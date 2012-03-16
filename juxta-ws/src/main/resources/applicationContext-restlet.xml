@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans 
+                        http://www.springframework.org/schema/beans/spring-beans-2.5.xsd">    
+
+    <!-- main restlet component: defines port, protocol and router that
+         maps RESTful uris to java services for handling those requests -->
+    <bean id="top" class="org.restlet.ext.spring.SpringComponent">
+        <property name="server">
+            <bean class="org.restlet.ext.spring.SpringServer">
+                <constructor-arg value="http" />
+                <constructor-arg value="${juxta.ws.port}" />
+            </bean>
+        </property>
+
+        <property name="defaultTarget" ref="juxtaWsAppliction" />
+        
+        <!-- add support for class loader access protocol. This is needed to
+             serve static content from the classpath (ftl resources). Also add support
+             for normal static content. -->
+        <property name="clientsList">
+            <list>
+                <value>clap</value>
+                <value>file</value>
+            </list>
+         </property>
+    </bean>        
+    
+    <!-- The restlet application class for the juxta web service -->
+    <bean id="juxtaWsAppliction" class="org.juxtasoftware.JuxtaWsApplication">
+        <property name="router" ref="juxtaRouter"/>
+        <property name="requestFilter" ref="filter" />
+        <property name="useAuthenticator" ref="useAuthenticator"/>
+        <property name="statusService" ref="statusService" />
+    </bean>
+  
+    <!-- The filter forwards all of its requests off to the router. It is also responsible
+         for determining if cross domain requests are accepted -->
+    <bean id="filter" class="org.juxtasoftware.RequestFilter">
+        <property name="accessList" ref="allowAccessList"/>
+    </bean>
+    
+    <!-- The status service for displaying customized error pages-->
+    <bean id="statusService" class="org.juxtasoftware.JuxtaStatusService"/>
+        
+    <!-- This defines all of the RESTful mappings for the juxtaWS -->
+    <bean id="juxtaRouter" class="org.restlet.ext.spring.SpringBeanRouter"/>
+    <bean name="/juxta" class="org.juxtasoftware.resource.RootResource" scope="prototype" autowire="byName" />
+    
+    <!-- workspace resources -->
+    <bean name="/juxta/workspace" class="org.juxtasoftware.resource.WorkspacesResource" scope="prototype" autowire="byName" />
+    <bean name="/juxta/workspace/{id}" class="org.juxtasoftware.resource.WorkspaceResource" scope="prototype" autowire="byName" />
+    
+    <!-- import -->
+    <bean name="/juxta/{workspace}/import" class="org.juxtasoftware.resource.Importer" scope="prototype" autowire="byName" />
+    <bean name="/juxta/{workspace}/import/{id}/status" class="org.juxtasoftware.resource.Importer" scope="prototype" autowire="byName" />
+    <bean name="/juxta/{workspace}/import/{id}/cancel" class="org.juxtasoftware.resource.Importer" scope="prototype" autowire="byName" />
+    <bean name="/juxta/import" class="org.juxtasoftware.resource.Importer" scope="prototype" autowire="byName" />
+    <bean name="/juxta/import/{id}/status" class="org.juxtasoftware.resource.Importer" scope="prototype" autowire="byName" />
+    <bean name="/juxta/import/{id}/cancel" class="org.juxtasoftware.resource.Importer" scope="prototype" autowire="byName" />
+    
+    <!-- source resources -->
+    <bean name="/juxta/{workspace}/source" class="org.juxtasoftware.resource.SourcesResource" scope="prototype" autowire="byName" />
+    <bean name="/juxta/{workspace}/source/{id}" class="org.juxtasoftware.resource.SourceResource" scope="prototype" autowire="byName" />
+    <bean name="/juxta/source" class="org.juxtasoftware.resource.SourcesResource" scope="prototype" autowire="byName" />
+    <bean name="/juxta/source/{id}" class="org.juxtasoftware.resource.SourceResource" scope="prototype" autowire="byName" />
+    
+    <!-- revision sets -->
+    <bean name="/juxta/{workspace}/source/{id}/revision" class="org.juxtasoftware.resource.RevisionsResource" scope="prototype" autowire="byName" />
+    <bean name="/juxta/{workspace}/source/{sourceId}/revision/{id}" class="org.juxtasoftware.resource.RevisionResource" scope="prototype" autowire="byName" />
+    <bean name="/juxta/source/{id}/revision" class="org.juxtasoftware.resource.RevisionsResource" scope="prototype" autowire="byName" />
+    <bean name="/juxta/source/{sourceId}/revision/{id}" class="org.juxtasoftware.resource.RevisionResource" scope="prototype" autowire="byName" />
+
+    <!-- template resources -->
+    <bean name="/juxta/{workspace}/template" class="org.juxtasoftware.resource.TemplatesResource" scope="prototype" autowire="byName" />
+    <bean name="/juxta/{workspace}/template/{id}" class="org.juxtasoftware.resource.TemplateResource" scope="prototype" autowire="byName" />
+    <bean name="/juxta/template" class="org.juxtasoftware.resource.TemplatesResource" scope="prototype" autowire="byName" />
+    <bean name="/juxta/template/{id}" class="org.juxtasoftware.resource.TemplateResource" scope="prototype" autowire="byName" />
+    
+    <!-- transform -->
+    <bean name="/juxta/{workspace}/transform" class="org.juxtasoftware.resource.Transformer" scope="prototype" autowire="byName" />
+    <bean name="/juxta/transform" class="org.juxtasoftware.resource.Transformer" scope="prototype" autowire="byName" />
+
+    <!-- witness resources -->
+    <bean name="/juxta/{workspace}/witness" class="org.juxtasoftware.resource.WitnessesResource" scope="prototype" autowire="byName" />
+    <bean name="/juxta/{workspace}/witness/{witnessId}" class="org.juxtasoftware.resource.WitnessResource" scope="prototype" autowire="byName" />
+    <bean name="/juxta/witness" class="org.juxtasoftware.resource.WitnessesResource" scope="prototype" autowire="byName" />
+    <bean name="/juxta/witness/{witnessId}" class="org.juxtasoftware.resource.WitnessResource" scope="prototype" autowire="byName" />
+    
+    <!-- filters -->
+    <bean name="/juxta/{workspace}/filter" class="org.juxtasoftware.resource.QNameFiltersResource" scope="prototype" autowire="byName" />
+    <bean name="/juxta/{workspace}/filter/{id}" class="org.juxtasoftware.resource.QNameFilterResource" scope="prototype" autowire="byName" />
+    <bean name="/juxta/filter" class="org.juxtasoftware.resource.QNameFiltersResource" scope="prototype" autowire="byName" />
+    <bean name="/juxta/filter/{id}" class="org.juxtasoftware.resource.QNameFilterResource" scope="prototype" autowire="byName" />
+    
+    <!-- comparison set -->
+    <bean name="/juxta/{workspace}/set" class="org.juxtasoftware.resource.ComparisonSetsResource" scope="prototype" autowire="byName" />
+    <bean name="/juxta/{workspace}/set/{id}" class="org.juxtasoftware.resource.ComparisonSetResource" scope="prototype" autowire="byName" />
+    <bean name="/juxta/set" class="org.juxtasoftware.resource.ComparisonSetsResource" scope="prototype" autowire="byName" />
+    <bean name="/juxta/set/{id}" class="org.juxtasoftware.resource.ComparisonSetResource" scope="prototype" autowire="byName" />
+    
+    <!-- tokenizer -->
+    <bean name="/juxta/{workspace}/set/{id}/tokenize" class="org.juxtasoftware.resource.TokenizerResource" scope="prototype" autowire="byName" />
+    <bean name="/juxta/{workspace}/set/{id}/tokenizer/status" class="org.juxtasoftware.resource.TokenizerResource" scope="prototype" autowire="byName" />
+    <bean name="/juxta/{workspace}/set/{id}/tokenizer/cancel" class="org.juxtasoftware.resource.TokenizerResource" scope="prototype" autowire="byName" />
+    <bean name="/juxta/set/{id}/tokenize" class="org.juxtasoftware.resource.TokenizerResource" scope="prototype" autowire="byName" />
+    <bean name="/juxta/set/{id}/tokenizer/status" class="org.juxtasoftware.resource.TokenizerResource" scope="prototype" autowire="byName" />
+    <bean name="/juxta/set/{id}/tokenizer/cancel" class="org.juxtasoftware.resource.TokenizerResource" scope="prototype" autowire="byName" />
+    
+    <!-- collator -->
+    <bean name="/juxta/{workspace}/set/{id}/collate" class="org.juxtasoftware.resource.CollatorResource" scope="prototype" autowire="byName" />
+    <bean name="/juxta/{workspace}/set/{id}/collator" class="org.juxtasoftware.resource.CollatorResource" scope="prototype" autowire="byName" />
+    <bean name="/juxta/{workspace}/set/{id}/collator/status" class="org.juxtasoftware.resource.CollatorResource" scope="prototype" autowire="byName" />
+    <bean name="/juxta/{workspace}/set/{id}/collator/cancel" class="org.juxtasoftware.resource.CollatorResource" scope="prototype" autowire="byName" />
+    <bean name="/juxta/set/{id}/collate" class="org.juxtasoftware.resource.CollatorResource" scope="prototype" autowire="byName" />
+    <bean name="/juxta/set/{id}/collator" class="org.juxtasoftware.resource.CollatorResource" scope="prototype" autowire="byName" />
+    <bean name="/juxta/set/{id}/collator/status" class="org.juxtasoftware.resource.CollatorResource" scope="prototype" autowire="byName" />
+    <bean name="/juxta/set/{id}/collator/cancel" class="org.juxtasoftware.resource.CollatorResource" scope="prototype" autowire="byName" />
+    
+    <!-- histogram -->
+    <bean name="/juxta/{workspace}/set/{id}/histogram" class="org.juxtasoftware.resource.HistogramResource" scope="prototype" autowire="byName" />
+    <bean name="/juxta/set/{id}/histogram" class="org.juxtasoftware.resource.HistogramResource" scope="prototype" autowire="byName" />
+    
+    <!-- fragments -->
+    <bean name="/juxta/{workspace}/set/{id}/diff/fragment" class="org.juxtasoftware.resource.FragmentResource" scope="prototype" autowire="byName" />
+    <bean name="/juxta/set/{id}/diff/fragment" class="org.juxtasoftware.resource.FragmentResource" scope="prototype" autowire="byName" />
+    
+    <!-- views -->
+    <bean name="/juxta/{workspace}/set/{id}/view" class="org.juxtasoftware.resource.SetViewResource" scope="prototype" autowire="byName" />
+    <bean name="/juxta/set/{id}/view" class="org.juxtasoftware.resource.SetViewResource" scope="prototype" autowire="byName" />
+
+    <!-- annotations -->
+    <bean name="/juxta/{workspace}/set/{setId}/witness/{witnessId}/annotation" class="org.juxtasoftware.resource.AnnotationsResource" scope="prototype" autowire="byName" />
+    <bean name="/juxta/{workspace}/set/{setId}/witness/{witnessId}/annotation/{annotationId}" class="org.juxtasoftware.resource.AnnotationResource" scope="prototype" autowire="byName" />
+    <bean name="/juxta/set/{setId}/witness/{witnessId}/annotation" class="org.juxtasoftware.resource.AnnotationsResource" scope="prototype" autowire="byName" />
+    <bean name="/juxta/set/{setId}/witness/{witnessId}/annotation/{annotationId}" class="org.juxtasoftware.resource.AnnotationResource" scope="prototype" autowire="byName" />
+
+    <!-- alignments -->
+    <bean name="/juxta/{workspace}/set/{setId}/alignment" class="org.juxtasoftware.resource.AlignmentsResource" scope="prototype" autowire="byName" />
+    <bean name="/juxta/{workspace}/set/{setId}/alignment/{id}" class="org.juxtasoftware.resource.AlignmentResource" scope="prototype" autowire="byName" />
+    <bean name="/juxta/set/{setId}/alignment" class="org.juxtasoftware.resource.AlignmentsResource" scope="prototype" autowire="byName" />
+    <bean name="/juxta/set/{setId}/alignment/{id}" class="org.juxtasoftware.resource.AlignmentResource" scope="prototype" autowire="byName" />
+               
+</beans>

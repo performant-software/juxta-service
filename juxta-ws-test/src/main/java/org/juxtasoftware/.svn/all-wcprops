@@ -1,0 +1,89 @@
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/!svn/ver/2575/juxta/trunk/juxta-ws-test/src/main/java/org/juxtasoftware
+END
+CollateFilterTest.java
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/!svn/ver/2161/juxta/trunk/juxta-ws-test/src/main/java/org/juxtasoftware/CollateFilterTest.java
+END
+SetHelper.java
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/!svn/ver/2760/juxta/trunk/juxta-ws-test/src/main/java/org/juxtasoftware/SetHelper.java
+END
+Helper.java
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/!svn/ver/2741/juxta/trunk/juxta-ws-test/src/main/java/org/juxtasoftware/Helper.java
+END
+TransformTest.java
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/!svn/ver/2741/juxta/trunk/juxta-ws-test/src/main/java/org/juxtasoftware/TransformTest.java
+END
+SourceTest.java
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/!svn/ver/2522/juxta/trunk/juxta-ws-test/src/main/java/org/juxtasoftware/SourceTest.java
+END
+JuxtaServiceTest.java
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/!svn/ver/2745/juxta/trunk/juxta-ws-test/src/main/java/org/juxtasoftware/JuxtaServiceTest.java
+END
+TemplateTest.java
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/!svn/ver/2741/juxta/trunk/juxta-ws-test/src/main/java/org/juxtasoftware/TemplateTest.java
+END
+ComparisonSetTest.java
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/!svn/ver/2762/juxta/trunk/juxta-ws-test/src/main/java/org/juxtasoftware/ComparisonSetTest.java
+END
+PsImportTest.java
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/!svn/ver/2762/juxta/trunk/juxta-ws-test/src/main/java/org/juxtasoftware/PsImportTest.java
+END
+ImportTest.java
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/!svn/ver/2762/juxta/trunk/juxta-ws-test/src/main/java/org/juxtasoftware/ImportTest.java
+END
+FilterHelper.java
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/!svn/ver/2161/juxta/trunk/juxta-ws-test/src/main/java/org/juxtasoftware/FilterHelper.java
+END
+QNameFilterTest.java
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/!svn/ver/2264/juxta/trunk/juxta-ws-test/src/main/java/org/juxtasoftware/QNameFilterTest.java
+END
+CollatorTest.java
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/!svn/ver/2762/juxta/trunk/juxta-ws-test/src/main/java/org/juxtasoftware/CollatorTest.java
+END
+CollateXmlTest.java
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/!svn/ver/2741/juxta/trunk/juxta-ws-test/src/main/java/org/juxtasoftware/CollateXmlTest.java
+END

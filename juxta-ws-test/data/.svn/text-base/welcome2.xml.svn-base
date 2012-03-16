@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<juxta-document>
+<bibliographic>
+<title></title>
+<short-title>welcome2.txt</short-title>
+<author></author>
+<editor></editor>
+<source></source>
+<date></date>
+<notes></notes>
+</bibliographic>
+<text>
+<m_s id="1" type="" n="1" /><m_e refid="1" />Welcome to Juxta!
+
+<m_s id="14" type="" n="2" /><m_e refid="14" />In getting started, you should download and read the PDF user's handbook located in the "help" section of the Juxta home page:
+
+<m_s id="94" type="" n="3" /><m_e refid="94" />http://www.patacriticism.org/juxta/
+
+<m_s id="b9" type="" n="4" /><m_e refid="b9" />You can also examine some sample collations that we have prepared for you.  Just select "Open Sample..." from Juxta's "File" menu.  Any of the .jxt files contained therein will provide you with a playground for learning how Juxta works.
+
+<m_s id="1d0" type="" n="5" /><m_e refid="1d0" />You can even learn a good deal about the tool from this "welcome.jxt" comparison set.  It contains two versions of the text you're reading now.  Clicking on words and phrases highlighted in blue reveals variants.  You can explore Juxta by experimenting with other buttons and fields, such as the comparison view of documents or the command for generating a critical apparatus.
+
+<m_s id="34a" type="" n="6" /><m_e refid="34a" />When you are ready to collate your own documents, ready them according to directions in the user's manual and choose "New Comparison Set" from the "File" menu.
+
+<m_s id="3eb" type="" n="7" /><m_e refid="3eb" />Have fun -- and good luck!</text>
+</juxta-document>

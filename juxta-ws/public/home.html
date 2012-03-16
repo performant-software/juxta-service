@@ -1,0 +1,53 @@
+
+<p>Juxta WS is a version of Juxta that runs as a web service.</p>
+
+<p>
+<a href="http://www.juxtasoftware.org">Juxta</a> is a tool for
+exploring differences between versions of a text. It allows the
+scholar to collate witnesses with a base text during the editorial
+process. It can be part of a workflow for checking OCRed or hand-keyed
+texts, can help establish chronological or authorial relationships
+between texts, and can track migrations of passages between texts.
+</p>
+
+<p>
+Juxta WS is designed to work in the server environment of the digital
+edition. Juxta WS allows you to upload and store XML documents for the
+purpose of collation and display, and to browse collations using a
+simple HTML interface.
+</p>
+
+<p>
+As of this writing (mid-October 2011), Juxta WS can display the
+differences between texts in two ways. The “Heatmap” view displays the
+base text for a comparison set with spans highlighted in a range of
+colors to indicate differences from the other witnesses (darker
+highlighting indicates that a larger number of the witnesses vary).
+The “Differences” view displays range offset data for the differences
+among all the witnesses. A “Side by Side” view is planned for the
+future; it will allow you to see two texts at a time with their
+differences highlighted.
+</p>
+
+<p>
+Juxta WS is made to be part of a production pipeline and may be
+commanded using JSON or XML. The Juxta WS protocol follows a RESTful
+model. It uses HTTP verbs to model CRUD operations on a set of
+objects. The objects defined in this protocol include: comparison
+sets, documents, tokens, collations (or alignments), analysis results,
+and views. Objects created from each of these types are given an ID.
+This ID may then be used to reference the object in subsequent
+operations.
+</p>
+
+<p>
+Juxta WS offers its operations both as an integrated whole and as
+discrete operations or ‘micro-services’. For example, the tokenization
+service may be called independently of other operations, allowing
+Juxta WS to act as a pre-processor for linguistic algorithms. Or, you
+may wish to intervene, process the token stream and then feed the
+modified stream back into Juxta’s collation algorithm. These
+micro-services conform to the Gothenburg Model developed in 2009 at a
+joint workshop of the EU-funded research projects COST Action 32 and
+Interedition in Gothenburg.
+</p>

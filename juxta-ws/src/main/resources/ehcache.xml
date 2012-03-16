@@ -1,0 +1,43 @@
+<ehcache>
+    <diskStore path="java.io.tmpdir/juxta_ehcache" />
+
+    <!--
+    Mandatory Default Cache configuration. These settings will be applied to caches
+    created programmtically using CacheManager.add(String cacheName)
+    -->
+    <defaultCache
+            maxElementsInMemory="10000"
+            eternal="false"
+            timeToIdleSeconds="120"
+            timeToLiveSeconds="120"
+            overflowToDisk="false"
+            maxElementsOnDisk="0"
+            diskPersistent="false"
+            memoryStoreEvictionPolicy="LRU" 
+            />
+            
+    <cache name="collationCache"        
+            maxElementsInMemory="10000"
+            eternal="false"
+            timeToIdleSeconds="120"
+            timeToLiveSeconds="120"
+            overflowToDisk="false"
+            maxElementsOnDisk="0"
+            diskPersistent="false"
+            memoryStoreEvictionPolicy="LRU" 
+            />
+            
+    <!-- parse profiles, qname filters and sets -->
+    <cache name="profileCache" maxElementsInMemory="100" eternal="false" 
+        timeToIdleSeconds="300" timeToLiveSeconds="300" overflowToDisk="false"
+        maxElementsOnDisk="0" diskPersistent="false" memoryStoreEvictionPolicy="LRU"
+    />
+    <cache name="filterCache" maxElementsInMemory="100" eternal="false" 
+        timeToIdleSeconds="300" timeToLiveSeconds="300" overflowToDisk="false"
+        maxElementsOnDisk="0" diskPersistent="false" memoryStoreEvictionPolicy="LRU"
+    />
+    <cache name="comparisonSetCache" maxElementsInMemory="100" eternal="false" 
+        timeToIdleSeconds="300" timeToLiveSeconds="300" overflowToDisk="false"
+        maxElementsOnDisk="0" diskPersistent="false" memoryStoreEvictionPolicy="LRU"
+    />
+</ehcache>

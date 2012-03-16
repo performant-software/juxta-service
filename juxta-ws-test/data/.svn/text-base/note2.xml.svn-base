@@ -1,0 +1,9 @@
+<junk>
+	<p>line of text</p>
+	<h1>header including a <span xml:id="1">notey</span>!</h1>
+	<note target="1">note text</note>
+	<div>
+		<p>this is a paragraph within a div. there is a note after the div tag</p>
+		<note type="gloss">note text that does not  have a target</note>
+	</div>
+</junk>

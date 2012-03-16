@@ -1,0 +1,112 @@
+package org.juxtasoftware.service;
+
+import java.io.InputStream;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.juxtasoftware.Constants;
+import org.juxtasoftware.dao.ComparisonSetDao;
+import org.juxtasoftware.dao.TemplateDao;
+import org.juxtasoftware.dao.WorkspaceDao;
+import org.juxtasoftware.model.ComparisonSet;
+import org.juxtasoftware.model.Template;
+import org.juxtasoftware.model.Workspace;
+import org.juxtasoftware.service.importer.jxt.JxtImportServiceImpl;
+import org.juxtasoftware.service.importer.ps.ParallelSegmentationImportImpl;
+import org.juxtasoftware.util.BackgroundTaskStatus;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import com.google.common.io.Closeables;
+
+/**
+ * @author <a href="http://gregor.middell.net/" title="Homepage">Gregor Middell</a>
+ */
+public class ImportServiceTest extends AbstractTest {
+
+    @Autowired private JxtImportServiceImpl jxtImportService;
+    @Autowired private ParallelSegmentationImportImpl psImportService;
+    @Autowired private ComparisonSetDao setDao;
+    @Autowired private WorkspaceDao workspaceDao;
+    @Autowired private XmlTemplateParser parser;
+    @Autowired private TemplateDao templateDao;
+   
+
+    @Before
+    public void setup() throws Exception {
+        Workspace ws = this.workspaceDao.getPublic();
+        if ( ws == null ) {
+            ws = new Workspace();
+            ws.setName("public");
+            ws.setDescription("Default public workspace");
+            Long id = this.workspaceDao.create(ws);
+            ws.setId( id );
+        }
+        
+        if ( templateDao.exists(ws, Constants.PARALLEL_SEGMENTATION_TEMPLATE) == false ) {
+            InputStream is = ClassLoader.getSystemResourceAsStream("tei-template.xml");
+            parser.parse(is);
+            Template template = parser.getTemplates().get(0);
+            template.setWorkspaceId( ws.getId() );
+            template.setDefault(false);
+            templateDao.create(template );
+        }
+    }
+
+    
+    @Test
+    public void importFile() throws Exception {
+        final Workspace ws = this.workspaceDao.getPublic();
+        ComparisonSet set = new ComparisonSet();
+        set.setName("jxt-unit-test-set");
+        set.setWorkspaceId( ws.getId() );
+        Long id = this.setDao.create(set);
+        set.setId(id);
+        
+        InputStream data = null;
+        try {
+            BackgroundTaskStatus s= new BackgroundTaskStatus( "test1");
+            data = getClass().getResourceAsStream("/old.jxt");
+            jxtImportService.doImport(set, data, s );
+            throw new Exception("Invalid accept of old file");
+        } catch (Exception e) {
+            // no-op, this is expected here
+        } finally {
+            Closeables.close(data, false);
+        }
+        
+        try {
+            BackgroundTaskStatus s= new BackgroundTaskStatus( "test2");
+            data = getClass().getResourceAsStream("/welcome.jxt");
+            jxtImportService.doImport(set, data, s);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw e;
+        } finally {
+            Closeables.close(data, false);
+        }
+    }
+    
+    
+    @Test
+    public void importTei() throws Exception {
+       
+        final Workspace ws = this.workspaceDao.getPublic();
+        ComparisonSet set = new ComparisonSet();
+        set.setName("tei-ps-unit-test-set");
+        set.setWorkspaceId( ws.getId() );
+        Long id = this.setDao.create(set);
+        set.setId(id);
+        
+        InputStream data = null;
+        try {
+            BackgroundTaskStatus s= new BackgroundTaskStatus( "test1");
+            data = getClass().getResourceAsStream("/autumn.xml");
+            psImportService.doImport(set, data, s );
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw e;
+        } finally {
+            Closeables.close(data, false);
+        }
+    }
+}

@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+    <xs:simpleType name="actionType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="INCLUDE" />
+            <xs:enumeration value="EXCLUDE" />
+            <xs:enumeration value="MAKE_NOTABLE" />
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:complexType name="tagType">
+        <xs:attribute name="action" type="actionType" use="required" />
+        <xs:attribute name="newLine" type="xs:boolean" use="required" />
+        <xs:attribute name="name" type="xs:string" use="required" />
+    </xs:complexType>
+
+    <xs:complexType name="templateType">
+        <xs:sequence>
+            <xs:element name="tag" type="tagType" minOccurs="0"
+                maxOccurs="unbounded" />
+        </xs:sequence>
+        <xs:attribute name="guid" use="required" />
+        <xs:attribute name="name" use="required" />
+        <xs:attribute name="rootTagName" type="xs:string" use="required" />
+        <xs:attribute name="isDefault" type="xs:boolean" use="required" />
+        <xs:attribute name="targetXPath" type="xs:string" use="optional" />
+    </xs:complexType>
+
+    <xs:element name="templates">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="template" type="templateType"
+                    minOccurs="0" maxOccurs="unbounded" />
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+</xs:schema>

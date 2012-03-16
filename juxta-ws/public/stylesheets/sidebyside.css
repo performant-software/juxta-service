@@ -1,0 +1,152 @@
+/** 
+ *     CSS for side by side view
+ */
+
+/* div containing the loc/unlock button */
+img.scroll-mode-img {
+    position: absolute;
+    border: 1px solid #BBB;
+    padding: 2px 8px 3px 8px;
+    background: #EEE;
+    border-radius: 3px;
+    color: #000000;
+}
+.scroll-mode-img:hover {
+    -moz-box-shadow: 2px 2px 2px #999;
+    -webkit-box-shadow: 2px 2px 2px #999;
+    box-shadow: 1px 1px 1px #999;
+    text-decoration: none;
+    background: #FFF;
+}
+.scroll-mode-img:active {
+    background: #ccc;
+    -moz-box-shadow: 0 0 0 #000;
+    -webkit-box-shadow: 0 0 0 #000;
+    box-shadow: 0 0 0 #000;
+     border: 1px inset #BBB;
+}
+
+/* divs used for rendering the diff connections */
+div.canvas-div {
+    position: absolute;
+    overflow:scroll;
+    overflow-x: hidden; 
+    overflow-y: hidden; 
+}
+
+.sbs-title{
+    float:left;
+    width:85%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* div containing the left witness for comparison */ 
+div.left-witness {
+    font: 15px "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-weight: 300;
+    line-height: 1.4;
+    border-radius: 5px 5px 0 0;
+    -mox-border-radius: 5px 5px 0 0;
+    -webkit-border-radius: 5px 5px 0 0;
+    width: 47%; 
+    float: left;
+    border: 1px solid #cccccc;  
+    overflow: hidden;
+    background-color: #ffffff;
+    margin:0;
+    padding:0;
+    position: relative;
+}
+
+/* div containing the right witness for comparison */ 
+div.right-witness {
+    font: 15px "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-weight: 300;
+    line-height: 1.4;
+    border-radius: 5px 5px 0 0;
+    -mox-border-radius: 5px 5px 0 0;
+    -webkit-border-radius: 5px 5px 0 0;
+    width: 47%; 
+    float: right;
+    border: 1px solid #cccccc;  
+    background-color: #ffffff;
+    margin:0;
+    padding:0;
+    position: relative;
+}
+
+
+/* Div containing actual witness text */
+div.witness-text {
+    padding: 0 5px 0 5px;
+    margin: 0;
+    font: 15px "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-weight: 300;
+    line-height: 1.4;    
+    overflow: scroll;
+    overflow-x: hidden; 
+}
+
+/* DIFF span style */
+/* Note: bit after the comma means if a tag that has both diff and move */
+/* the diff style has priority */ 
+span.diff, span.diff span.move  {
+    background-color: #DAEEDA;
+}
+span.diff.lit, span.diff.lit span.move   {
+    background-color: #6ECE6E !important;
+}
+.lit  {
+    background-color: #6ECE6E !important;
+}
+
+span.move  {
+    background-color: #eeeeee;
+    padding: 0.15em;
+}
+
+.sbs-button {
+    float:right;
+    padding: 2px 6px 2px 6px !important;
+}
+
+/* Popup */
+.witnesses-popup {
+    visibility: hidden;
+    position: fixed;
+    width:200px;
+    height: auto;
+    text-align:center;
+    z-index: 1000;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 0.9em;
+    font-weight: 300;
+    background-color: #eee;
+    border: 1px solid #666;
+    -moz-box-shadow: 5px 5px 5px #999;
+    -webkit-box-shadow: 5px 5px 5px #999;
+    box-shadow: 5px 5px 5px #999;
+    -mox-border-radius: 5px;
+    -webkit-border-radius: 5px;
+    border-radius: 5px;
+    padding: 0px 0px 5px 0px;
+}
+.witness-select {
+    width: 95%;
+    height: auto;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    -mox-border-radius: 2px;
+    -webkit-border-radius: 2px;
+    border-radius: 2px;
+}
+.popup-buttons {
+    margin: 5px;
+}
+
+
+
+
+
+

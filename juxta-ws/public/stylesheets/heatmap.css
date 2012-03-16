@@ -1,0 +1,292 @@
+
+/* div containing al files in the comparison set */ 
+div.files {
+    border-radius: 5px 5px 0 0;
+    -mox-border-radius: 5px 5px 0 0;
+    -webkit-border-radius: 5px 5px 0 0;
+    width: 25%;
+    float: left;
+    border: 1px solid #cccccc;  
+    overflow: hidden;
+    background-color: #ffffff;
+    margin:0;
+    padding:0;
+    line-height: 1.4;
+}
+
+.set-file {
+    font: 14px "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-weight: 300;
+    
+}
+
+
+.hidden {
+    display: none;
+}
+
+
+/** TOOLBAR **/
+.heatmap-toolbar {
+    border-bottom: 1px solid #999;
+    border-top: 1px solid #999;
+    background-color: #f5f5f5;
+    top: -1px;
+    position: relative;
+    text-align: right;
+    padding: 0px 2px 3px 0px;
+    margin: 0;
+}
+
+.heatmap-scroller {
+    overflow: scroll;
+    overflow-x: hidden;
+}
+
+.page-break {
+    color: #aaaaaa;
+    cursor: default;
+    font-weight: bolder;
+}
+
+/* Witness entry in comparison set div */
+div.witness {
+    margin-top: 0.3em;
+    margin-bottom: 0.3em;
+    padding-left: 0.2em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+    float: left;
+    width:59%;
+}
+
+div.change-index {
+    float: right;
+    width: 38%;
+    margin: 3px 3px 0 0;
+}
+
+/* Base document entry in comparison set div */
+div.base {
+    background-color: #7ede7e;
+    margin-top: 0.35em;
+    margin-bottom: 0.35em;
+    margin-right: 0.15em;
+    margin-left: 0.15em;
+    outline: 1px solid #008000;
+    padding-left: 0.2em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: default;
+}
+
+/* Div for headmap, notes and margin boxes */
+/* This version is when the full UI is used */
+div.heatmap-div {
+    border-radius: 5px 5px 0 0;
+    -mox-border-radius: 5px 5px 0 0;
+    -webkit-border-radius: 5px 5px 0 0;
+    border: 1px solid #cccccc;
+    float: right;
+    width: 74.5%;
+    height: auto;
+    margin:0;
+    padding:0;
+    background-color: #ffffff;
+    cursor: default;
+}
+
+/* Div for headmap, notes and margin boxes */
+/* This version is when the SIMPLE UI is used */
+div.simple-heatmap-div {
+    margin: 0;
+    padding: 0;
+    width:auto;
+    height:auto;
+}
+
+/** Contains the text of the heatmap */
+div.heatmap-text {
+    padding: 0.5em;
+    float: left;
+    width: 70%;
+    font: 14px "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-weight: 300;
+    line-height: 1.4;
+}
+
+/** Contains all of the NOTES */
+div.note-boxes {
+    padding: 0;
+    float: right;
+    width: 28%;
+    height: 100%;
+}
+
+/* The note box */
+div.note {
+    font: 12px  "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-weight: 300;
+    line-height: 1.2;
+    padding: 0.1em;
+    border-radius: 3px;
+    -mox-border-radius: 3px;
+    -webkit-border-radius: 3px;
+    border: 1.5px solid #bca902;
+    background-color: #fffcc8;
+    margin-bottom: 0.25em;
+    -moz-box-shadow: 2px 2px 2px #999;
+    -webkit-box-shadow: 2px 2px 2px #999;
+    box-shadow: 2px 2px 2px #999;
+}
+div.highlighted {
+    background-color: #fffe38;
+    border: 1.5px solid #ff0000;
+}
+span.note-anchor-highlighted {
+    background-color: #fffe38;
+    outline: 1px solid #ff0000;
+    padding: 0.1em;
+    font-size: 1em;
+    -moz-box-shadow: 2px 2px 2px #999;
+    -webkit-box-shadow: 2px 2px 2px #999;
+    box-shadow: 2px 2px 2px #999;
+}
+
+/* Large box containing a group of note boxes */
+div.margin-boxes {
+    padding: 0;
+    float: right;
+    width: 28%;
+    height: 100%;
+    display: none;
+}
+div.margin-box {
+    border-radius: 3px;
+    -mox-border-radius: 3px;
+    -webkit-border-radius: 3px;
+    border: 1px solid #008000;
+    font: 12px  "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-weight: 200;
+    line-height: 1.2;
+    margin-bottom: 0.35em;
+    -moz-box-shadow: 2px 2px 2px #999;
+    -webkit-box-shadow: 2px 2px 2px #999;
+    box-shadow: 2px 2px 2px #999;
+}
+p.box-title {
+    border-radius: 3px 3px 0 0;
+    -mox-border-radius: 3px 3px 0 0;
+    -webkit-border-radius: 3px 3px 0 0;
+    margin: 0;
+    padding-top: 0;
+    padding-left: 0.25em;
+    padding-bottom: 0;
+    padding-right: 0;
+    background-color: #bae2ba;
+    border-bottom: 1px solid #008000;
+    font-weight: bold;
+}
+p.box-content {
+    margin: 0;
+    padding: 0.3em 0.2em 0.4em 0.4em;
+}
+span.note-anchor {
+    background-color: #fffcc8;
+    outline: 1px solid #bca902;
+    padding: 0.1em;
+    font-size: 1em;
+}
+span.note-anchor-hidden {
+    background-color: transparent;
+    outline: 0;
+    padding: 0em;
+    font-size: 1em;
+}
+span.active {
+    background-color: #bae2ba;
+    outline: 1px solid #008000;
+}
+
+/** TEI Revsion tag styles **/
+.rev.add {
+    font-weight: bold;
+    text-decoration: underline;
+    color: #008000;
+}
+.rev.add.accept {
+    display: inline;
+    text-decoration: none;
+}
+.rev.add.reject {
+    display: none;
+}
+
+.rev.delete {
+    font-weight: bold;
+    text-decoration: line-through;
+    color: #800000;
+} 
+.rev.delete.accept {
+    display: none;
+}
+.rev.delete.reject {
+    display: inline;
+    color: #800000;
+    text-decoration: none;
+} 
+
+.plain-revs {
+    font-weight: 300 !important;
+    color: #000 !important;
+    text-decoration: none !important;
+}
+.show-all {
+    display: inline !important;
+}  
+
+
+span.del {
+    color: #aa0000;
+    font-size: 0.8em;
+}
+span.change {
+    color: #0000bb;
+    font-weight: bolder;
+}
+
+
+/** Heat map colors */
+span.heatmap {
+    cursor: pointer;
+}
+.heat1 {
+    background-color: rgb(239,240,255);
+}
+.heat2 {
+    background-color: rgb(213,217,255);
+}
+.heat3 {
+    background-color: rgb(187,193,255);
+}
+.heat4 {
+    background-color: rgb(161,170,255);
+}
+.heat5 {
+    background-color: rgb(135,146,255);
+}
+.heat6 {
+    background-color: rgb(109,123,255);
+}
+.heat7 {
+    background-color: rgb(83,99,255);
+}
+.heat8 {
+    background-color: rgb(57,76,255);
+}
+.heat9 {
+    background-color: rgb(51,71,250);
+}
