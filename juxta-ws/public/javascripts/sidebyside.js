@@ -708,13 +708,6 @@ function initDocumentHeight() {
     if ( isLocked() )  {
          $("#left-witness-text").css("overflow-y", "hidden" );
     }
-    
-    // if there are only 2 witnesses in the comparison
-    // set, ditch the change buttons
-    if ( $("#witness-count").text() == "2") {
-        $("#change-left").css("visibility", "hidden");
-        $("#change-right").css("visibility", "hidden");  
-    }
 }
 
 function changeWitness(sourceButtonId) {
