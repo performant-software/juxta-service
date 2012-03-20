@@ -27,7 +27,7 @@ public class ImportTest {
             String name = "import-test-set-"+UUID.randomUUID().hashCode();
             File jxtFile = new File("data/damozel.jxt");
             
-            PostMethod post = new PostMethod(this.baseUrl+"/import");
+            PostMethod post = new PostMethod(this.baseUrl+"/import?overwrite");
             Part[] parts = {
                 new StringPart("setName", name),
                 new FilePart("jxtFile", jxtFile)

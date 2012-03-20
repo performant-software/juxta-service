@@ -1,9 +1,11 @@
 package org.juxtasoftware;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.UUID;
 
 import org.apache.commons.httpclient.methods.PostMethod;
+import org.apache.commons.httpclient.methods.StringRequestEntity;
 import org.apache.commons.httpclient.methods.multipart.FilePart;
 import org.apache.commons.httpclient.methods.multipart.MultipartRequestEntity;
 import org.apache.commons.httpclient.methods.multipart.Part;
@@ -22,20 +24,18 @@ public class PsImportTest {
     public void runTests() throws Exception {
         LOG.info("Testing PS-Import API");
         Long setId = null;
+        Long srcId = null;
         try { 
  
+            // create a source from the TEI ps file
+            srcId = createTeiPsSource();
+            
+            // use this sourceID to import witnesses and assemble them
+            // into a comparison set
             String name = "import-test-set-"+UUID.randomUUID().hashCode();
-            File jxtFile = new File("data/autumn.xml");
-
             PostMethod post = new PostMethod(this.baseUrl+"/import?overwrite");
-            Part[] parts = {
-                new StringPart("setName", name),
-                new FilePart("teiFile", jxtFile)
-            };
-            post.setRequestEntity(
-                new MultipartRequestEntity(parts, post.getParams())
-                );
-
+            String json = "{\"setName\":"+"\""+name+"\", \"teiSourceId\": "+srcId+"}";
+            post.setRequestEntity(new StringRequestEntity(json, "application/json", "utf-8"));
             JuxtaServiceTest.execRequest(post);
             String response = JuxtaServiceTest.getResponseString(post);
             long id = Long.parseLong(response);
@@ -59,5 +59,25 @@ public class PsImportTest {
                 
             }
         }
+    }
+    
+    private Long createTeiPsSource() throws IOException {
+        String name = "tei-ps-src-"+UUID.randomUUID().toString();
+
+        File psFile = new File("data/autumn.xml");
+        PostMethod post = new PostMethod(this.baseUrl+"/source");
+        Part[] parts = {
+                        new StringPart("sourceName", name),
+                        new StringPart("contentType", "text/xml"),
+                        new FilePart("sourceFile", psFile)
+                    };
+        post.setRequestEntity(
+            new MultipartRequestEntity(parts, post.getParams())
+            );
+        
+        
+        JuxtaServiceTest.execRequest(post);
+        String response = JuxtaServiceTest.getResponseString(post);
+        return Long.parseLong(response.substring(1,response.lastIndexOf(']')));
     }
 }
