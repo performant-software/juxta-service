@@ -57,7 +57,7 @@ public class Transformer extends BaseResource {
         JsonParser parser = new JsonParser();
         JsonObject json = parser.parse(jsonString).getAsJsonObject();
         Long sourceId = json.get("source").getAsLong();
-        Source srcDoc = this.sourceDao.find(sourceId);
+        Source srcDoc = this.sourceDao.find(this.workspace.getId(), sourceId);
         if ( validateModel(srcDoc) == false ) {
             getResponse().setStatus(Status.CLIENT_ERROR_NOT_FOUND);
             return toTextRepresentation( "Invalid source "+sourceId);

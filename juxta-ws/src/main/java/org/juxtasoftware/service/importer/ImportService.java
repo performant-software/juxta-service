@@ -1,7 +1,5 @@
 package org.juxtasoftware.service.importer;
 
-import java.io.InputStream;
-
 import org.juxtasoftware.model.ComparisonSet;
 import org.juxtasoftware.util.BackgroundTaskStatus;
 
@@ -10,18 +8,16 @@ import org.juxtasoftware.util.BackgroundTaskStatus;
  * @author loufoster
  *
  */
-public interface ImportService {
+public interface ImportService<T> {
     
     /**
-     * Import data from the stream into a comparison set. <code>baseDoc</code> may be
+     * Import data from the generic source into a comparison set. <code>baseDoc</code> may be
      * null, or it may specify the base witness for this set
      * 
      * @param set
-     * @param baseDoc
-     * @param importStream
+     * @param importSource
      * @param status
      * @throws Exception
      */
-    void doImport(final ComparisonSet set, final InputStream importStream,
-        BackgroundTaskStatus status) throws Exception;
+    void doImport(final ComparisonSet set, final T importSource, BackgroundTaskStatus status) throws Exception;
 }

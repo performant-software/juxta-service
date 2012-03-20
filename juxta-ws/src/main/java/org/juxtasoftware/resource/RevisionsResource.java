@@ -39,7 +39,7 @@ public class RevisionsResource extends BaseResource {
         
         // this request must contain a source id
         Long id = Long.parseLong( (String)getRequest().getAttributes().get("id"));
-        this.source = this.sourceDao.find( id );   
+        this.source = this.sourceDao.find(this.workspace.getId(), id );   
         validateModel(this.source);
     }
     /**

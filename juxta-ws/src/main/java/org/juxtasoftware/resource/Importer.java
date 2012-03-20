@@ -1,5 +1,6 @@
 package org.juxtasoftware.resource;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Date;
@@ -23,6 +24,7 @@ import org.juxtasoftware.util.BackgroundTask;
 import org.juxtasoftware.util.BackgroundTaskCanceledException;
 import org.juxtasoftware.util.BackgroundTaskStatus;
 import org.juxtasoftware.util.TaskManager;
+import org.restlet.data.MediaType;
 import org.restlet.data.Status;
 import org.restlet.ext.fileupload.RestletFileUpload;
 import org.restlet.representation.Representation;
@@ -37,6 +39,9 @@ import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
 /**
  * Resource used to import JXT files from desktop to juxta-ws. It also
  * supports import of TEI parallel segmentation files. 
@@ -48,7 +53,6 @@ import org.springframework.stereotype.Service;
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
 public class Importer extends BaseResource implements ApplicationContextAware {
     private enum Action { IMPORT, STATUS, CANCEL }
-    private enum Type{ JXT, TEI_PS };
     
     private Action action;
     private Long setId = null;
@@ -131,11 +135,20 @@ public class Importer extends BaseResource implements ApplicationContextAware {
             return null;
         }
         
+        if (MediaType.MULTIPART_FORM_DATA.equals(entity.getMediaType(),true)) {
+            return handleMutipartPost( entity );
+        } else if ( MediaType.APPLICATION_JSON.equals(entity.getMediaType(),true)) {
+            return handleJsonPost( entity );
+        }
+        
+        setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
+        return toTextRepresentation("Invalid post data format");
+    }
+    
+    private Representation handleMutipartPost(Representation entity) {
         // data for creation of new comparison set
         String setName = null;
         InputStream is = null;
-        ComparisonSet set = new ComparisonSet();
-        Type type = Type.JXT;
         
         // Parse the multipart request....
         try {
@@ -149,55 +162,82 @@ public class Importer extends BaseResource implements ApplicationContextAware {
                     setName = item.getString();
                 } else if ( item.getFieldName().equals("jxtFile")) {
                     is = item.getInputStream();
-                    type = Type.JXT;
-                } else if ( item.getFieldName().equals("teiFile")) {
-                    is = item.getInputStream();
-                    type = Type.TEI_PS;
-                }
+                } 
             }
             
             // validate that everything needed is present
-            if ( type.equals(Type.JXT) ) {
-                if ( setName == null || is == null ) {
-                    setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
-                    return toTextRepresentation("Missing required JXT parameters");
-                }
-            } else {
-                if ( setName == null || is == null ) {
-                    setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
-                    return toTextRepresentation("Missing required TEI parameters");
-                }
+            if ( setName == null || is == null ) {
+                setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
+                return toTextRepresentation("Missing required JXT parameters");
             }
         } catch (Exception e) {
             LOG.error("Unable to parse multipart data", e);
             setStatus(Status.CLIENT_ERROR_BAD_REQUEST );
             return toTextRepresentation("File upload failed");
         }
-             
-        // find or create the set
-        set = this.setDao.find(this.workspace, setName);
+        
+
+        try {
+            // create set to contain the data
+            ComparisonSet set = createImportSet(setName);
+            
+            // dump data into new set
+            ImportService<InputStream> importService = this.context.getBean(JxtImportServiceImpl.class);
+            this.taskManager.submit( new ImportTask<InputStream>(importService, set, is));
+            
+            // return set id so its import status can be tracked
+            return toTextRepresentation( set.getId().toString() );
+        } catch (IOException e) {
+            if ( getStatus() == Status.SUCCESS_OK ) {
+                setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
+            }
+            return toTextRepresentation( "Unable to import data: "+e.toString() );
+        } 
+    }
+
+    private Representation handleJsonPost(Representation entity) {
+        
+        try {
+            JsonParser parser = new JsonParser();
+            JsonObject jsonObj = parser.parse( entity.getText()).getAsJsonObject();
+            String setName = jsonObj.get("setName").getAsString();
+            Long srcId = jsonObj.get("teiSourceId").getAsLong();
+            
+            // create source and set
+            Source src = this.sourceDao.find(this.workspace.getId(), srcId);
+            ComparisonSet set = createImportSet(setName);
+            
+            // dump data into new set
+            ImportService<Source> importService = this.context.getBean(ParallelSegmentationImportImpl.class);
+            this.taskManager.submit( new ImportTask<Source>(importService, set, src));
+            
+            // return set id so its import status can be tracked
+            return toTextRepresentation( set.getId().toString() );
+        } catch (Exception e) {
+            
+            if ( getStatus() == Status.SUCCESS_OK ) {
+                setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
+            }
+            return toTextRepresentation( "Unable to import data: "+e.toString() );
+        }
+    }
+    
+    private ComparisonSet createImportSet( final String setName) throws IOException {
+        ComparisonSet set = this.setDao.find(this.workspace, setName);
         if ( set != null ) {
             if ( this.overwrite == false ) {
                 setStatus(Status.CLIENT_ERROR_CONFLICT, "Conflict with existing comparison set name");
-                return toTextRepresentation("Conflict with existing comparison set name");
+                throw new IOException("Conflict with existing comparison set name");
             }
+            return set;
         } else {
             set = new ComparisonSet();
             set.setName(setName);
             set.setWorkspaceId( this.workspace.getId() );
             Long id  = this.setDao.create(set);
             set.setId(id);
+            return set;
         }
-
-        // create a new task to do the work of importing via the import service
-        ImportService importService = null;
-        if ( type.equals(Type.JXT)) {
-            importService = (ImportService)this.context.getBean(JxtImportServiceImpl.class);
-        } else {
-            importService = (ImportService)this.context.getBean(ParallelSegmentationImportImpl.class);
-        }
-        this.taskManager.submit( new ImportTask(importService, set, is));
-        return toTextRepresentation( set.getId().toString() );
     }
     
     private static String generateTaskName(long setId ) {
@@ -222,7 +262,7 @@ public class Importer extends BaseResource implements ApplicationContextAware {
             this.witnessDao.delete(witness);
             
             // Next, kill the orphaned source
-            Source s = this.sourceDao.find(sourceId);
+            Source s = this.sourceDao.find(this.workspace.getId(), sourceId);
             this.sourceDao.delete(s);
         }
         
@@ -236,19 +276,19 @@ public class Importer extends BaseResource implements ApplicationContextAware {
     /**
      * Task to asynchronously execute the import
      */
-    private class ImportTask implements BackgroundTask {
+    private class ImportTask<T> implements BackgroundTask {
         private BackgroundTaskStatus task;
-        private InputStream jxtIs;
+        private T importSouce;
         private ComparisonSet set;
         private Date startDate;
         private Date endDate;
         private String taskName;
-        private ImportService importer;
+        private ImportService<T> importer;
         private BackgroundTaskStatus.Status status = BackgroundTaskStatus.Status.PENDING;
         
-        public ImportTask(ImportService importService, ComparisonSet set, InputStream jxtIs) {
+        public ImportTask(ImportService<T> importService, ComparisonSet set, T importSouce) {
             this.set = set;
-            this.jxtIs = jxtIs;
+            this.importSouce = importSouce;
             this.taskName  = generateTaskName( set.getId() );
             this.task = new BackgroundTaskStatus( this.taskName );
             this.startDate = new Date();
@@ -261,7 +301,7 @@ public class Importer extends BaseResource implements ApplicationContextAware {
                 LOG.info("Begin task "+this.taskName);
                 this.status = BackgroundTaskStatus.Status.PROCESSING;
                 this.task.begin();
-                this.importer.doImport(this.set, this.jxtIs, this.task);
+                this.importer.doImport(this.set, this.importSouce, this.task);
                 LOG.info("task "+this.taskName+" COMPLETE");
                 this.endDate = new Date();
                 this.status = BackgroundTaskStatus.Status.COMPLETE;

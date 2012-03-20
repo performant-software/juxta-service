@@ -1,8 +1,6 @@
 package org.juxtasoftware.service.importer.ps;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.Reader;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -10,9 +8,9 @@ import java.util.List;
 import java.util.Set;
 
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.stream.XMLStreamException;
 
 import org.juxtasoftware.Constants;
+import org.juxtasoftware.dao.AlignmentDao;
 import org.juxtasoftware.dao.CacheDao;
 import org.juxtasoftware.dao.ComparisonSetDao;
 import org.juxtasoftware.dao.NoteDao;
@@ -56,7 +54,7 @@ import eu.interedition.text.xml.XMLParser;
  */
 @Service
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
-public class ParallelSegmentationImportImpl implements ImportService {
+public class ParallelSegmentationImportImpl implements ImportService<Source> {
 
     @Autowired private TemplateDao templateDao;
     @Autowired private SourceDao sourceDao;
@@ -66,6 +64,7 @@ public class ParallelSegmentationImportImpl implements ImportService {
     @Autowired private PageBreakDao pageBreakDao;
     @Autowired private ComparisonSetDao setDao;
     @Autowired private WorkspaceDao workspaceDao;
+    @Autowired private AlignmentDao alignmentDao;
     @Autowired private Tokenizer tokenizer;
     @Autowired private ComparisonSetCollator collator;
     @Autowired private WitnessParser witnessParser;
@@ -83,7 +82,7 @@ public class ParallelSegmentationImportImpl implements ImportService {
     }
     
     @Override
-    public void doImport(ComparisonSet set, InputStream importStream, BackgroundTaskStatus status)
+    public void doImport(ComparisonSet set, Source importSrc, BackgroundTaskStatus status)
         throws Exception {
         
         // save key data for use later
@@ -98,9 +97,8 @@ public class ParallelSegmentationImportImpl implements ImportService {
         LOG.info("Import parallel segmented document into '"+this.set.getName()+"'");
         
         prepareSet();
-        Source teiSource = createSource(importStream);
-        extractWitnessIdentifiers( teiSource );
-        parseSource( teiSource );
+        extractWitnessIdentifiers( importSrc );
+        parseSource( importSrc );
         
         // tokenize 
         CollatorConfig cfg = this.setDao.getCollatorConfig(this.set);
@@ -128,11 +126,12 @@ public class ParallelSegmentationImportImpl implements ImportService {
         this.setDao.update(this.set);
         this.setDao.deleteAllWitnesses(this.set);
         this.cacheDao.deleteHeatmap(set.getId());
+        this.alignmentDao.clear(this.set, true); // true to force clear ALL for this set
         try {
             Source teiSource = null;
             for (Witness witness : witnesses) {
                 if ( teiSource == null ) {
-                   teiSource = this.sourceDao.find(witness.getSourceId());
+                   teiSource = this.sourceDao.find(this.ws.getId(), witness.getSourceId());
                 }
                 this.witnessDao.delete(witness);
             }
@@ -168,7 +167,7 @@ public class ParallelSegmentationImportImpl implements ImportService {
      * Scan the source data from witList data and generate a 
      * list of witnesses included in the file
      * 
-     * @param teiSource
+     * @param importStream
      * @throws IOException 
      * @throws SAXException 
      * @throws ParserConfigurationException 
@@ -188,7 +187,7 @@ public class ParallelSegmentationImportImpl implements ImportService {
      * @param teiSource
      * @throws Exception 
      */
-    private void parseSource(Source teiSource) throws Exception {
+    private void parseSource(Source teiSource ) throws Exception {
         this.taskStatus.setNote("Parse "+set.getName());
         Workspace ws = this.workspaceDao.getPublic();
         Template template = this.templateDao.find(ws, Constants.PARALLEL_SEGMENTATION_TEMPLATE);
@@ -252,20 +251,5 @@ public class ParallelSegmentationImportImpl implements ImportService {
             }
             this.pageBreakDao.create(breaks);
         }
-    }
-
-    /**
-     * Create an XML source entry from the original parallel segmented TEI doc.
-     * It will be used as the basis to create 1 or more witnesses during import.
-     * 
-     * @param importStream
-     * @return
-     * @throws IOException
-     * @throws XMLStreamException
-     */
-    private Source createSource(InputStream importStream) throws IOException, XMLStreamException {
-        this.taskStatus.setNote("Create parallel segmentation source");
-        Long id = this.sourceDao.create( this.ws, this.set.getName(), true, new InputStreamReader(importStream));
-        return this.sourceDao.find(id);
     }
 }

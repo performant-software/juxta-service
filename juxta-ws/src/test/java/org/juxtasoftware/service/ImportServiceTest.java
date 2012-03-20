@@ -1,14 +1,18 @@
 package org.juxtasoftware.service;
 
 import java.io.InputStream;
+import java.io.StringReader;
 
+import org.apache.commons.io.IOUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.juxtasoftware.Constants;
 import org.juxtasoftware.dao.ComparisonSetDao;
+import org.juxtasoftware.dao.SourceDao;
 import org.juxtasoftware.dao.TemplateDao;
 import org.juxtasoftware.dao.WorkspaceDao;
 import org.juxtasoftware.model.ComparisonSet;
+import org.juxtasoftware.model.Source;
 import org.juxtasoftware.model.Template;
 import org.juxtasoftware.model.Workspace;
 import org.juxtasoftware.service.importer.jxt.JxtImportServiceImpl;
@@ -29,6 +33,7 @@ public class ImportServiceTest extends AbstractTest {
     @Autowired private WorkspaceDao workspaceDao;
     @Autowired private XmlTemplateParser parser;
     @Autowired private TemplateDao templateDao;
+    @Autowired private SourceDao sourceDao;
    
 
     @Before
@@ -97,16 +102,20 @@ public class ImportServiceTest extends AbstractTest {
         Long id = this.setDao.create(set);
         set.setId(id);
         
-        InputStream data = null;
+        InputStream is = null;
         try {
             BackgroundTaskStatus s= new BackgroundTaskStatus( "test1");
-            data = getClass().getResourceAsStream("/autumn.xml");
-            psImportService.doImport(set, data, s );
+            is = getClass().getResourceAsStream("/autumn.xml");
+            String data = IOUtils.toString(is);
+            Long srcId = this.sourceDao.create(ws, "tei-ps-unit-test-autumn", true, new StringReader(data));
+            Source teiSrc = this.sourceDao.find(ws.getId(), srcId);
+            
+            psImportService.doImport(set, teiSrc, s );
         } catch (Exception e) {
             e.printStackTrace();
             throw e;
         } finally {
-            Closeables.close(data, false);
+            Closeables.close(is, false);
         }
     }
 }

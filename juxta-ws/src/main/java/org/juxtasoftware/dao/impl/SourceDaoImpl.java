@@ -66,7 +66,6 @@ public class SourceDaoImpl implements SourceDao, InitializingBean {
         return (Long)this.insert.executeAndReturnKey( ps );
     }
 
-    
     @Override
     public Reader getContentReader( final Source src ) {
         final String sql = "select content from text_content where id=?";
@@ -162,8 +161,10 @@ public class SourceDaoImpl implements SourceDao, InitializingBean {
     }
     
     @Override
-    public Source find(Long id) {
-        return DataAccessUtils.uniqueResult(jdbcTemplate.query(buildFinderSQL("where s.id = ?"), ROW_MAPPER, id));
+    public Source find(final Long workspaceId, final Long id) {
+        return DataAccessUtils.uniqueResult(
+            this.jdbcTemplate.query(buildFinderSQL("where s.workspace_id=? and s.id = ?"), 
+                ROW_MAPPER, workspaceId, id));
     }
 
     protected String buildFinderSQL(String whereClause) {

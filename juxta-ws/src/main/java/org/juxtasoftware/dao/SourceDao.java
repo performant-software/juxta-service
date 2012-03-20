@@ -33,7 +33,7 @@ public interface SourceDao  {
      * @param id
      * @return
      */
-    Source find( final Long id );
+    Source find( final Long workspaceId, Long id );
     
     /**
      * Given a source, find its root element

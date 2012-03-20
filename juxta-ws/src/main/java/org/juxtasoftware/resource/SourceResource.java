@@ -44,7 +44,7 @@ public class SourceResource extends BaseResource {
         super.doInit();
         
         Long id = Long.parseLong((String) getRequestAttributes().get("id"));
-        this.source = this.sourceDao.find(id);
+        this.source = this.sourceDao.find(this.workspace.getId(), id);
         
         // was a range set requested?
         if (getQuery().getValuesMap().containsKey("range") ) {

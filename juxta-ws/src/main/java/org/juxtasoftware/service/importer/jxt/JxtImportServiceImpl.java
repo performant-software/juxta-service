@@ -69,7 +69,7 @@ import eu.interedition.text.NameRepository;
  */
 @Service
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
-public class JxtImportServiceImpl implements ImportService {
+public class JxtImportServiceImpl implements ImportService<InputStream> {
     @Autowired private ManifestParser manifestParser;
     @Autowired private MovesParser movesParser;
     @Autowired private XmlTemplateParser templateParser;
@@ -167,7 +167,7 @@ public class JxtImportServiceImpl implements ImportService {
         this.cacheDao.deleteHeatmap(this.set.getId());
         try {
             for (Witness witness : witnesses) {
-                Source s = this.sourceDao.find(witness.getSourceId());
+                Source s = this.sourceDao.find(this.ws.getId(), witness.getSourceId());
                 this.witnessDao.delete(witness);
                 this.revisionsDao.deleteSourceRevisionSets(s.getId());
                 this.sourceDao.delete(s);
@@ -287,7 +287,7 @@ public class JxtImportServiceImpl implements ImportService {
             // the reson: juxta desktop allows user to alter raw xml
             // also, others may have grabbed this source for other purposes
             Long srcId = this.sourceDao.create(this.ws, srcInfo.getSrcFile().getName(), isXml, new FileReader(srcInfo.getSrcFile()));
-            Source source = this.sourceDao.find(srcId);
+            Source source = this.sourceDao.find(this.ws.getId(), srcId);
             
             // record any accepted revisions this witness may have had
             List<Integer> acceptedRevs = srcInfo.getAcceptedRevsions();

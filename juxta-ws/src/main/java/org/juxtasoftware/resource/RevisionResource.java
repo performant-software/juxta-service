@@ -35,7 +35,7 @@ public class RevisionResource extends BaseResource {
     protected void doInit() throws ResourceException {
         super.doInit();
         Long id = Long.parseLong( (String)getRequest().getAttributes().get("sourceId"));
-        this.source = this.sourceDao.find(id);
+        this.source = this.sourceDao.find(this.workspace.getId(), id);
         this.revisonSetId = Long.parseLong( (String)getRequest().getAttributes().get("id"));
         validateModel(this.source);
     }
