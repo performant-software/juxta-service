@@ -57,9 +57,19 @@ public class AlignmentDaoImpl implements AlignmentDao, InitializingBean  {
     }
     
    @Override
-    public void clear(ComparisonSet set) {
-       final String sql = "delete from "+TABLE_NAME+" where set_id=? and manual=?";
-       this.jdbcTemplate.update(sql, set.getId(), 0);
+   public void clear(ComparisonSet set){
+       clear(set, false);
+   }
+   
+   @Override
+   public void clear( final ComparisonSet set, boolean force) {
+       if ( force == false ) {
+           final String sql = "delete from "+TABLE_NAME+" where set_id=? and manual=?";
+           this.jdbcTemplate.update(sql, set.getId(), 0);
+       } else {
+           final String sql = "delete from "+TABLE_NAME+" where set_id=?";
+           this.jdbcTemplate.update(sql, set.getId());
+       }
     }
     
     protected SqlParameterSource toSqlParameterSource(Alignment align) {
