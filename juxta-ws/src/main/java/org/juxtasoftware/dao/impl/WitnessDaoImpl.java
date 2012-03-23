@@ -12,6 +12,7 @@ import java.util.Set;
 
 import org.juxtasoftware.dao.WitnessDao;
 import org.juxtasoftware.model.ComparisonSet;
+import org.juxtasoftware.model.Usage;
 import org.juxtasoftware.model.Witness;
 import org.juxtasoftware.model.Workspace;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -124,6 +125,23 @@ public class WitnessDaoImpl extends JuxtaDaoImpl<Witness> implements WitnessDao 
         sql.append(" where w.id = ?");
         return DataAccessUtils.uniqueResult(
                 this.jt.query(sql.toString(), new WitnessMapper(), id));
+    }
+    
+    @Override
+    public List<Usage> getUsage(Witness witness) {
+        // Find all of the comparison sets that include this witness
+        String setSql = "select distinct set_id from juxta_comparison_set_member where witness_id = ?";
+        List<Usage> usage = this.jt.query(setSql, new RowMapper<Usage>(){
+            @Override
+            public Usage mapRow(ResultSet rs, int rowNum) throws SQLException {
+                return new Usage(Usage.Type.COMPARISON_SET, rs.getLong("set_id"));
+            }
+            
+        },witness.getId());
+        
+        // include the source (that we already know) that was used to generate this witness
+        usage.add( new Usage(Usage.Type.SOURCE, witness.getSourceId()));
+        return usage;
     }
     
     /**

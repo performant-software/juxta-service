@@ -1,15 +1,17 @@
 package org.juxtasoftware.resource;
 
 import java.io.IOException;
-import java.io.Reader;
-import java.io.StringWriter;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang.StringEscapeUtils;
+import org.juxtasoftware.dao.AlignmentDao;
+import org.juxtasoftware.dao.CacheDao;
 import org.juxtasoftware.dao.ComparisonSetDao;
 import org.juxtasoftware.dao.WitnessDao;
 import org.juxtasoftware.model.ComparisonSet;
+import org.juxtasoftware.model.Usage;
 import org.juxtasoftware.model.Witness;
 import org.juxtasoftware.util.RangedTextReader;
 import org.restlet.data.Status;
@@ -22,7 +24,6 @@ import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
-import com.google.common.io.CharStreams;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
@@ -44,6 +45,8 @@ public class WitnessResource extends BaseResource {
     
     @Autowired private ComparisonSetDao setDao;
     @Autowired private WitnessDao witnessDao;
+    @Autowired private CacheDao cacheDao;
+    @Autowired private AlignmentDao alignmentDao;
 
     /**
      * Extract the text ID and range info from the request attributes
@@ -130,6 +133,7 @@ public class WitnessResource extends BaseResource {
      */
     @Delete
     public void deleteWitness() {   
+        // Delete witness entirely, or just delete from a set?
         if ( this.setId != null ) {
             LOG.info("Delete witness "+this.witness.getId()+" from set "+this.setId);
             ComparisonSet set = this.setDao.find(this.setId);
@@ -145,38 +149,28 @@ public class WitnessResource extends BaseResource {
             this.setDao.deleteWitness(set, witness); 
         } else {
             LOG.info("Delete witness "+this.witness.getId());
-            this.witnessDao.delete( witness ); 
-        }
-    }
-    
-    public final class RR  {
-        private StringWriter sourceContentWriter = new StringWriter();
-        
-        public void read(Reader content) throws IOException {
-            read(content, null);
-        }
-        public void read(Reader content, Range range) throws IOException {
-            if ( range == null) {
-                CharStreams.copy(content, this.sourceContentWriter);
-            } else {
-                long pos = 0;
-                while ( pos <= range.getEnd() ) {
-                    int data = content.read();
-                    if ( data == -1 ) {
-                        break;
-                    } else {
-                        if ( pos >= range.getStart() && (pos+1) <= range.getEnd()) {
-                            sourceContentWriter.append( (char)data );
-                        }
-                        pos++;
-                    }
+            
+            // get a list of all uses of this witness.
+            // Mark sets as NOT collated, clear their collation cache and remove all alignments
+            List<Usage> usage = this.witnessDao.getUsage(this.witness);
+            for (Usage u : usage) {
+                if ( u.getType().equals(Usage.Type.COMPARISON_SET)) {
+               
+                    // clear cached data
+                    Long setId = u.getId();
+                    this.cacheDao.deleteAll(setId);
+                    
+                    // set status to NOT collated
+                    ComparisonSet set = this.setDao.find(setId);
+                    set.setCollated(false);
+                    this.setDao.update(set);
+                    
+                    // manually purge all alignments for this set
+                    this.alignmentDao.clear(set);
                 }
             }
-        }
-        
-        @Override
-        public String toString() {
-            return this.sourceContentWriter.toString();
+            
+            this.witnessDao.delete( witness ); 
         }
     }
 }
