@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang.StringEscapeUtils;
-import org.juxtasoftware.dao.AlignmentDao;
 import org.juxtasoftware.dao.CacheDao;
 import org.juxtasoftware.dao.ComparisonSetDao;
 import org.juxtasoftware.dao.RevisionDao;
@@ -40,7 +39,6 @@ public class SourceResource extends BaseResource {
     @Autowired private RevisionDao revisionDao;
     @Autowired private CacheDao cacheDao;
     @Autowired private ComparisonSetDao setDao;
-    @Autowired private AlignmentDao alignmentDao;
     @Autowired private WitnessDao witnessDao;
     
     private Range range = null;
