@@ -297,11 +297,13 @@ public class Importer extends BaseResource implements ApplicationContextAware {
         
         @Override
         public void run() {
+            boolean collated = false;
             try {
                 LOG.info("Begin task "+this.taskName);
                 this.status = BackgroundTaskStatus.Status.PROCESSING;
                 this.task.begin();
                 this.importer.doImport(this.set, this.importSouce, this.task);
+                collated = true;
                 LOG.info("task "+this.taskName+" COMPLETE");
                 this.endDate = new Date();
                 this.status = BackgroundTaskStatus.Status.COMPLETE;
@@ -316,6 +318,9 @@ public class Importer extends BaseResource implements ApplicationContextAware {
                 this.endDate = new Date();
                 this.status = BackgroundTaskStatus.Status.FAILED;
             }
+            
+            this.set.setCollated(collated);
+            setDao.update(this.set);
         }
         
         @Override
