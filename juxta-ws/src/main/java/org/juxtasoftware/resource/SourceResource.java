@@ -11,9 +11,11 @@ import org.juxtasoftware.dao.CacheDao;
 import org.juxtasoftware.dao.ComparisonSetDao;
 import org.juxtasoftware.dao.RevisionDao;
 import org.juxtasoftware.dao.SourceDao;
+import org.juxtasoftware.dao.WitnessDao;
 import org.juxtasoftware.model.ComparisonSet;
 import org.juxtasoftware.model.Source;
 import org.juxtasoftware.model.Usage;
+import org.juxtasoftware.model.Witness;
 import org.juxtasoftware.util.RangedTextReader;
 import org.restlet.data.Status;
 import org.restlet.representation.Representation;
@@ -39,6 +41,7 @@ public class SourceResource extends BaseResource {
     @Autowired private CacheDao cacheDao;
     @Autowired private ComparisonSetDao setDao;
     @Autowired private AlignmentDao alignmentDao;
+    @Autowired private WitnessDao witnessDao;
     
     private Range range = null;
     private Source source;
@@ -132,7 +135,13 @@ public class SourceResource extends BaseResource {
         // clear their collation cache and remove all alignments
         List<Usage> usage = this.sourceDao.getUsage(this.source);
         for (Usage u : usage) {
-            if ( u.getType().equals(Usage.Type.COMPARISON_SET)) {
+            // Manually delete the witness. This is necessary
+            // cuz witness content is stored in the text_content area
+            // and will not cascade delete itself.
+            if ( u.getType().equals(Usage.Type.WITNESS)) {
+                Witness w = this.witnessDao.find(u.getId());
+                this.witnessDao.delete(w);
+            } else if ( u.getType().equals(Usage.Type.COMPARISON_SET)) {
            
                 // clear cached data
                 Long setId = u.getId();
@@ -142,9 +151,6 @@ public class SourceResource extends BaseResource {
                 ComparisonSet set = this.setDao.find(setId);
                 set.setCollated(false);
                 this.setDao.update(set);
-                
-                // clear alignments
-                this.alignmentDao.clear(set);
             }
         }
 
