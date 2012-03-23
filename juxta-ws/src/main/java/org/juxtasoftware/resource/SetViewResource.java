@@ -57,6 +57,9 @@ public class SetViewResource extends BaseResource {
     @Get("html")
     public Representation toHtml() throws IOException {
         LOG.info("Get "+this.mode+" view of comparison set "+this.set.getId());
+        if ( this.set.isCollated() == false ) {
+            return toTextRepresentation("This set is not collated");
+        }
         switch ( this.mode ) {
             case HEAT_MAP:
                 return this.heatmapView.toHtml(this, this.set);

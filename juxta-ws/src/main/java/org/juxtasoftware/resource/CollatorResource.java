@@ -91,7 +91,7 @@ public class CollatorResource extends BaseResource {
         }
         
         CollatorConfig cfg = this.comparisonSetDao.getCollatorConfig(set);
-        this.taskManager.submit( new CollateTask(this.diffCollator, cfg, set) );
+        this.taskManager.submit( new CollateTask(this.comparisonSetDao, this.diffCollator, cfg, set) );
         return toTextRepresentation(this.set.getId().toString());
     }
 
@@ -142,23 +142,27 @@ public class CollatorResource extends BaseResource {
         private final CollatorConfig config;
         private Date startDate;
         private Date endDate;
+        private ComparisonSetDao setDao;
         
-        public CollateTask(ComparisonSetCollator collator, CollatorConfig cfg, ComparisonSet set ) {
+        public CollateTask(ComparisonSetDao dao, ComparisonSetCollator collator, CollatorConfig cfg, ComparisonSet set ) {
             this.name =  generateTaskName( set.getId());
             this.status = new BackgroundTaskStatus( this.name );
             this.collator = collator;
             this.set = set;
             this.config = cfg;
             this.startDate = new Date();
+            this.setDao = dao;
         }
         
         @Override
         public void run() {
+            boolean collated = false;
             try {
                 LOG.info("Begin task "+this.name);
                 this.status.begin();
                 this.collator.collate( this.set, this.config, this.status);
                 LOG.info("task "+this.name+" COMPLETE");
+                collated = true;
                 this.endDate = new Date();
             } catch (IOException e) {
                 LOG.error(this.name+" task failed", e.toString());
@@ -172,6 +176,9 @@ public class CollatorResource extends BaseResource {
                 this.status.fail(e.toString());
                 this.endDate = new Date();
             }
+            
+            this.set.setCollated(collated);
+            this.setDao.update(this.set);
         }
         
         @Override

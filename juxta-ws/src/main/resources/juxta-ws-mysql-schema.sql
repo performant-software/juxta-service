@@ -71,7 +71,7 @@ CREATE TABLE IF NOT EXISTS juxta_revision_set (
     PRIMARY KEY (id),
     INDEX( name ),
     INDEX( source_id),
-    FOREIGN KEY (source_id) REFERENCES juxta_source (id)
+    FOREIGN KEY (source_id) REFERENCES juxta_source (id) ON DELETE CASCADE 
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS juxta_revision_set_index (
@@ -94,7 +94,7 @@ CREATE TABLE IF NOT EXISTS juxta_witness (
     created DATETIME not null,
     updated DATETIME,
     PRIMARY KEY(id),
-    FOREIGN KEY (source_id) REFERENCES juxta_source (id),
+    FOREIGN KEY (source_id) REFERENCES juxta_source (id) ON DELETE CASCADE,
     FOREIGN KEY (template_id) REFERENCES juxta_template (id),
     FOREIGN KEY (revision_set_id) REFERENCES juxta_revision_set (id),
     FOREIGN KEY (text_id) REFERENCES text_content (id),
@@ -107,6 +107,7 @@ CREATE TABLE IF NOT EXISTS juxta_comparison_set (
     id BIGINT NOT NULL AUTO_INCREMENT,
     name VARCHAR(255) NOT NULL,
 	workspace_id BIGINT NOT NULL default 1,
+	collated BOOL not null default 0,
     created DATETIME not null,
     updated DATETIME,
     PRIMARY KEY (id),
@@ -140,7 +141,7 @@ CREATE TABLE IF NOT EXISTS juxta_comparison_set_member (
     witness_id BIGINT NOT NULL,
 	UNIQUE (set_id, witness_id),
     FOREIGN KEY (set_id) REFERENCES juxta_comparison_set (id) ON DELETE CASCADE,
-    FOREIGN KEY (witness_id) REFERENCES juxta_witness (id)
+    FOREIGN KEY (witness_id) REFERENCES juxta_witness (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS juxta_note (

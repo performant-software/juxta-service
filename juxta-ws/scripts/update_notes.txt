@@ -1,0 +1,15 @@
+tables changed:
+===============
+juxta_revision_set				: add delete cascade
+juxta_witness						: add delete cascade
+juxta_comparison_set				: add collated flag
+juxta_comparison_set_member 	: add delete cascade
+
+To add 'on delete cascade'
+==========================
+1. show create table juxta_witness;
+2. note the id of the foreign key constraint
+3. drop the existing: 
+   alter table juxta_witness drop foreign key juxta_source_ibfk_2;
+4. Add it back: 
+   alter table juxta_witness add foreign key(source_id) REFERENCES juxta_source (id) ON DELETE CASCADE;

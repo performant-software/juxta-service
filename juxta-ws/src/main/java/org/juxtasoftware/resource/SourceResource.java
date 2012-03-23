@@ -2,12 +2,18 @@ package org.juxtasoftware.resource;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang.StringEscapeUtils;
+import org.juxtasoftware.dao.AlignmentDao;
+import org.juxtasoftware.dao.CacheDao;
+import org.juxtasoftware.dao.ComparisonSetDao;
 import org.juxtasoftware.dao.RevisionDao;
 import org.juxtasoftware.dao.SourceDao;
+import org.juxtasoftware.model.ComparisonSet;
 import org.juxtasoftware.model.Source;
+import org.juxtasoftware.model.Usage;
 import org.juxtasoftware.util.RangedTextReader;
 import org.restlet.data.Status;
 import org.restlet.representation.Representation;
@@ -30,6 +36,9 @@ public class SourceResource extends BaseResource {
 
     @Autowired private SourceDao sourceDao;
     @Autowired private RevisionDao revisionDao;
+    @Autowired private CacheDao cacheDao;
+    @Autowired private ComparisonSetDao setDao;
+    @Autowired private AlignmentDao alignmentDao;
     
     private Range range = null;
     private Source source;
@@ -115,8 +124,34 @@ public class SourceResource extends BaseResource {
      * Delete the raw document resource with the ID specified in the request
      */
     @Delete
-    public void remove() {
+    public Representation remove() {
         LOG.info("Delete source "+source.getId());
+        
+        // get a list of all uses of this source. Comparison
+        // set uses need special treatment; mark them as NOT collated,
+        // clear their collation cache and remove all alignments
+        List<Usage> usage = this.sourceDao.getUsage(this.source);
+        for (Usage u : usage) {
+            if ( u.getType().equals(Usage.Type.COMPARISON_SET)) {
+           
+                // clear cached data
+                Long setId = u.getId();
+                this.cacheDao.deleteAll(setId);
+                
+                // set status to NOT collated
+                ComparisonSet set = this.setDao.find(setId);
+                set.setCollated(false);
+                this.setDao.update(set);
+                
+                // clear alignments
+                this.alignmentDao.clear(set);
+            }
+        }
+
         this.sourceDao.delete(this.source);
+        
+        
+        Gson gson = new Gson();
+        return toJsonRepresentation( gson.toJson(usage));
     }
 }

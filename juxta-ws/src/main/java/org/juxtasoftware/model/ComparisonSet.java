@@ -12,6 +12,7 @@ import com.google.common.base.Objects;
  */
 public class ComparisonSet extends WorkspaceMember {
     private String name;
+    private boolean collated;
     private Date created;
     private Date updated;
     
@@ -37,6 +38,14 @@ public class ComparisonSet extends WorkspaceMember {
 
     public void setUpdated(Date updated) {
         this.updated = updated;
+    }
+
+    public boolean isCollated() {
+        return collated;
+    }
+
+    public void setCollated(boolean collated) {
+        this.collated = collated;
     }
 
     @Override

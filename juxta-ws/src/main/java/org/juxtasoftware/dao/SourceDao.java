@@ -7,6 +7,7 @@ import java.util.List;
 import javax.xml.stream.XMLStreamException;
 
 import org.juxtasoftware.model.Source;
+import org.juxtasoftware.model.Usage;
 import org.juxtasoftware.model.Workspace;
 
 public interface SourceDao  {
@@ -63,4 +64,13 @@ public interface SourceDao  {
      * @return
      */
     boolean exists( final Workspace ws, final String name);
+    
+    /**
+     * Get a list of usage information for this source. The list
+     * details all of the witnesses based upon this source, and
+     * all of the sets using these witnesses
+     * @param src
+     * @return
+     */
+    List<Usage> getUsage( final Source src );
 }

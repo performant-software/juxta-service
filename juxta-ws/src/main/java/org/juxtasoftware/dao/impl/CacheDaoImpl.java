@@ -19,6 +19,11 @@ public class CacheDaoImpl implements CacheDao {
     
     private final String TABLE = "juxta_collation_cache";
     
+    @Override
+    public void deleteAll(Long setId) {
+        final String sql = "delete from "+TABLE+" where set_id=?";
+        jdbcTemplate.update(sql, setId );
+    }
     
     @Override
     public boolean heatmapExists(final Long setId, final Long baseId) {

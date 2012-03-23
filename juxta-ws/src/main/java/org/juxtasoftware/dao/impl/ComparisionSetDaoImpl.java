@@ -120,15 +120,15 @@ public class ComparisionSetDaoImpl extends JuxtaDaoImpl<ComparisonSet> implement
     @Override
     public void update(final ComparisonSet set) {
         this.jt.update("update " + this.tableName + 
-            " set name = ?, updated=? where id = ?", 
-            set.getName(), new Date(), set.getId());
+            " set name = ?, collated=?, updated=? where id = ?", 
+            set.getName(), set.isCollated(), new Date(), set.getId());
     }
     
     
     @Override
     public ComparisonSet find( final Workspace ws, final String setName) {
         final StringBuilder sql = new StringBuilder();
-        sql.append("select id, name, workspace_id, created, updated ");
+        sql.append("select id, name, collated, workspace_id, created, updated ");
         sql.append(" from "+this.tableName+" where name = ? and workspace_id=?");
         ComparisonSet set = DataAccessUtils.uniqueResult(jt.query(sql.toString(), SET_ROW_MAPPER, 
             setName, ws.getId()));
@@ -138,7 +138,7 @@ public class ComparisionSetDaoImpl extends JuxtaDaoImpl<ComparisonSet> implement
     @Override
     public ComparisonSet find(Long id) {
         final StringBuilder sql = new StringBuilder();
-        sql.append("select id, name, workspace_id, created, updated ");
+        sql.append("select id, name, collated, workspace_id, created, updated ");
         sql.append(" from "+this.tableName+" where id = ?");
         ComparisonSet set = DataAccessUtils.uniqueResult(jt.query(sql.toString(), SET_ROW_MAPPER, id));
         return set;
@@ -148,6 +148,7 @@ public class ComparisionSetDaoImpl extends JuxtaDaoImpl<ComparisonSet> implement
     protected SqlParameterSource toInsertData(ComparisonSet object) {
         final MapSqlParameterSource ps = new MapSqlParameterSource();
         ps.addValue("name", object.getName());
+        ps.addValue("collated", object.isCollated());
         ps.addValue("workspace_id", object.getWorkspaceId());
         ps.addValue("created", new Date());
         return ps;
@@ -160,7 +161,7 @@ public class ComparisionSetDaoImpl extends JuxtaDaoImpl<ComparisonSet> implement
 
     @Override
     public List<ComparisonSet> list( final Workspace ws) {
-        final String sql = "select id, name, workspace_id, created, updated from "
+        final String sql = "select id, name, collated, workspace_id, created, updated from "
             +this.tableName+" where workspace_id=? order by updated desc, created desc";
         return this.jt.query(sql, SET_ROW_MAPPER, ws.getId());
     }
@@ -199,6 +200,7 @@ public class ComparisionSetDaoImpl extends JuxtaDaoImpl<ComparisonSet> implement
             final ComparisonSet cs = new ComparisonSet();
             cs.setId(rs.getLong("id"));
             cs.setName(rs.getString("name"));
+            cs.setCollated( rs.getBoolean("collated"));
             cs.setWorkspaceId( rs.getLong("workspace_id"));
             cs.setCreated( rs.getTimestamp("created"));
             cs.setUpdated( rs.getTimestamp("updated"));

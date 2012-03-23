@@ -72,4 +72,10 @@ public interface CacheDao {
      * @return
      */
     Reader getSideBySide( final Long setId, final Long witness1, final Long witness2 );
+    
+    /**
+     * Remove all cached data for the specified comparison set
+     * @param setId
+     */
+    void deleteAll( final Long setId );
 }
