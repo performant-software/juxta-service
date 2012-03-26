@@ -9,6 +9,8 @@ import javax.xml.stream.XMLStreamException;
 
 import org.juxtasoftware.dao.NoteDao;
 import org.juxtasoftware.dao.PageBreakDao;
+import org.juxtasoftware.dao.RevisionDao;
+import org.juxtasoftware.dao.TemplateDao;
 import org.juxtasoftware.dao.WitnessDao;
 import org.juxtasoftware.model.Note;
 import org.juxtasoftware.model.PageBreak;
@@ -29,6 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.google.common.collect.Lists;
 
+import static eu.interedition.text.query.Criteria.*;
 import eu.interedition.text.AnnotationRepository;
 import eu.interedition.text.Text;
 import eu.interedition.text.TextConsumer;
@@ -47,10 +50,66 @@ public class SourceTransformer {
     @Autowired private AnnotationRepository annotationRepository;
     @Autowired private TextRepository textRepository;
     @Autowired private WitnessDao witnessDao;
+    @Autowired private RevisionDao revisionDao;
+    @Autowired private TemplateDao templateDao;
     @Autowired private NoteDao noteDao;
     @Autowired private PageBreakDao pbDao;
     @Autowired private XMLParser xmlParser;
 
+    /**
+     * RE-run the transform of <code>srcDoc</code> into a prior witness
+     * identified as <code>witness</>. The orignal witness text and annotations
+     * will be replaced with new versions that result from appling the parse template
+     * to the source again.
+     * 
+     * @param srcDoc
+     * @param witness
+     * @throws XMLStreamException 
+     * @throws IOException 
+     */
+    public void redoTransform( Source srcDoc, Witness origWit ) throws IOException, XMLStreamException {
+        
+        // get original revision set info
+        RevisionSet revSet = null;
+        if ( origWit.getRevisionSetId() != null ) {
+            revSet = this.revisionDao.getRevsionSet(origWit.getRevisionSetId());
+        }
+        
+        // get original parse template
+        Template template = null;
+        if (origWit.getTemplateId() != null ) {
+            template = this.templateDao.find(origWit.getTemplateId());
+        } else {
+            template = new Template();
+            template.setName("includeAll");
+        }
+        
+        // clear out old witness stuff; annotations, page breaks and notes - BUT NOT text
+        // can't kill it yet cuz witness refers to it. Must wait til after witness
+        // text is updated!
+        this.annotationRepository.delete( text(origWit.getText()) );
+        this.noteDao.deleteAll( origWit.getId() );
+        this.pbDao.deleteAll( origWit.getId() );
+        
+        // redo the transform
+        final XMLParserConfigurationAdapter pc = new XMLParserConfigurationAdapter(template, revSet);
+        Text parsedContent = srcDoc.getText();
+        if (srcDoc.getText().getType().equals(Text.Type.XML)) {
+            parsedContent = this.xmlParser.parse(srcDoc.getText(), pc);
+        } else {
+            NullTransformReader rdr = new NullTransformReader();
+            this.textRepository.read(srcDoc.getText(), rdr);
+            parsedContent = rdr.getContent();
+        }  
+        
+        // dump the results 
+        this.witnessDao.updateContent(origWit, parsedContent);
+        writeNotesAndPageBreaks(pc, origWit.getId());
+        
+        // now it is safe to kill the original text text
+        this.textRepository.delete( origWit.getText() );
+    }
+    
     /**
      * Transform <code>srcDoc</code> into a witness with the name <code>finalName</code>
      * using parse template <code>template</code>.  The resulting witness ID
@@ -95,13 +154,19 @@ public class SourceTransformer {
         }
         Long id = this.witnessDao.create(witness);
 
+        writeNotesAndPageBreaks(pc, id);
+        
+        return id;
+    }
+
+    private void writeNotesAndPageBreaks(final XMLParserConfigurationAdapter pc, Long witnessId) {
         // add in any note tag information that was discovered
         // during the transformation process.
         if ( pc.notesIncluded() ) {
             final List<Note> notes = pc.noteModule.getNotes();
             if (!notes.isEmpty()) {
                 for (Note note : notes) {
-                    note.setWitnessId(id);
+                    note.setWitnessId(witnessId);
                 }
                 this.noteDao.create(notes);
             }
@@ -112,13 +177,11 @@ public class SourceTransformer {
             final List<PageBreak> pbs = pc.pbModule.getPageBreaks();
             if ( pbs.isEmpty() == false ) {
                 for ( PageBreak pb : pbs ) {
-                    pb.setWitnessId(id);
+                    pb.setWitnessId(witnessId);
                 }
                 this.pbDao.create(pbs);
             }
         }
-        
-        return id;
     }
     
     /**

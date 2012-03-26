@@ -9,10 +9,20 @@ import org.juxtasoftware.model.Usage;
 import org.juxtasoftware.model.Witness;
 import org.juxtasoftware.model.Workspace;
 
+import eu.interedition.text.Text;
+
 /**
  * Witness DAO - lookup witness data by set or name. Access to content stream
  */
 public interface WitnessDao extends JuxtaDao<Witness> {
+    
+    /**
+     * Update the witness content
+     * 
+     * @param witnes
+     * @param newContent
+     */
+    void updateContent(final Witness witnes, final Text newContent );
     
     /**
      * Find all of the witnesses associated with the set

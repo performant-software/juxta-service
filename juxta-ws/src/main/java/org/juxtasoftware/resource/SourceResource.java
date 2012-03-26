@@ -12,6 +12,7 @@ import javax.xml.stream.XMLStreamException;
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.apache.commons.lang.StringEscapeUtils;
+import org.juxtasoftware.dao.AlignmentDao;
 import org.juxtasoftware.dao.CacheDao;
 import org.juxtasoftware.dao.ComparisonSetDao;
 import org.juxtasoftware.dao.RevisionDao;
@@ -21,6 +22,7 @@ import org.juxtasoftware.model.ComparisonSet;
 import org.juxtasoftware.model.Source;
 import org.juxtasoftware.model.Usage;
 import org.juxtasoftware.model.Witness;
+import org.juxtasoftware.service.SourceTransformer;
 import org.juxtasoftware.util.RangedTextReader;
 import org.restlet.data.MediaType;
 import org.restlet.data.Status;
@@ -47,8 +49,10 @@ public class SourceResource extends BaseResource {
     @Autowired private SourceDao sourceDao;
     @Autowired private RevisionDao revisionDao;
     @Autowired private CacheDao cacheDao;
+    @Autowired private AlignmentDao alignmentDao;
     @Autowired private ComparisonSetDao setDao;
     @Autowired private WitnessDao witnessDao;
+    @Autowired private SourceTransformer transformer;
     
     private Range range = null;
     private Source source;
@@ -205,7 +209,23 @@ public class SourceResource extends BaseResource {
      */
     private Representation updateSource( InputStream srcInputStream, final String newName ) throws IOException, XMLStreamException {
         this.sourceDao.update(this.source, newName, new InputStreamReader(srcInputStream));
-        // TODO the mess.. pass along changes to all derived items
+        
+        List<Usage> usage = this.sourceDao.getUsage(this.source);
+        for ( Usage use : usage ) {
+            if ( use.getType().equals(Usage.Type.COMPARISON_SET ) ) {
+                // clear cached data, alignmsnts and flag set as uncollated
+                Long setId = use.getId();
+                this.cacheDao.deleteAll(setId);
+                ComparisonSet set = this.setDao.find(setId);
+                set.setCollated(false);
+                this.setDao.update(set);
+                this.alignmentDao.clear(set);
+            } else if  ( use.getType().equals(Usage.Type.WITNESS) ) {
+                Witness oldWit = this.witnessDao.find( use.getId() );
+                this.transformer.redoTransform(this.source, oldWit);                     
+            }
+        }
+        
         return toJsonRepresentation("{\"result\": \"success\"}");
     }
 

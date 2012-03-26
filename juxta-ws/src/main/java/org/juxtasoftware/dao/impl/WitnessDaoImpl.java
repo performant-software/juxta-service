@@ -23,6 +23,7 @@ import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.stereotype.Repository;
 
 import eu.interedition.text.Range;
+import eu.interedition.text.Text;
 import eu.interedition.text.TextRepository;
 import eu.interedition.text.rdbms.RelationalText;
 import eu.interedition.text.rdbms.RelationalTextRepository;
@@ -40,6 +41,15 @@ public class WitnessDaoImpl extends JuxtaDaoImpl<Witness> implements WitnessDao 
     
     public WitnessDaoImpl() {
         super("juxta_witness");
+    }
+    
+    @Override
+    public void updateContent(final Witness witness, final Text newContent) {
+        String sql = "update "+this.tableName+" set text_id=?, updated=? where id=?";
+        this.jt.update(sql, 
+            ((RelationalText)newContent).getId(),
+            new Date(),
+            witness.getId() );
     }
     
     @Override
