@@ -66,6 +66,36 @@ public class SourceDaoImpl implements SourceDao, InitializingBean {
         ps.addValue("created", new Date());
         return (Long)this.insert.executeAndReturnKey( ps );
     }
+    
+    @Override
+    public void update(final Source src, final String newName) {
+        String sql = "update juxta_source set file_name=?, updated=? where id=?";
+        this.jdbcTemplate.update(sql, newName, new Date(), src.getId());      
+    }
+    
+    @Override
+    public void update( Source src, final String newName, final Reader contentReader) throws IOException, XMLStreamException {
+        
+        // create a new text entry for this source
+        Text txtContent = null;
+        if ( src.getText().getType().equals(Text.Type.XML) ) {
+            txtContent = this.textRepository.create(XML_INPUT_FACTORY.createXMLStreamReader(contentReader));
+        } else {
+            txtContent = this.textRepository.create(contentReader);
+        }
+        Long contentId = ((RelationalText) txtContent).getId();
+        Long oldContentID = ((RelationalText)src.getText()).getId();
+        src.setFileName(newName);
+        src.setText(txtContent);
+        
+        String sql = "update juxta_source set file_name=?, content_id=?, updated=? where id=?";
+        this.jdbcTemplate.update(sql, newName, contentId, new Date(), src.getId() );
+        
+        // delete the old content!
+        this.jdbcTemplate.update("delete from text_content where id=?", oldContentID);
+             
+        
+    }
 
     @Override
     public Reader getContentReader( final Source src ) {

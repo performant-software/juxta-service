@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS juxta_source (
 	content_id BIGINT NOT NULL,
 	workspace_id BIGINT NOT NULL default 1,
 	created DATETIME not null,
+    updated DATETIME,
 	PRIMARY KEY (id),
     FOREIGN KEY (workspace_id) REFERENCES juxta_workspace (id) ON DELETE CASCADE,
     FOREIGN KEY (content_id) REFERENCES text_content (id),

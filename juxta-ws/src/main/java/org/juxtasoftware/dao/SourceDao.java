@@ -24,6 +24,23 @@ public interface SourceDao  {
     Long create(final Workspace ws, final String name, final Boolean isXml, Reader contentReader) throws IOException, XMLStreamException;
     
     /**
+     * Update the source name
+     * @param src
+     * @param newName
+     */
+    void update(Source src, final String newName);
+    
+    /**
+     * Update th name and content of the specified source
+     * @param src
+     * @param newName
+     * @param contentReader
+     * @throws XMLStreamException 
+     * @throws IOException 
+     */
+    void update(Source src, final String newName, Reader contentReader) throws IOException, XMLStreamException;
+    
+    /**
      * Delete the specifed source
      * @param src
      */
