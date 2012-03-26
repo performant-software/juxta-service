@@ -59,6 +59,12 @@ public class NoteDaoImpl implements NoteDao {
                 
             } );
     }
+    
+    @Override
+    public void deleteAll(Long witnessId) {
+        final String sql = "delete from "+TABLE_NAME+" where witness_id = ?";
+        this.jdbcTemplate.update(sql, witnessId);
+    }
 
     @Override
     public List<Note> find(final Long witnessId ) {

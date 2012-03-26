@@ -27,6 +27,12 @@ public interface PageBreakDao {
     List<PageBreak> find( final Long witnessId);
     
     /**
+     * Delete all PBs for the witness identified by <code>witnessId</code>.
+     * @param witness
+     */
+    void deleteAll( final Long witnessId );
+    
+    /**
      * Determine if the witness identified by <code>witnessId</code> has
      * any page breaks
      * 
