@@ -98,7 +98,7 @@ public class SourceResource extends BaseResource implements ApplicationContextAw
         // grab the last segment of the request and see if this
         // is a status related request
         String act = getRequest().getResourceRef().getLastSegment().toUpperCase();
-        this.isStatusRequest = act.equals("STATUS");
+        this.isStatusRequest = ( act.equals("STATUS") || act.equals("CANCEL"));
     }
     
     /**

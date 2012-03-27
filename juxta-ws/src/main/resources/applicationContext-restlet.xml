@@ -65,9 +65,11 @@
     <bean name="/juxta/{workspace}/source" class="org.juxtasoftware.resource.SourcesResource" scope="prototype" autowire="byName" />
     <bean name="/juxta/{workspace}/source/{id}" class="org.juxtasoftware.resource.SourceResource" scope="prototype" autowire="byName" />
     <bean name="/juxta/{workspace}/source/{id}/status" class="org.juxtasoftware.resource.SourceResource" scope="prototype" autowire="byName" />
+    <bean name="/juxta/{workspace}/source/{id}/cancel" class="org.juxtasoftware.resource.SourceResource" scope="prototype" autowire="byName" />
     <bean name="/juxta/source" class="org.juxtasoftware.resource.SourcesResource" scope="prototype" autowire="byName" />
     <bean name="/juxta/source/{id}" class="org.juxtasoftware.resource.SourceResource" scope="prototype" autowire="byName" />
     <bean name="/juxta/source/{id}/status" class="org.juxtasoftware.resource.SourceResource" scope="prototype" autowire="byName" />
+    <bean name="/juxta/source/{id}/cancel" class="org.juxtasoftware.resource.SourceResource" scope="prototype" autowire="byName" />
     
     <!-- revision sets -->
     <bean name="/juxta/{workspace}/source/{id}/revision" class="org.juxtasoftware.resource.RevisionsResource" scope="prototype" autowire="byName" />
