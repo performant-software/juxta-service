@@ -408,11 +408,9 @@ public class SourceResource extends BaseResource implements ApplicationContextAw
         
         @Override
         public void doUpdate(BackgroundTaskStatus status) throws Exception {
-            // First, update the source with the new content and (possibly) name
-            SourceResource.this.sourceDao.update(this.origSource, newName, new InputStreamReader(srcInputStream));
-            Source source = SourceResource.this.sourceDao.find(this.origSource.getWorkspaceId(), this.origSource.getId());
+            // First, find the usage of this source and use this to find the set
             ComparisonSet set = null;
-            for ( Usage u : SourceResource.this.sourceDao.getUsage(source)) {
+            for ( Usage u : SourceResource.this.sourceDao.getUsage(this.origSource)) {
                 if ( u.getType().equals(Usage.Type.COMPARISON_SET)) {
                     set = SourceResource.this.setDao.find(u.getId());
                     if ( set.getName().equals(this.origSource.getFileName())) {
@@ -423,6 +421,12 @@ public class SourceResource extends BaseResource implements ApplicationContextAw
                 }
             }
             
+            // next, update the source with the new text content, then grab a NEW copy 
+            // of the source that contains the updated text reference information
+            SourceResource.this.sourceDao.update(this.origSource, newName, new InputStreamReader(srcInputStream));
+            Source source = SourceResource.this.sourceDao.find(this.origSource.getWorkspaceId(), this.origSource.getId());
+            
+            // finally, re-import all of the witnesses into the set
             ParallelSegmentationImportImpl importService = SourceResource.this.context.getBean(ParallelSegmentationImportImpl.class);
             importService.reimportSource(set, source);
         }

@@ -125,9 +125,7 @@ public class ParallelSegmentationImportImpl implements ImportService<Source> {
             this.setDao.update(this.set);
         }
         
-        if ( this.taskStatus != null ) {
-            this.taskStatus.setNote("Import successful");
-        }
+        setStatusMsg("Import successful");
     }
     
     /**
@@ -171,12 +169,18 @@ public class ParallelSegmentationImportImpl implements ImportService<Source> {
         }
     }
     
+    private void setStatusMsg( final String msg ) {
+        if (this.taskStatus != null ) {
+            this.taskStatus.setNote(msg);
+        }
+    }
+    
     /**
      * Collate the comparison set
      * @throws IOException
      */
     private void collate( CollatorConfig cfg ) throws IOException {
-        this.taskStatus.setNote("Collating comparison set");
+        setStatusMsg("Collating comparison set");
         this.collator.collate(this.set, cfg, this.taskStatus);
         incrementStatus();
     }
@@ -187,7 +191,7 @@ public class ParallelSegmentationImportImpl implements ImportService<Source> {
      * @throws IOException
      */
     private void tokenize( CollatorConfig cfg ) throws IOException {
-        this.taskStatus.setNote("Tokenizing comparison set");
+        setStatusMsg("Tokenizing comparison set");
         this.tokenizer.tokenize(this.set, cfg, this.taskStatus);
         incrementStatus();
     }
@@ -202,7 +206,7 @@ public class ParallelSegmentationImportImpl implements ImportService<Source> {
      * @throws ParserConfigurationException 
      */
     private void extractWitnessIdentifiers(Source teiSource) throws ParserConfigurationException, SAXException, IOException {
-        this.taskStatus.setNote("Extract witness information");
+        setStatusMsg("Extract witness information");
         Reader r = this.sourceDao.getContentReader(teiSource);
         this.witnessParser.parse( r );
         this.listWitData = this.witnessParser.getWitnesses();
@@ -217,7 +221,7 @@ public class ParallelSegmentationImportImpl implements ImportService<Source> {
      * @throws Exception 
      */
     private void parseSource(Source teiSource ) throws Exception {
-        this.taskStatus.setNote("Parse "+set.getName());
+        setStatusMsg("Parse "+set.getName());
         Workspace ws = this.workspaceDao.getPublic();
         Template template = this.templateDao.find(ws, Constants.PARALLEL_SEGMENTATION_TEMPLATE);
         
@@ -226,7 +230,7 @@ public class ParallelSegmentationImportImpl implements ImportService<Source> {
         Set<Witness> witnesses = new HashSet<Witness>();
         for ( WitnessInfo info : this.listWitData ) {
             
-            this.taskStatus.setNote("Parse WitnessID "+info.getGroupId()+" - '"+info.getDescription()+"' from source");
+            setStatusMsg("Parse WitnessID "+info.getGroupId()+" - '"+info.getDescription()+"' from source");
             PsXmlParserConfig cfg = new PsXmlParserConfig( template, info );
             Text witnessTxt = this.xmlParser.parse(teiSource.getText(), cfg);
             Witness witness = createWitness( ws, teiSource, template, witnessTxt, info );
@@ -240,7 +244,7 @@ public class ParallelSegmentationImportImpl implements ImportService<Source> {
         }
         
         // add all witnesses to the set
-        this.taskStatus.setNote("Create comparison set");
+        setStatusMsg("Create comparison set");
         this.setDao.addWitnesses(this.set, witnesses);
         this.setDao.update(this.set);
         incrementStatus();
