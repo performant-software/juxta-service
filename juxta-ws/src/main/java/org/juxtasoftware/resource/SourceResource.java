@@ -3,11 +3,10 @@ package org.juxtasoftware.resource;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.xml.stream.XMLStreamException;
 
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
@@ -24,14 +23,18 @@ import org.juxtasoftware.model.Usage;
 import org.juxtasoftware.model.Witness;
 import org.juxtasoftware.service.SourceTransformer;
 import org.juxtasoftware.service.importer.ps.ParallelSegmentationImportImpl;
+import org.juxtasoftware.util.BackgroundTask;
+import org.juxtasoftware.util.BackgroundTaskCanceledException;
 import org.juxtasoftware.util.BackgroundTaskStatus;
 import org.juxtasoftware.util.RangedTextReader;
+import org.juxtasoftware.util.TaskManager;
 import org.restlet.data.MediaType;
 import org.restlet.data.Status;
 import org.restlet.ext.fileupload.RestletFileUpload;
 import org.restlet.representation.Representation;
 import org.restlet.resource.Delete;
 import org.restlet.resource.Get;
+import org.restlet.resource.Post;
 import org.restlet.resource.Put;
 import org.restlet.resource.ResourceException;
 import org.springframework.beans.BeansException;
@@ -58,10 +61,12 @@ public class SourceResource extends BaseResource implements ApplicationContextAw
     @Autowired private ComparisonSetDao setDao;
     @Autowired private WitnessDao witnessDao;
     @Autowired private SourceTransformer transformer;
+    @Autowired private TaskManager taskManager;
     
     private ApplicationContext context;
     private Range range = null;
     private Source source;
+    private boolean isStatusRequest;
 
     /**
      * Extract the doc ID from the request attributes. This is the doc that
@@ -89,6 +94,11 @@ public class SourceResource extends BaseResource implements ApplicationContextAw
         }
         
         validateModel( this.source );
+        
+        // grab the last segment of the request and see if this
+        // is a status related request
+        String act = getRequest().getResourceRef().getLastSegment().toUpperCase();
+        this.isStatusRequest = act.equals("STATUS");
     }
     
     /**
@@ -98,6 +108,13 @@ public class SourceResource extends BaseResource implements ApplicationContextAw
      */
     @Get("html")
     public Representation toHtml() throws IOException {
+        
+        // don't support HTML status requests
+        if (isStatusRequest ) {
+            setStatus(Status.CLIENT_ERROR_NOT_FOUND);
+            return null;
+        }
+        
         final RangedTextReader reader = new RangedTextReader();
         reader.read( this.sourceDao.getContentReader(this.source), this.range );
 
@@ -118,6 +135,12 @@ public class SourceResource extends BaseResource implements ApplicationContextAw
      */
     @Get("txt")
     public Representation toTxt() throws IOException {
+        // don't support TXT status requests
+        if (isStatusRequest ) {
+            setStatus(Status.CLIENT_ERROR_NOT_FOUND);
+            return null;
+        }
+        
         final RangedTextReader reader = new RangedTextReader();
         reader.read( this.sourceDao.getContentReader(this.source), this.range );
         return toTextRepresentation(reader.toString());
@@ -130,14 +153,31 @@ public class SourceResource extends BaseResource implements ApplicationContextAw
      */
     @Get("json")
     public Representation toJson() throws IOException {
-        final RangedTextReader reader = new RangedTextReader();
-        reader.read( this.sourceDao.getContentReader(this.source), this.range );
-        JsonObject obj = new JsonObject();
-        obj.addProperty("id", this.source.getId());
-        obj.addProperty("fileName", this.source.getFileName());
-        obj.addProperty("content", reader.toString());
-        Gson gson = new Gson();
-        return toTextRepresentation(gson.toJson(obj));
+        if ( this.isStatusRequest ) {
+            return getUpdateStatus();
+        } else {
+            final RangedTextReader reader = new RangedTextReader();
+            reader.read( this.sourceDao.getContentReader(this.source), this.range );
+            JsonObject obj = new JsonObject();
+            obj.addProperty("id", this.source.getId());
+            obj.addProperty("fileName", this.source.getFileName());
+            obj.addProperty("content", reader.toString());
+            Gson gson = new Gson();
+            return toTextRepresentation(gson.toJson(obj));
+        }
+    }
+    
+    /**
+     * Handle POST only to cancel updates
+     * @param entity
+     */
+    @Post
+    public void handlePost( Representation entity ) {
+        if ( this.isStatusRequest == false ) {
+            setStatus(Status.CLIENT_ERROR_NOT_FOUND);
+        } else {
+            cancelUpdate();
+        } 
     }
     
     /**
@@ -201,12 +241,21 @@ public class SourceResource extends BaseResource implements ApplicationContextAw
                 LOG.error("Unable to update source", e);
                 setStatus(Status.CLIENT_ERROR_BAD_REQUEST );
                 return toTextRepresentation("File upload failed");
-            } 
-                
+            }    
         } 
         
         setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
         return toTextRepresentation("Unsupported content type in put");
+    }
+    
+    private Representation getUpdateStatus() {
+        String json = this.taskManager.getStatus( "update-src-"+this.source.getId() );
+        return toJsonRepresentation(json);
+    }
+
+    private void cancelUpdate() {
+        LOG.info("Cancel source update " + this.source.getId());
+        this.taskManager.cancel( "update-src-"+this.source.getId() );
     }
     
     /**
@@ -219,59 +268,24 @@ public class SourceResource extends BaseResource implements ApplicationContextAw
      * @throws Exception 
      */
     private Representation updateParallelSegmentedSource(InputStream srcInputStream, String newName) throws Exception {
-        // First, update the source with the new content and (possibly) name
-        this.sourceDao.update(this.source, newName, new InputStreamReader(srcInputStream));
-        Source source = this.sourceDao.find(this.workspace.getId(), this.source.getId());
-        ComparisonSet set = null;
-        for ( Usage u : this.sourceDao.getUsage(source)) {
-            if ( u.getType().equals(Usage.Type.COMPARISON_SET)) {
-                set = this.setDao.find(u.getId());
-                if ( set.getName().equals(this.source.getFileName())) {
-                    break;
-                } else {
-                    set = null;
-                }
-            }
-        }
-        
-        ParallelSegmentationImportImpl importService = this.context.getBean(ParallelSegmentationImportImpl.class);
-        importService.deferCollation();
-        BackgroundTaskStatus task =  new BackgroundTaskStatus( "update-tei-ps-src-"+newName );
-        importService.doImport(set, source, task);
-        return toJsonRepresentation("{\"result\": \"success\"}");
+        TeiPsSourceUpdater updater = new TeiPsSourceUpdater(this.source, srcInputStream, newName);
+        this.taskManager.submit( new UpdateTask(updater));
+        return toJsonRepresentation(this.source.getId().toString());
     }
 
     /**
-     * Update source content and name. This will also find all related witnesses and comparison sets.
+     * Create a task to update source content and name. This will also find all related witnesses and comparison sets.
      * Witnesses will be re-parsed and comparison sets will be invalidated (cache cleared,
      * alignments reset and collated flag set to false)
      * 
      * @param srcInputStream
      * @param newName
      * @return
-     * @throws XMLStreamException 
-     * @throws IOException 
      */
-    private Representation updateSource( InputStream srcInputStream, final String newName ) throws IOException, XMLStreamException {
-        this.sourceDao.update(this.source, newName, new InputStreamReader(srcInputStream));
-        
-        List<Usage> usage = this.sourceDao.getUsage(this.source);
-        for ( Usage use : usage ) {
-            if ( use.getType().equals(Usage.Type.COMPARISON_SET ) ) {
-                // clear cached data, alignmsnts and flag set as uncollated
-                Long setId = use.getId();
-                this.cacheDao.deleteAll(setId);
-                ComparisonSet set = this.setDao.find(setId);
-                set.setCollated(false);
-                this.setDao.update(set);
-                this.alignmentDao.clear(set);
-            } else if  ( use.getType().equals(Usage.Type.WITNESS) ) {
-                Witness oldWit = this.witnessDao.find( use.getId() );
-                this.transformer.redoTransform(this.source, oldWit);                     
-            }
-        }
-        
-        return toJsonRepresentation("{\"result\": \"success\"}");
+    private Representation updateSource( InputStream srcInputStream, final String newName )  {
+        SourceUpdater updater = new SourceUpdater(this.source, srcInputStream, newName);
+        this.taskManager.submit( new UpdateTask(updater));
+        return toJsonRepresentation(this.source.getId().toString());
     }
 
     /**
@@ -325,5 +339,167 @@ public class SourceResource extends BaseResource implements ApplicationContextAw
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
         this.context = applicationContext;
+    }
+    
+    /**
+     * Interface for an update task
+     *
+     */
+    private interface UpdateExecutor {
+        public void doUpdate( BackgroundTaskStatus status ) throws Exception;
+        public String getName();
+    }
+    
+    /**
+     * Class to perform all of the steps necessary to update a souce
+     */
+    private class SourceUpdater implements UpdateExecutor {
+        private InputStream srcInputStream;
+        private String newName;
+        private Source origSource;
+        
+        public SourceUpdater( Source origSource, InputStream srcInputStream, final String newName ) {
+            this.srcInputStream = srcInputStream;
+            this.newName = newName;
+            this.origSource = origSource;
+        }
+        
+        @Override
+        public void doUpdate(BackgroundTaskStatus status) throws Exception {
+            SourceResource.this.sourceDao.update(this.origSource, this.newName, 
+                new InputStreamReader(this.srcInputStream));
+            
+            List<Usage> usage = sourceDao.getUsage(this.origSource);
+            for ( Usage use : usage ) {
+                if ( use.getType().equals(Usage.Type.COMPARISON_SET ) ) {
+                    // clear cached data, alignmsnts and flag set as uncollated
+                    Long setId = use.getId();
+                    SourceResource.this.cacheDao.deleteAll(setId);
+                    ComparisonSet set = SourceResource.this.setDao.find(setId);
+                    set.setCollated(false);
+                    SourceResource.this.setDao.update(set);
+                    SourceResource.this.alignmentDao.clear(set);
+                } else if  ( use.getType().equals(Usage.Type.WITNESS) ) {
+                    Witness oldWit = SourceResource.this.witnessDao.find( use.getId() );
+                    SourceResource.this.transformer.redoTransform(this.origSource, oldWit);                     
+                }
+            }
+        }
+
+        @Override
+        public String getName() {
+            return "update-src-"+this.origSource.getId();
+        }
+    }
+    
+    /**
+     * Class to perform all of the steps necessary to update and re-import a TEI PS source
+     */
+    private class TeiPsSourceUpdater implements UpdateExecutor {
+        private InputStream srcInputStream;
+        private String newName;
+        private Source origSource;
+        
+        public TeiPsSourceUpdater( Source origSource, InputStream srcInputStream, String newName ) {
+            this.srcInputStream = srcInputStream;
+            this.newName = newName;
+            this.origSource = origSource;
+        }
+        
+        @Override
+        public void doUpdate(BackgroundTaskStatus status) throws Exception {
+            // First, update the source with the new content and (possibly) name
+            SourceResource.this.sourceDao.update(this.origSource, newName, new InputStreamReader(srcInputStream));
+            Source source = SourceResource.this.sourceDao.find(this.origSource.getWorkspaceId(), this.origSource.getId());
+            ComparisonSet set = null;
+            for ( Usage u : SourceResource.this.sourceDao.getUsage(source)) {
+                if ( u.getType().equals(Usage.Type.COMPARISON_SET)) {
+                    set = SourceResource.this.setDao.find(u.getId());
+                    if ( set.getName().equals(this.origSource.getFileName())) {
+                        break;
+                    } else {
+                        set = null;
+                    }
+                }
+            }
+            
+            ParallelSegmentationImportImpl importService = SourceResource.this.context.getBean(ParallelSegmentationImportImpl.class);
+            importService.reimportSource(set, source);
+        }
+        
+        @Override
+        public String getName() {
+            return "update-src-"+this.origSource.getId();
+        }
+    }
+    
+    /**
+     * Task to asynchronously execute the source update and push the
+     * changes out to witnesses and comparison sets
+     */
+    private class UpdateTask implements BackgroundTask {
+        private BackgroundTaskStatus task;
+        private Date startDate;
+        private Date endDate;
+        private UpdateExecutor updateExecutor;
+        private BackgroundTaskStatus.Status status = BackgroundTaskStatus.Status.PENDING;
+        
+        public UpdateTask(UpdateExecutor update) {
+            this.task = new BackgroundTaskStatus( update.getName() );
+            this.startDate = new Date();
+            this.updateExecutor = update;
+        }
+        
+        @Override
+        public void run() {
+            try {
+                LOG.info("Begin update source task "+this.updateExecutor.getName());
+                this.status = BackgroundTaskStatus.Status.PROCESSING;
+                this.task.begin();
+                this.updateExecutor.doUpdate( this.task);
+                LOG.info("task "+this.updateExecutor.getName()+" COMPLETE");
+                this.endDate = new Date();
+                this.status = BackgroundTaskStatus.Status.COMPLETE;
+            } catch ( BackgroundTaskCanceledException e) {
+                LOG.info( this.updateExecutor.getName()+" update source task was canceled");
+                this.endDate = new Date();
+                this.status = BackgroundTaskStatus.Status.CANCELED;
+            } catch (Exception e) {
+                LOG.error(this.updateExecutor.getName()+" update source task failed", e);
+                this.task.fail(e.getMessage());
+                this.endDate = new Date();
+                this.status = BackgroundTaskStatus.Status.FAILED;
+            }
+        }
+        
+        @Override
+        public void cancel() {
+            this.task.cancel();
+        }
+
+        @Override
+        public BackgroundTaskStatus.Status getStatus() {
+            return this.status;
+        }
+
+        @Override
+        public String getName() {
+            return this.updateExecutor.getName();
+        }
+        
+        @Override
+        public Date getEndTime() {
+            return this.endDate;
+        }
+        
+        @Override
+        public Date getStartTime() {
+            return this.startDate;
+        }
+        
+        @Override
+        public String getMessage() {
+            return this.task.getNote();
+        }
     }
 }

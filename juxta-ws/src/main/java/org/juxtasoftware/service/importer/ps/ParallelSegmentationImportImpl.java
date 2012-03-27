@@ -78,8 +78,8 @@ public class ParallelSegmentationImportImpl implements ImportService<Source> {
         
     private ComparisonSet set;
     private Set<Witness> preExistingWitnesses;
-    private BackgroundTaskStatus taskStatus;
-    private BackgroundTaskSegment taskSegment;
+    private BackgroundTaskStatus taskStatus = null;
+    private BackgroundTaskSegment taskSegment = null;
     private List<WitnessInfo> listWitData = new ArrayList<WitnessInfo>();
     private boolean deferCollation = false;
     
@@ -88,8 +88,9 @@ public class ParallelSegmentationImportImpl implements ImportService<Source> {
     public ParallelSegmentationImportImpl() {  
     }
     
-    public void deferCollation() {
+    public void reimportSource(ComparisonSet set, Source importSrc) throws Exception {
         this.deferCollation = true;
+        doImport(set, importSrc, null);
     }
     
     @Override
@@ -100,12 +101,14 @@ public class ParallelSegmentationImportImpl implements ImportService<Source> {
         this.set = set;
         this.taskStatus = status;
         
-        // set up the number of segments in the task
-        int numSteps = 5;
-        if ( this.deferCollation ) {
-            numSteps = 3;
+        if ( this.taskStatus != null ) {
+            // set up the number of segments in the task
+            int numSteps = 5;
+            if ( this.deferCollation ) {
+                numSteps = 3;
+            }
+            this.taskSegment = this.taskStatus.add(1, new BackgroundTaskSegment( numSteps ));
         }
-        this.taskSegment = this.taskStatus.add(1, new BackgroundTaskSegment( numSteps ));
         
         LOG.info("Import parallel segmented document into '"+this.set.getName()+"'");
         
@@ -122,7 +125,9 @@ public class ParallelSegmentationImportImpl implements ImportService<Source> {
             this.setDao.update(this.set);
         }
         
-        this.taskStatus.setNote("Import successful");
+        if ( this.taskStatus != null ) {
+            this.taskStatus.setNote("Import successful");
+        }
     }
     
     /**
@@ -153,10 +158,16 @@ public class ParallelSegmentationImportImpl implements ImportService<Source> {
                 this.pageBreakDao.deleteAll( witness.getId() );
             }
             
-            this.taskSegment.incrementValue();
+            incrementStatus();
 
         } catch (Exception e) {
             throw new RuntimeException("Import failed", e);
+        }
+    }
+    
+    private void incrementStatus() {
+        if ( this.taskSegment != null ) {
+            this.taskSegment.incrementValue();
         }
     }
     
@@ -167,7 +178,7 @@ public class ParallelSegmentationImportImpl implements ImportService<Source> {
     private void collate( CollatorConfig cfg ) throws IOException {
         this.taskStatus.setNote("Collating comparison set");
         this.collator.collate(this.set, cfg, this.taskStatus);
-        this.taskSegment.incrementValue();
+        incrementStatus();
     }
     
     /**
@@ -178,7 +189,7 @@ public class ParallelSegmentationImportImpl implements ImportService<Source> {
     private void tokenize( CollatorConfig cfg ) throws IOException {
         this.taskStatus.setNote("Tokenizing comparison set");
         this.tokenizer.tokenize(this.set, cfg, this.taskStatus);
-        this.taskSegment.incrementValue();
+        incrementStatus();
     }
     
     /**
@@ -195,7 +206,7 @@ public class ParallelSegmentationImportImpl implements ImportService<Source> {
         Reader r = this.sourceDao.getContentReader(teiSource);
         this.witnessParser.parse( r );
         this.listWitData = this.witnessParser.getWitnesses();
-        this.taskSegment.incrementValue();
+        incrementStatus();
     }
 
     /**
@@ -232,7 +243,7 @@ public class ParallelSegmentationImportImpl implements ImportService<Source> {
         this.taskStatus.setNote("Create comparison set");
         this.setDao.addWitnesses(this.set, witnesses);
         this.setDao.update(this.set);
-        this.taskSegment.incrementValue();
+        incrementStatus();
         
     }
     

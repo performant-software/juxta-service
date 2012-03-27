@@ -93,8 +93,6 @@ public class SourceDaoImpl implements SourceDao, InitializingBean {
         
         // delete the old content!
         this.jdbcTemplate.update("delete from text_content where id=?", oldContentID);
-             
-        
     }
 
     @Override
