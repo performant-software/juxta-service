@@ -1,5 +1,7 @@
 package org.juxtasoftware.service.importer.ps;
 
+import static eu.interedition.text.query.Criteria.text;
+
 import java.io.IOException;
 import java.io.Reader;
 import java.util.ArrayList;
@@ -41,7 +43,9 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 import org.xml.sax.SAXException;
 
+import eu.interedition.text.AnnotationRepository;
 import eu.interedition.text.Text;
+import eu.interedition.text.TextRepository;
 import eu.interedition.text.xml.XMLParser;
 
 /**
@@ -65,20 +69,27 @@ public class ParallelSegmentationImportImpl implements ImportService<Source> {
     @Autowired private ComparisonSetDao setDao;
     @Autowired private WorkspaceDao workspaceDao;
     @Autowired private AlignmentDao alignmentDao;
+    @Autowired private AnnotationRepository annotationRepository;
+    @Autowired private TextRepository textRepository;
     @Autowired private Tokenizer tokenizer;
     @Autowired private ComparisonSetCollator collator;
     @Autowired private WitnessParser witnessParser;
     @Autowired private XMLParser xmlParser;
         
-    private Workspace ws;
     private ComparisonSet set;
+    private Set<Witness> preExistingWitnesses;
     private BackgroundTaskStatus taskStatus;
     private BackgroundTaskSegment taskSegment;
     private List<WitnessInfo> listWitData = new ArrayList<WitnessInfo>();
+    private boolean deferCollation = false;
     
     private static final Logger LOG = LoggerFactory.getLogger( ImportService.class.getName());
     
     public ParallelSegmentationImportImpl() {  
+    }
+    
+    public void deferCollation() {
+        this.deferCollation = true;
     }
     
     @Override
@@ -88,10 +99,12 @@ public class ParallelSegmentationImportImpl implements ImportService<Source> {
         // save key data for use later
         this.set = set;
         this.taskStatus = status;
-        this.ws = this.workspaceDao.find(this.set.getWorkspaceId());
         
         // set up the number of segments in the task
-        final int numSteps = 5;
+        int numSteps = 5;
+        if ( this.deferCollation ) {
+            numSteps = 3;
+        }
         this.taskSegment = this.taskStatus.add(1, new BackgroundTaskSegment( numSteps ));
         
         LOG.info("Import parallel segmented document into '"+this.set.getName()+"'");
@@ -100,12 +113,14 @@ public class ParallelSegmentationImportImpl implements ImportService<Source> {
         extractWitnessIdentifiers( importSrc );
         parseSource( importSrc );
         
-        // tokenize 
-        CollatorConfig cfg = this.setDao.getCollatorConfig(this.set);
-        tokenize(cfg);
-        collate( cfg );
-        
-        this.taskSegment.incrementValue();
+        if ( this.deferCollation == false ) {
+            CollatorConfig cfg = this.setDao.getCollatorConfig(this.set);
+            tokenize(cfg);
+            collate( cfg );
+            
+            this.set.setCollated(true);
+            this.setDao.update(this.set);
+        }
         
         this.taskStatus.setNote("Import successful");
     }
@@ -117,28 +132,31 @@ public class ParallelSegmentationImportImpl implements ImportService<Source> {
     private void prepareSet() {
         // grab all witnesses associated with this set.
         // If there are none, there is nothing more to do
-        Set<Witness> witnesses = this.setDao.getWitnesses(this.set);
-        if ( witnesses.size() == 0) {
+        this.preExistingWitnesses = this.setDao.getWitnesses(this.set);
+        if ( this.preExistingWitnesses.size() == 0) {
             return;
         }
         
         // clear out all prior data 
+        this.set.setCollated(false);
         this.setDao.update(this.set);
         this.setDao.deleteAllWitnesses(this.set);
         this.cacheDao.deleteHeatmap(set.getId());
         this.alignmentDao.clear(this.set, true); // true to force clear ALL for this set
         try {
-            Source teiSource = null;
-            for (Witness witness : witnesses) {
-                if ( teiSource == null ) {
-                   teiSource = this.sourceDao.find(this.ws.getId(), witness.getSourceId());
-                }
-                this.witnessDao.delete(witness);
+            // clear out all pre-existing witness supporting data,
+            // but leave the witness itself. It will be updated 
+            // with the re-parsed content from the source later.
+            for (Witness witness : this.preExistingWitnesses) {
+                this.annotationRepository.delete( text(witness.getText()) );
+                this.noteDao.deleteAll( witness.getId() );
+                this.pageBreakDao.deleteAll( witness.getId() );
             }
+            
+            this.taskSegment.incrementValue();
 
-            this.sourceDao.delete( teiSource );
         } catch (Exception e) {
-            throw new RuntimeException("Unable to overwrite set; witnesses are in use in another set.");
+            throw new RuntimeException("Import failed", e);
         }
     }
     
@@ -216,22 +234,46 @@ public class ParallelSegmentationImportImpl implements ImportService<Source> {
         this.setDao.update(this.set);
         this.taskSegment.incrementValue();
         
-        this.taskSegment.incrementValue();
-        
     }
     
+    /**
+     * Create a new witness if none was pre-existing. Update the text content
+     * of one that already existed.
+     * 
+     * @param ws
+     * @param source
+     * @param template
+     * @param witnessTxt
+     * @param info
+     * @return
+     * @throws Exception
+     */
     Witness createWitness(Workspace ws, Source source, Template template, Text witnessTxt, WitnessInfo info ) throws Exception{
-        if ( this.witnessDao.exists(ws, info.getName())) {
-            throw new Exception("Witness '"+info.getName()+"' already exists in workspace '"+ws.getName()+"'");
+        Witness witness = null;
+        for (Witness oldWit : this.preExistingWitnesses ) {
+            if ( oldWit.getName().equals(info.getName())) {
+                witness = oldWit;
+                break;
+            }
         }
-        Witness witness = new Witness();
-        witness.setName( info.getName() );
-        witness.setSourceId( source.getId());
-        witness.setTemplateId(template.getId());
-        witness.setText(witnessTxt);
-        witness.setWorkspaceId( this.set.getWorkspaceId() );
-        Long id = this.witnessDao.create(witness);
-        witness.setId( id );
+        
+        if ( witness == null ) {
+            witness = new Witness();
+            witness.setName( info.getName() );
+            witness.setSourceId( source.getId());
+            witness.setTemplateId(template.getId());
+            witness.setWorkspaceId( this.set.getWorkspaceId() );
+            witness.setText(witnessTxt);
+            Long id = this.witnessDao.create(witness);
+            witness.setId( id );
+        } else {
+            Text oldTxt = witness.getText();
+            this.witnessDao.updateContent(witness, witnessTxt);
+            
+            // now it is safe to kill the original text text
+            this.textRepository.delete( oldTxt );
+        }
+        
         return witness;
     }
     

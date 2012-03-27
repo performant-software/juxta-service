@@ -23,6 +23,8 @@ import org.juxtasoftware.model.Source;
 import org.juxtasoftware.model.Usage;
 import org.juxtasoftware.model.Witness;
 import org.juxtasoftware.service.SourceTransformer;
+import org.juxtasoftware.service.importer.ps.ParallelSegmentationImportImpl;
+import org.juxtasoftware.util.BackgroundTaskStatus;
 import org.juxtasoftware.util.RangedTextReader;
 import org.restlet.data.MediaType;
 import org.restlet.data.Status;
@@ -32,8 +34,11 @@ import org.restlet.resource.Delete;
 import org.restlet.resource.Get;
 import org.restlet.resource.Put;
 import org.restlet.resource.ResourceException;
+import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
@@ -44,7 +49,7 @@ import eu.interedition.text.Range;
 
 @Service
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
-public class SourceResource extends BaseResource {
+public class SourceResource extends BaseResource implements ApplicationContextAware {
 
     @Autowired private SourceDao sourceDao;
     @Autowired private RevisionDao revisionDao;
@@ -54,6 +59,7 @@ public class SourceResource extends BaseResource {
     @Autowired private WitnessDao witnessDao;
     @Autowired private SourceTransformer transformer;
     
+    private ApplicationContext context;
     private Range range = null;
     private Source source;
 
@@ -152,6 +158,7 @@ public class SourceResource extends BaseResource {
         if (MediaType.MULTIPART_FORM_DATA.equals(entity.getMediaType(),true)) {
             InputStream srcInputStream = null;
             String sourceName= null;
+            boolean isParallelSegmented = false;
             try {
                 // pull the list of items in this multipart request
                 DiskFileItemFactory factory = new DiskFileItemFactory();
@@ -163,6 +170,8 @@ public class SourceResource extends BaseResource {
                         srcInputStream = item.getInputStream();
                     } else  if ( item.getFieldName().equals("sourceName")) {
                         sourceName = item.getString();
+                    } else  if ( item.getFieldName().equals("parallelSegmented")) {
+                        isParallelSegmented = true;
                     } 
                 }
                 
@@ -181,7 +190,11 @@ public class SourceResource extends BaseResource {
                     if ( sourceName == null || sourceName.length() == 0) {
                         sourceName = this.source.getFileName();
                     }
-                    return updateSource( srcInputStream, sourceName );
+                    if ( isParallelSegmented ) {
+                        return updateParallelSegmentedSource( srcInputStream, sourceName  );
+                    } else {
+                        return updateSource( srcInputStream, sourceName );
+                    }
                 }
                 
             } catch (Exception e) {
@@ -196,6 +209,38 @@ public class SourceResource extends BaseResource {
         return toTextRepresentation("Unsupported content type in put");
     }
     
+    /**
+     * Update a source that is encoded in TEI Parallel Segmentation. Requires
+     * a re-import of the newly editied source.
+     * 
+     * @param srcInputStream
+     * @param sourceName
+     * @return
+     * @throws Exception 
+     */
+    private Representation updateParallelSegmentedSource(InputStream srcInputStream, String newName) throws Exception {
+        // First, update the source with the new content and (possibly) name
+        this.sourceDao.update(this.source, newName, new InputStreamReader(srcInputStream));
+        Source source = this.sourceDao.find(this.workspace.getId(), this.source.getId());
+        ComparisonSet set = null;
+        for ( Usage u : this.sourceDao.getUsage(source)) {
+            if ( u.getType().equals(Usage.Type.COMPARISON_SET)) {
+                set = this.setDao.find(u.getId());
+                if ( set.getName().equals(this.source.getFileName())) {
+                    break;
+                } else {
+                    set = null;
+                }
+            }
+        }
+        
+        ParallelSegmentationImportImpl importService = this.context.getBean(ParallelSegmentationImportImpl.class);
+        importService.deferCollation();
+        BackgroundTaskStatus task =  new BackgroundTaskStatus( "update-tei-ps-src-"+newName );
+        importService.doImport(set, source, task);
+        return toJsonRepresentation("{\"result\": \"success\"}");
+    }
+
     /**
      * Update source content and name. This will also find all related witnesses and comparison sets.
      * Witnesses will be re-parsed and comparison sets will be invalidated (cache cleared,
@@ -275,5 +320,10 @@ public class SourceResource extends BaseResource {
         
         Gson gson = new Gson();
         return toJsonRepresentation( gson.toJson(usage));
+    }
+
+    @Override
+    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+        this.context = applicationContext;
     }
 }
