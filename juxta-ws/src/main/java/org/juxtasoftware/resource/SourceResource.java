@@ -161,6 +161,7 @@ public class SourceResource extends BaseResource implements ApplicationContextAw
             JsonObject obj = new JsonObject();
             obj.addProperty("id", this.source.getId());
             obj.addProperty("fileName", this.source.getFileName());
+            obj.addProperty("type", this.source.getText().getType().toString());
             obj.addProperty("content", reader.toString());
             Gson gson = new Gson();
             return toTextRepresentation(gson.toJson(obj));
