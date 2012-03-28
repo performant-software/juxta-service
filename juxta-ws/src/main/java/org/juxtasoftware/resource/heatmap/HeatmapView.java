@@ -35,7 +35,6 @@ import org.juxtasoftware.resource.BaseResource;
 import org.juxtasoftware.util.QNameFilters;
 import org.juxtasoftware.util.ftl.FileDirective;
 import org.juxtasoftware.util.ftl.HeatmapStreamDirective;
-import org.restlet.data.Status;
 import org.restlet.representation.Representation;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -105,8 +104,7 @@ public class HeatmapView implements ApplicationContextAware {
         // Get all witness (and changeIndex) info. Pick out the base
         List<SetWitness> witnesses = getWitnessInfo( set, baseWitnessId );
         if ( witnesses.size() < 2) {
-            this.parent.setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
-            return this.parent.toTextRepresentation("Must have 2 or more witnesses to view heatmap");
+            return this.parent.toTextRepresentation("This set contains less than two witnesess. Unable to view heatmap.");
         }
         Witness base = null;
         for ( SetWitness w : witnesses ) {
@@ -154,6 +152,9 @@ public class HeatmapView implements ApplicationContextAware {
     private List<SetWitness> getWitnessInfo( ComparisonSet set, Long baseWitnessId ) {
         List<SetWitness> out = new ArrayList<SetWitness>();
         List<Witness> witnesses = new ArrayList<Witness>(this.setDao.getWitnesses(set));
+        if ( witnesses.size() < 2 ) {
+            return out;
+        }
         Map<Long, Long> witnessDiffLen = new HashMap<Long, Long>();
         
         // setup base witnessID; if unspecified just pick
