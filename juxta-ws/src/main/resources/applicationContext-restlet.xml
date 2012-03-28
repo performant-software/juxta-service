@@ -71,6 +71,10 @@
     <bean name="/juxta/source/{id}/status" class="org.juxtasoftware.resource.SourceResource" scope="prototype" autowire="byName" />
     <bean name="/juxta/source/{id}/cancel" class="org.juxtasoftware.resource.SourceResource" scope="prototype" autowire="byName" />
     
+    <!-- usage resources -->
+    <bean name="/juxta/{workspace}/{type}/{id}/usage" class="org.juxtasoftware.resource.UsageResource" scope="prototype" autowire="byName" />
+    <bean name="/juxta/{type}/{id}/usage" class="org.juxtasoftware.resource.UsageResource" scope="prototype" autowire="byName" />
+    
     <!-- revision sets -->
     <bean name="/juxta/{workspace}/source/{id}/revision" class="org.juxtasoftware.resource.RevisionsResource" scope="prototype" autowire="byName" />
     <bean name="/juxta/{workspace}/source/{sourceId}/revision/{id}" class="org.juxtasoftware.resource.RevisionResource" scope="prototype" autowire="byName" />

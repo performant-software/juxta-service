@@ -182,7 +182,7 @@ public class SourceResource extends BaseResource implements ApplicationContextAw
     }
     
     /**
-     * Update the content of source <code>sourcceID</code> with the data
+     * Update the content of source <code>sourceID</code> with the data
      * contined in the post
      * @param entity
      * @return
