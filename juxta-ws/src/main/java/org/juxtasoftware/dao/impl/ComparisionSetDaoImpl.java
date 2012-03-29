@@ -11,6 +11,7 @@ import org.juxtasoftware.dao.ComparisonSetDao;
 import org.juxtasoftware.dao.WitnessDao;
 import org.juxtasoftware.model.CollatorConfig;
 import org.juxtasoftware.model.ComparisonSet;
+import org.juxtasoftware.model.Usage;
 import org.juxtasoftware.model.Witness;
 import org.juxtasoftware.model.Workspace;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,6 +54,17 @@ public class ComparisionSetDaoImpl extends JuxtaDaoImpl<ComparisonSet> implement
         CollatorConfig cfg = new CollatorConfig();
         createCollatorConfig(id, cfg);
         return id;
+    }
+    
+    @Override
+    public List<Usage> getUsage(ComparisonSet set) {
+        Set<Witness> witnesses = getWitnesses(set);
+        List<Usage> usage = new ArrayList<Usage>();
+        for ( Witness w : witnesses) {
+            usage.add( new Usage(Usage.Type.WITNESS, w.getId()) );
+            usage.add( new Usage(Usage.Type.SOURCE, w.getSourceId()) );
+        }
+        return usage;
     }
     
     @Override

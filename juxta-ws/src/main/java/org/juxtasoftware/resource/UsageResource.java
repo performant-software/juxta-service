@@ -77,15 +77,7 @@ public class UsageResource extends BaseResource {
             return toTextRepresentation("source id "+this.resourceId+" does not exist in workspace "+this.workspace.getName());
         }
         List<Usage> usage =  this.sourceDao.getUsage(src);
-        JsonArray jsonArray = new JsonArray();
-        for ( Usage u :usage ) {
-            JsonObject obj = new JsonObject();
-            obj.addProperty("type", u.getType().toString());
-            obj.addProperty("id", u.getId().toString());
-            jsonArray.add(obj);
-        }
-        Gson gson = new Gson();
-        return toJsonRepresentation( gson.toJson(jsonArray) );
+        return toJsonRepresentation( toUsageJson(usage) );
     }
 
     private Representation getWitnessUsage() {
@@ -94,9 +86,8 @@ public class UsageResource extends BaseResource {
             setStatus(Status.CLIENT_ERROR_NOT_FOUND);
             return toTextRepresentation("witness id "+this.resourceId+" does not exist in workspace "+this.workspace.getName());
         }
-     
-        // TODO 
-        return toTextRepresentation("Witness ssage not yet implemented");
+        List<Usage> usage =  this.witnessDao.getUsage(witness);
+        return toJsonRepresentation( toUsageJson(usage) );
     }
 
     private Representation getSetUsage() {
@@ -105,9 +96,20 @@ public class UsageResource extends BaseResource {
             setStatus(Status.CLIENT_ERROR_NOT_FOUND);
             return toTextRepresentation("set id "+this.resourceId+" does not exist in workspace "+this.workspace.getName());
         }
-
-        // TODO 
-        return toTextRepresentation("Set usage not yet implemented");
+        List<Usage> usage =  this.setDao.getUsage(set);
+        return toJsonRepresentation( toUsageJson(usage) );
+    }
+    
+    private String toUsageJson( List<Usage> usage ) {
+        JsonArray jsonArray = new JsonArray();
+        for ( Usage u :usage ) {
+            JsonObject obj = new JsonObject();
+            obj.addProperty("type", u.getType().toString());
+            obj.addProperty("id", u.getId().toString());
+            jsonArray.add(obj);
+        }
+        Gson gson = new Gson();
+        return gson.toJson(jsonArray);
     }
 
 }

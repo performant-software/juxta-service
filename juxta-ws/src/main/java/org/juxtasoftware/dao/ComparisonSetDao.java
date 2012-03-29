@@ -5,6 +5,7 @@ import java.util.Set;
 
 import org.juxtasoftware.model.CollatorConfig;
 import org.juxtasoftware.model.ComparisonSet;
+import org.juxtasoftware.model.Usage;
 import org.juxtasoftware.model.Witness;
 import org.juxtasoftware.model.Workspace;
 
@@ -33,4 +34,7 @@ public interface ComparisonSetDao extends JuxtaDao<ComparisonSet> {
     // config management
     CollatorConfig getCollatorConfig( final ComparisonSet set );
     void updateCollatorConfig( final ComparisonSet set, final CollatorConfig cfg );
+
+    // get the list of items used to populate this comparions set
+    List<Usage> getUsage(ComparisonSet set);
 }
