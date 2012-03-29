@@ -63,7 +63,7 @@ public class RevisionsResource extends BaseResource {
         Map<String, Object> map = new HashMap<String, Object>();
         map.put("sets", sets);
         map.put("page", "source");
-        map.put("title", "Revision Sets for Source \""+this.source.getFileName()+"\"");
+        map.put("title", "Revision Sets for Source \""+this.source.getName()+"\"");
         return toHtmlRepresentation("revision_sets.ftl", map);
     }
     

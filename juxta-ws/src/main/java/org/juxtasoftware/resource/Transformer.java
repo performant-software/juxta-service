@@ -97,7 +97,7 @@ public class Transformer extends BaseResource {
         if ( json.has("finalName")) {
             finalName = json.get("finalName").getAsString();
         } else {
-            finalName = srcDoc.getFileName();
+            finalName = srcDoc.getName();
             int pos = finalName.lastIndexOf('.');
             if ( pos > -1 ) {
                 finalName = finalName.substring(0, pos);

@@ -119,11 +119,11 @@ public class SourceResource extends BaseResource implements ApplicationContextAw
         reader.read( this.sourceDao.getContentReader(this.source), this.range );
 
         Map<String,Object> map = new HashMap<String,Object>();
-        map.put("name", this.source.getFileName());
+        map.put("name", this.source.getName());
         map.put("sourceId", this.source.getId());
         map.put("hasRevisionSets", this.revisionDao.hasRevisionSets(this.source.getId()));
         map.put("page", "source");
-        map.put("title", "Juxta Source: "+this.source.getFileName());
+        map.put("title", "Juxta Source: "+this.source.getName());
         map.put("text",  toTextRepresentation( StringEscapeUtils.escapeHtml(reader.toString())));
         return toHtmlRepresentation("source.ftl", map);
     }
@@ -160,7 +160,7 @@ public class SourceResource extends BaseResource implements ApplicationContextAw
             reader.read( this.sourceDao.getContentReader(this.source), this.range );
             JsonObject obj = new JsonObject();
             obj.addProperty("id", this.source.getId());
-            obj.addProperty("fileName", this.source.getFileName());
+            obj.addProperty("name", this.source.getName());
             obj.addProperty("type", this.source.getText().getType().toString());
             obj.addProperty("content", reader.toString());
             Gson gson = new Gson();
@@ -229,7 +229,7 @@ public class SourceResource extends BaseResource implements ApplicationContextAw
                     // if no new name was specifed, just pass along the
                     // old name as if it were new.
                     if ( sourceName == null || sourceName.length() == 0) {
-                        sourceName = this.source.getFileName();
+                        sourceName = this.source.getName();
                     }
                     if ( isParallelSegmented ) {
                         return updateParallelSegmentedSource( srcInputStream, sourceName  );
@@ -414,7 +414,7 @@ public class SourceResource extends BaseResource implements ApplicationContextAw
             for ( Usage u : SourceResource.this.sourceDao.getUsage(this.origSource)) {
                 if ( u.getType().equals(Usage.Type.COMPARISON_SET)) {
                     set = SourceResource.this.setDao.find(u.getId());
-                    if ( set.getName().equals(this.origSource.getFileName())) {
+                    if ( set.getName().equals(this.origSource.getName())) {
                         break;
                     } else {
                         set = null;

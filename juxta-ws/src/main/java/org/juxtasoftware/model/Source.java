@@ -6,16 +6,16 @@ import eu.interedition.text.Text;
 
 public class Source extends WorkspaceMember {
 
-    private String fileName;
+    private String name;
     private Text text;
     private Date created;
       
-    public final String getFileName() {
-        return fileName;
+    public final String getName() {
+        return name;
     }
 
-    public final void setFileName(String fileName) {
-        this.fileName = fileName;
+    public final void setName(String name) {
+        this.name = name;
     }
 
     public Text getText() {
@@ -49,6 +49,6 @@ public class Source extends WorkspaceMember {
 
     @Override
     public String toString() {
-        return "Source [id=" + id + ", fileName=" + fileName + "]";
+        return "Source [id=" + id + ", name=" + name + "]";
     }
 }

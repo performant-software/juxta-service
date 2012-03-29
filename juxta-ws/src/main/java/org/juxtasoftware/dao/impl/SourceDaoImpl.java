@@ -60,7 +60,7 @@ public class SourceDaoImpl implements SourceDao, InitializingBean {
             txtContent = this.textRepository.create(contentReader);
         }
         final MapSqlParameterSource ps = new MapSqlParameterSource();
-        ps.addValue("file_name", name);
+        ps.addValue("name", name);
         ps.addValue("content_id", ((RelationalText) txtContent).getId());
         ps.addValue("workspace_id", ws.getId());
         ps.addValue("created", new Date());
@@ -69,7 +69,7 @@ public class SourceDaoImpl implements SourceDao, InitializingBean {
     
     @Override
     public void update(final Source src, final String newName) {
-        String sql = "update juxta_source set file_name=?, updated=? where id=?";
+        String sql = "update juxta_source set name=?, updated=? where id=?";
         this.jdbcTemplate.update(sql, newName, new Date(), src.getId());      
     }
     
@@ -85,10 +85,10 @@ public class SourceDaoImpl implements SourceDao, InitializingBean {
         }
         Long contentId = ((RelationalText) txtContent).getId();
         Long oldContentID = ((RelationalText)src.getText()).getId();
-        src.setFileName(newName);
+        src.setName(newName);
         src.setText(txtContent);
         
-        String sql = "update juxta_source set file_name=?, content_id=?, updated=? where id=?";
+        String sql = "update juxta_source set name=?, content_id=?, updated=? where id=?";
         this.jdbcTemplate.update(sql, newName, contentId, new Date(), src.getId() );
         
         // delete the old content!
@@ -178,7 +178,7 @@ public class SourceDaoImpl implements SourceDao, InitializingBean {
 
     @Override
     public boolean exists(final Workspace ws, final String name) {
-        List<Source> sources = jdbcTemplate.query(buildFinderSQL("where s.file_name = ?"), ROW_MAPPER, name);
+        List<Source> sources = jdbcTemplate.query(buildFinderSQL("where s.name = ?"), ROW_MAPPER, name);
         boolean exists = false;
         for ( Source src : sources ) {
             if ( src.isMemberOf(ws)) {
@@ -242,13 +242,13 @@ public class SourceDaoImpl implements SourceDao, InitializingBean {
     }
 
     public static String selectSourceFrom(String tableName) {
-        return SQL.select(tableName, "id", "file_name", "workspace_id", "created");
+        return SQL.select(tableName, "id", "name", "workspace_id", "created");
     }
 
     public static Source mapSourceFrom(ResultSet rs, String prefix, Text text) throws SQLException {
         final Source source = new Source();
         source.setId(rs.getLong(prefix + "_id"));
-        source.setFileName(rs.getString(prefix + "_file_name"));
+        source.setName(rs.getString(prefix + "_name"));
         source.setWorkspaceId( rs.getLong(prefix+"_workspace_id"));
         source.setCreated( rs.getTimestamp(prefix+"_created"));
         source.setText(text);

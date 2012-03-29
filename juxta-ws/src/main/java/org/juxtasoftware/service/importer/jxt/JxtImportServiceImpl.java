@@ -4,6 +4,7 @@ import static org.juxtasoftware.service.importer.jxt.Util.isContainedIn;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
@@ -14,6 +15,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
+
+import javax.xml.stream.XMLStreamException;
 
 import org.juxtasoftware.Constants;
 import org.juxtasoftware.dao.AlignmentDao;
@@ -286,16 +289,15 @@ public class JxtImportServiceImpl implements ImportService<InputStream> {
             // create the juxta source (must always create a new one)
             // the reson: juxta desktop allows user to alter raw xml
             // also, others may have grabbed this source for other purposes
-            Long srcId = this.sourceDao.create(this.ws, srcInfo.getSrcFile().getName(), isXml, new FileReader(srcInfo.getSrcFile()));
-            Source source = this.sourceDao.find(this.ws.getId(), srcId);
+            Source source = createSource(srcInfo, isXml);
             
             // record any accepted revisions this witness may have had
             List<Integer> acceptedRevs = srcInfo.getAcceptedRevsions();
             RevisionSet revSet = null;
             if ( acceptedRevs.size() > 0) {
                 revSet = new RevisionSet();
-                revSet.setName(this.set.getName()+"-src-"+srcId);
-                revSet.setSourceId(srcId);
+                revSet.setName(this.set.getName()+"-src-"+source.getId());
+                revSet.setSourceId( source.getId() );
                 revSet.setRevisionIndexes(acceptedRevs);
                 Long id = this.revisionsDao.createRevisionSet(revSet);
                 revSet.setId(id);
@@ -340,7 +342,7 @@ public class JxtImportServiceImpl implements ImportService<InputStream> {
                 
             } else {
                 // Just null transform it to a witness
-                witnessId = this.transformer.transform(source, null, null, source.getFileName());
+                witnessId = this.transformer.transform(source, null, null, source.getName());
             }
             
             Witness newWitness = this.witnessDao.find(witnessId);
@@ -352,6 +354,11 @@ public class JxtImportServiceImpl implements ImportService<InputStream> {
         this.setDao.addWitnesses(this.set, witnesses);
         this.setDao.update(this.set);
         this.taskSegment.incrementValue();
+    }
+
+    private Source createSource(SourceInfo srcInfo, boolean isXml) throws FileNotFoundException, IOException, XMLStreamException {
+        Long srcId = this.sourceDao.create(this.ws, srcInfo.getSrcFile().getName(), isXml, new FileReader(srcInfo.getSrcFile()));
+        return this.sourceDao.find(this.ws.getId(), srcId);
     }
 
     private void excludeBiblioData(Template parseTemplate) {

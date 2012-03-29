@@ -305,7 +305,7 @@ public class SourcesResource extends BaseResource {
             
             JsonObject  obj = new JsonObject();
             obj.add("id", new JsonPrimitive(src.getId()) );
-            obj.add("fileName", new JsonPrimitive(src.getFileName()));
+            obj.add("name", new JsonPrimitive(src.getName()));
             obj.add("type", new JsonPrimitive(src.getText().getType().toString()));
             obj.add("length", new JsonPrimitive(src.getText().getLength()));
             obj.add("created", new JsonPrimitive( this.format.format(src.getCreated())));
