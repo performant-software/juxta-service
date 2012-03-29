@@ -2,10 +2,7 @@ package org.juxtasoftware.resource.sidebyside;
 
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -15,7 +12,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.output.FileWriterWithEncoding;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.juxtasoftware.Constants;
@@ -71,7 +67,7 @@ public class SideBySideView implements FileDirectiveListener, ApplicationContext
     
     public Representation toHtml( final BaseResource parent, final ComparisonSet set) throws IOException {
         this.parent = parent;
-        
+                
         if (parent.getQuery().getValuesMap().containsKey("refresh") ) {
             this.cacheDao.deleteSideBySide(set.getId());
         }
@@ -93,9 +89,10 @@ public class SideBySideView implements FileDirectiveListener, ApplicationContext
             parent.getResponse().setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
             return parent.toTextRepresentation("Malformed docs param");
         }
-       
+    
         // Grab it from cache if possible
         if ( this.cacheDao.sideBySideExists(set.getId(), witnessIds[0], witnessIds[1]) == true) {
+            LOG.info("Pulling side-by-side view from cache");
             Reader sbsReader = this.cacheDao.getSideBySide(set.getId(), witnessIds[0], witnessIds[1]);
             return parent.toHtmlRepresentation(sbsReader);
         }
@@ -148,36 +145,12 @@ public class SideBySideView implements FileDirectiveListener, ApplicationContext
         map.put("witnesses", witnesses);
         Representation sbsFtl =  this.parent.toHtmlRepresentation("side_by_side.ftl", map);
         
-        // dump data to temp file
-        File tmp = null;
-        FileOutputStream fos = null;
-        try {
-            tmp = File.createTempFile("sbs-"+set.getId(),".dat");
-            fos = new FileOutputStream(tmp);
-            IOUtils.copy(sbsFtl.getReader(), new OutputStreamWriter(fos));
-        } catch (Exception e ) {
-            LOG.error(e.getMessage());
-            return parent.toTextRepresentation("Unable to generate side-by-side view");
-        } finally {
-            IOUtils.closeQuietly(fos);
-        }
-        
-        // stream tmp file into db if possible
-        FileReader reader = null;
-        try {
-            // Stream data into cache DB (this invalidates the reader), the stream it back out of
-            // the db, back to the client
-            reader = new FileReader(tmp);
-            this.cacheDao.cacheSideBySide(set.getId(), witnessIds[0], witnessIds[1], reader);
-            return parent.toHtmlRepresentation( this.cacheDao.getSideBySide(set.getId(),  witnessIds[0], witnessIds[1]));
-        } catch (Exception e) {
-            LOG.warn("Unable to cache side-by-side for set "+set.getId()+" in db: "+e.getMessage());
-            IOUtils.closeQuietly(reader);
-            reader = new FileReader(tmp);
-            return parent.toHtmlRepresentation( reader );
-        } finally {
-           tmp.delete();
-        }        
+        // Stream data into cache DB (this invalidates the reader), then stream it back out of
+        // the db, back to the client. 
+        // NOTE: this can be a big file. Be sure to update the mysql config to handle large posts.
+        // This is usually in /etc/my.cnf. The setting to add is: max_allowed_packet=8M (or whaterver size)
+        this.cacheDao.cacheSideBySide(set.getId(), witnessIds[0], witnessIds[1], sbsFtl.getReader());
+        return parent.toHtmlRepresentation( this.cacheDao.getSideBySide(set.getId(),  witnessIds[0], witnessIds[1]));       
     }
 
     @Override
