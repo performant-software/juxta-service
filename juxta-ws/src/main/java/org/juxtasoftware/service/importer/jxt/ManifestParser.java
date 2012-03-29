@@ -168,6 +168,9 @@ public class ManifestParser extends DefaultHandler  {
             }
             return this.title;
         }
+        public void setTitle( final String newTitle ) {
+            this.title = newTitle;
+        }
         public final String getTemplateGuid() {
             return templateGuid;
         } 

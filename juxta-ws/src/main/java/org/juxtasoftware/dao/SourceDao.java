@@ -83,6 +83,17 @@ public interface SourceDao  {
     boolean exists( final Workspace ws, final String name);
     
     /**
+     * Transform the non-unique <code>origName</code> into a name that 
+     * is unique for workspace <code>ws</code>. Uniqne names are generated
+     * by adding a '-#' extension to the end, where # is an sequentially increasing
+     * number
+     * @param ws
+     * @param origName
+     * @return
+     */
+    String makeUniqueName(final Workspace ws, final String origName);
+    
+    /**
      * Get a list of usage information for this source. The list
      * details all of the witnesses based upon this source, and
      * all of the sets using these witnesses

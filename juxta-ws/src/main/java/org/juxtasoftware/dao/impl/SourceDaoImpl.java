@@ -228,6 +228,25 @@ public class SourceDaoImpl implements SourceDao, InitializingBean {
         }
         return usage;
     }
+    
+    @Override
+    public String makeUniqueName(final Workspace ws, final String origName) {
+        final String sql = "select `name` from juxta_source where `name` like ?";
+        int maxNum = 0;
+        List<String> names = this.jdbcTemplate.queryForList(sql, String.class, origName+"-%");
+        for (String name : names ) {
+            String numStr = name.substring(origName.length()+1);
+            if ( numStr.length() > 0 ) {
+                try {
+                    int num = Integer.parseInt(numStr);
+                    if ( num > maxNum ) {
+                        maxNum = num;
+                    }
+                } catch (Exception e) {}
+            }
+        }
+        return origName+"-"+(maxNum+1);
+    }
 
     protected String buildFinderSQL(String whereClause) {
         final StringBuilder sql = new StringBuilder("select ");

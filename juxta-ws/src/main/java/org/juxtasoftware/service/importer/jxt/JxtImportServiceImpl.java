@@ -357,7 +357,13 @@ public class JxtImportServiceImpl implements ImportService<InputStream> {
     }
 
     private Source createSource(SourceInfo srcInfo, boolean isXml) throws FileNotFoundException, IOException, XMLStreamException {
-        Long srcId = this.sourceDao.create(this.ws, srcInfo.getSrcFile().getName(), isXml, new FileReader(srcInfo.getSrcFile()));
+        
+        String name = srcInfo.getTitle();
+        if ( this.sourceDao.exists(this.ws, name)) {
+            name = this.sourceDao.makeUniqueName(this.ws, name);
+            srcInfo.setTitle(name);
+        }
+        Long srcId = this.sourceDao.create(this.ws, name, isXml, new FileReader(srcInfo.getSrcFile()));
         return this.sourceDao.find(this.ws.getId(), srcId);
     }
 
