@@ -1,10 +1,13 @@
 package org.juxtasoftware.resource;
 
+import java.util.List;
+
 import org.juxtasoftware.dao.ComparisonSetDao;
 import org.juxtasoftware.dao.SourceDao;
 import org.juxtasoftware.dao.WitnessDao;
 import org.juxtasoftware.model.ComparisonSet;
 import org.juxtasoftware.model.Source;
+import org.juxtasoftware.model.Usage;
 import org.juxtasoftware.model.Witness;
 import org.restlet.data.Status;
 import org.restlet.representation.Representation;
@@ -14,6 +17,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 
 /**
  * Resource used to GET a json representation of the 
@@ -69,9 +76,16 @@ public class UsageResource extends BaseResource {
             setStatus(Status.CLIENT_ERROR_NOT_FOUND);
             return toTextRepresentation("source id "+this.resourceId+" does not exist in workspace "+this.workspace.getName());
         }
-        
-        // TODO 
-        return toTextRepresentation("Source usage not yet implemented");
+        List<Usage> usage =  this.sourceDao.getUsage(src);
+        JsonArray jsonArray = new JsonArray();
+        for ( Usage u :usage ) {
+            JsonObject obj = new JsonObject();
+            obj.addProperty("type", u.getType().toString());
+            obj.addProperty("id", u.getId().toString());
+            jsonArray.add(obj);
+        }
+        Gson gson = new Gson();
+        return toJsonRepresentation( gson.toJson(jsonArray) );
     }
 
     private Representation getWitnessUsage() {
