@@ -168,7 +168,10 @@ public class WitnessDaoImpl extends JuxtaDaoImpl<Witness> implements WitnessDao 
             witness.setFragment(new Range(rs.getInt("w_fragment_start"), 
                                           rs.getInt("w_fragment_end")));
             witness.setSourceId( rs.getLong("w_source_id"));
-            witness.setTemplateId( rs.getLong("w_template_id") );
+            Object templateIdObj = rs.getObject("w_template_id");
+            if (templateIdObj != null ) {
+                witness.setTemplateId( (Long)templateIdObj );
+            }
             witness.setWorkspaceId( rs.getLong("w_workspace_id") );
             witness.setCreated( rs.getTimestamp("w_created") );
             witness.setUpdated( rs.getTimestamp("w_updated") );
