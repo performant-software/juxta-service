@@ -281,7 +281,7 @@ public class JxtImportServiceImpl implements ImportService<InputStream> {
             if ( extPos > -1 ) {
                 ext = srcName.substring(extPos);
             }
-            boolean isXml = !ext.equalsIgnoreCase(".txt");
+            boolean isXml = ext.equalsIgnoreCase(".xml");
             if ( isXml ) {
                 parseTemplate = this.templateParser.findTemplate( srcInfo.getTemplateGuid() );
             }
