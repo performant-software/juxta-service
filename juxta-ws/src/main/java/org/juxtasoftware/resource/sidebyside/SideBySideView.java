@@ -109,7 +109,7 @@ public class SideBySideView implements FileDirectiveListener, ApplicationContext
         
         // special case! Only attempt to get and connect
         // differences if the comparands are different.
-        if ( witnessIds[0] != witnessIds[1] ) {
+        if ( witnessIds[0].equals( witnessIds[1] ) == false ) {
             // generate the change lists for each witness and
             // update the changes map with this data
             generateWitnessChangeLists(set);
