@@ -1,7 +1,5 @@
 package org.juxtasoftware.service.importer.ps;
 
-import static eu.interedition.text.query.Criteria.text;
-
 import java.io.IOException;
 import java.io.Reader;
 import java.util.ArrayList;
@@ -43,7 +41,6 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 import org.xml.sax.SAXException;
 
-import eu.interedition.text.AnnotationRepository;
 import eu.interedition.text.Text;
 import eu.interedition.text.TextRepository;
 import eu.interedition.text.xml.XMLParser;
@@ -69,7 +66,6 @@ public class ParallelSegmentationImportImpl implements ImportService<Source> {
     @Autowired private ComparisonSetDao setDao;
     @Autowired private WorkspaceDao workspaceDao;
     @Autowired private AlignmentDao alignmentDao;
-    @Autowired private AnnotationRepository annotationRepository;
     @Autowired private TextRepository textRepository;
     @Autowired private Tokenizer tokenizer;
     @Autowired private ComparisonSetCollator collator;
@@ -117,11 +113,14 @@ public class ParallelSegmentationImportImpl implements ImportService<Source> {
         parseSource( importSrc );
         
         if ( this.deferCollation == false ) {
+            set.setStatus(ComparisonSet.Status.COLLATING);
+            this.setDao.update(this.set);
+            
             CollatorConfig cfg = this.setDao.getCollatorConfig(this.set);
             tokenize(cfg);
             collate( cfg );
             
-            this.set.setCollated(true);
+            set.setStatus(ComparisonSet.Status.COLLATED);
             this.setDao.update(this.set);
         }
         
@@ -140,9 +139,8 @@ public class ParallelSegmentationImportImpl implements ImportService<Source> {
             return;
         }
         
-        // clear out all prior data 
-        this.set.setCollated(false);
-        this.setDao.update(this.set);
+        // clear out all prior data (note that delete witnesses causes a purge 
+        // of all alignment ant tokenization data)
         this.setDao.deleteAllWitnesses(this.set);
         this.cacheDao.deleteHeatmap(set.getId());
         this.alignmentDao.clear(this.set, true); // true to force clear ALL for this set
@@ -151,7 +149,6 @@ public class ParallelSegmentationImportImpl implements ImportService<Source> {
             // but leave the witness itself. It will be updated 
             // with the re-parsed content from the source later.
             for (Witness witness : this.preExistingWitnesses) {
-                this.annotationRepository.delete( text(witness.getText()) );
                 this.noteDao.deleteAll( witness.getId() );
                 this.pageBreakDao.deleteAll( witness.getId() );
             }

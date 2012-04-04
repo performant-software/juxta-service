@@ -83,6 +83,10 @@ public class CollatorResource extends BaseResource {
 
     private Representation doCollation() {
         
+        if (this.set.getStatus().equals(ComparisonSet.Status.COLLATING)) {
+            setStatus(Status.CLIENT_ERROR_CONFLICT);
+            return toTextRepresentation("Set "+this.set.getId()+" is currently collating");
+        }
         Set<Witness> witnesses = this.comparisonSetDao.getWitnesses(this.set);
         if ( witnesses.size() < 2) {
             setStatus(Status.CLIENT_ERROR_FAILED_DEPENDENCY);
@@ -156,29 +160,34 @@ public class CollatorResource extends BaseResource {
         
         @Override
         public void run() {
-            boolean collated = false;
             try {
-                LOG.info("Begin task "+this.name);
+                LOG.info("Begin collation task "+this.name);
+                this.set.setStatus( ComparisonSet.Status.COLLATING );
+                this.setDao.update(this.set);
                 this.status.begin();
                 this.collator.collate( this.set, this.config, this.status);
-                LOG.info("task "+this.name+" COMPLETE");
-                collated = true;
-                this.endDate = new Date();
+                LOG.info("collation task "+this.name+" COMPLETE");
+                this.endDate = new Date();           
+                this.set.setStatus( ComparisonSet.Status.COLLATED );
+                this.setDao.update(this.set);   
             } catch (IOException e) {
                 LOG.error(this.name+" task failed", e.toString());
                 this.status.fail(e.toString());
                 this.endDate = new Date();
+                this.set.setStatus( ComparisonSet.Status.ERROR );
+                this.setDao.update(this.set);
             } catch ( BackgroundTaskCanceledException e) {
                 LOG.info( this.name+" task was canceled");
                 this.endDate = new Date();
+                this.set.setStatus( ComparisonSet.Status.NOT_COLLATED );
+                this.setDao.update(this.set);
             } catch (Exception e) {
                 LOG.error(this.name+" task failed", e);
                 this.status.fail(e.toString());
-                this.endDate = new Date();
+                this.endDate = new Date();       
+                this.set.setStatus( ComparisonSet.Status.ERROR );
+                this.setDao.update(this.set);
             }
-            
-            this.set.setCollated(collated);
-            this.setDao.update(this.set);
         }
         
         @Override

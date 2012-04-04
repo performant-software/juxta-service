@@ -1,5 +1,12 @@
 package org.juxtasoftware.dao.impl;
 
+import static eu.interedition.text.query.Criteria.and;
+import static eu.interedition.text.query.Criteria.annotationName;
+import static eu.interedition.text.query.Criteria.or;
+import static eu.interedition.text.query.Criteria.text;
+import static org.juxtasoftware.Constants.GAP_NAME;
+import static org.juxtasoftware.Constants.TOKEN_NAME;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -7,6 +14,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Set;
 
+import org.juxtasoftware.dao.AlignmentDao;
 import org.juxtasoftware.dao.ComparisonSetDao;
 import org.juxtasoftware.dao.WitnessDao;
 import org.juxtasoftware.model.CollatorConfig;
@@ -22,13 +30,19 @@ import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.stereotype.Repository;
 
+import eu.interedition.text.AnnotationRepository;
+
 /**
  * @author <a href="http://gregor.middell.net/" title="Homepage">Gregor Middell</a>
  */
 @Repository
 public class ComparisionSetDaoImpl extends JuxtaDaoImpl<ComparisonSet> implements ComparisonSetDao {
 
-    @Autowired WitnessDao witnessDao;
+    @Autowired private WitnessDao witnessDao;
+    @Autowired private AlignmentDao alignmentDao;
+    @Autowired private AnnotationRepository annotatonRepo;
+    @Autowired private CacheDaoImpl cacheDao;
+    
     private SimpleJdbcInsert memberInsert;
     protected SimpleJdbcInsert configInsert;
     private static final SetRowMapper SET_ROW_MAPPER = new SetRowMapper();
@@ -54,6 +68,23 @@ public class ComparisionSetDaoImpl extends JuxtaDaoImpl<ComparisonSet> implement
         CollatorConfig cfg = new CollatorConfig();
         createCollatorConfig(id, cfg);
         return id;
+    }
+    
+    @Override
+    public void clearCollationData( ComparisonSet set) {
+       
+        // clear alignments and cached visualization data
+        this.cacheDao.deleteAll(set.getId());
+        this.alignmentDao.clear(set);
+        
+        // clear tokens/gaps from all witnesses in set
+        for (Witness witness : getWitnesses(set) ) {
+            annotatonRepo.delete(and(text(witness.getText()), or(annotationName(GAP_NAME),annotationName(TOKEN_NAME))  ));
+        }
+        
+        // flag set as uncollated
+        set.setStatus(ComparisonSet.Status.NOT_COLLATED);
+        update(set);
     }
     
     @Override
@@ -119,11 +150,15 @@ public class ComparisionSetDaoImpl extends JuxtaDaoImpl<ComparisonSet> implement
 
     @Override
     public void deleteAllWitnesses(ComparisonSet set) {
+        // ALL collation data must be purged first, then remove witnesss
+        clearCollationData(set);
         this.jt.update("delete from "+SET_MEMBER_TABLE+" where set_id=?", set.getId());
     }
     
     @Override
     public void deleteWitness(ComparisonSet set, Witness witness) {
+        // ALL collation data must be purged first, then remove witnesss
+        clearCollationData(set);
         final String sql = "delete from "+SET_MEMBER_TABLE+" where set_id=? and witness_id=?";
         this.jt.update(sql, set.getId(), witness.getId() );
         updateLastUpdatedTime( set );
@@ -132,15 +167,15 @@ public class ComparisionSetDaoImpl extends JuxtaDaoImpl<ComparisonSet> implement
     @Override
     public void update(final ComparisonSet set) {
         this.jt.update("update " + this.tableName + 
-            " set name = ?, collated=?, updated=? where id = ?", 
-            set.getName(), set.isCollated(), new Date(), set.getId());
+            " set name = ?, status=?, updated=? where id = ?", 
+            set.getName(), set.getStatus().toString(), new Date(), set.getId());
     }
     
     
     @Override
     public ComparisonSet find( final Workspace ws, final String setName) {
         final StringBuilder sql = new StringBuilder();
-        sql.append("select id, name, collated, workspace_id, created, updated ");
+        sql.append("select id, name, status, workspace_id, created, updated ");
         sql.append(" from "+this.tableName+" where name = ? and workspace_id=?");
         ComparisonSet set = DataAccessUtils.uniqueResult(jt.query(sql.toString(), SET_ROW_MAPPER, 
             setName, ws.getId()));
@@ -150,7 +185,7 @@ public class ComparisionSetDaoImpl extends JuxtaDaoImpl<ComparisonSet> implement
     @Override
     public ComparisonSet find(Long id) {
         final StringBuilder sql = new StringBuilder();
-        sql.append("select id, name, collated, workspace_id, created, updated ");
+        sql.append("select id, name, status, workspace_id, created, updated ");
         sql.append(" from "+this.tableName+" where id = ?");
         ComparisonSet set = DataAccessUtils.uniqueResult(jt.query(sql.toString(), SET_ROW_MAPPER, id));
         return set;
@@ -160,7 +195,7 @@ public class ComparisionSetDaoImpl extends JuxtaDaoImpl<ComparisonSet> implement
     protected SqlParameterSource toInsertData(ComparisonSet object) {
         final MapSqlParameterSource ps = new MapSqlParameterSource();
         ps.addValue("name", object.getName());
-        ps.addValue("collated", object.isCollated());
+        ps.addValue("status", object.getStatus().toString());
         ps.addValue("workspace_id", object.getWorkspaceId());
         ps.addValue("created", new Date());
         return ps;
@@ -173,7 +208,7 @@ public class ComparisionSetDaoImpl extends JuxtaDaoImpl<ComparisonSet> implement
 
     @Override
     public List<ComparisonSet> list( final Workspace ws) {
-        final String sql = "select id, name, collated, workspace_id, created, updated from "
+        final String sql = "select id, name, status, workspace_id, created, updated from "
             +this.tableName+" where workspace_id=? order by updated desc, created desc";
         return this.jt.query(sql, SET_ROW_MAPPER, ws.getId());
     }
@@ -212,13 +247,12 @@ public class ComparisionSetDaoImpl extends JuxtaDaoImpl<ComparisonSet> implement
             final ComparisonSet cs = new ComparisonSet();
             cs.setId(rs.getLong("id"));
             cs.setName(rs.getString("name"));
-            cs.setCollated( rs.getBoolean("collated"));
+            cs.setStatus( rs.getString("status") );
             cs.setWorkspaceId( rs.getLong("workspace_id"));
             cs.setCreated( rs.getTimestamp("created"));
             cs.setUpdated( rs.getTimestamp("updated"));
             return cs;
-        }
-        
+        }   
     }
     
     /**

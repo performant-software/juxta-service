@@ -11,8 +11,9 @@ import com.google.common.base.Objects;
  *
  */
 public class ComparisonSet extends WorkspaceMember {
+    public enum Status {NOT_COLLATED, COLLATING, COLLATED, ERROR};
     private String name;
-    private boolean collated;
+    private Status status = Status.NOT_COLLATED;
     private Date created;
     private Date updated;
     
@@ -41,11 +42,18 @@ public class ComparisonSet extends WorkspaceMember {
     }
 
     public boolean isCollated() {
-        return collated;
+        return (this.status.equals(Status.COLLATED));
     }
 
-    public void setCollated(boolean collated) {
-        this.collated = collated;
+    public void setStatus(Status collStatus) {
+        this.status = collStatus;
+    }
+    public void setStatus(String strStatus) {
+        this.status = Status.valueOf(strStatus);
+    }
+    
+    public Status getStatus() {
+        return this.status;
     }
 
     @Override

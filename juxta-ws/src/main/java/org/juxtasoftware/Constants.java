@@ -9,6 +9,7 @@ public interface Constants {
     final URI JUXTA_NS = URI.create("http://juxtasoftware.org/ns");
     final URI TEI_NS = URI.create("http://www.tei-c.org/ns/1.0");
 
+    final Name GAP_NAME = new SimpleName(Constants.JUXTA_NS, "gap");
     final Name TOKEN_NAME = new SimpleName(Constants.JUXTA_NS, "token");
     final Name ALIGNMENT_NAME = new SimpleName(JUXTA_NS, "alignment");
     final Name CHANGE_NAME = new SimpleName(JUXTA_NS, "change");

@@ -164,8 +164,8 @@ public class JxtImportServiceImpl implements ImportService<InputStream> {
             return;
         }
         
-        // clear out all prior data 
-        this.setDao.update(this.set);
+        // clear out all prior data (NOTE: delete all witnesses wil also clear out all
+        // aligment and annotation data )
         this.setDao.deleteAllWitnesses(this.set);
         this.cacheDao.deleteHeatmap(this.set.getId());
         try {

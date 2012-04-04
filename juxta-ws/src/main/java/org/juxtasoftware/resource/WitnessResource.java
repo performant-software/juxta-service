@@ -6,8 +6,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang.StringEscapeUtils;
-import org.juxtasoftware.dao.AlignmentDao;
-import org.juxtasoftware.dao.CacheDao;
 import org.juxtasoftware.dao.ComparisonSetDao;
 import org.juxtasoftware.dao.WitnessDao;
 import org.juxtasoftware.model.ComparisonSet;
@@ -45,8 +43,6 @@ public class WitnessResource extends BaseResource {
     
     @Autowired private ComparisonSetDao setDao;
     @Autowired private WitnessDao witnessDao;
-    @Autowired private CacheDao cacheDao;
-    @Autowired private AlignmentDao alignmentDao;
 
     /**
      * Extract the text ID and range info from the request attributes
@@ -155,18 +151,8 @@ public class WitnessResource extends BaseResource {
             List<Usage> usage = this.witnessDao.getUsage(this.witness);
             for (Usage u : usage) {
                 if ( u.getType().equals(Usage.Type.COMPARISON_SET)) {
-               
-                    // clear cached data
-                    Long setId = u.getId();
-                    this.cacheDao.deleteAll(setId);
-                    
-                    // set status to NOT collated
-                    ComparisonSet set = this.setDao.find(setId);
-                    set.setCollated(false);
-                    this.setDao.update(set);
-                    
-                    // manually purge all alignments for this set
-                    this.alignmentDao.clear(set);
+                    ComparisonSet set = this.setDao.find(u.getId());
+                    this.setDao.clearCollationData(set);
                 }
             }
             

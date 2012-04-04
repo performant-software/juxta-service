@@ -11,8 +11,6 @@ import java.util.Map;
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.apache.commons.lang.StringEscapeUtils;
-import org.juxtasoftware.dao.AlignmentDao;
-import org.juxtasoftware.dao.CacheDao;
 import org.juxtasoftware.dao.ComparisonSetDao;
 import org.juxtasoftware.dao.RevisionDao;
 import org.juxtasoftware.dao.SourceDao;
@@ -56,8 +54,6 @@ public class SourceResource extends BaseResource implements ApplicationContextAw
 
     @Autowired private SourceDao sourceDao;
     @Autowired private RevisionDao revisionDao;
-    @Autowired private CacheDao cacheDao;
-    @Autowired private AlignmentDao alignmentDao;
     @Autowired private ComparisonSetDao setDao;
     @Autowired private WitnessDao witnessDao;
     @Autowired private SourceTransformer transformer;
@@ -318,15 +314,9 @@ public class SourceResource extends BaseResource implements ApplicationContextAw
                 Witness w = this.witnessDao.find(u.getId());
                 this.witnessDao.delete(w);
             } else if ( u.getType().equals(Usage.Type.COMPARISON_SET)) {
-           
-                // clear cached data
-                Long setId = u.getId();
-                this.cacheDao.deleteAll(setId);
-                
-                // set status to NOT collated
-                ComparisonSet set = this.setDao.find(setId);
-                set.setCollated(false);
-                this.setDao.update(set);
+                // set must have all of its collation data reset
+                ComparisonSet set = this.setDao.find( u.getId());
+                this.setDao.clearCollationData(set);
             }
         }
 
@@ -344,7 +334,6 @@ public class SourceResource extends BaseResource implements ApplicationContextAw
     
     /**
      * Interface for an update task
-     *
      */
     private interface UpdateExecutor {
         public void doUpdate( BackgroundTaskStatus status ) throws Exception;
@@ -374,12 +363,8 @@ public class SourceResource extends BaseResource implements ApplicationContextAw
             for ( Usage use : usage ) {
                 if ( use.getType().equals(Usage.Type.COMPARISON_SET ) ) {
                     // clear cached data, alignmsnts and flag set as uncollated
-                    Long setId = use.getId();
-                    SourceResource.this.cacheDao.deleteAll(setId);
-                    ComparisonSet set = SourceResource.this.setDao.find(setId);
-                    set.setCollated(false);
-                    SourceResource.this.setDao.update(set);
-                    SourceResource.this.alignmentDao.clear(set);
+                    ComparisonSet set = SourceResource.this.setDao.find(use.getId());
+                    SourceResource.this.setDao.clearCollationData(set);
                 } else if  ( use.getType().equals(Usage.Type.WITNESS) ) {
                     Witness oldWit = SourceResource.this.witnessDao.find( use.getId() );
                     SourceResource.this.transformer.redoTransform(this.origSource, oldWit);                     

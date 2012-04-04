@@ -297,30 +297,33 @@ public class Importer extends BaseResource implements ApplicationContextAware {
         
         @Override
         public void run() {
-            boolean collated = false;
             try {
                 LOG.info("Begin task "+this.taskName);
                 this.status = BackgroundTaskStatus.Status.PROCESSING;
                 this.task.begin();
+                this.set.setStatus( ComparisonSet.Status.COLLATING );
+                Importer.this.setDao.update(this.set);
                 this.importer.doImport(this.set, this.importSouce, this.task);
-                collated = true;
                 LOG.info("task "+this.taskName+" COMPLETE");
                 this.endDate = new Date();
                 this.status = BackgroundTaskStatus.Status.COMPLETE;
+                this.set.setStatus( ComparisonSet.Status.COLLATED );
+                Importer.this.setDao.update(this.set);
             } catch ( BackgroundTaskCanceledException e) {
                 LOG.info( this.taskName+" task was canceled");
                 cleanupCanceledImport( this.set );
                 this.endDate = new Date();
                 this.status = BackgroundTaskStatus.Status.CANCELED;
+                this.set.setStatus( ComparisonSet.Status.NOT_COLLATED );
+                Importer.this.setDao.update(this.set);
             } catch (Exception e) {
                 LOG.error(this.taskName+" task failed", e);
                 this.task.fail(e.getMessage());
                 this.endDate = new Date();
                 this.status = BackgroundTaskStatus.Status.FAILED;
+                this.set.setStatus( ComparisonSet.Status.ERROR );
+                Importer.this.setDao.update(this.set);
             }
-            
-            this.set.setCollated(collated);
-            setDao.update(this.set);
         }
         
         @Override

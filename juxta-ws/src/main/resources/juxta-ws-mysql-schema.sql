@@ -108,7 +108,7 @@ CREATE TABLE IF NOT EXISTS juxta_comparison_set (
     id BIGINT NOT NULL AUTO_INCREMENT,
     name VARCHAR(255) NOT NULL,
 	workspace_id BIGINT NOT NULL default 1,
-	collated BOOL not null default 0,
+	status ENUM('NOT_COLLATED','COLLATING','COLLATED','ERROR') not null default 'NOT_COLLATED',
     created DATETIME not null,
     updated DATETIME,
     PRIMARY KEY (id),
