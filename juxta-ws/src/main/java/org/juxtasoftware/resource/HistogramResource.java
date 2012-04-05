@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 
-import org.juxtasoftware.Constants;
 import org.juxtasoftware.dao.AlignmentDao;
 import org.juxtasoftware.dao.ComparisonSetDao;
 import org.juxtasoftware.model.Alignment;
@@ -87,9 +86,6 @@ public class HistogramResource extends BaseResource {
         constraints.setFilter(changesFilter);
         List<Alignment> diffs =  this.alignmentDao.list(constraints);
         for (Alignment diff :  diffs ) {
-            if ( diff.getName().equals(Constants.CHANGE_NAME) == false ) {
-                continue;
-            }
             
             // get the base witness annotation
             AlignedAnnotation anno = diff.getWitnessAnnotation(this.baseWitnessId);
