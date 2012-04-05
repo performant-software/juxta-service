@@ -87,7 +87,8 @@ public class TokenizerResource extends BaseResource {
     }
 
     private Representation doTokenization() {
-        LOG.info("Tokenize set "+this.set.getId() );       
+        LOG.info("Tokenize set "+this.set.getId() );  
+        this.comparisonSetDao.clearCollationData(this.set);
         CollatorConfig cfg = this.comparisonSetDao.getCollatorConfig(set);
         this.taskManager.submit( new TokenizeTask(this.tokenizer, cfg, set) );
         return toTextRepresentation(this.set.getId().toString());
