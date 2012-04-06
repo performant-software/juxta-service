@@ -1,6 +1,7 @@
 package org.juxtasoftware.resource;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -128,27 +129,29 @@ public class WitnessResource extends BaseResource {
      * Delete the specified witness
      */
     @Delete
-    public void deleteWitness() {   
+    public Representation deleteWitness() {   
         // Delete witness entirely, or just delete from a set?
+        List<Usage> usage = new ArrayList<Usage>();
         if ( this.setId != null ) {
             LOG.info("Delete witness "+this.witness.getId()+" from set "+this.setId);
             ComparisonSet set = this.setDao.find(this.setId);
             if ( set == null ) {
-                setStatus(Status.CLIENT_ERROR_NOT_FOUND,"Invalid set "+this.setId);
-                return;
+                setStatus(Status.CLIENT_ERROR_NOT_FOUND);
+                return toTextRepresentation("Invalid set "+this.setId);
             }
             if ( this.setDao.isWitness(set, witness) == false ) {
-                setStatus(Status.CLIENT_ERROR_NOT_FOUND, 
-                    "Witness "+this.witness.getId()+" does not exist in set "+this.setId);
-                return;
+                setStatus(Status.CLIENT_ERROR_NOT_FOUND); 
+                return toTextRepresentation("Witness "+this.witness.getId()+" does not exist in set "+this.setId);
             }
             this.setDao.deleteWitness(set, witness); 
+            usage.add( new Usage(Usage.Type.COMPARISON_SET, this.setId));
+            
         } else {
             LOG.info("Delete witness "+this.witness.getId());
             
             // get a list of all uses of this witness.
             // Mark sets as NOT collated, clear their collation cache and remove all alignments
-            List<Usage> usage = this.witnessDao.getUsage(this.witness);
+            usage = this.witnessDao.getUsage(this.witness);
             for (Usage u : usage) {
                 if ( u.getType().equals(Usage.Type.COMPARISON_SET)) {
                     ComparisonSet set = this.setDao.find(u.getId());
@@ -158,5 +161,9 @@ public class WitnessResource extends BaseResource {
             
             this.witnessDao.delete( witness ); 
         }
+        
+        // return the json list of itmes that were affected
+        Gson gson = new Gson();
+        return toJsonRepresentation( gson.toJson(usage) );
     }
 }
