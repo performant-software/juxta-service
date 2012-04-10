@@ -97,16 +97,21 @@ public class HistogramResource extends BaseResource {
                 histogram[i]++;
             }
         }
-        
+
+        // scale to max value and stuff in out string
         StringBuffer out = new StringBuffer();
         for ( int i=0;i<histogram.length;i++) {
             if ( out.length() > 0) {
                 out.append(",");
             }
-            out.append(histogram[i]);
+            double scaled = (double)histogram[i]/(double)maxValue;
+            if ( scaled > 1.0 ) {
+                scaled = 1.0;
+            }
+            out.append(String.format("%1.2f",  scaled));
         }
         
-        String jsonStr = "{\"baseName\": \""+base.getName()+"\", \"maxValue\": "+maxValue+", \"histogram\": ["+out.toString()+"]}";
+        String jsonStr = "{\"baseName\": \""+base.getName()+"\", \"histogram\": ["+out.toString()+"]}";
         return toJsonRepresentation( jsonStr );
     }
     
