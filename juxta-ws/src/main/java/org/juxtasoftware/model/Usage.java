@@ -9,10 +9,12 @@ public class Usage {
     public enum Type { SOURCE, WITNESS, COMPARISON_SET};
     private final Type type;
     private final Long id;
+    private final String name;
     
-    public Usage( final Type t, final Long id ) {
+    public Usage( final Type t, final Long id, final String name) {
         this.type = t;
         this.id = id;
+        this.name = name;
     }
 
     public Type getType() {
@@ -21,6 +23,10 @@ public class Usage {
 
     public Long getId() {
         return id;
+    }
+    
+    public String getName() {
+        return this.name;
     }
 
     @Override

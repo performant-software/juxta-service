@@ -106,6 +106,7 @@ public class UsageResource extends BaseResource {
             JsonObject obj = new JsonObject();
             obj.addProperty("type", u.getType().toString());
             obj.addProperty("id", u.getId().toString());
+            obj.addProperty("name", u.getName());
             jsonArray.add(obj);
         }
         Gson gson = new Gson();

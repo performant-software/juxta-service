@@ -139,18 +139,21 @@ public class WitnessDaoImpl extends JuxtaDaoImpl<Witness> implements WitnessDao 
     
     @Override
     public List<Usage> getUsage(Witness witness) {
-        // Find all of the comparison sets that include this witness
-        String setSql = "select distinct set_id from juxta_comparison_set_member where witness_id = ?";
+        String setSql = "select distinct set_id,name from juxta_comparison_set_member " +
+            "inner join juxta_comparison_set on juxta_comparison_set.id = set_id " +
+            "where witness_id =?";
         List<Usage> usage = this.jt.query(setSql, new RowMapper<Usage>(){
             @Override
             public Usage mapRow(ResultSet rs, int rowNum) throws SQLException {
-                return new Usage(Usage.Type.COMPARISON_SET, rs.getLong("set_id"));
+                return new Usage(Usage.Type.COMPARISON_SET, rs.getLong("set_id"), rs.getString("name"));
             }
             
         },witness.getId());
         
         // include the source (that we already know) that was used to generate this witness
-        usage.add( new Usage(Usage.Type.SOURCE, witness.getSourceId()));
+        String nmSql = "select name from juxta_source where id=?";
+        String srcName = this.jt.queryForObject(nmSql, String.class, witness.getSourceId());
+        usage.add( new Usage(Usage.Type.SOURCE, witness.getSourceId(), srcName));
         return usage;
     }
     

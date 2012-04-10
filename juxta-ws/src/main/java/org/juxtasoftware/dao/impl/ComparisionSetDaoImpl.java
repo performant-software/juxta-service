@@ -91,9 +91,11 @@ public class ComparisionSetDaoImpl extends JuxtaDaoImpl<ComparisonSet> implement
     public List<Usage> getUsage(ComparisonSet set) {
         Set<Witness> witnesses = getWitnesses(set);
         List<Usage> usage = new ArrayList<Usage>();
+        String nmSql = "select name from juxta_source where id=?";
         for ( Witness w : witnesses) {
-            usage.add( new Usage(Usage.Type.WITNESS, w.getId()) );
-            usage.add( new Usage(Usage.Type.SOURCE, w.getSourceId()) );
+            usage.add( new Usage(Usage.Type.WITNESS, w.getId(), w.getName()) );
+            String srcName = this.jt.queryForObject(nmSql, String.class, w.getSourceId());
+            usage.add( new Usage(Usage.Type.SOURCE, w.getSourceId(), srcName) );
         }
         return usage;
     }

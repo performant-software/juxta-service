@@ -199,11 +199,11 @@ public class SourceDaoImpl implements SourceDao, InitializingBean {
     @Override
     public List<Usage> getUsage(Source src) {
         // First pass, find all witnesses that have been created from this source
-        final String witnessSql = "select id from juxta_witness where source_id=?";
+        final String witnessSql = "select id,name from juxta_witness where source_id=?";
         List<Usage> usage =  this.jdbcTemplate.query(witnessSql, new RowMapper<Usage>() {
             @Override
             public Usage mapRow(ResultSet rs, int rowNum) throws SQLException {
-                return new Usage(Usage.Type.WITNESS, rs.getLong("id"));
+                return new Usage(Usage.Type.WITNESS, rs.getLong("id"), rs.getString("name"));
             }
             
         }, src.getId());
@@ -217,11 +217,13 @@ public class SourceDaoImpl implements SourceDao, InitializingBean {
                 }
                 ids.append( u.getId() );
             }
-            String setSql = "select distinct set_id from juxta_comparison_set_member where witness_id in ("+ids+")";
+            String setSql = "select distinct set_id,name from juxta_comparison_set_member " +
+            		"inner join juxta_comparison_set on juxta_comparison_set.id = set_id " +
+            		"where witness_id in ("+ids+")";
             usage.addAll( this.jdbcTemplate.query(setSql, new RowMapper<Usage>(){
                 @Override
                 public Usage mapRow(ResultSet rs, int rowNum) throws SQLException {
-                    return new Usage(Usage.Type.COMPARISON_SET, rs.getLong("set_id"));
+                    return new Usage(Usage.Type.COMPARISON_SET, rs.getLong("set_id"), rs.getString("name"));
                 }
                 
             }));

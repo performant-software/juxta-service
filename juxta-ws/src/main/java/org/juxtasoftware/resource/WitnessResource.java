@@ -144,7 +144,7 @@ public class WitnessResource extends BaseResource {
                 return toTextRepresentation("Witness "+this.witness.getId()+" does not exist in set "+this.setId);
             }
             this.setDao.deleteWitness(set, witness); 
-            usage.add( new Usage(Usage.Type.COMPARISON_SET, this.setId));
+            usage.add( new Usage(Usage.Type.COMPARISON_SET, set.getId(), set.getName()));
             
         } else {
             LOG.info("Delete witness "+this.witness.getId());
