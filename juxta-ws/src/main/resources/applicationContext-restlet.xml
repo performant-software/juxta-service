@@ -96,6 +96,7 @@
     <bean name="/juxta/{workspace}/witness/{witnessId}" class="org.juxtasoftware.resource.WitnessResource" scope="prototype" autowire="byName" />
     <bean name="/juxta/witness" class="org.juxtasoftware.resource.WitnessesResource" scope="prototype" autowire="byName" />
     <bean name="/juxta/witness/{witnessId}" class="org.juxtasoftware.resource.WitnessResource" scope="prototype" autowire="byName" />
+    <bean name="/juxta/{workspace}/set/{setId}/witness/{witnessId}" class="org.juxtasoftware.resource.WitnessResource" scope="prototype" autowire="byName" />
     
     <!-- filters -->
     <bean name="/juxta/{workspace}/filter" class="org.juxtasoftware.resource.QNameFiltersResource" scope="prototype" autowire="byName" />
