@@ -58,6 +58,7 @@ public class SetViewResource extends BaseResource {
     public Representation toHtml() throws IOException {
         LOG.info("Get "+this.mode+" view of comparison set "+this.set.getId());
         if ( this.set.isCollated() == false ) {
+            setStatus(Status.CLIENT_ERROR_NOT_FOUND);
             return toTextRepresentation("This set is not collated");
         }
         switch ( this.mode ) {
