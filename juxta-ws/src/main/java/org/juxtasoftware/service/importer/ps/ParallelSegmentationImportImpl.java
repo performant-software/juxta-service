@@ -219,8 +219,9 @@ public class ParallelSegmentationImportImpl implements ImportService<Source> {
      */
     private void parseSource(Source teiSource ) throws Exception {
         setStatusMsg("Parse "+set.getName());
-        Workspace ws = this.workspaceDao.getPublic();
-        Template template = this.templateDao.find(ws, Constants.PARALLEL_SEGMENTATION_TEMPLATE);
+        Workspace publicWs = this.workspaceDao.getPublic();
+        Template template = this.templateDao.find(publicWs, Constants.PARALLEL_SEGMENTATION_TEMPLATE);
+        Workspace ws = this.workspaceDao.find(this.set.getWorkspaceId());
         
         // run the src text thru the parser for multiple passes
         // once for each witness listed in the listWit tag.
@@ -262,6 +263,9 @@ public class ParallelSegmentationImportImpl implements ImportService<Source> {
      */
     Witness createWitness(Workspace ws, Source source, Template template, Text witnessTxt, WitnessInfo info ) throws Exception{
         Witness witness = null;
+        
+        // See if there are witnesses that existed and were
+        // attached to the target set
         for (Witness oldWit : this.preExistingWitnesses ) {
             if ( oldWit.getName().equals(info.getName())) {
                 witness = oldWit;
@@ -269,6 +273,12 @@ public class ParallelSegmentationImportImpl implements ImportService<Source> {
             }
         }
         
+        // still none, see if an identically named witness exists
+        if (witness == null ) {
+            witness = this.witnessDao.find(ws, info.getName());
+        }
+        
+        // Just create a new one if we still are null
         if ( witness == null ) {
             witness = new Witness();
             witness.setName( info.getName() );

@@ -100,6 +100,14 @@ public class WitnessDaoImpl extends JuxtaDaoImpl<Witness> implements WitnessDao 
     }
     
     @Override
+    public Witness find(Workspace ws, String title) {
+        StringBuilder sql = getSqlBuilder();
+        sql.append(" where w.workspace_id = ? and w.name = ?");
+        return DataAccessUtils.uniqueResult( this.jt.query(sql.toString(), 
+            new WitnessMapper(), ws.getId(), title));
+    }
+    
+    @Override
     public boolean exists( final Workspace ws, final String title) {
         final String sql = "select count(*) as cnt from " +this.tableName+ " where workspace_id=? and name=?";
         int cnt = this.jt.queryForInt(sql, ws.getId(), title);

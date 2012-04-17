@@ -63,6 +63,14 @@ public interface WitnessDao extends JuxtaDao<Witness> {
     boolean exists( final Workspace ws, final String title);
     
     /**
+     * Find a witness by workspace and title
+     * @param ws
+     * @param setName
+     * @return
+     */
+    Witness find( final Workspace ws, final String setName );
+    
+    /**
      * Get a list of usage information for this witness. The list
      * details all of the witnesses based upon this source, and
      * all of the sets using these witnesses
