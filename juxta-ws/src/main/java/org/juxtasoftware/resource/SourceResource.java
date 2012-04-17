@@ -407,6 +407,23 @@ public class SourceResource extends BaseResource implements ApplicationContextAw
                 }
             }
             
+            // if the set is still null, this could mean that all of the witnesses that were 
+            // created from this source are gone and we can't use them to make a connection to set. 
+            // As a fallback, see if a set named the same as the source exists.
+            if ( set == null ) {
+                set =  SourceResource.this.setDao.find(SourceResource.this.workspace, this.origSource.getName());
+            }
+            
+            // End of the line.. if we still have nothing, the all witness AND prior set
+            // have been deleted. Re-create the set.
+            if ( set == null ) {
+                set = new ComparisonSet();
+                set.setName(this.origSource.getName());
+                set.setWorkspaceId( SourceResource.this.workspace.getId() );
+                Long id  = SourceResource.this.setDao.create(set);
+                set.setId(id);
+            }
+            
             // next, update the source with the new text content, then grab a NEW copy 
             // of the source that contains the updated text reference information
             SourceResource.this.sourceDao.update(this.origSource, newName, new InputStreamReader(srcInputStream));
