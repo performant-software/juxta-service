@@ -218,7 +218,7 @@ public class ComparisionSetDaoImpl extends JuxtaDaoImpl<ComparisonSet> implement
     @Override
     public List<ComparisonSet> list( final Workspace ws) {
         final String sql = "select id, name, status, workspace_id, created, updated from "
-            +this.tableName+" where workspace_id=? order by updated desc, created desc";
+            +this.tableName+" where workspace_id=? order by created desc";
         return this.jt.query(sql, SET_ROW_MAPPER, ws.getId());
     }
     

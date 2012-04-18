@@ -1,5 +1,6 @@
 package org.juxtasoftware.resource;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -65,6 +66,7 @@ public class ComparisonSetsResource extends BaseResource {
         // parse out the main set object from string
         Gson gson = new Gson();
         ComparisonSet set = gson.fromJson(jsonSet, ComparisonSet.class);
+        set.setCreated( new Date() );
         set.setWorkspaceId( this.workspace.getId() );
         
         // flag duplicates in the same workspace as an error
@@ -74,25 +76,24 @@ public class ComparisonSetsResource extends BaseResource {
                 this.workspace.getName());
         }
         
-        // create it!
+        // do the creation
         Long id = this.comparionSetDao.create(set);
         
-        // now parse the remaining elements into an array of 
-        // witness IDs
+        // If present, lookup each witnessID found and generate a list for this set
         JsonParser parser = new JsonParser();
         JsonObject jsonObj = parser.parse(jsonSet).getAsJsonObject();
-
-        // lookup each witnessID found and generate a list for this set
-        Set<Witness> witnesses = new HashSet<Witness>();
-        JsonArray ids = jsonObj.get("witnesses").getAsJsonArray();
-        for ( Iterator<JsonElement> itr = ids.iterator(); itr.hasNext(); ) {
-            Long witnessId = itr.next().getAsLong();
-            Witness witness = this.witnessDao.find( witnessId );
-            witnesses.add( witness );
-        } 
-        
-        // add all witnesses to the set
-        this.comparionSetDao.addWitnesses(set, witnesses);
+        if ( jsonObj.has("witnesses")) {
+            Set<Witness> witnesses = new HashSet<Witness>();
+            JsonArray ids = jsonObj.get("witnesses").getAsJsonArray();
+            for ( Iterator<JsonElement> itr = ids.iterator(); itr.hasNext(); ) {
+                Long witnessId = itr.next().getAsLong();
+                Witness witness = this.witnessDao.find( witnessId );
+                witnesses.add( witness );
+            } 
+            
+            // add all witnesses to the set
+            this.comparionSetDao.addWitnesses(set, witnesses);
+        }
         
         return toTextRepresentation(id.toString());
     }
