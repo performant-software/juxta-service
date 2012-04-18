@@ -302,7 +302,7 @@ a.juxta-button:active, .pressed  {
     visibility: hidden;
     position: fixed;
     width:200px;
-    height: auto;
+    height: 250px;
     text-align:center;
     z-index: 1000;
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
@@ -320,7 +320,7 @@ a.juxta-button:active, .pressed  {
 }
 .workspace-select {
     width: 95%;
-    height: auto;
+    height: 204px;
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     -mox-border-radius: 2px;
     -webkit-border-radius: 2px;
