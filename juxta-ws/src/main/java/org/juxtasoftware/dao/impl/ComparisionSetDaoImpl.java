@@ -11,6 +11,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -92,10 +93,16 @@ public class ComparisionSetDaoImpl extends JuxtaDaoImpl<ComparisonSet> implement
         Set<Witness> witnesses = getWitnesses(set);
         List<Usage> usage = new ArrayList<Usage>();
         String nmSql = "select name from juxta_source where id=?";
+        Set<Long> srcIds = new HashSet<Long>();
         for ( Witness w : witnesses) {
             usage.add( new Usage(Usage.Type.WITNESS, w.getId(), w.getName()) );
-            String srcName = this.jt.queryForObject(nmSql, String.class, w.getSourceId());
-            usage.add( new Usage(Usage.Type.SOURCE, w.getSourceId(), srcName) );
+            
+            // don't add multiple copies of the same source!
+            if ( srcIds.contains(w.getSourceId()) == false ) {
+                srcIds.add( w.getSourceId());
+                String srcName = this.jt.queryForObject(nmSql, String.class, w.getSourceId());
+                usage.add( new Usage(Usage.Type.SOURCE, w.getSourceId(), srcName) );
+            }
         }
         return usage;
     }
