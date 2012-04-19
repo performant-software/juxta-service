@@ -14,6 +14,7 @@ import org.restlet.data.Status;
 import org.restlet.representation.Representation;
 import org.restlet.resource.Delete;
 import org.restlet.resource.Get;
+import org.restlet.resource.Post;
 import org.restlet.resource.Put;
 import org.restlet.resource.ResourceException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,6 +44,7 @@ public class ComparisonSetResource extends BaseResource {
     @Autowired private WitnessDao witnessDao;
 
     private ComparisonSet set;
+    private boolean addWitnesses = false;
     
     @Override
     protected void doInit() throws ResourceException {
@@ -50,6 +52,11 @@ public class ComparisonSetResource extends BaseResource {
         Long id = Long.parseLong( (String)getRequest().getAttributes().get("id"));
         this.set = this.comparionSetDao.find(id);
         validateModel(this.set);
+        
+        String lastSeg  = getRequest().getResourceRef().getLastSegment().toUpperCase();
+        if (  lastSeg.equals("ADD")) {
+            addWitnesses = true;
+        }
     }
     
     @Get("html")
@@ -114,6 +121,42 @@ public class ComparisonSetResource extends BaseResource {
         this.comparionSetDao.deleteAllWitnesses(updateSet);
         this.comparionSetDao.addWitnesses(updateSet, witnesses);
         return toTextRepresentation( Long.toString(updateSet.getId()) );
+    }
+    
+    @Post("json")
+    public Representation addWitnesses( final String jsonWitnesses ) {
+        if ( this.addWitnesses == false ) {
+            setStatus(Status.CLIENT_ERROR_METHOD_NOT_ALLOWED);
+            return toTextRepresentation("set POST is not allowed");
+        }
+        
+        LOG.info("Add Witnesses to set "+this.set.getId()+": "+jsonWitnesses);
+        JsonParser parser = new JsonParser();
+        JsonArray jsonArray = parser.parse(jsonWitnesses).getAsJsonArray();
+        Set<Witness> currWits = this.comparionSetDao.getWitnesses(this.set);
+        Set<Witness> addWits = new HashSet<Witness>();
+        for ( Iterator<JsonElement>  itr = jsonArray.iterator(); itr.hasNext(); ) {
+            Long newWitId = itr.next().getAsLong();
+            for ( Witness w : currWits ) {
+                if (w.getId().equals(newWitId) ) {
+                    setStatus(Status.CLIENT_ERROR_CONFLICT);
+                    return toTextRepresentation("Witness "+newWitId+" already exists in set "+this.set.getId());
+                }
+            }
+            
+            // at this point, the witness ID does not exist. get the witnesss
+            Witness w = this.witnessDao.find(newWitId);
+            if ( w == null || w.getWorkspaceId().equals(this.workspace.getId()) == false ){
+                setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
+                return toTextRepresentation("Witness "+newWitId+" does not exist");
+            } 
+            addWits.add(w);
+        }
+        
+        this.comparionSetDao.addWitnesses(this.set, addWits);
+        
+        Integer added = addWits.size();
+        return toTextRepresentation( added.toString() );
     }
     
     @Delete

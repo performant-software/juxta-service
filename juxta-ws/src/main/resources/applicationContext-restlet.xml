@@ -107,8 +107,10 @@
     <!-- comparison set -->
     <bean name="/juxta/{workspace}/set" class="org.juxtasoftware.resource.ComparisonSetsResource" scope="prototype" autowire="byName" />
     <bean name="/juxta/{workspace}/set/{id}" class="org.juxtasoftware.resource.ComparisonSetResource" scope="prototype" autowire="byName" />
+    <bean name="/juxta/{workspace}/set/{id}/add" class="org.juxtasoftware.resource.ComparisonSetResource" scope="prototype" autowire="byName" />
     <bean name="/juxta/set" class="org.juxtasoftware.resource.ComparisonSetsResource" scope="prototype" autowire="byName" />
     <bean name="/juxta/set/{id}" class="org.juxtasoftware.resource.ComparisonSetResource" scope="prototype" autowire="byName" />
+    <bean name="/juxta/set/{id}/add" class="org.juxtasoftware.resource.ComparisonSetResource" scope="prototype" autowire="byName" />
     
     <!-- tokenizer -->
     <bean name="/juxta/{workspace}/set/{id}/tokenize" class="org.juxtasoftware.resource.TokenizerResource" scope="prototype" autowire="byName" />
