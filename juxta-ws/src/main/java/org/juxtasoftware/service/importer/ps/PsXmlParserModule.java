@@ -31,14 +31,14 @@ class PsXmlParserModule extends TextXMLParserModule {
             for (Name attrName : attributes.keySet()) {
                 final String attrLocalName = attrName.getLocalName();
                 if ("wit".equals(attrLocalName) || "lem".equals(attrLocalName) ) {
-
+                      
+                    // Ids are prefixed with # and separated by space.
+                    // Strip the # break up into tokens.
                     String idAttr = attributes.get(attrName).trim();
-                    
-                    // This id is prefixed with #. Multiple ids can be on
-                    // one line, separated by spaces.
+                    idAttr = idAttr.replaceAll("#", "");
                     String[] ids = idAttr.split(" ");
                     for ( int i=0; i<ids.length; i++) {
-                        String id = ids[i].substring(1).trim();
+                        String id = ids[i].trim();
                         if ( id.equals(this.tgtWitness.getId()) || 
                              id.equals(this.tgtWitness.getGroupId()) ) {
                             matchesTarget = true;

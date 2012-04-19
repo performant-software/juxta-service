@@ -2,6 +2,7 @@ package org.juxtasoftware.service.importer.ps;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
@@ -41,8 +42,17 @@ public class WitnessParser extends DefaultHandler {
     }
     
     public void parse( Reader teiReader ) throws ParserConfigurationException, SAXException, IOException {
-        SAXParser parser = parserFactory.newSAXParser();   
+        SAXParser parser = parserFactory.newSAXParser();  
         parser.parse( new InputSource(teiReader), this);
+    }
+    
+    @Override
+    public InputSource resolveEntity(String systemId, String publicId) throws IOException, SAXException {
+        if (publicId.contains(".dtd")) {
+            return new InputSource(new StringReader(""));
+        } else {
+            return null;
+        }
     }
     
     public List<WitnessInfo> getWitnesses() {
