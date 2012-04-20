@@ -134,6 +134,8 @@ public class ComparisionSetDaoImpl extends JuxtaDaoImpl<ComparisonSet> implement
     @Override
     public void addWitnesses( final ComparisonSet set, final Set<Witness> witnesses) {
         if ( witnesses.size() > 0 ) {
+            clearCollationData( set );
+            
             final long setId = set.getId();
             final List<SqlParameterSource> batch = new ArrayList<SqlParameterSource>(
                 witnesses.size());
