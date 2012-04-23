@@ -10,7 +10,7 @@
 
 
 <div id="files" class="files">
-    <div class="header">Comparison Set</div>
+    <div class="header">Witness List</div>
     <#list witnesses as witness>
         <#if witness.id == baseId>
             <div class="base set-file" title="${witness.name}">${witness.name}</div>

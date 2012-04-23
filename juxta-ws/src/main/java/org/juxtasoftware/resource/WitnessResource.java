@@ -99,6 +99,7 @@ public class WitnessResource extends BaseResource {
             JsonObject obj = new JsonObject();
             obj.addProperty("id", this.witness.getId());
             obj.addProperty("name", this.witness.getName());
+            obj.addProperty("sourceId", this.witness.getSourceId());
             obj.addProperty("content", reader.toString());
             Gson gson = new Gson();
             return toTextRepresentation(gson.toJson(obj));
