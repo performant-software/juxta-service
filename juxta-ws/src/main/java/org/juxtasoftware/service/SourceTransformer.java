@@ -288,6 +288,9 @@ public class SourceTransformer {
 
         @Override
         public boolean isLineElement(XMLEntity entity) {
+            if ( this.template.getName().equals("includeAll")) {
+                return true;
+            }
             return hasTemplateMatch( TagAction.Action.NEW_LINE, entity );
         }
 
