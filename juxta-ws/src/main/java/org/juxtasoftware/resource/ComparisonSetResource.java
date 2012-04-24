@@ -83,44 +83,29 @@ public class ComparisonSetResource extends BaseResource {
         return toJsonRepresentation(setJson.toString());
     }
     
+    /**
+    /* Accept json data to update the name of a comparison set.
+    /* format: { "name": "newName" }
+     */
     @Put("json")
-    public Representation updateComparisonSet(final String jsonSet ) {
-        LOG.info("Update set with "+jsonSet);
-        Gson gson = new Gson();
-        ComparisonSet updateSet = gson.fromJson(jsonSet, ComparisonSet.class);
+    public Representation rename(final String jsonStr ) {
+        JsonParser parser = new JsonParser();
+        JsonObject jsonObj =  parser.parse(jsonStr).getAsJsonObject();
+        String name = jsonObj.get("name").getAsString();
         
         // make sure name chages don't cause conflicts
-        if ( this.set.getName().equals(updateSet.getName()) == false ) {
-            if ( this.comparionSetDao.exists(this.workspace, updateSet.getName())) {
+        if ( this.set.getName().equals(name) == false ) {
+            if ( this.comparionSetDao.exists(this.workspace, name)) {
                 setStatus(Status.CLIENT_ERROR_CONFLICT);
-                return toTextRepresentation("Set "+updateSet.getName()+" already exists in workspace "
+                return toTextRepresentation("Set "+name+" already exists in workspace "
                     +this.workspace.getName());
             }
         }
         
         // update the set 
-        this.comparionSetDao.update( updateSet );
-        
-        // update witnesses in the set
-        JsonParser parser = new JsonParser();
-        JsonObject jsonObj = parser.parse(jsonSet).getAsJsonObject();      
-        Set<Witness> witnesses = new HashSet<Witness>();
-        JsonArray jsonWitnesses = jsonObj.get("witnesses").getAsJsonArray();
-        for ( Iterator<JsonElement> itr = jsonWitnesses.iterator(); itr.hasNext(); ) {
-            JsonElement witnessEle = itr.next();
-            Long witnessId;
-            if  ( witnessEle.isJsonObject() ) {
-                witnessId = ((JsonObject)witnessEle).get("id").getAsLong();
-            } else {
-                witnessId = witnessEle.getAsLong();
-            }
-            Witness witness = this.witnessDao.find( witnessId );
-            witnesses.add( witness );
-        }   
-        
-        this.comparionSetDao.deleteAllWitnesses(updateSet);
-        this.comparionSetDao.addWitnesses(updateSet, witnesses);
-        return toTextRepresentation( Long.toString(updateSet.getId()) );
+        this.set.setName( name );
+        this.comparionSetDao.update( this.set );
+        return toTextRepresentation( Long.toString(this.set.getId()) );
     }
     
     @Post("json")

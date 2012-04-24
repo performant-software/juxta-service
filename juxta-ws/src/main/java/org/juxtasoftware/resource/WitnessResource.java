@@ -134,11 +134,22 @@ public class WitnessResource extends BaseResource {
      * @param jsonStr
      */
     @Put("json")
-    public void rename( final String jsonStr ) {
+    public Representation rename( final String jsonStr ) {
         JsonParser parser = new JsonParser();
         JsonObject jsonObj =  parser.parse(jsonStr).getAsJsonObject();
         String name = jsonObj.get("name").getAsString();
+        
+        // make sure name chages don't cause conflicts
+        if ( this.witness.getName().equals(name) == false ) {
+            if ( this.witnessDao.exists(this.workspace,name)) {
+                setStatus(Status.CLIENT_ERROR_CONFLICT);
+                return toTextRepresentation("Set "+name+" already exists in workspace "
+                    +this.workspace.getName());
+            }
+        }
+        
         this.witnessDao.rename(this.witness, name);
+        return toTextRepresentation( this.witness.getId().toString());
     }
     
     /**
