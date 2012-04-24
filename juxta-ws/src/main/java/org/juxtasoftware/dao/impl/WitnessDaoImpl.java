@@ -44,6 +44,12 @@ public class WitnessDaoImpl extends JuxtaDaoImpl<Witness> implements WitnessDao 
     }
     
     @Override
+    public void rename(final Witness witness, final String newName) {
+        final String sql = "update "+this.tableName+" set name = ? where id = ?";
+        this.jt.update(sql, newName, witness.getId());
+    }
+    
+    @Override
     public void updateContent(final Witness witness, final Text newContent) {
         String sql = "update "+this.tableName+" set text_id=?, updated=? where id=?";
         this.jt.update(sql, 

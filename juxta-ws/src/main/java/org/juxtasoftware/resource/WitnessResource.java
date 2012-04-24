@@ -17,6 +17,7 @@ import org.restlet.data.Status;
 import org.restlet.representation.Representation;
 import org.restlet.resource.Delete;
 import org.restlet.resource.Get;
+import org.restlet.resource.Put;
 import org.restlet.resource.ResourceException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -25,6 +26,7 @@ import org.springframework.stereotype.Service;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 import eu.interedition.text.Range;
 
@@ -124,6 +126,19 @@ public class WitnessResource extends BaseResource {
             setStatus(Status.SERVER_ERROR_INTERNAL);
             return toTextRepresentation("Error retrieving witness: "+e.getMessage());
         }
+    }
+    
+    /**
+     * Accept json data to update the name of a witness.
+     * format: { "name": "newName" }
+     * @param jsonStr
+     */
+    @Put("json")
+    public void rename( final String jsonStr ) {
+        JsonParser parser = new JsonParser();
+        JsonObject jsonObj =  parser.parse(jsonStr).getAsJsonObject();
+        String name = jsonObj.get("name").getAsString();
+        this.witnessDao.rename(this.witness, name);
     }
     
     /**

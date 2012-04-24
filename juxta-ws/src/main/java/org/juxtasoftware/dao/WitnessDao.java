@@ -32,6 +32,13 @@ public interface WitnessDao extends JuxtaDao<Witness> {
     Set<Witness> find(final ComparisonSet set);
     
     /**
+     * Rename an existing witness
+     * @param witness
+     * @param newName
+     */
+    void rename(final Witness witness, final String newName );
+    
+    /**
      * Get a content reader for the witness
      * @param witness
      * @return
