@@ -51,7 +51,7 @@ public class JuxtaWS {
             parser.parse(is);
             Template template = parser.getTemplates().get(0);
             template.setWorkspaceId( publicWs.getId() );
-            template.setDefault(false);
+            template.setDefault(true);
             templateDao.create(template );
         }
         

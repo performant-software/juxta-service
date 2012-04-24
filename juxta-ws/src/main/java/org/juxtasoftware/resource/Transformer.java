@@ -4,13 +4,14 @@ import java.io.IOException;
 
 import javax.xml.stream.XMLStreamException;
 
-import org.juxtasoftware.dao.TemplateDao;
 import org.juxtasoftware.dao.RevisionDao;
 import org.juxtasoftware.dao.SourceDao;
+import org.juxtasoftware.dao.TemplateDao;
 import org.juxtasoftware.dao.WitnessDao;
-import org.juxtasoftware.model.Template;
 import org.juxtasoftware.model.RevisionSet;
 import org.juxtasoftware.model.Source;
+import org.juxtasoftware.model.Template;
+import org.juxtasoftware.model.Workspace;
 import org.juxtasoftware.service.SourceTransformer;
 import org.restlet.data.Status;
 import org.restlet.representation.Representation;
@@ -70,6 +71,7 @@ public class Transformer extends BaseResource {
 
         // if requested, get the parse template
         Template template = null;
+        Workspace pub = this.workspaceDao.getPublic();
         if ( json.has("template") ) {
             Long templateId = json.get("template").getAsLong();
             template = this.templateDao.find(templateId);
@@ -81,11 +83,16 @@ public class Transformer extends BaseResource {
             if ( srcDoc.getText().getType().equals(Text.Type.XML)) {
                 String rootEle = this.sourceDao.getRootElement(srcDoc);
                 template = this.templateDao.findDefault( this.workspace, rootEle );
+                
+                // still none, see if there is a PUBLIC template
+                if ( template == null ) {
+                    template = this.templateDao.findDefault(pub , rootEle);
+                }
             }
         }
         
         // validate template/workspace match
-        if ( template != null && this.workspace.getId().equals(template.getWorkspaceId()) == false) {
+        if ( template != null && this.workspace.getId().equals(template.getWorkspaceId()) == false && template.getWorkspaceId().equals(pub.getId())==false){
             setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
             return toTextRepresentation( "Template "+sourceId+
                 " does not exist in workspace "+this.workspace.getName());    
