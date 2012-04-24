@@ -43,8 +43,9 @@ public class ComparisonSetResource extends BaseResource {
     @Autowired private ComparisonSetDao comparionSetDao;
     @Autowired private WitnessDao witnessDao;
 
+    private enum PostAction {INVALID, ADD_WITNESSES, DELETE_WITNESSES};
     private ComparisonSet set;
-    private boolean addWitnesses = false;
+    private PostAction postAction = PostAction.INVALID;
     
     @Override
     protected void doInit() throws ResourceException {
@@ -55,7 +56,9 @@ public class ComparisonSetResource extends BaseResource {
         
         String lastSeg  = getRequest().getResourceRef().getLastSegment().toUpperCase();
         if (  lastSeg.equals("ADD")) {
-            addWitnesses = true;
+            this.postAction = PostAction.ADD_WITNESSES;
+        } else if (lastSeg.equals("DELETE")) {
+            this.postAction = PostAction.DELETE_WITNESSES;
         }
     }
     
@@ -109,13 +112,47 @@ public class ComparisonSetResource extends BaseResource {
     }
     
     @Post("json")
-    public Representation addWitnesses( final String jsonWitnesses ) {
-        if ( this.addWitnesses == false ) {
+    public Representation jsonPost( final String jsonWitnesses ) {
+        if ( this.postAction.equals(PostAction.INVALID) ) {
             setStatus(Status.CLIENT_ERROR_METHOD_NOT_ALLOWED);
             return toTextRepresentation("set POST is not allowed");
         }
         
-        LOG.info("Add Witnesses to set "+this.set.getId()+": "+jsonWitnesses);
+        if ( postAction.equals(PostAction.ADD_WITNESSES)) {
+            return addWitnesses( jsonWitnesses);
+        } else {
+            return deleteWitnesses( jsonWitnesses );
+        }
+    }
+    
+    private Representation deleteWitnesses(String jsonWitnesses) {
+        LOG.info("Delete Witnesses "+jsonWitnesses+" from set "+this.set.getId());
+        JsonParser parser = new JsonParser();
+        JsonArray jsonArray = parser.parse(jsonWitnesses).getAsJsonArray();
+        Set<Witness> currWits = this.comparionSetDao.getWitnesses(this.set);
+        for ( Iterator<JsonElement>  itr = jsonArray.iterator(); itr.hasNext(); ) {
+            Long witId = itr.next().getAsLong();
+            Witness delWitness = null;
+            for ( Witness w : currWits ) {
+                if ( w.getId().equals(witId)) {
+                    delWitness = w;
+                    break;
+                }
+            }
+            
+            if ( delWitness != null ) {
+                this.comparionSetDao.deleteWitness(this.set, delWitness) ;
+            } else {
+                setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
+                return toTextRepresentation("Witness "+witId+" does not exist in set "+this.set.getId());
+            }
+        }
+        Integer added = jsonArray.size();
+        return toTextRepresentation( added.toString() );
+    }
+
+    private Representation addWitnesses( final String jsonWitnesses ) {
+        LOG.info("Add Witnesses "+jsonWitnesses+" to set "+this.set.getId());
         JsonParser parser = new JsonParser();
         JsonArray jsonArray = parser.parse(jsonWitnesses).getAsJsonArray();
         Set<Witness> currWits = this.comparionSetDao.getWitnesses(this.set);
@@ -143,7 +180,7 @@ public class ComparisonSetResource extends BaseResource {
         Integer added = addWits.size();
         return toTextRepresentation( added.toString() );
     }
-    
+   
     @Delete
     public void deleteComparisonSet() {
         LOG.info("Delete set "+this.set.getId());

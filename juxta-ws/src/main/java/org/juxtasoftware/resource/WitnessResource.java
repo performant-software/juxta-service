@@ -1,7 +1,6 @@
 package org.juxtasoftware.resource;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,7 +40,6 @@ import eu.interedition.text.Range;
 public class WitnessResource extends BaseResource {
 
     private Witness witness = null;
-    private Long setId = null;
     private Range range = null;
     
     @Autowired private ComparisonSetDao setDao;
@@ -59,11 +57,6 @@ public class WitnessResource extends BaseResource {
         Long id = Long.parseLong( (String)getRequest().getAttributes().get("witnessId"));
         this.witness = this.witnessDao.find(id);
         
-        // it may contain a set if the user is referencing a witness via a set api
-        if ( getRequest().getAttributes().containsKey("setId")) {
-            this.setId = Long.parseLong( (String)getRequest().getAttributes().get("setId"));
-        }
-   
         // was a range set requested?
         if (getQuery().getValuesMap().containsKey("range") ) {
             String rangeInfo = getQuery().getValues("range");
@@ -157,37 +150,21 @@ public class WitnessResource extends BaseResource {
      */
     @Delete
     public Representation deleteWitness() {   
-        // Delete witness entirely, or just delete from a set?
-        List<Usage> usage = new ArrayList<Usage>();
-        if ( this.setId != null ) {
-            LOG.info("Delete witness "+this.witness.getId()+" from set "+this.setId);
-            ComparisonSet set = this.setDao.find(this.setId);
-            if ( set == null ) {
-                setStatus(Status.CLIENT_ERROR_NOT_FOUND);
-                return toTextRepresentation("Invalid set "+this.setId);
+        LOG.info("Delete witness "+this.witness.getId());
+        
+        // get a list of all uses of this witness.
+        // Mark sets as NOT collated, clear their collation cache and remove all alignments
+        List<Usage> usage = this.witnessDao.getUsage(this.witness);
+        for (Usage u : usage) {
+            if ( u.getType().equals(Usage.Type.COMPARISON_SET)) {
+                ComparisonSet set = this.setDao.find(u.getId());
+                this.setDao.clearCollationData(set);
             }
-            if ( this.setDao.isWitness(set, witness) == false ) {
-                setStatus(Status.CLIENT_ERROR_NOT_FOUND); 
-                return toTextRepresentation("Witness "+this.witness.getId()+" does not exist in set "+this.setId);
-            }
-            this.setDao.deleteWitness(set, witness); 
-            usage.add( new Usage(Usage.Type.COMPARISON_SET, set.getId(), set.getName()));
-            
-        } else {
-            LOG.info("Delete witness "+this.witness.getId());
-            
-            // get a list of all uses of this witness.
-            // Mark sets as NOT collated, clear their collation cache and remove all alignments
-            usage = this.witnessDao.getUsage(this.witness);
-            for (Usage u : usage) {
-                if ( u.getType().equals(Usage.Type.COMPARISON_SET)) {
-                    ComparisonSet set = this.setDao.find(u.getId());
-                    this.setDao.clearCollationData(set);
-                }
-            }
-            
-            this.witnessDao.delete( witness ); 
         }
+
+        // delete the witness (this will cascade delete 
+        // from all sets that were using it)
+        this.witnessDao.delete( witness ); 
         
         // return the json list of itmes that were affected
         Gson gson = new Gson();
