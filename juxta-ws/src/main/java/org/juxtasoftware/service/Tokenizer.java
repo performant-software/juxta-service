@@ -91,7 +91,6 @@ public class Tokenizer {
             public void read(Reader tokenText, long contentLength) throws IOException {
                 LOG.info("Tokenizing " + witness);
 
-                int numTokens = 0;
                 int offset = 0;
                 int start = -1;
                 boolean whitespaceRun = false;
@@ -101,7 +100,6 @@ public class Tokenizer {
                     if (read < 0) {
                         if (start != -1) {
                             createToken(text, start, offset);
-                            numTokens++;
                         }
                         break;
                     }
@@ -119,7 +117,6 @@ public class Tokenizer {
                             // a token containing the spaces
                             if (whitespaceRun) {
                                 createToken(text, start, offset);
-                                numTokens++;
                                 start = -1;
                                 whitespaceRun = false;
                             }
@@ -131,19 +128,26 @@ public class Tokenizer {
                         } else {
                             // Either whitespace or punctuation found. Notmally, this would end a
                             // token. Behavior is different if whitespace is not being ignored!
-                            // Simple case: punctuation - end and create a new token.
-                            // Harder case: non-filtered whitespace - if we are in the midst of a 
-                            // whitespace run DONT create a token, just keep accumulating the whitespace
-                            if (start != -1 && (isPunctuation(read) || filterWhitespace == false && whitespaceRun == false )) {
-                                createToken(text, start, offset);
-                                start = -1;
-                                
-                                // if whitespace ended the token and is not being ignored, start
-                                // a new token with the whitespace. This ensures that all whitespace
-                                // is included in the collation
-                                if (filterWhitespace == false && Character.isWhitespace(read) ) {
-                                    start = offset;
-                                    whitespaceRun = true;
+                            if ( filterWhitespace == false ) {
+                                // Simple case: punctuation - end and create a new token.
+                                // Harder case: whitespace - if we are in the midst of a 
+                                // whitespace run DONT create a token, just keep accumulating the whitespace
+                                if (start != -1 && (isPunctuation(read) || whitespaceRun == false )) {
+                                    createToken(text, start, offset);
+                                    start = -1;
+                                    
+                                    // if whitespace ended the token, start a new token with the 
+                                    // whitespace. This ensures that all whitespace is included in the collation
+                                    if ( Character.isWhitespace(read) ) {
+                                        start = offset;
+                                        whitespaceRun = true;
+                                    }
+                                }
+                            } else {
+                                // simple case, filtering whitespace
+                                if ( start != -1 ) {
+                                    createToken(text, start, offset);
+                                    start = -1;
                                 }
                             }
                         }
@@ -155,7 +159,6 @@ public class Tokenizer {
                 if (!tokens.isEmpty()) {
                     write();
                 }
-                LOG.trace(witness + " has " + numTokens + " token(s)");
             }
 
             private void createToken(Text text, int start, int end) {
