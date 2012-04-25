@@ -10,7 +10,7 @@ public final class FragmentFormatter {
     public static String format(final String srcFrag, Range origRange, Range contextRange, long maxLen) {
         
         // NOTES:
-        // There are cases (like huck fin example) where text like </image blag> is inline
+        // There are cases (like huck fin example) where text like </image blah> is inline
         // in the plain text witness. The fragment needs to be escaped so this shows,
         // but the tags for the change itself must NOT be escaped. So... stick in a 
         // odd char string (that wont be esscaped) to represent tag locations in original fragment, then escape it.
@@ -97,7 +97,7 @@ public final class FragmentFormatter {
         if ( firstTagPos > 0 ) {
             int startPos =  out.indexOf(' ');
             if ( startPos != -1) {
-                 out  =  out.substring(Math.min(startPos, firstTagPos)+1);
+                 out  =  out.substring(Math.min(startPos, firstTagPos));
             }
         }
         
