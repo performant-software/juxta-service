@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.io.output.FileWriterWithEncoding;
 import org.apache.commons.lang.StringEscapeUtils;
@@ -102,10 +103,11 @@ public class HeatmapView implements ApplicationContextAware {
         }
         
         // Get all witness (and changeIndex) info. Pick out the base
-        List<SetWitness> witnesses = getWitnessInfo( set, baseWitnessId );
-        if ( witnesses.size() < 2) {
+        Set<Witness> setWitnesses = this.setDao.getWitnesses(set);
+        if ( setWitnesses.size() < 2) {
             return this.parent.toTextRepresentation("This set contains less than two witnesess. Unable to view heatmap.");
         }
+        List<SetWitness> witnesses = getWitnessInfo( set, setWitnesses, baseWitnessId );
         Witness base = null;
         for ( SetWitness w : witnesses ) {
             if ( w.isBase() ) {
@@ -149,13 +151,13 @@ public class HeatmapView implements ApplicationContextAware {
         return this.parent.toHtmlRepresentation("heatmap.ftl", map);
     }
     
-    private List<SetWitness> getWitnessInfo( ComparisonSet set, Long baseWitnessId ) {
+    private List<SetWitness> getWitnessInfo( ComparisonSet set, Set<Witness> setWitnesses, Long baseWitnessId ) {
         List<SetWitness> out = new ArrayList<SetWitness>();
-        List<Witness> witnesses = new ArrayList<Witness>(this.setDao.getWitnesses(set));
-        if ( witnesses.size() < 2 ) {
-            return out;
-        }
+        List<Witness> witnesses = new ArrayList<Witness>(setWitnesses);
         Map<Long, Long> witnessDiffLen = new HashMap<Long, Long>();
+        for ( Witness w : witnesses ) {
+            witnessDiffLen.put(w.getId(), 0L);
+        }
         
         // setup base witnessID; if unspecified just pick
         // first witness as the base
@@ -331,6 +333,12 @@ public class HeatmapView implements ApplicationContextAware {
         AlignmentConstraint constraints = new AlignmentConstraint(set, base.getId());
         constraints.setFilter(changesFilter);
         List<Alignment> diffList = this.alignmentDao.list(constraints);
+        
+        // if there are no differences, there is nothing to do.Bail early
+        if ( diffList.size() == 0) {
+            return new ArrayList<Change>();
+        }
+        
         Collections.sort(diffList, new Comparator<Alignment>() {
             @Override
             public int compare(Alignment a, Alignment b) {
