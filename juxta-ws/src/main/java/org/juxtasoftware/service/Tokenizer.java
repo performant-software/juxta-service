@@ -42,7 +42,8 @@ public class Tokenizer {
     @Autowired private AnnotationRepository annotationRepository;
     @Autowired private TextRepository textRepository;
     @Autowired private ComparisonSetDao comparisonSetDao;
-    private boolean ignorePunctuation = true;
+    private boolean filterPunctuation = true;
+    private boolean filterWhitespace = true;
 
     /**
      * Break up the text of the all witnesses in the comparison set on whitespace boundaries. 
@@ -62,7 +63,8 @@ public class Tokenizer {
         // look into the cfg and see if we should be ignoring punctuaion. If so,
         // set the flag so we can tokenize on ws and punctuation. this keeps
         // results consistent with the desktop juxta.
-        this.ignorePunctuation = config.isFilterPunctuation(); 
+        this.filterPunctuation = config.isFilterPunctuation(); 
+        this.filterWhitespace = config.isFilterWhitespace();
         
         taskStatus.setNote("Tokenizing " + comparisonSet);
         
@@ -87,12 +89,12 @@ public class Tokenizer {
             private List<Annotation> tokens = Lists.newArrayListWithExpectedSize(BATCH_SIZE);
 
             public void read(Reader tokenText, long contentLength) throws IOException {
-                LOG.trace("Tokenizing " + witness);
+                LOG.info("Tokenizing " + witness);
 
                 int numTokens = 0;
                 int offset = 0;
                 int start = -1;
-                StringBuffer test = new StringBuffer();
+                boolean whitespaceRun = false;
 
                 do {
                     final int read = tokenText.read();
@@ -106,20 +108,43 @@ public class Tokenizer {
 
                     // make sure we are in bounds for the requested text fragment
                     // -- or no fragment was specified at all
-                    if ( fragment.equals(Range.NULL) ||
-                         (offset >= fragment.getStart() && offset < fragment.getEnd()) ) {
+                    if ( fragment.equals(Range.NULL) || (offset >= fragment.getStart() && offset < fragment.getEnd()) ) {
                         
-                        if ( isTokenChar(read) ) {
-                            if ( start == -1 ) {
-                                start = offset;
-                            }
-                            test.append( (char)read );
-                        } else {
-                            if ( start != -1 ) {
+                        // track start of whitespace run if whitespace is not ignored
+                        if (filterWhitespace == false && Character.isWhitespace(read) && start == -1) {
+                            start = offset;
+                            whitespaceRun = true;
+                        } else if (isTokenChar(read)) {
+                            // end whitespace runs on non whitespace chars. Create
+                            // a token containing the spaces
+                            if (whitespaceRun) {
                                 createToken(text, start, offset);
                                 numTokens++;
-                                test = new StringBuffer();
                                 start = -1;
+                                whitespaceRun = false;
+                            }
+                            
+                            // start a new token
+                            if (start == -1) {
+                                start = offset;
+                            }
+                        } else {
+                            // Either whitespace or punctuation found. Notmally, this would end a
+                            // token. Behavior is different if whitespace is not being ignored!
+                            // Simple case: punctuation - end and create a new token.
+                            // Harder case: non-filtered whitespace - if we are in the midst of a 
+                            // whitespace run DONT create a token, just keep accumulating the whitespace
+                            if (start != -1 && (isPunctuation(read) || filterWhitespace == false && whitespaceRun == false )) {
+                                createToken(text, start, offset);
+                                start = -1;
+                                
+                                // if whitespace ended the token and is not being ignored, start
+                                // a new token with the whitespace. This ensures that all whitespace
+                                // is included in the collation
+                                if (filterWhitespace == false && Character.isWhitespace(read) ) {
+                                    start = offset;
+                                    whitespaceRun = true;
+                                }
                             }
                         }
                     }
@@ -147,12 +172,18 @@ public class Tokenizer {
         });
     }
     
+    private boolean isPunctuation( int c ) {
+        return ( Character.isWhitespace(c) == false &&
+                 Character.isLetter(c) == false &&
+                 Character.isDigit(c) == false );
+    }
+    
     private boolean isTokenChar(int c) {
         if (Character.isWhitespace(c)) {
             return false;
         }
         
-        if ( this.ignorePunctuation ) {
+        if ( this.filterPunctuation ) {
             if (Character.isLetter(c) || Character.isDigit(c)) {
                 return true;
             }
