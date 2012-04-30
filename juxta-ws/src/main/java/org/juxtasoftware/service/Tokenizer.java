@@ -13,6 +13,7 @@ import java.util.Set;
 import eu.interedition.text.TextConsumer;
 import org.juxtasoftware.dao.ComparisonSetDao;
 import org.juxtasoftware.model.CollatorConfig;
+import org.juxtasoftware.model.CollatorConfig.HyphenationFilter;
 import org.juxtasoftware.model.ComparisonSet;
 import org.juxtasoftware.model.Witness;
 import org.juxtasoftware.util.BackgroundTaskSegment;
@@ -42,8 +43,6 @@ public class Tokenizer {
     @Autowired private AnnotationRepository annotationRepository;
     @Autowired private TextRepository textRepository;
     @Autowired private ComparisonSetDao comparisonSetDao;
-    private boolean filterPunctuation = true;
-    private boolean filterWhitespace = true;
 
     /**
      * Break up the text of the all witnesses in the comparison set on whitespace boundaries. 
@@ -59,139 +58,220 @@ public class Tokenizer {
     public void tokenize(ComparisonSet comparisonSet, CollatorConfig config, BackgroundTaskStatus taskStatus) throws IOException {
         final Set<Witness> witnesses = comparisonSetDao.getWitnesses(comparisonSet);
         final BackgroundTaskSegment ts = taskStatus.add(1, new BackgroundTaskSegment(witnesses.size()));
-        
-        // look into the cfg and see if we should be ignoring punctuaion. If so,
-        // set the flag so we can tokenize on ws and punctuation. this keeps
-        // results consistent with the desktop juxta.
-        this.filterPunctuation = config.isFilterPunctuation(); 
-        this.filterWhitespace = config.isFilterWhitespace();
-        
+                
         taskStatus.setNote("Tokenizing " + comparisonSet);
-        
         for (Witness witness : witnesses) {
             taskStatus.setNote("Tokenizing '" + witness.getName() + "'");
-            
-            tokenize(witness);
-            
+            LOG.info("Tokenizing " + witness.getName());
+            tokenize(config, witness);
             ts.incrementValue();            
         }
     }
     
-    private void tokenize(final Witness witness) throws IOException {
+    private void tokenize(final CollatorConfig config, final Witness witness) throws IOException {
         // purge any prior tokens for this witness
         final Text text = witness.getText();
         Preconditions.checkNotNull(text);
         this.annotationRepository.delete(and(text(text), annotationName(TOKEN_NAME)));
+        
+        // do the tokenization
+        TokenizingConsumer tc = new TokenizingConsumer(config, witness);
+        this.textRepository.read(text, tc);
+    }
+    
+    
+    /**
+     * Text consumer that splits the text stream into tokens based
+     * on configuration settings
+     * 
+     * @author loufoster
+     *
+     */
+    private class TokenizingConsumer implements TextConsumer {
+        private List<Annotation> tokens = Lists.newArrayListWithExpectedSize(BATCH_SIZE);
+        private final Range fragment;
+        private final Text text;
+        private final boolean filterLinebreak;
+        private final boolean filterHyphens;
+        private final boolean filterWhitespace;
+        private final boolean filterPunctuation;
+        
+        public TokenizingConsumer(CollatorConfig cfg, Witness w) {
+            this.filterPunctuation = cfg.isFilterPunctuation();
+            this.filterWhitespace = cfg.isFilterWhitespace();
+            this.filterLinebreak = cfg.getHyphenationFilter().equals(HyphenationFilter.FILTER_LINEBREAK);
+            this.filterHyphens = cfg.getHyphenationFilter().equals(HyphenationFilter.FILTER_ALL);
+            this.fragment = w.getFragment();
+            this.text = w.getText();
+        }
+        
+        private boolean isPunctuation( int c ) {
+            return ( Character.isWhitespace(c) == false &&
+                     Character.isLetter(c) == false &&
+                     Character.isDigit(c) == false );
+        }
+        
+        private boolean isTokenChar(int c) {
+            if ( Character.isWhitespace(c) ) {
+                return false;
+            }
+            
+            if ( this.filterPunctuation ) {
+                if (Character.isLetter(c) || Character.isDigit(c)) {
+                    return true;
+                }
+                return false;
+            } 
+            return true;
+        }
+        
+        public void read(Reader tokenText, long contentLength) throws IOException {
+            
+            int offset = 0;
+            int start = -1;
+            boolean foundLineFeed = false;
+            boolean foundHyphen = false; 
+            boolean inHyphenatedWord = false;
+            boolean whitespaceRun = false;
 
-        final Range fragment = witness.getFragment();
-        this.textRepository.read(text, new TextConsumer() {
-
-            private List<Annotation> tokens = Lists.newArrayListWithExpectedSize(BATCH_SIZE);
-
-            public void read(Reader tokenText, long contentLength) throws IOException {
-                LOG.info("Tokenizing " + witness);
-
-                int offset = 0;
-                int start = -1;
-                boolean whitespaceRun = false;
-
-                do {
-                    final int read = tokenText.read();
-                    if (read < 0) {
-                        if (start != -1) {
-                            createToken(text, start, offset);
-                        }
-                        break;
-                    }
-
-                    // make sure we are in bounds for the requested text fragment
-                    // -- or no fragment was specified at all
-                    if ( fragment.equals(Range.NULL) || (offset >= fragment.getStart() && offset < fragment.getEnd()) ) {
-                        
-                        // track start of whitespace run if whitespace is not ignored
-                        if (filterWhitespace == false && Character.isWhitespace(read) && start == -1) {
-                            start = offset;
-                            whitespaceRun = true;
-                        } else if (isTokenChar(read)) {
-                            // end whitespace runs on non whitespace chars. Create
-                            // a token containing the spaces
-                            if (whitespaceRun) {
-                                createToken(text, start, offset);
-                                start = -1;
-                                whitespaceRun = false;
-                            }
-                            
-                            // start a new token
-                            if (start == -1) {
-                                start = offset;
-                            }
+            do {
+                final int read = tokenText.read();
+                if (read < 0) {
+                    if (start != -1) {
+                        // catch case when last line of the source contains
+                        // only the 2nd part of a word break or hyphenated word
+                        if ( (this.filterLinebreak||this.filterHyphens) && inHyphenatedWord ) {
+                            joinLastToken(offset);
                         } else {
-                            // Either whitespace or punctuation found. Notmally, this would end a
-                            // token. Behavior is different if whitespace is not being ignored!
-                            if ( filterWhitespace == false ) {
-                                // Simple case: punctuation - end and create a new token.
-                                // Harder case: whitespace - if we are in the midst of a 
-                                // whitespace run DONT create a token, just keep accumulating the whitespace
-                                if (start != -1 && (isPunctuation(read) || whitespaceRun == false )) {
-                                    createToken(text, start, offset);
-                                    start = -1;
-                                    
-                                    // if whitespace ended the token, start a new token with the 
-                                    // whitespace. This ensures that all whitespace is included in the collation
+                            createToken( start, offset, false);
+                        }
+                    }
+                    break;
+                }
+
+                // make sure we are in bounds for the requested text fragment
+                if ( this.fragment.equals(Range.NULL) || (offset >= this.fragment.getStart() && offset < this.fragment.getEnd()) ) {
+                    
+                    // track start of whitespace run if whitespace is not ignored
+                    if (this.filterWhitespace == false && Character.isWhitespace(read) && start == -1) {
+                        start = offset;
+                        whitespaceRun = true;
+                    } else if (isTokenChar(read)) {
+                        // end whitespace runs on non whitespace chars. Create
+                        // a token containing the spaces
+                        if (whitespaceRun) {
+                            createToken( start, offset, false);
+                            start = -1;
+                            whitespaceRun = false;
+                        }
+                        
+                        // If this is a non-whitespace char after a dash where
+                        // only a space and a linefeed have been found, this token
+                        // is considered to be the 2nd part of a word break. Promote the flags.
+                        // Alternatively, if mode is filter ALL hyphenation and a hyphen has been found
+                        // promote the flags
+                        if ( foundHyphen && ( (foundLineFeed && this.filterLinebreak) || this.filterHyphens) ) {
+                            foundHyphen = false;
+                            foundLineFeed = false;
+                            inHyphenatedWord = true;
+                        } else {
+                            foundHyphen = false;
+                            foundLineFeed = false;
+                        }
+                        
+                        // start a new token
+                        if (start == -1) {
+                            start = offset;
+                        }
+                        
+                    } else {
+                        if ( this.filterLinebreak == true || this.filterHyphens ) {
+                            if ( inHyphenatedWord == false ) {
+                                if ( foundHyphen == false ) {
+                                    // Note the presence of a hyphen. Actual behavior will
+                                    // be determined as additional data is read
+                                    foundHyphen = ( read == '-' );
+                                } else {
+                                    // Whitespace is ignored after a hyphen is found in both hyphen-filter settings
                                     if ( Character.isWhitespace(read) ) {
-                                        start = offset;
-                                        whitespaceRun = true;
+                                        // In filter linebreak mode, a hyphen may be followed by whitespace
+                                        // and MUST have a linefeed or carriage return
+                                        if ( this.filterLinebreak == true ) {
+                                            if (read == 13 || read == 10 ) {
+                                                foundLineFeed = true;
+                                            }
+                                        }
+                                    } else {
+                                        foundHyphen = false;
+                                        foundLineFeed = false;
                                     }
                                 }
                             } else {
-                                // simple case, filtering whitespace
-                                if ( start != -1 ) {
-                                    createToken(text, start, offset);
-                                    start = -1;
+                                // this is the end of a token that has been identified as
+                                // the second half of a hyphenated word. Join it with the last
+                                // created token and continue on - without executing the rest
+                                // of the loop below
+                                inHyphenatedWord = false;
+                                joinLastToken(offset);
+                                start = -1;
+                                offset++;
+                                continue;
+                            }
+         
+                        }
+                        
+                        // Either whitespace or punctuation found. Normally, this would end a
+                        // token. Behavior is different if whitespace is not being ignored!
+                        if ( this.filterWhitespace == false ) {
+                            // Simple case: punctuation - end and create a new token.
+                            // Harder case: whitespace - if we are in the midst of a 
+                            // whitespace run DONT create a token, just keep accumulating the whitespace
+                            if (start != -1 && (isPunctuation(read) || whitespaceRun == false )) {
+                                createToken( start, offset, foundHyphen );
+                                start = -1;
+                                
+                                // if whitespace ended the token, start a new token with the 
+                                // whitespace. This ensures that all whitespace is included in the collation
+                                if ( Character.isWhitespace(read) ) {
+                                    start = offset;
+                                    whitespaceRun = true;
                                 }
+                            }
+                        } else {
+                            // simple case, filtering whitespace
+                            if ( start != -1 ) {
+                                createToken( start, offset, foundHyphen );
+                                start = -1;
                             }
                         }
                     }
-
-                    offset++;
-                } while (true);
-
-                if (!tokens.isEmpty()) {
-                    write();
                 }
-            }
 
-            private void createToken(Text text, int start, int end) {
-                tokens.add(new SimpleAnnotation(text, TOKEN_NAME, new Range(start, end), null));
-                if ((tokens.size() % BATCH_SIZE) == 0) {
-                    write();
-                }
-            }
+                offset++;
+            } while (true);
 
-            private void write() {
-                annotationRepository.create(tokens);
-                tokens.clear();
+            if (!this.tokens.isEmpty()) {
+                write();
             }
-        });
-    }
-    
-    private boolean isPunctuation( int c ) {
-        return ( Character.isWhitespace(c) == false &&
-                 Character.isLetter(c) == false &&
-                 Character.isDigit(c) == false );
-    }
-    
-    private boolean isTokenChar(int c) {
-        if (Character.isWhitespace(c)) {
-            return false;
         }
-        
-        if ( this.filterPunctuation ) {
-            if (Character.isLetter(c) || Character.isDigit(c)) {
-                return true;
+
+        private void joinLastToken(int end) {
+            Annotation last = this.tokens.remove( this.tokens.size()-1 );
+            this.tokens.add(  new SimpleAnnotation(last.getText(), TOKEN_NAME, new Range(last.getRange().getStart(), end), null) ); 
+        }
+
+        private void createToken(int start, int end, boolean possbleWordbreak) {
+            this.tokens.add(  new SimpleAnnotation(this.text, TOKEN_NAME, new Range(start, end), null) );
+            if ( possbleWordbreak == false ) {
+                if ((this.tokens.size() % BATCH_SIZE) == 0) {
+                    write();
+                }
             }
-            return false;
-        } 
-        return true;
+        }
+
+        private void write() {
+            Tokenizer.this.annotationRepository.create(this.tokens);
+            this.tokens.clear();
+        }
     }
 }

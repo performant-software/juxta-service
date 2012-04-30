@@ -17,6 +17,7 @@ import java.util.regex.Pattern;
 import org.juxtasoftware.diff.Token;
 import org.juxtasoftware.diff.TokenSource;
 import org.juxtasoftware.diff.impl.SimpleToken;
+import org.juxtasoftware.model.CollatorConfig.HyphenationFilter;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
@@ -68,6 +69,23 @@ public class RepositoryTokenSource implements TokenSource {
         final List<Token> tokens = Lists.newArrayListWithExpectedSize(tokenTexts.size());
         for (Map.Entry<Range, String> tokenEntry : tokenTexts.entrySet()) {
             String tokenText = tokenEntry.getValue();
+            
+            if (config.getHyphenationFilter().equals(HyphenationFilter.FILTER_ALL)  ) {
+                if ( tokenText.contains("-")) {
+                    String[] bits = tokenText.split("-");
+                    if (bits.length == 2) {
+                        tokenText = bits[0].trim() + bits[1].trim();
+                    }
+                }
+            } else if (config.getHyphenationFilter().equals(HyphenationFilter.FILTER_LINEBREAK)  ) {
+                if ( tokenText.contains("-") && tokenText.contains("\n")) {
+                    String[] bits = tokenText.split("-");
+                    if (bits.length == 2) {
+                        tokenText = bits[0].trim() + bits[1].trim();
+                    }
+                }   
+            }
+            
             if (config.isFilterWhitespace()) {
                 tokenText = tokenText.trim();
             }

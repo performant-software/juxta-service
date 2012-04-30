@@ -2,10 +2,13 @@ package org.juxtasoftware.model;
 
 
 public class CollatorConfig {
+    public enum HyphenationFilter {INCLUDE_ALL, FILTER_LINEBREAK, FILTER_ALL}
+    
     private Long id;
     private boolean filterWhitespace = true;
     private boolean filterPunctuation = true;
     private boolean filterCase = true;
+    private HyphenationFilter hyphenationFilter = HyphenationFilter.INCLUDE_ALL;
 
     public CollatorConfig() {
         this(true,true,true);
@@ -48,7 +51,15 @@ public class CollatorConfig {
     public void setFilterCase(boolean filterCase) {
         this.filterCase = filterCase;
     }
-    
+
+    public HyphenationFilter getHyphenationFilter() {
+        return hyphenationFilter;
+    }
+
+    public void setHyphenationFilter(HyphenationFilter hyphenationFilter) {
+        this.hyphenationFilter = hyphenationFilter;
+    }
+
     @Override
     public int hashCode() {
         final int prime = 31;

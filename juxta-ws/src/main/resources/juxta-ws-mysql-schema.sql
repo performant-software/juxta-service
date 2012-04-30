@@ -133,6 +133,7 @@ CREATE TABLE IF NOT EXISTS juxta_collator_config (
     filter_whitespace BOOL NOT NULL DEFAULT 1,
     filter_punctuation BOOL NOT NULL DEFAULT 1,
     filter_case BOOL NOT NULL DEFAULT 1,
+    hyphenation_filter enum('INCLUDE_ALL','FILTER_LINEBREAK','FILTER_ALL') not null default 'INCLUDE_ALL',
     PRIMARY KEY (id),
     FOREIGN KEY (set_id) REFERENCES juxta_comparison_set (id)  ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;

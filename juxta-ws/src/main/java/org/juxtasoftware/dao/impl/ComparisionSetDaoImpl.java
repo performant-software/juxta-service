@@ -19,6 +19,7 @@ import org.juxtasoftware.dao.AlignmentDao;
 import org.juxtasoftware.dao.ComparisonSetDao;
 import org.juxtasoftware.dao.WitnessDao;
 import org.juxtasoftware.model.CollatorConfig;
+import org.juxtasoftware.model.CollatorConfig.HyphenationFilter;
 import org.juxtasoftware.model.ComparisonSet;
 import org.juxtasoftware.model.Usage;
 import org.juxtasoftware.model.Witness;
@@ -243,6 +244,7 @@ public class ComparisionSetDaoImpl extends JuxtaDaoImpl<ComparisonSet> implement
         ps.addValue("filter_case", cfg.isFilterCase() );
         ps.addValue("filter_punctuation", cfg.isFilterPunctuation() );
         ps.addValue("filter_whitespace", cfg.isFilterWhitespace() );
+        ps.addValue("hyphenation_filter", cfg.getHyphenationFilter().toString() );
         ps.addValue("set_id", setId);
         this.configInsert.execute( ps );
     }
@@ -279,6 +281,7 @@ public class ComparisionSetDaoImpl extends JuxtaDaoImpl<ComparisonSet> implement
             cfg.setFilterCase( rs.getBoolean("filter_case") );
             cfg.setFilterPunctuation( rs.getBoolean("filter_punctuation") );
             cfg.setFilterWhitespace( rs.getBoolean("filter_whitespace") );
+            cfg.setHyphenationFilter( HyphenationFilter.valueOf(rs.getString("hyphenation_filter")) );
             return cfg;
         }
     }

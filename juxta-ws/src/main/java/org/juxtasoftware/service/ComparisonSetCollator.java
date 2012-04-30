@@ -24,6 +24,7 @@ import org.juxtasoftware.diff.TranspositionSource;
 import org.juxtasoftware.diff.impl.SimpleTokenComparator;
 import org.juxtasoftware.model.Alignment;
 import org.juxtasoftware.model.Alignment.AlignedAnnotation;
+import org.juxtasoftware.model.CollatorConfig.HyphenationFilter;
 import org.juxtasoftware.model.AlignmentConstraint;
 import org.juxtasoftware.model.CollatorConfig;
 import org.juxtasoftware.model.ComparisonSet;
@@ -144,47 +145,12 @@ public class ComparisonSetCollator extends DiffCollator {
         public boolean isFilterCase() {
             return config.isFilterCase();
         }
+        
+        @Override
+        public HyphenationFilter getHyphenationFilter() {
+            return this.config.getHyphenationFilter();
+        }
 
-//        @Override
-//        public Set<Set<Annotation>> transpositionsIn(Comparison collation) throws IOException {
-//            final Operator baseCriteria = and(text(collation.getBase().getText()));
-//            if (!collation.getBaseRanges().isEmpty()) {
-//                final Operator baseRangeCriterion = or();
-//                for (Range baseRange : collation.getBaseRanges()) {
-//                    baseRangeCriterion.add(rangeOverlap(baseRange));
-//                }
-//                baseCriteria.add(baseRangeCriterion);
-//            }
-//
-//            final Set<Set<Annotation>> transpositions = Sets.newHashSet();
-//            final Text witnessText = collation.getWitness().getText();
-//            for (Map.Entry<AnnotationLink, Set<Annotation>> link : annotationLinkRepository.find(and(linkName(TRANSPOSITION_NAME), baseCriteria)).entrySet()) {
-//                boolean transpositionAdded = false;
-//                for (Annotation a : link.getValue()) {
-//                    if (!witnessText.equals(a.getText())) {
-//                        continue;
-//                    }
-//                    if (collation.getWitnessRanges().isEmpty()) {
-//                        transpositions.add(link.getValue());
-//                        transpositionAdded = true;
-//                        break;
-//                    }
-//                    for (Range witnessRange : collation.getWitnessRanges()) {
-//                        if (witnessRange.hasOverlapWith(a.getRange())) {
-//                            transpositions.add(link.getValue());
-//                            transpositionAdded = true;
-//                            break;
-//                        }
-//                    }
-//                    if (transpositionAdded) {
-//                        break;
-//                    }
-//                }
-//            }
-//            return transpositions;
-//        }
-//    }
-//    
         @Override
         public Set<Set<Annotation>> transpositionsIn(Comparison collation) throws IOException {
             
