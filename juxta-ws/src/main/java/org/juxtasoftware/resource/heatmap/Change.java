@@ -76,6 +76,14 @@ public final class Change implements Comparable<Change> {
         }
         return null;
     }
+    
+    public boolean hasMatchingGroup(Change prior) {
+        if ( getGroup() == 0 || prior.getGroup() == 0 ) {
+            return false;
+        } else {
+            return (getGroup() == prior.getGroup());
+        }
+    } 
 
     public void mergeChange( Change mergeFrom ) {
 
@@ -206,5 +214,5 @@ public final class Change implements Comparable<Change> {
         public String toString() {
             return "WitnessID: "+this.witness.getId()+" - "+this.fragment;
         }
-    }    
+    }   
 }

@@ -439,7 +439,7 @@ public class HeatmapView implements ApplicationContextAware {
                 //  * diff must be between same witnesses
                 //  * diffs must have same frequence
                 //  * must be from the same alignment group   
-                if ( prior.getGroup() == change.getGroup() && change.hasMatchingWitnesses(prior) && 
+                if ( change.hasMatchingGroup( prior ) && change.hasMatchingWitnesses(prior) && 
                      change.getDifferenceFrequency() == prior.getDifferenceFrequency()) {
                     prior.mergeChange(change);
                     itr.remove();

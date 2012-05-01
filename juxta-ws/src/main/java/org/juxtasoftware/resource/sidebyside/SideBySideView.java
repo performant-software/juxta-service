@@ -248,7 +248,7 @@ public class SideBySideView implements FileDirectiveListener, ApplicationContext
             for ( Iterator<Change> itr =  info.getChanges().iterator(); itr.hasNext();  ) {
                 Change change = itr.next();
                 if (prior != null) {
-                    if (prior.getGroup() == change.getGroup()) {
+                    if ( change.hasMatchingGroup( prior) ) {
                         prior.merge(change);
                         itr.remove();
                         continue;
@@ -457,6 +457,14 @@ public class SideBySideView implements FileDirectiveListener, ApplicationContext
             }
         }
         
+        public boolean hasMatchingGroup(Change prior) {
+            if ( getGroup() == 0 || prior.getGroup() == 0 ) {
+                return false;
+            } else {
+                return (getGroup() == prior.getGroup());
+            }
+        }
+
         public int getGroup() {
             return this.group;
         }
