@@ -49,8 +49,8 @@ public class ChangeInjector implements StreamInjector<Change> {
             return false;
         }
         
-        if ( this.currChange.getRange().getStart() == pos && this.tagStarted == false ||
-             this.currChange.getRange().getEnd() == pos && this.tagStarted == true ) {
+        if ( this.currChange.getRange().getStart() <= pos && this.tagStarted == false ||
+             this.currChange.getRange().getEnd() <= pos && this.tagStarted == true ) {
             return true;
         }
         return false;
@@ -59,7 +59,7 @@ public class ChangeInjector implements StreamInjector<Change> {
     @Override
     public void injectContentStart(StringBuilder line, final long currPositon) {
         if ( this.currChange != null && this.tagStarted == false ) {
-            if ( this.currChange.getRange().getStart() == currPositon) {
+            if ( this.currChange.getRange().getStart() <= currPositon) {
                 line.append( generateChangeHtml( this.currChange, this.witnessCount ) );
                 this.tagStarted = true;
             } 
@@ -69,7 +69,7 @@ public class ChangeInjector implements StreamInjector<Change> {
     @Override
     public void injectContentEnd(StringBuilder line, final long currPosition) {
         if ( this.currChange != null && this.tagStarted == true ) {
-            if ( this.currChange.getRange().getEnd() == currPosition) {
+            if ( this.currChange.getRange().getEnd() <= currPosition) {
                 line.append("</span>");
                 this.tagStarted = false;
                 this.currChange = null;

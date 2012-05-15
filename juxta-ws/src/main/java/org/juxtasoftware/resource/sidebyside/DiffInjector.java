@@ -37,8 +37,8 @@ public class DiffInjector implements OverlapInjector<Change> {
             return false;
         }
         
-        if ( this.currChange.getRange().getStart() == pos && this.tagStarted == false ||
-             this.currChange.getRange().getEnd() == pos && this.tagStarted == true ) {
+        if ( this.currChange.getRange().getStart() <= pos && this.tagStarted == false ||
+             this.currChange.getRange().getEnd() <= pos && this.tagStarted == true ) {
             return true;
         }
         return false;
@@ -58,7 +58,7 @@ public class DiffInjector implements OverlapInjector<Change> {
     @Override
     public boolean injectContentStart(StringBuilder line, long currPositon) {
         if ( this.currChange != null && this.tagStarted == false ) {
-            if ( this.currChange.getRange().getStart() == currPositon) {
+            if ( this.currChange.getRange().getStart() <= currPositon) {
                 line.append("<span id=\"diff-").append(currChange.id).append("\"");
                 line.append(" class=\"diff\"");
                 line.append(" juxta:connect-to=\"").append(currChange.connectedToId).append("\"");
@@ -73,7 +73,7 @@ public class DiffInjector implements OverlapInjector<Change> {
     @Override
     public boolean injectContentEnd(StringBuilder line, long currPosition) {
         if ( this.currChange != null && this.tagStarted == true ) {
-            if ( this.currChange.getRange().getEnd() == currPosition) {
+            if ( this.currChange.getRange().getEnd() <= currPosition) {
                 line.append("</span>");
                 this.tagStarted = false;
                 this.currChange = null;
