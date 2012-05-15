@@ -166,6 +166,22 @@ public class BaseResource extends ServerResource {
     }
     
     /**
+     * Convert the Reader into an XML representation, zipping if possible
+     * @param reader Reader containing the html data
+     * @return
+     */
+    public Representation toXmlRepresentation( final String content ) {
+        Representation r = new StringRepresentation(content, 
+            MediaType.TEXT_PLAIN,
+            Language.DEFAULT,
+            CharacterSet.UTF_8);
+        if ( this.zipSupported ) {
+            return new EncodeRepresentation(Encoding.GZIP, r);
+        }
+        return r;   
+    }
+    
+    /**
      * Convert the JSON data in jsonString to aa application/json, 
      * UTF-8 representation
      * @param jsonString JSON data in string format

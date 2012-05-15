@@ -5,11 +5,15 @@ import java.util.logging.Handler;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.log4j.PropertyConfigurator;
+import org.juxtasoftware.dao.JuxtaXsltDao;
 import org.juxtasoftware.dao.TemplateDao;
 import org.juxtasoftware.dao.WorkspaceDao;
+import org.juxtasoftware.dao.impl.JuxtaXsltDaoImpl;
 import org.juxtasoftware.dao.impl.TemplateDaoImpl;
 import org.juxtasoftware.dao.impl.WorkspaceDaoImpl;
+import org.juxtasoftware.model.JuxtaXslt;
 import org.juxtasoftware.model.Template;
 import org.juxtasoftware.model.Workspace;
 import org.juxtasoftware.service.XmlTemplateParser;
@@ -40,6 +44,7 @@ public class JuxtaWS {
         // init all common filters
         ((QNameFilters)context.getBean(QNameFilters.class)).initialize();
         
+        // TODO This should probably die in favor of XSLT below
         // if neceessary, create the defult template for parsing TEI parallel segmentation
         TemplateDao templateDao = context.getBean(TemplateDaoImpl.class);
         WorkspaceDao wsDao = context.getBean(WorkspaceDaoImpl.class);
@@ -53,6 +58,18 @@ public class JuxtaWS {
             template.setWorkspaceId( publicWs.getId() );
             template.setDefault(true);
             templateDao.create(template );
+        }
+        
+        JuxtaXsltDao xsltDao =  context.getBean(JuxtaXsltDaoImpl.class);
+        JuxtaXslt stripper = xsltDao.getTagStripper();
+        if ( stripper == null ) {
+            stripper = new JuxtaXslt();
+            stripper.setName("Generic Tag Stripper");
+            stripper.setWorkspaceId(publicWs.getId());
+            InputStream is = ClassLoader.getSystemResourceAsStream("tag_stripper.xslt");
+            stripper.setXslt( IOUtils.toString(is, "utf-8"));
+            xsltDao.create(stripper);
+            
         }
         
         LoggerFactory.getLogger("").info("Juxta Web service started");

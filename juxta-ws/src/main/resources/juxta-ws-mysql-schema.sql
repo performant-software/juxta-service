@@ -41,6 +41,16 @@ CREATE TABLE IF NOT EXISTS juxta_qname_filter_member (
     FOREIGN KEY (qname_id) REFERENCES text_qname (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+CREATE TABLE IF NOT EXISTS juxta_xslt (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    workspace_id BIGINT NOT NULL default 1,
+    name VARCHAR(255) NOT NULL,
+    xslt text not null,
+    UNIQUE INDEX(name, workspace_id),
+    PRIMARY KEY (id),
+    FOREIGN KEY (workspace_id) REFERENCES juxta_workspace (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
 CREATE TABLE IF NOT EXISTS juxta_template (
 	id BIGINT NOT NULL AUTO_INCREMENT,
 	name VARCHAR(255) NOT NULL,
