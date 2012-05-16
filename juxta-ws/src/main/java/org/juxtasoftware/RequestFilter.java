@@ -87,9 +87,7 @@ public class RequestFilter extends Filter {
         } else if ( lastSegment.contains(".html")) {
             request.getResourceRef().setLastSegment(lastSegment.substring(0, lastSegment.length()-5));
             setAccepts( request, MediaType.TEXT_HTML);
-        } else {
-            setAccepts( request, MediaType.TEXT_HTML);
-        }
+        } 
         int resp = super.doHandle(request, response);
       
         // collect info and write out the request/response details to the log file
