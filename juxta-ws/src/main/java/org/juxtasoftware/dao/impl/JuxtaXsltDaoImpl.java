@@ -1,13 +1,17 @@
 package org.juxtasoftware.dao.impl;
 
+import java.io.Reader;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 
 import org.juxtasoftware.dao.JuxtaXsltDao;
 import org.juxtasoftware.model.JuxtaXslt;
+import org.juxtasoftware.model.Usage;
 import org.juxtasoftware.model.Workspace;
 import org.springframework.dao.support.DataAccessUtils;
+import org.springframework.jdbc.core.PreparedStatementSetter;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
@@ -45,14 +49,32 @@ public class JuxtaXsltDaoImpl extends JuxtaDaoImpl<JuxtaXslt> implements JuxtaXs
     }
 
     @Override
-    public void update(JuxtaXslt juxtaXslt) {
+    public void update(final Long xsltId, final Reader xsltReader) {
         final String sql = "update "+this.tableName+" set xslt=? where id=?";
-        this.jt.update(sql, juxtaXslt.getXslt(), juxtaXslt.getId());
+        this.jt.update(sql, new PreparedStatementSetter() {
+            @Override
+            public void setValues(PreparedStatement ps) throws SQLException {
+                ps.setLong(2, xsltId);
+                ps.setCharacterStream(1, xsltReader);
+            }
+        });    
     }
 
     @Override
     public JuxtaXslt getTagStripper() {
         return find(1L);
+    }
+    
+    @Override
+    public List<Usage> getUsage(JuxtaXslt xslt) {
+        final String sql = "select id, name from juxta_witness where xslt_id=?";
+        return this.jt.query(sql, new RowMapper<Usage>() {
+
+            @Override
+            public Usage mapRow(ResultSet rs, int rowNum) throws SQLException {
+                return new Usage(Usage.Type.WITNESS, rs.getLong("id"), rs.getString("name"));
+            }
+            }, xslt.getId());
     }
 
     @Override

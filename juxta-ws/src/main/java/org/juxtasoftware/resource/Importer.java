@@ -10,12 +10,11 @@ import java.util.Set;
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.juxtasoftware.dao.ComparisonSetDao;
+import org.juxtasoftware.dao.JuxtaXsltDao;
 import org.juxtasoftware.dao.SourceDao;
-import org.juxtasoftware.dao.TemplateDao;
 import org.juxtasoftware.dao.WitnessDao;
 import org.juxtasoftware.model.ComparisonSet;
 import org.juxtasoftware.model.Source;
-import org.juxtasoftware.model.Template;
 import org.juxtasoftware.model.Witness;
 import org.juxtasoftware.service.importer.ImportService;
 import org.juxtasoftware.service.importer.jxt.JxtImportServiceImpl;
@@ -62,7 +61,7 @@ public class Importer extends BaseResource implements ApplicationContextAware {
     @Autowired private ComparisonSetDao setDao;
     @Autowired private WitnessDao witnessDao;
     @Autowired private SourceDao sourceDao;
-    @Autowired private TemplateDao templateDao;    
+    @Autowired private JuxtaXsltDao xsltDao;    
 
     @Override
     public void setApplicationContext(ApplicationContext context) throws BeansException {
@@ -256,7 +255,7 @@ public class Importer extends BaseResource implements ApplicationContextAware {
         List<Long> templateIdList = new ArrayList<Long>();
         for ( Witness witness :witnesses ) {
             Long sourceId  = witness.getSourceId();
-            templateIdList.add( witness.getTemplateId() );
+            templateIdList.add( witness.getXsltId() );
             
             // Next, kill the witness
             this.witnessDao.delete(witness);
@@ -266,11 +265,13 @@ public class Importer extends BaseResource implements ApplicationContextAware {
             this.sourceDao.delete(s);
         }
         
-        // Finally, iterate over all templates and kill them too
-        for (Long templateId : templateIdList ) {
-            Template t = this.templateDao.find(templateId);
-            this.templateDao.delete(t);
-        }
+        // TODO
+        
+//        // Finally, iterate over all templates and kill them too
+//        for (Long templateId : templateIdList ) {
+//            Template t = this.templateDao.find(templateId);
+//            this.templateDao.delete(t);
+//        }
     }
     
     /**

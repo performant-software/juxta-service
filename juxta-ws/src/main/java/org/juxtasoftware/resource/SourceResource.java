@@ -12,10 +12,12 @@ import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.juxtasoftware.dao.ComparisonSetDao;
+import org.juxtasoftware.dao.JuxtaXsltDao;
 import org.juxtasoftware.dao.RevisionDao;
 import org.juxtasoftware.dao.SourceDao;
 import org.juxtasoftware.dao.WitnessDao;
 import org.juxtasoftware.model.ComparisonSet;
+import org.juxtasoftware.model.JuxtaXslt;
 import org.juxtasoftware.model.Source;
 import org.juxtasoftware.model.Usage;
 import org.juxtasoftware.model.Witness;
@@ -56,6 +58,7 @@ public class SourceResource extends BaseResource implements ApplicationContextAw
     @Autowired private RevisionDao revisionDao;
     @Autowired private ComparisonSetDao setDao;
     @Autowired private WitnessDao witnessDao;
+    @Autowired private JuxtaXsltDao xsltDao;
     @Autowired private SourceTransformer transformer;
     @Autowired private TaskManager taskManager;
     
@@ -313,6 +316,8 @@ public class SourceResource extends BaseResource implements ApplicationContextAw
             if ( u.getType().equals(Usage.Type.WITNESS)) {
                 Witness w = this.witnessDao.find(u.getId());
                 this.witnessDao.delete(w);
+                JuxtaXslt xslt = this.xsltDao.find( w.getXsltId() );
+                this.xsltDao.delete( xslt );
             } else if ( u.getType().equals(Usage.Type.COMPARISON_SET)) {
                 // set must have all of its collation data reset
                 ComparisonSet set = this.setDao.find( u.getId());

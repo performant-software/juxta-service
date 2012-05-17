@@ -8,15 +8,11 @@ import java.util.logging.Logger;
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.PropertyConfigurator;
 import org.juxtasoftware.dao.JuxtaXsltDao;
-import org.juxtasoftware.dao.TemplateDao;
 import org.juxtasoftware.dao.WorkspaceDao;
 import org.juxtasoftware.dao.impl.JuxtaXsltDaoImpl;
-import org.juxtasoftware.dao.impl.TemplateDaoImpl;
 import org.juxtasoftware.dao.impl.WorkspaceDaoImpl;
 import org.juxtasoftware.model.JuxtaXslt;
-import org.juxtasoftware.model.Template;
 import org.juxtasoftware.model.Workspace;
-import org.juxtasoftware.service.XmlTemplateParser;
 import org.juxtasoftware.util.QNameFilters;
 import org.restlet.Component;
 import org.slf4j.LoggerFactory;
@@ -44,22 +40,11 @@ public class JuxtaWS {
         // init all common filters
         ((QNameFilters)context.getBean(QNameFilters.class)).initialize();
         
-        // TODO This should probably die in favor of XSLT below
-        // if neceessary, create the defult template for parsing TEI parallel segmentation
-        TemplateDao templateDao = context.getBean(TemplateDaoImpl.class);
+        // create public workspace
         WorkspaceDao wsDao = context.getBean(WorkspaceDaoImpl.class);
         Workspace publicWs = wsDao.getPublic();
-        if ( templateDao.exists(publicWs, Constants.PARALLEL_SEGMENTATION_TEMPLATE) == false ) {
-            // get the stream of the xml source from the resources
-            InputStream is = ClassLoader.getSystemResourceAsStream("tei-template.xml");
-            XmlTemplateParser parser =  (XmlTemplateParser)context.getBean(XmlTemplateParser.class);
-            parser.parse(is);
-            Template template = parser.getTemplates().get(0);
-            template.setWorkspaceId( publicWs.getId() );
-            template.setDefault(true);
-            templateDao.create(template );
-        }
         
+        // add thetag stripper xslt
         JuxtaXsltDao xsltDao =  context.getBean(JuxtaXsltDaoImpl.class);
         JuxtaXslt stripper = xsltDao.getTagStripper();
         if ( stripper == null ) {

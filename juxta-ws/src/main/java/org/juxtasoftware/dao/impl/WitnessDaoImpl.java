@@ -88,7 +88,7 @@ public class WitnessDaoImpl extends JuxtaDaoImpl<Witness> implements WitnessDao 
         ps.addValue("fragment_start", object.getFragment().getStart());
         ps.addValue("fragment_end", object.getFragment().getEnd());
         ps.addValue("source_id", object.getSourceId());
-        ps.addValue("template_id", object.getTemplateId());
+        ps.addValue("xslt_id", object.getXsltId());
         ps.addValue("revision_set_id", object.getRevisionSetId());
         ps.addValue("text_id", ((RelationalText) object.getText()).getId());
         ps.addValue("workspace_id", object.getWorkspaceId());
@@ -132,7 +132,7 @@ public class WitnessDaoImpl extends JuxtaDaoImpl<Witness> implements WitnessDao 
     private StringBuilder getSqlBuilder() {
         final StringBuilder sql = new StringBuilder();
         sql.append("select w.id as w_id, w.name as w_name, w.created as w_created, w.updated as w_updated, ");
-        sql.append("       w.source_id as w_source_id, w.template_id as w_template_id,");
+        sql.append("       w.source_id as w_source_id, w.xslt_id as w_xslt_id,");
         sql.append("       w.revision_set_id as w_revision_set_id,");
         sql.append("       w.fragment_start as w_fragment_start, ");
         sql.append("       w.fragment_end as w_fragment_end, ");
@@ -185,9 +185,9 @@ public class WitnessDaoImpl extends JuxtaDaoImpl<Witness> implements WitnessDao 
             witness.setFragment(new Range(rs.getInt("w_fragment_start"), 
                                           rs.getInt("w_fragment_end")));
             witness.setSourceId( rs.getLong("w_source_id"));
-            Object templateIdObj = rs.getObject("w_template_id");
+            Object templateIdObj = rs.getObject("w_xslt_id");
             if (templateIdObj != null ) {
-                witness.setTemplateId( (Long)templateIdObj );
+                witness.setXsltId( (Long)templateIdObj );
             }
             witness.setWorkspaceId( rs.getLong("w_workspace_id") );
             witness.setCreated( rs.getTimestamp("w_created") );

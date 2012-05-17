@@ -51,30 +51,6 @@ CREATE TABLE IF NOT EXISTS juxta_xslt (
     FOREIGN KEY (workspace_id) REFERENCES juxta_workspace (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE IF NOT EXISTS juxta_template (
-	id BIGINT NOT NULL AUTO_INCREMENT,
-	name VARCHAR(255) NOT NULL,
-	root_namespace_uri VARCHAR(100) NOT NULL DEFAULT "*",
-    root_namespace_prefix VARCHAR(25) NOT NULL DEFAULT "*",
-    root_local_name VARCHAR(50) NOT NULL DEFAULT "*",
-    is_default boolean not null default 0,
-    workspace_id BIGINT NOT NULL default 1,
-    UNIQUE INDEX(name, workspace_id),
-	PRIMARY KEY (id),
-    FOREIGN KEY (workspace_id) REFERENCES juxta_workspace (id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
-CREATE TABLE IF NOT EXISTS juxta_template_tag_action (
-    id BIGINT NOT NULL AUTO_INCREMENT,
-    template_id BIGINT NOT NULL,
-    namespace_uri VARCHAR(100) NOT NULL DEFAULT "*",
-    namespace_prefix VARCHAR(25) NOT NULL DEFAULT "*",
-    local_name VARCHAR(50) NOT NULL DEFAULT "*",
-    action ENUM('INCLUDE','EXCLUDE','NOTABLE','NEW_LINE') NOT NULL DEFAULT 'INCLUDE',
-    PRIMARY KEY (id),
-    FOREIGN KEY (template_id) REFERENCES juxta_template (id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
 CREATE TABLE IF NOT EXISTS juxta_revision_set (
     id BIGINT NOT NULL AUTO_INCREMENT,
     name VARCHAR(255) NOT NULL,
@@ -96,7 +72,7 @@ CREATE TABLE IF NOT EXISTS juxta_witness (
     id BIGINT NOT NULL AUTO_INCREMENT,
     name VARCHAR(255) NOT NULL,
     source_id BIGINT NOT NULL,
-    template_id BIGINT,
+    xslt_id BIGINT,
     revision_set_id BIGINT,
     text_id BIGINT NOT NULL,
     fragment_start BIGINT NOT NULL,
@@ -106,7 +82,7 @@ CREATE TABLE IF NOT EXISTS juxta_witness (
     updated DATETIME,
     PRIMARY KEY(id),
     FOREIGN KEY (source_id) REFERENCES juxta_source (id),
-    FOREIGN KEY (template_id) REFERENCES juxta_template (id),
+    FOREIGN KEY (xslt_id) REFERENCES juxta_xslt (id),
     FOREIGN KEY (revision_set_id) REFERENCES juxta_revision_set (id),
     FOREIGN KEY (text_id) REFERENCES text_content (id),
     FOREIGN KEY (workspace_id) REFERENCES juxta_workspace (id) ON DELETE CASCADE,

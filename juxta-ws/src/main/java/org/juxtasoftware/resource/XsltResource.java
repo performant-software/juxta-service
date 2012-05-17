@@ -1,9 +1,16 @@
 package org.juxtasoftware.resource;
 
+import java.io.InputStreamReader;
 import java.util.List;
 
 import org.juxtasoftware.dao.JuxtaXsltDao;
+import org.juxtasoftware.dao.SourceDao;
+import org.juxtasoftware.dao.WitnessDao;
 import org.juxtasoftware.model.JuxtaXslt;
+import org.juxtasoftware.model.Source;
+import org.juxtasoftware.model.Usage;
+import org.juxtasoftware.model.Witness;
+import org.juxtasoftware.service.SourceTransformer;
 import org.restlet.data.CharacterSet;
 import org.restlet.data.Language;
 import org.restlet.data.MediaType;
@@ -26,6 +33,9 @@ import com.google.gson.Gson;
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
 public class XsltResource extends BaseResource {
     @Autowired private JuxtaXsltDao xsltDao;
+    @Autowired private SourceDao sourceDao;
+    @Autowired private WitnessDao witnessDao;
+    @Autowired private SourceTransformer transformer;
     private Long xsltId = null;
     
     @Override
@@ -76,16 +86,44 @@ public class XsltResource extends BaseResource {
     
     @Post("json")
     public Representation createXslt( final String jsonData ) {
-        return toTextRepresentation( "newID" );
+        Gson gson = new Gson();
+        JuxtaXslt xslt = gson.fromJson(jsonData, JuxtaXslt.class);
+        Long id = this.xsltDao.create(xslt);
+        return toTextRepresentation( id.toString() );
     }
     
-    @Put("json")
-    public Representation updateXslt( final String jsonData ) {
+    @Put
+    public Representation updateXslt( final Representation entity ) {
         if ( this.xsltId == null ) {
             setStatus(Status.CLIENT_ERROR_METHOD_NOT_ALLOWED);
             return null;
         }
-        return toTextRepresentation("id of changed XSLT");
+        
+        if (MediaType.TEXT_XML.equals(entity.getMediaType()) == false) {
+            setStatus(Status.CLIENT_ERROR_UNSUPPORTED_MEDIA_TYPE);
+            return null;
+        }
+        
+        JuxtaXslt xslt = this.xsltDao.find(this.xsltId);
+        if ( validateModel(xslt) == false ) {
+            return null;
+        }
+  
+        try {
+            this.xsltDao.update(this.xsltId, new InputStreamReader(entity.getStream()) );
+            
+            // Get the witness that uses this XSLT. List should be of size 1.
+            List<Usage> usage = this.xsltDao.getUsage(xslt);
+            for(Usage u : usage) {
+                Witness origWit = this.witnessDao.find( u.getId() );
+                Source src = this.sourceDao.find(this.workspace.getId(), origWit.getSourceId());
+                this.transformer.redoTransform(src, origWit);
+            }
+            return toTextRepresentation( this.xsltId.toString() );
+        } catch (Exception e) {
+            setStatus(Status.SERVER_ERROR_INTERNAL);
+            return toTextRepresentation(e.getMessage());
+        }
     }
     
     @Delete
@@ -94,5 +132,9 @@ public class XsltResource extends BaseResource {
             setStatus(Status.CLIENT_ERROR_METHOD_NOT_ALLOWED);
             return;
         }
+        JuxtaXslt xslt = this.xsltDao.find(this.xsltId);
+        if ( validateModel(xslt) != false ) {
+            this.xsltDao.delete(xslt);
+        } 
     }
 }

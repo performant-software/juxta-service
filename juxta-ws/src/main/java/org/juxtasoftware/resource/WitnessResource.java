@@ -7,8 +7,10 @@ import java.util.Map;
 
 import org.apache.commons.lang.StringEscapeUtils;
 import org.juxtasoftware.dao.ComparisonSetDao;
+import org.juxtasoftware.dao.JuxtaXsltDao;
 import org.juxtasoftware.dao.WitnessDao;
 import org.juxtasoftware.model.ComparisonSet;
+import org.juxtasoftware.model.JuxtaXslt;
 import org.juxtasoftware.model.Usage;
 import org.juxtasoftware.model.Witness;
 import org.juxtasoftware.util.RangedTextReader;
@@ -44,6 +46,7 @@ public class WitnessResource extends BaseResource {
     
     @Autowired private ComparisonSetDao setDao;
     @Autowired private WitnessDao witnessDao;
+    @Autowired private JuxtaXsltDao xsltDao;
 
     /**
      * Extract the text ID and range info from the request attributes
@@ -95,6 +98,7 @@ public class WitnessResource extends BaseResource {
             obj.addProperty("id", this.witness.getId());
             obj.addProperty("name", this.witness.getName());
             obj.addProperty("sourceId", this.witness.getSourceId());
+            obj.addProperty("xsltId", this.witness.getXsltId());
             obj.addProperty("content", reader.toString());
             Gson gson = new Gson();
             return toTextRepresentation(gson.toJson(obj));
@@ -165,6 +169,8 @@ public class WitnessResource extends BaseResource {
         // delete the witness (this will cascade delete 
         // from all sets that were using it)
         this.witnessDao.delete( witness ); 
+        JuxtaXslt xslt = this.xsltDao.find( this.witness.getXsltId() );
+        this.xsltDao.delete( xslt );
         
         // return the json list of itmes that were affected
         Gson gson = new Gson();

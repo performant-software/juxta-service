@@ -1,16 +1,12 @@
 package org.juxtasoftware.resource;
 
-import java.io.IOException;
-
-import javax.xml.stream.XMLStreamException;
-
+import org.juxtasoftware.dao.JuxtaXsltDao;
 import org.juxtasoftware.dao.RevisionDao;
 import org.juxtasoftware.dao.SourceDao;
-import org.juxtasoftware.dao.TemplateDao;
 import org.juxtasoftware.dao.WitnessDao;
+import org.juxtasoftware.model.JuxtaXslt;
 import org.juxtasoftware.model.RevisionSet;
 import org.juxtasoftware.model.Source;
-import org.juxtasoftware.model.Template;
 import org.juxtasoftware.model.Workspace;
 import org.juxtasoftware.service.SourceTransformer;
 import org.restlet.data.Status;
@@ -37,7 +33,7 @@ import eu.interedition.text.Text;
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
 public class Transformer extends BaseResource {
     @Autowired private SourceDao sourceDao;
-    @Autowired private TemplateDao templateDao;
+    @Autowired private JuxtaXsltDao xsltDao;
     @Autowired private RevisionDao revisionDao;
     @Autowired private WitnessDao witnessDao;
     @Autowired private SourceTransformer transformer;
@@ -69,30 +65,29 @@ public class Transformer extends BaseResource {
                 " does not exist in workspace "+this.workspace.getName());    
         }
 
-        // if requested, get the parse template
-        Template template = null;
+        // if requested, get the xslt transform
+        JuxtaXslt xslt = null;
         Workspace pub = this.workspaceDao.getPublic();
-        if ( json.has("template") ) {
-            Long templateId = json.get("template").getAsLong();
-            template = this.templateDao.find(templateId);
+        if ( json.has("xslt") ) {
+            Long xsltId = json.get("xslt").getAsLong();
+            xslt = this.xsltDao.find(xsltId);
         } else {
-            // if none specifed and source is xml, first search for
-            // a suitable default template. If none are found leave
-            // the template null. This will be treated by the transformer
-            // as include all tags.
+            // if none specifed and source is xml, clone the basic
+            // tag stripper xslt and save it as a new file. Use it
+            // to do the initial transform
             if ( srcDoc.getText().getType().equals(Text.Type.XML)) {
-                String rootEle = this.sourceDao.getRootElement(srcDoc);
-                template = this.templateDao.findDefault( this.workspace, rootEle );
-                
-                // still none, see if there is a PUBLIC template
-                if ( template == null ) {
-                    template = this.templateDao.findDefault(pub , rootEle);
-                }
+                JuxtaXslt baseXslt = this.xsltDao.getTagStripper();
+                xslt = new JuxtaXslt();
+                xslt.setWorkspaceId( this.workspace.getId() );
+                xslt.setXslt( baseXslt.getXslt() );
+                xslt.setName( "src-"+srcDoc.getId()+"-transform");
+                Long newId = this.xsltDao.create(xslt);
+                xslt.setId(newId);
             }
         }
         
-        // validate template/workspace match
-        if ( template != null && this.workspace.getId().equals(template.getWorkspaceId()) == false && template.getWorkspaceId().equals(pub.getId())==false){
+        // validate template/workspace match (except public)
+        if ( xslt != null && this.workspace.getId().equals(xslt.getWorkspaceId()) == false && xslt.getWorkspaceId().equals(pub.getId())==false){
             setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
             return toTextRepresentation( "Template "+sourceId+
                 " does not exist in workspace "+this.workspace.getName());    
@@ -125,16 +120,12 @@ public class Transformer extends BaseResource {
         }
 
         try {
-            Long witnessId = this.transformer.transform(srcDoc, template, revSet, finalName);
+            Long witnessId = this.transformer.transform(srcDoc, xslt, revSet, finalName);
             return toTextRepresentation( witnessId.toString() );
-        } catch (IOException e) {
+        } catch (Exception e) {
             LOG.error("Caught Excepion: unable to transform source", e);
             setStatus(Status.SERVER_ERROR_INTERNAL);
             return toTextRepresentation("Transform Failed: "+e.getMessage());
-        } catch (XMLStreamException e) {
-            LOG.error("Caught Exception: unable to transform source", e);
-            setStatus(Status.SERVER_ERROR_INTERNAL);
-            return toTextRepresentation("Transform Failed: "+e.getMessage());
-        }
+        } 
     }
 }

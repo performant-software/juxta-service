@@ -13,7 +13,7 @@ import eu.interedition.text.Text;
 public class Witness extends WorkspaceMember implements Comparand {
 
     @Expose private String name;
-    @Expose private Long templateId;
+    @Expose private Long xsltId;
     @Expose private Long revisionSetId;
     @Expose private Long sourceId;
     @Expose private Date created;
@@ -25,7 +25,7 @@ public class Witness extends WorkspaceMember implements Comparand {
         this.id = that.id;
         this.workspaceId = that.workspaceId;
         this.name = that.name;
-        this.templateId = that.templateId;
+        this.xsltId = that.xsltId;
         this.revisionSetId = that.revisionSetId;
         this.sourceId = that.sourceId;
         this.text = that.text;
@@ -96,12 +96,12 @@ public class Witness extends WorkspaceMember implements Comparand {
         this.fragmentRange = fragment;
     }
 
-    public final Long getTemplateId() {
-        return templateId;
+    public final Long getXsltId() {
+        return xsltId;
     }
 
-    public final void setTemplateId(Long templateId) {
-        this.templateId = templateId;
+    public final void setXsltId(Long xsltId) {
+        this.xsltId = xsltId;
     }
 
     @Override

@@ -13,10 +13,10 @@ import org.juxtasoftware.Constants;
 import org.juxtasoftware.dao.AlignmentDao;
 import org.juxtasoftware.dao.CacheDao;
 import org.juxtasoftware.dao.ComparisonSetDao;
+import org.juxtasoftware.dao.JuxtaXsltDao;
 import org.juxtasoftware.dao.NoteDao;
 import org.juxtasoftware.dao.PageBreakDao;
 import org.juxtasoftware.dao.SourceDao;
-import org.juxtasoftware.dao.TemplateDao;
 import org.juxtasoftware.dao.WitnessDao;
 import org.juxtasoftware.dao.WorkspaceDao;
 import org.juxtasoftware.model.CollatorConfig;
@@ -24,7 +24,6 @@ import org.juxtasoftware.model.ComparisonSet;
 import org.juxtasoftware.model.Note;
 import org.juxtasoftware.model.PageBreak;
 import org.juxtasoftware.model.Source;
-import org.juxtasoftware.model.Template;
 import org.juxtasoftware.model.Witness;
 import org.juxtasoftware.model.Workspace;
 import org.juxtasoftware.service.ComparisonSetCollator;
@@ -57,7 +56,7 @@ import eu.interedition.text.xml.XMLParser;
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
 public class ParallelSegmentationImportImpl implements ImportService<Source> {
 
-    @Autowired private TemplateDao templateDao;
+    @Autowired private JuxtaXsltDao xsltDao;
     @Autowired private SourceDao sourceDao;
     @Autowired private WitnessDao witnessDao;
     @Autowired private NoteDao noteDao;
@@ -218,34 +217,35 @@ public class ParallelSegmentationImportImpl implements ImportService<Source> {
      * @throws Exception 
      */
     private void parseSource(Source teiSource ) throws Exception {
-        setStatusMsg("Parse "+set.getName());
-        Workspace publicWs = this.workspaceDao.getPublic();
-        Template template = this.templateDao.find(publicWs, Constants.PARALLEL_SEGMENTATION_TEMPLATE);
-        Workspace ws = this.workspaceDao.find(this.set.getWorkspaceId());
-        
-        // run the src text thru the parser for multiple passes
-        // once for each witness listed in the listWit tag.
-        Set<Witness> witnesses = new HashSet<Witness>();
-        for ( WitnessInfo info : this.listWitData ) {
-            
-            setStatusMsg("Parse WitnessID "+info.getGroupId()+" - '"+info.getDescription()+"' from source");
-            PsXmlParserConfig cfg = new PsXmlParserConfig( template, info );
-            Text witnessTxt = this.xmlParser.parse(teiSource.getText(), cfg);
-            Witness witness = createWitness( ws, teiSource, template, witnessTxt, info );
-            witnesses.add(witness);
-            if ( cfg.notesIncluded()  ) {
-                writeNotes(witness, cfg.getNotes() );
-            }
-            if ( cfg.pageBreaksIncluded()) {
-                writePageBreaks(witness, cfg.getPageBreaks() );
-            }
-        }
-        
-        // add all witnesses to the set
-        setStatusMsg("Create comparison set");
-        this.setDao.addWitnesses(this.set, witnesses);
-        this.setDao.update(this.set);
-        incrementStatus();
+        // TODO
+//        setStatusMsg("Parse "+set.getName());
+//        Workspace publicWs = this.workspaceDao.getPublic();
+//        Template template = this.templateDao.find(publicWs, Constants.PARALLEL_SEGMENTATION_TEMPLATE);
+//        Workspace ws = this.workspaceDao.find(this.set.getWorkspaceId());
+//        
+//        // run the src text thru the parser for multiple passes
+//        // once for each witness listed in the listWit tag.
+//        Set<Witness> witnesses = new HashSet<Witness>();
+//        for ( WitnessInfo info : this.listWitData ) {
+//            
+//            setStatusMsg("Parse WitnessID "+info.getGroupId()+" - '"+info.getDescription()+"' from source");
+//            PsXmlParserConfig cfg = new PsXmlParserConfig( template, info );
+//            Text witnessTxt = this.xmlParser.parse(teiSource.getText(), cfg);
+//            Witness witness = createWitness( ws, teiSource, template, witnessTxt, info );
+//            witnesses.add(witness);
+//            if ( cfg.notesIncluded()  ) {
+//                writeNotes(witness, cfg.getNotes() );
+//            }
+//            if ( cfg.pageBreaksIncluded()) {
+//                writePageBreaks(witness, cfg.getPageBreaks() );
+//            }
+//        }
+//        
+//        // add all witnesses to the set
+//        setStatusMsg("Create comparison set");
+//        this.setDao.addWitnesses(this.set, witnesses);
+//        this.setDao.update(this.set);
+//        incrementStatus();
         
     }
     
@@ -261,43 +261,43 @@ public class ParallelSegmentationImportImpl implements ImportService<Source> {
      * @return
      * @throws Exception
      */
-    Witness createWitness(Workspace ws, Source source, Template template, Text witnessTxt, WitnessInfo info ) throws Exception{
-        Witness witness = null;
-        
-        // See if there are witnesses that existed and were
-        // attached to the target set
-        for (Witness oldWit : this.preExistingWitnesses ) {
-            if ( oldWit.getName().equals(info.getName())) {
-                witness = oldWit;
-                break;
-            }
-        }
-        
-        // still none, see if an identically named witness exists
-        if (witness == null ) {
-            witness = this.witnessDao.find(ws, info.getName());
-        }
-        
-        // Just create a new one if we still are null
-        if ( witness == null ) {
-            witness = new Witness();
-            witness.setName( info.getName() );
-            witness.setSourceId( source.getId());
-            witness.setTemplateId(template.getId());
-            witness.setWorkspaceId( this.set.getWorkspaceId() );
-            witness.setText(witnessTxt);
-            Long id = this.witnessDao.create(witness);
-            witness.setId( id );
-        } else {
-            Text oldTxt = witness.getText();
-            this.witnessDao.updateContent(witness, witnessTxt);
-            
-            // now it is safe to kill the original text text
-            this.textRepository.delete( oldTxt );
-        }
-        
-        return witness;
-    }
+//    Witness createWitness(Workspace ws, Source source, Template template, Text witnessTxt, WitnessInfo info ) throws Exception{
+//        Witness witness = null;
+//        
+//        // See if there are witnesses that existed and were
+//        // attached to the target set
+//        for (Witness oldWit : this.preExistingWitnesses ) {
+//            if ( oldWit.getName().equals(info.getName())) {
+//                witness = oldWit;
+//                break;
+//            }
+//        }
+//        
+//        // still none, see if an identically named witness exists
+//        if (witness == null ) {
+//            witness = this.witnessDao.find(ws, info.getName());
+//        }
+//        
+//        // Just create a new one if we still are null
+//        if ( witness == null ) {
+//            witness = new Witness();
+//            witness.setName( info.getName() );
+//            witness.setSourceId( source.getId());
+//            witness.setXsltId(template.getId());
+//            witness.setWorkspaceId( this.set.getWorkspaceId() );
+//            witness.setText(witnessTxt);
+//            Long id = this.witnessDao.create(witness);
+//            witness.setId( id );
+//        } else {
+//            Text oldTxt = witness.getText();
+//            this.witnessDao.updateContent(witness, witnessTxt);
+//            
+//            // now it is safe to kill the original text text
+//            this.textRepository.delete( oldTxt );
+//        }
+//        
+//        return witness;
+//    }
     
     public void writeNotes( final Witness w, List<Note> notes) {
         if (!notes.isEmpty()) {
