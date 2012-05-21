@@ -23,6 +23,7 @@ public class NoteCollectingXMLParserModule extends XMLParserModuleAdapter {
     // the current note and its content
     private Note currNote;
     private StringBuilder currNoteContent;
+    private int junk = 0;
     
     // final list of notes encountered in the text
     private List<Note> notes = new ArrayList<Note>();
@@ -39,9 +40,11 @@ public class NoteCollectingXMLParserModule extends XMLParserModuleAdapter {
 
     @Override
     public void start(XMLEntity entity, XMLParserState state) {
-        final long textOffset = state.getTextOffset();
+        final long textOffset = state.getTextOffset()-junk;
         final Map<Name, String> attributes = entity.getAttributes();
         final String localName = entity.getName().getLocalName();
+        
+        System.err.println("START OFFSET:"+state.getTextOffset());
 
         // is this a note tag?
         if ("note".equals(localName)) {
@@ -74,7 +77,7 @@ public class NoteCollectingXMLParserModule extends XMLParserModuleAdapter {
 
     @Override
     public void end(XMLEntity entity, XMLParserState state) {
-        final long textOffset = state.getTextOffset();
+        final long textOffset = state.getTextOffset()-junk;
         final Map<Name, String> attributes = entity.getAttributes();
         final String localName = entity.getName().getLocalName();
         
@@ -115,6 +118,10 @@ public class NoteCollectingXMLParserModule extends XMLParserModuleAdapter {
 
     @Override
     public void text(String text, XMLParserState state) {
+        System.err.println("CONTENT ["+text+"]");
+        if ( text.contains("\n") ) {
+            junk++;
+        }
         if ( this.currNoteContent != null ) {
             this.currNoteContent.append(text);
         }

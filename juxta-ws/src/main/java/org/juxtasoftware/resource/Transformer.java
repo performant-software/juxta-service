@@ -64,6 +64,19 @@ public class Transformer extends BaseResource {
             return toTextRepresentation( "Source "+sourceId+
                 " does not exist in workspace "+this.workspace.getName());    
         }
+        
+        // if an alternate name for the parsed witness was passed
+        // get it; otherwise its just the src file minus extenson
+        String finalName = "";
+        if ( json.has("finalName")) {
+            finalName = json.get("finalName").getAsString();
+        } else {
+            finalName = srcDoc.getName();
+            int pos = finalName.lastIndexOf('.');
+            if ( pos > -1 ) {
+                finalName = finalName.substring(0, pos);
+            }
+        }
 
         // if requested, get the xslt transform
         JuxtaXslt xslt = null;
@@ -80,7 +93,7 @@ public class Transformer extends BaseResource {
                 xslt = new JuxtaXslt();
                 xslt.setWorkspaceId( this.workspace.getId() );
                 xslt.setXslt( baseXslt.getXslt() );
-                xslt.setName( "src-"+srcDoc.getId()+"-transform");
+                xslt.setName( finalName+"-transform");
                 Long newId = this.xsltDao.create(xslt);
                 xslt.setId(newId);
             }
@@ -93,18 +106,6 @@ public class Transformer extends BaseResource {
                 " does not exist in workspace "+this.workspace.getName());    
         }
 
-        // if an alternate name for the parsed witness was passed
-        // get it; otherwise its just the src file minus extenson
-        String finalName = "";
-        if ( json.has("finalName")) {
-            finalName = json.get("finalName").getAsString();
-        } else {
-            finalName = srcDoc.getName();
-            int pos = finalName.lastIndexOf('.');
-            if ( pos > -1 ) {
-                finalName = finalName.substring(0, pos);
-            }
-        }
         
         // prevent duplicate witnesses from being created
         if ( this.witnessDao.exists(this.workspace, finalName) ) {
