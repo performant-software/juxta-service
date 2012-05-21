@@ -10,6 +10,8 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Stack;
 
 import javax.xml.stream.XMLStreamException;
 import javax.xml.transform.OutputKeys;
@@ -33,24 +35,24 @@ import org.juxtasoftware.model.PageBreak;
 import org.juxtasoftware.model.RevisionSet;
 import org.juxtasoftware.model.Source;
 import org.juxtasoftware.model.Witness;
-import org.juxtasoftware.util.xml.module.JuxtaTextXmlParserModule;
-import org.juxtasoftware.util.xml.module.NoteCollectingXMLParserModule;
-import org.juxtasoftware.util.xml.module.PageBreakXmlParserModule;
+import org.juxtasoftware.service.importer.jxt.Util;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.xml.sax.Attributes;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+import org.xml.sax.helpers.DefaultHandler;
+
+import com.google.common.collect.Maps;
 
 import eu.interedition.text.AnnotationRepository;
+import eu.interedition.text.Range;
 import eu.interedition.text.Text;
 import eu.interedition.text.TextConsumer;
 import eu.interedition.text.TextRepository;
-import eu.interedition.text.xml.XMLEntity;
-import eu.interedition.text.xml.XMLParser;
-import eu.interedition.text.xml.XMLParserConfiguration;
-import eu.interedition.text.xml.XMLParserModule;
-import eu.interedition.text.xml.module.LineElementXMLParserModule;
 
 @Service
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
@@ -63,7 +65,6 @@ public class SourceTransformer {
     @Autowired private JuxtaXsltDao xsltDao;
     @Autowired private NoteDao noteDao;
     @Autowired private PageBreakDao pbDao;
-    @Autowired private XMLParser xmlParser;
     @Autowired private SourceDao sourceDao;
     
     private List<Note> notes;
@@ -83,7 +84,7 @@ public class SourceTransformer {
      * @throws TransformerFactoryConfigurationError 
      * @throws TransformerConfigurationException 
      */
-    public void redoTransform( Source srcDoc, Witness origWit ) throws IOException, XMLStreamException, TransformerException {
+    public void redoTransform( Source srcDoc, Witness origWit ) throws SAXException, IOException, TransformerException  {
 
         // get original parse template
         JuxtaXslt xslt = null;
@@ -103,15 +104,12 @@ public class SourceTransformer {
         if ( origWit.getRevisionSetId() != null ) {
             revSet = this.revisionDao.getRevsionSet(origWit.getRevisionSetId());
         }
-        extractSpecialTags(srcDoc.getText(), xslt, revSet);
+        extractSpecialTags(srcDoc, xslt, revSet);
         writeExtractedTags(origWit.getId());
 
         // if notes or pbs are INCLUDED they have just been handled above. Remove them now
         if ( xslt.isExcluded("note") == false) {
             xslt.addExclusion( "note");
-        }
-        if ( xslt.isExcluded("pb") == false) {
-            xslt.addExclusion("pb");
         }
         
         // redo the transform
@@ -141,21 +139,19 @@ public class SourceTransformer {
      * @param revSet 
      * @param finalName The name of the resulting witness (optional)
      * @return The new witness ID
+     * @throws SAXException 
      * @throws IOException
      * @throws XMLStreamException
      * @throws TransformerException 
      */
-    public Long transform(Source srcDoc, JuxtaXslt xslt, RevisionSet revSet, String finalName) throws IOException, XMLStreamException, TransformerException {
+    public Long transform(Source srcDoc, JuxtaXslt xslt, RevisionSet revSet, String finalName) throws SAXException, IOException, TransformerException {
 
         // pull info for tags that require special handling: note,pb & revs
-        extractSpecialTags(srcDoc.getText(), xslt, revSet);
+        extractSpecialTags(srcDoc, xslt, revSet);
         
         // if notes or pbs are INCLUDED they have just been handled above. Remove them now
         if ( xslt.isExcluded("note") == false) {
             xslt.addExclusion( "note");
-        }
-        if ( xslt.isExcluded("pb") == false) {
-            xslt.addExclusion("pb");
         }
         
         // transform into a new text_content object        
@@ -196,9 +192,12 @@ public class SourceTransformer {
         File outFile = File.createTempFile("xform"+srcDoc.getId(), "xml");
         outFile.deleteOnExit();
         javax.xml.transform.Source xmlSource = new StreamSource( this.sourceDao.getContentReader(srcDoc) );
-        //final String stringRegex = "\"replace(replace(.,'^\\s+',''),'\\s+',' ')\"";
-        final String fixedXslt = xslt.getXslt();//.replace("\".\"", stringRegex);
-        //System.out.println(fixedXslt);
+        //String stringRegex = "\"replace(replace(replace(., '[\\n\\r]', ''), '^\\s+', ' '), '\\s+$', ' ')\"";
+        //String stringRegex = "\"replace(., '[\\n\\r]', '')\"";
+        //String stringRegex = "\"replace( '\\s+$', ' ')\"";
+        //String fixedXslt = xslt.getXslt().replace("\".\"", stringRegex);
+        String fixedXslt = xslt.getXslt();
+        System.out.println(fixedXslt);
         javax.xml.transform.Source xsltSource =  new StreamSource( new StringReader(fixedXslt) );
         javax.xml.transform.Result result = new StreamResult( outFile );
  
@@ -216,7 +215,7 @@ public class SourceTransformer {
         return parsedContent;
     }
 
-    private void extractSpecialTags(final Text source, final JuxtaXslt xslt, final RevisionSet revSet) throws IOException, XMLStreamException {
+    private void extractSpecialTags(final Source source, final JuxtaXslt xslt, final RevisionSet revSet) throws SAXException, IOException  {
         
         // if everything has been excluded, there is noting to do here!
         if ( xslt.isExcluded("note") && xslt.isExcluded("pb") && revSet == null ) {
@@ -225,11 +224,13 @@ public class SourceTransformer {
         
         // create config for parser. Note that the parser by default creates
         // a new text record. In this case it is useless. Just delete it immediately
-        JuxtaExtractorConfig pc = new JuxtaExtractorConfig( xslt, revSet);
-        Text junk = this.xmlParser.parse(source, pc);
-        this.textRepository.delete(junk);
-        this.notes = pc.getNotes();
-        this.pageBeaks = pc.getPageBreaks();
+        try {
+        JuxtaExtractor extract = new JuxtaExtractor( source, xslt, revSet);
+        this.notes = extract.getNotes();
+        this.pageBeaks = extract.getPageBreaks();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
     
     private void writeExtractedTags( final Long witnessId ) {
@@ -278,125 +279,181 @@ public class SourceTransformer {
      * @author loufoster
      *
      */
-    private class JuxtaExtractorConfig implements XMLParserConfiguration {
-        private NoteCollectingXMLParserModule noteModule;
-        private PageBreakXmlParserModule pbModule;
-        private JuxtaTextXmlParserModule textModule;
-        private List<XMLParserModule> modules ;
+    private class JuxtaExtractor extends DefaultHandler  {
+        private boolean extractNotes;
+        private boolean extractPb;
+        private Note currNote = null;
+        private StringBuilder currNoteContent;
+        private List<Note> notes = new ArrayList<Note>();
+        private List<PageBreak> breaks = new ArrayList<PageBreak>();
+        private Map<String, Range> identifiedRanges = Maps.newHashMap();
         private JuxtaXslt xslt;
+        
+        private StringBuilder sb = new StringBuilder();
+        private long currPos = 0;
+        private boolean isExcluding = false;
+        private Stack<String> exclusionContext = new Stack<String>();
+        private Stack<String> xmlIdStack = new Stack<String>();
 
-        private JuxtaExtractorConfig(final JuxtaXslt xslt, RevisionSet revSet) {
-            if ( revSet != null ) {
-                this.textModule = new JuxtaTextXmlParserModule(
-                   SourceTransformer.this.annotationRepository, revSet.getRevisionIndexes());
-            } else {
-                this.textModule = new JuxtaTextXmlParserModule(
-                    SourceTransformer.this.annotationRepository, new ArrayList<Integer>());
-            }
-            this.modules = new ArrayList<XMLParserModule>(4);
-            this.modules.add( this.textModule );
-            this.modules.add( new LineElementXMLParserModule() );
-                        
-            if ( xslt.isExcluded("pb") == false ) {
-                this.pbModule = new PageBreakXmlParserModule();
-                this.modules.add(this.pbModule);
-            }
-            if ( xslt.isExcluded("note") == false) {
-                this.noteModule = new NoteCollectingXMLParserModule();
-                this.modules.add(this.noteModule);
-            }
+        private JuxtaExtractor(final Source source, final JuxtaXslt xslt, RevisionSet revSet) throws SAXException, IOException {          
+            this.extractPb = !xslt.isExcluded("pb");
+            this.extractNotes= !xslt.isExcluded("note");
             this.xslt = xslt;
+            Util.saxParser().parse( new InputSource( sourceDao.getContentReader(source) ), this);
         }
         
         public List<Note> getNotes() {
-            if ( this.noteModule != null ) {
-                return this.noteModule.getNotes();
-            } 
-            return new ArrayList<Note>();
+            return this.notes;
         }
         public List<PageBreak> getPageBreaks() {
-            if ( this.pbModule != null ) {
-                return this.pbModule.getPageBreaks();
+            return this.breaks;
+        }
+        
+        @Override
+        public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
+            if ( this.isExcluding ) {
+                this.exclusionContext.push(qName);
+                return;
             }
-            return new ArrayList<PageBreak>();
-        }
-
-        /**
-         * implementation of XMLParserConfiguration interface
-         */
-        @Override
-        public boolean included(XMLEntity entity) {
-            // if notes ane pb are to be handled correctly, they are INCLUDED in the xslt at this point
-            // for spacing to work out correctly we must tell the parer that they are NOT included
-            if ( this.noteModule != null && entity.getName().getLocalName().equalsIgnoreCase("note")) {
-                return false;
+            
+            if (qName.equals("pb") ) {
+                System.err.println("PB");
             }
-            if ( this.pbModule != null && entity.getName().getLocalName().equalsIgnoreCase("pb")) {
-                return false;
+            
+            if (this.xslt.isExcluded(qName)) {
+                this.isExcluding = true;
+                this.exclusionContext.push(qName);
             }
-            // in all other cases, default to the rules of the xslt
-            return !this.xslt.isExcluded(entity.getName().getLocalName());
-        }
-
-        @Override
-        public boolean excluded(XMLEntity entity) {
-            // if notes ane pb are to be handled correctly, they are INCLUDED in the xslt at this point
-            // for spacing to work out correctly we must tell the parer that they are NOT included
-            if ( this.noteModule != null && entity.getName().getLocalName().equalsIgnoreCase("note")) {
-                return true;
+            
+            System.err.println(qName+" start pos "+this.currPos);
+            
+            if ( qName.equals("note") && this.extractNotes) {
+                handleNote(attributes);
+            } else if (qName.equals("pb") && this.extractPb) {
+                handlePageBreak(attributes);
+            } else {
+                final String idVal = getIdValue(attributes);
+                if ( idVal != null ) {
+                    this.identifiedRanges.put(idVal, new Range(this.currPos, this.currPos));
+                    this.xmlIdStack.push(idVal);
+                } else  {
+                    this.xmlIdStack.push("NA");
+                }
             }
-            if ( this.pbModule != null && entity.getName().getLocalName().equalsIgnoreCase("pb")) {
-                return true;
+        }
+        
+        private void handleNote(Attributes attributes) {
+            this.currNote = new Note();
+            this.currNote.setAnchorRange(new Range(this.currPos, this.currPos));
+            this.currNoteContent = new StringBuilder();
+
+            // search note tag attributes for type and target and add them to the note.
+            for (int idx = 0; idx<attributes.getLength(); idx++) {  
+                String name = attributes.getQName(idx);
+                if ( name.contains(":")) {
+                    name = name.split(":")[1];
+                }
+                if ("type".equals(name)) {
+                    this.currNote.setType(attributes.getValue(idx));
+                } else if ("target".equals(name)) {
+                    this.currNote.setTargetID(attributes.getValue(idx));
+                }
             }
-            // in all other cases, default to the rules of the xslt
-            return this.xslt.isExcluded(entity.getName().getLocalName());
+            this.notes.add(this.currNote);
         }
 
-        @Override
-        public boolean isLineElement(XMLEntity entity) {
-            if ( this.noteModule != null && entity.getName().getLocalName().equalsIgnoreCase("note")) {
-                return false;
+        private void handlePageBreak(Attributes attributes) {
+            PageBreak pb = new PageBreak();
+            pb.setOffset(this.currPos);
+            
+            for (int idx = 0; idx<attributes.getLength(); idx++) {  
+                String name = attributes.getQName(idx);
+                if ( name.contains(":")) {
+                    name = name.split(":")[1];
+                }
+                if ("n".equals(name)) {
+                    pb.setLabel( attributes.getValue(idx) );
+                } 
             }
-            if ( this.pbModule != null && entity.getName().getLocalName().equalsIgnoreCase("pb")) {
-                return false;
+            this.breaks.add(pb);
+        }
+
+        private String getIdValue( Attributes attributes ){
+            for (int idx = 0; idx<attributes.getLength(); idx++) {  
+                String val = attributes.getQName(idx);
+                if ( val.contains(":")) {
+                    val = val.split(":")[1];
+                }
+                if ( val.equals("id")) {
+                    return attributes.getValue(idx);
+                }
             }
-            return this.xslt.hasLineBreak( entity.getName().getLocalName() );
+            return null;
         }
-
+        
         @Override
-        public boolean isNotable(XMLEntity entity) {
-            return false;
+        public void endElement(String uri, String localName, String qName) throws SAXException {
+            if ( this.isExcluding ) {
+                this.exclusionContext.pop();
+                this.isExcluding = !this.exclusionContext.empty();
+                return;
+            }
+            
+            if (qName.equals("note")) {
+                this.currNote.setContent(this.currNoteContent.toString().replaceAll("\\s+", " ").trim());
+                if ( this.currNote.getContent().length() == 0 ) {
+                    this.notes.remove(this.currNote);
+                }
+                this.currNote = null;
+                this.currNoteContent = null;
+            } else {
+                // if the tag has an identifier, save it off for crossreference with targeted notes
+                if ( this.xmlIdStack.empty() == false ) {
+                    final String xmlId = this.xmlIdStack.pop();
+                    if (xmlId.equals("NA") == false ) {
+                        this.identifiedRanges.put(xmlId, new Range(this.identifiedRanges.get(xmlId).getStart(), this.currPos));
+                    }
+                }
+                
+                if ( qName.equals("pb") || this.xslt.hasLineBreak(qName)){
+                    sb.append("\n");
+                    this.currPos++;
+                }
+            }            
         }
-
+        
         @Override
-        public boolean isContainerElement(XMLEntity entity) {
-            return false;
+        public void characters(char[] ch, int start, int length) throws SAXException {
+            if ( this.isExcluding == false ) {
+                String txt = new String(ch, start, length);
+                txt = txt.trim();
+                System.err.println("["+txt+"]");
+                if ( this.currNote != null ) {
+                    this.currNoteContent.append(txt);
+                } else {
+                    if ( txt.length() > 0) {
+                        this.currPos += (txt.length()+1);
+                        sb.append(txt).append(" ");
+                    }
+                }
+            }
         }
-
+        
         @Override
-        public List<XMLParserModule> getModules() {
-            return this.modules;
+        public void endDocument() throws SAXException {
+            System.err.println(sb.toString());
+            // at the end of parsing, find all notes that have a target
+            // specified. Look up that id and set the associated range
+            // as the note anchor point
+            for ( Note note : this.notes ) {
+                String noteTargetId = note.getTargetID();
+                if ( noteTargetId != null && noteTargetId.length() > 0){
+                    Range tgtRange = this.identifiedRanges.get(noteTargetId);
+                    if ( tgtRange != null ) {
+                        note.setAnchorRange( tgtRange );
+                    }
+                }
+            }
         }
-
-        @Override
-        public char getNotableCharacter() {
-            return '\u25CA';
-        }
-
-        @Override
-        public int getTextBufferSize() {
-            return 102400;
-        }
-
-        @Override
-        public boolean isCompressingWhitespace() {
-            return true;
-        }
-
-        @Override
-        public boolean isRemoveLeadingWhitespace() {
-            return true;
-        }
-
-    }
+    }   
 }

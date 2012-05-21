@@ -20,7 +20,7 @@ public class Util {
         parserFactory.setValidating(false);
     }
 
-    static SAXParser saxParser() throws SAXException {
+    public static SAXParser saxParser() throws SAXException {
         try {
             return parserFactory.newSAXParser();
         } catch (ParserConfigurationException e) {

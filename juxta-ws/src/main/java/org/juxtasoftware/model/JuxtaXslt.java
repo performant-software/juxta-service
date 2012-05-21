@@ -38,14 +38,19 @@ public class JuxtaXslt extends WorkspaceMember {
     }
     
     public void addExclusion(String tag) {
+        boolean hasNamespace = this.xslt.contains("xmlns:ns");
+        String qName = tag;
+        if ( hasNamespace ) {
+            qName = "ns:"+tag;
+        }
         final String marker = "<!--global-exclusions-->";
         int pos = this.xslt.indexOf(marker)+marker.length();
-        String ex = "\n    <xsl:template match=\""+tag+"\"/>";
+        String ex = "\n    <xsl:template match=\""+qName+"\"/>";
         this.xslt = xslt.substring(0,pos)+ex+this.xslt.substring(pos);   
         
         // remove from breaks so there is not a template ambiguity
         pos = xslt.indexOf("<!--breaks-->");
-        int limitPos = xslt.indexOf("<xsl:template match=\"text()\">");
+        int limitPos = xslt.indexOf("<xsl:template match=\"*\">");
         pos = xslt.indexOf("match=\"", pos)+7;
         if ( pos > limitPos ) {
             return;
@@ -54,7 +59,7 @@ public class JuxtaXslt extends WorkspaceMember {
         String tags = xslt.substring(pos,endPos);
         
         // remove the tag and clean up an double | that may remain
-        String newTags = tags.replaceAll("("+tag+"\\||\\|"+tag+")","");
+        String newTags = tags.replaceAll("("+qName+"\\||\\|"+qName+")","");
         
         // sub the new tags list back into the xslt
         this.xslt = this.xslt.replace(tags, newTags);
@@ -90,7 +95,7 @@ public class JuxtaXslt extends WorkspaceMember {
      */
     public boolean hasLineBreak( final String tagName ) {
         int pos = xslt.indexOf("<!--breaks-->");
-        int limitPos = xslt.indexOf("<xsl:template match=\"text()\">");
+        int limitPos = xslt.indexOf("<xsl:template match=\"*\">");
         pos = xslt.indexOf("match=\"", pos)+7;
         if ( pos > limitPos ) {
             return false;
