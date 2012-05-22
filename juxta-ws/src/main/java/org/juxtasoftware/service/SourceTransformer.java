@@ -426,22 +426,25 @@ public class SourceTransformer {
         public void characters(char[] ch, int start, int length) throws SAXException {
             if ( this.isExcluding == false ) {
                 String txt = new String(ch, start, length);
-                txt = txt.trim();
+                // remove formatting: if a line startes with \n, all following whitespace
+                // is formatting. Ditch it.
+                txt = txt.replaceAll("^[\\n]\\s*", "");
+                
+                // All whitespace from the last \n on is junk. Strip it
+                txt = txt.replaceAll("[\\n]\\s*$", "");
                 System.err.println("["+txt+"]");
                 if ( this.currNote != null ) {
                     this.currNoteContent.append(txt);
                 } else {
-                    if ( txt.length() > 0) {
-                        this.currPos += (txt.length()+1);
-                        sb.append(txt).append(" ");
-                    }
+                    this.currPos += txt.length();
+                    sb.append(txt);
                 }
             }
         }
         
         @Override
         public void endDocument() throws SAXException {
-            System.err.println(sb.toString());
+            System.err.println("["+sb.toString()+"]");   
             // at the end of parsing, find all notes that have a target
             // specified. Look up that id and set the associated range
             // as the note anchor point

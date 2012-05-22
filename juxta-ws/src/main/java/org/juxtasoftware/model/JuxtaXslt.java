@@ -50,7 +50,7 @@ public class JuxtaXslt extends WorkspaceMember {
         
         // remove from breaks so there is not a template ambiguity
         pos = xslt.indexOf("<!--breaks-->");
-        int limitPos = xslt.indexOf("<xsl:template match=\"*\">");
+        int limitPos = xslt.indexOf("<xsl:template match=\"text()\">");
         pos = xslt.indexOf("match=\"", pos)+7;
         if ( pos > limitPos ) {
             return;
@@ -95,7 +95,7 @@ public class JuxtaXslt extends WorkspaceMember {
      */
     public boolean hasLineBreak( final String tagName ) {
         int pos = xslt.indexOf("<!--breaks-->");
-        int limitPos = xslt.indexOf("<xsl:template match=\"*\">");
+        int limitPos = xslt.indexOf("<xsl:template match=\"text()\">");
         pos = xslt.indexOf("match=\"", pos)+7;
         if ( pos > limitPos ) {
             return false;
