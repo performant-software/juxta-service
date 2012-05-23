@@ -1,8 +1,12 @@
 package org.juxtasoftware.resource;
 
+import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import org.apache.commons.io.IOUtils;
 import org.juxtasoftware.dao.JuxtaXsltDao;
 import org.juxtasoftware.dao.SourceDao;
 import org.juxtasoftware.dao.WitnessDao;
@@ -37,6 +41,7 @@ public class XsltResource extends BaseResource {
     @Autowired private WitnessDao witnessDao;
     @Autowired private SourceTransformer transformer;
     private Long xsltId = null;
+    private boolean templateRequest = false;
     
     @Override
     protected void doInit() throws ResourceException {
@@ -44,14 +49,21 @@ public class XsltResource extends BaseResource {
         if ( getRequest().getAttributes().containsKey("id")) {
             this.xsltId = Long.parseLong( (String)getRequest().getAttributes().get("id"));
         }
+        
+        String lastSeg  = getRequest().getResourceRef().getLastSegment();
+        this.templateRequest = ( lastSeg.equalsIgnoreCase("template"));
     }
     
     @Get("json")
     public Representation getJson() {
         if ( this.xsltId == null ) {
-            List<JuxtaXslt> list = this.xsltDao.list(this.workspace);
-            Gson gson = new Gson();
-            return toJsonRepresentation( gson.toJson(list)); 
+            if ( this.templateRequest ) {
+                return getXsltTemplates();
+            } else {
+                List<JuxtaXslt> list = this.xsltDao.list(this.workspace);
+                Gson gson = new Gson();
+                return toJsonRepresentation( gson.toJson(list)); 
+            }
         } else {
             JuxtaXslt xslt = this.xsltDao.find(this.xsltId);
             Gson gson = new Gson();
@@ -59,12 +71,32 @@ public class XsltResource extends BaseResource {
         }
     }
     
+    private Representation getXsltTemplates() {
+        try {
+            Map<String,String> templates = new HashMap<String,String>();
+            templates.put("main", IOUtils.toString( ClassLoader.getSystemResourceAsStream("xslt/basic.xslt"), "utf-8"));
+            templates.put("singleExclude", IOUtils.toString( ClassLoader.getSystemResourceAsStream("xslt/single-exclusion.xslt"), "utf-8"));
+            templates.put("linebreak", "<xsl:value-of select=\"$display-linebreak\"/>");
+            
+            Gson gson = new Gson();
+            return toJsonRepresentation( gson.toJson(templates));
+        } catch (IOException e ) {
+            setStatus(Status.SERVER_ERROR_INTERNAL);
+            return toTextRepresentation("Unable to retrieve XSLT templates: " +e.getMessage());
+        }
+    }
+
     @Get("html")
     public Representation getHtml() {
         if ( this.xsltId == null ) {
-            List<JuxtaXslt> list = this.xsltDao.list(this.workspace);
-            Gson gson = new Gson();
-            return toJsonRepresentation( gson.toJson(list)); 
+            if ( this.templateRequest ) {
+                setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
+                return null;
+            } else {
+                List<JuxtaXslt> list = this.xsltDao.list(this.workspace);
+                Gson gson = new Gson();
+                return toJsonRepresentation( gson.toJson(list)); 
+            }
         } else {
             JuxtaXslt xslt = this.xsltDao.find(this.xsltId);
             return new StringRepresentation("<h2>"+xslt.getName()+"</h2><textarea style=\"width:90%;height:90%\" value=\""+xslt.getXslt()+"\"/>", 
@@ -80,12 +112,20 @@ public class XsltResource extends BaseResource {
             setStatus(Status.CLIENT_ERROR_UNSUPPORTED_MEDIA_TYPE);
             return null;
         }
+        if ( this.templateRequest ) {
+            setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
+            return null;
+        } 
         JuxtaXslt xslt = this.xsltDao.find(this.xsltId);
         return toXmlRepresentation( xslt.getXslt() );
     }
     
     @Post("json")
     public Representation createXslt( final String jsonData ) {
+        if ( this.templateRequest || this.xsltId != null) {
+            setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
+            return null;
+        } 
         Gson gson = new Gson();
         JuxtaXslt xslt = gson.fromJson(jsonData, JuxtaXslt.class);
         Long id = this.xsltDao.create(xslt);
@@ -98,6 +138,11 @@ public class XsltResource extends BaseResource {
             setStatus(Status.CLIENT_ERROR_METHOD_NOT_ALLOWED);
             return null;
         }
+        
+        if ( this.templateRequest ) {
+            setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
+            return null;
+        } 
         
         if (MediaType.TEXT_XML.equals(entity.getMediaType()) == false) {
             setStatus(Status.CLIENT_ERROR_UNSUPPORTED_MEDIA_TYPE);
@@ -132,6 +177,10 @@ public class XsltResource extends BaseResource {
             setStatus(Status.CLIENT_ERROR_METHOD_NOT_ALLOWED);
             return;
         }
+        if ( this.templateRequest ) {
+            setStatus(Status.CLIENT_ERROR_METHOD_NOT_ALLOWED);
+            return;
+        } 
         JuxtaXslt xslt = this.xsltDao.find(this.xsltId);
         if ( validateModel(xslt) != false ) {
             this.xsltDao.delete(xslt);
