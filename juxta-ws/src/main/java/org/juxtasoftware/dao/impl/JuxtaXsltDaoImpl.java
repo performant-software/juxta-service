@@ -63,13 +63,36 @@ public class JuxtaXsltDaoImpl extends JuxtaDaoImpl<JuxtaXslt> implements JuxtaXs
     @Override
     public List<Usage> getUsage(JuxtaXslt xslt) {
         final String sql = "select id, name from juxta_witness where xslt_id=?";
-        return this.jt.query(sql, new RowMapper<Usage>() {
+        List<Usage> usage =  this.jt.query(sql, new RowMapper<Usage>() {
 
             @Override
             public Usage mapRow(ResultSet rs, int rowNum) throws SQLException {
                 return new Usage(Usage.Type.WITNESS, rs.getLong("id"), rs.getString("name"));
             }
             }, xslt.getId());
+        
+        // find all of the sets that use these witnesses. Add these to the initial list
+        if ( usage.size() > 0 ) {
+            StringBuilder ids = new StringBuilder();
+            for (Usage u : usage) {
+                if ( ids.length() > 0) {
+                    ids.append(",");
+                }
+                ids.append( u.getId() );
+            }
+            String setSql = "select distinct set_id,name from juxta_comparison_set_member " +
+                    "inner join juxta_comparison_set on juxta_comparison_set.id = set_id " +
+                    "where witness_id in ("+ids+")";
+            usage.addAll( this.jt.query(setSql, new RowMapper<Usage>(){
+                @Override
+                public Usage mapRow(ResultSet rs, int rowNum) throws SQLException {
+                    return new Usage(Usage.Type.COMPARISON_SET, rs.getLong("set_id"), rs.getString("name"));
+                }
+                
+            }));
+        }
+        
+        return usage;
     }
 
     @Override

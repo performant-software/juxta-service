@@ -7,9 +7,11 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.io.IOUtils;
+import org.juxtasoftware.dao.ComparisonSetDao;
 import org.juxtasoftware.dao.JuxtaXsltDao;
 import org.juxtasoftware.dao.SourceDao;
 import org.juxtasoftware.dao.WitnessDao;
+import org.juxtasoftware.model.ComparisonSet;
 import org.juxtasoftware.model.JuxtaXslt;
 import org.juxtasoftware.model.Source;
 import org.juxtasoftware.model.Usage;
@@ -40,6 +42,7 @@ public class XsltResource extends BaseResource {
     @Autowired private SourceDao sourceDao;
     @Autowired private WitnessDao witnessDao;
     @Autowired private SourceTransformer transformer;
+    @Autowired private ComparisonSetDao setDao;
     private Long xsltId = null;
     private boolean templateRequest = false;
     
@@ -160,11 +163,18 @@ public class XsltResource extends BaseResource {
             // Get the witness that uses this XSLT. List should be of size 1.
             List<Usage> usage = this.xsltDao.getUsage(xslt);
             for(Usage u : usage) {
-                Witness origWit = this.witnessDao.find( u.getId() );
-                Source src = this.sourceDao.find(this.workspace.getId(), origWit.getSourceId());
-                this.transformer.redoTransform(src, origWit);
+                if ( u.getType().equals(Usage.Type.WITNESS)) {
+                    Witness origWit = this.witnessDao.find( u.getId() );
+                    Source src = this.sourceDao.find(this.workspace.getId(), origWit.getSourceId());
+                    this.transformer.redoTransform(src, origWit);
+                } else if ( u.getType().equals(Usage.Type.COMPARISON_SET)) {
+                    ComparisonSet set = this.setDao.find( u.getId());
+                    this.setDao.clearCollationData(set);
+                    
+                }
             }
-            return toTextRepresentation( this.xsltId.toString() );
+            Gson gson = new Gson();
+            return toJsonRepresentation( gson.toJson(usage));
         } catch (Exception e) {
             setStatus(Status.SERVER_ERROR_INTERNAL);
             return toTextRepresentation(e.getMessage());
