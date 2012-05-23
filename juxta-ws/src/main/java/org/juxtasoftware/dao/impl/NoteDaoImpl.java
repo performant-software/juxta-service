@@ -35,6 +35,9 @@ public class NoteDaoImpl implements NoteDao {
 
     @Override
     public void create(final List<Note> notes) {
+        if ( notes.isEmpty() ) {
+            return;
+        }
         StringBuilder sql = new StringBuilder();
         sql.append("insert into ").append(TABLE_NAME);
         sql.append(" (witness_id, note_type, target_xml_id,");

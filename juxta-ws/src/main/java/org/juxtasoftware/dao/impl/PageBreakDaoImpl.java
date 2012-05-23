@@ -20,6 +20,9 @@ public class PageBreakDaoImpl implements PageBreakDao {
 
     @Override
     public void create(final List<PageBreak> pbs) {
+        if ( pbs.isEmpty() ) {
+            return;
+        }
         this.jdbcTemplate.batchUpdate(
             "insert into "+TABLE_NAME+" (witness_id, offset, label) values (?,?,?)",
             new BatchPreparedStatementSetter() {

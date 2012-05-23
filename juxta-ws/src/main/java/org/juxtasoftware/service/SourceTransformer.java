@@ -66,9 +66,6 @@ public class SourceTransformer {
     @Autowired private NoteDao noteDao;
     @Autowired private PageBreakDao pbDao;
     @Autowired private SourceDao sourceDao;
-    
-    private List<Note> notes;
-    private List<PageBreak> pageBeaks;
 
     /**
      * RE-run the transform of <code>srcDoc</code> into a prior witness
@@ -98,14 +95,6 @@ public class SourceTransformer {
         this.annotationRepository.delete( text(origWit.getText()) );
         this.noteDao.deleteAll( origWit.getId() );
         this.pbDao.deleteAll( origWit.getId() );
-
-        // Extract tags that jave special handling in juxta FIRST
-        RevisionSet revSet = null;
-        if ( origWit.getRevisionSetId() != null ) {
-            revSet = this.revisionDao.getRevsionSet(origWit.getRevisionSetId());
-        }
-        extractSpecialTags(srcDoc, xslt, revSet);
-        writeExtractedTags(origWit.getId());
         
         // redo the transform
         Text parsedContent = srcDoc.getText();
@@ -117,8 +106,15 @@ public class SourceTransformer {
             parsedContent = rdr.getContent();
         }  
         
-        // dump the results 
+        // dump the transform results 
         this.witnessDao.updateContent(origWit, parsedContent);
+        
+        // Extract information about tags that require special handling
+        RevisionSet revSet = null;
+        if ( origWit.getRevisionSetId() != null ) {
+            revSet = this.revisionDao.getRevsionSet(origWit.getRevisionSetId());
+        }
+        extractSpecialTags(srcDoc, origWit.getId(), xslt, revSet);
         
         // now it is safe to kill the original text text
         this.textRepository.delete( origWit.getText() );
@@ -126,7 +122,7 @@ public class SourceTransformer {
     
     /**
      * Transform <code>srcDoc</code> into a witness with the name <code>finalName</code>
-     * using parse template <code>template</code>.  The resulting witness ID
+     * using XSLT contained in <code>xslt</code>.  The resulting witness ID
      * is returned.
      * 
      * @param srcDoc The JuxtaSource to be transformed into a witness
@@ -136,13 +132,9 @@ public class SourceTransformer {
      * @return The new witness ID
      * @throws SAXException 
      * @throws IOException
-     * @throws XMLStreamException
      * @throws TransformerException 
      */
     public Long transform(Source srcDoc, JuxtaXslt xslt, RevisionSet revSet, String finalName) throws SAXException, IOException, TransformerException {
-
-        // pull info for tags that require special handling: note,pb & revs
-        extractSpecialTags(srcDoc, xslt, revSet);
         
         // transform into a new text_content object        
         Text parsedContent = srcDoc.getText();
@@ -167,14 +159,16 @@ public class SourceTransformer {
             witness.setRevisionSetId(revSet.getId());
         }
         Long id = this.witnessDao.create(witness);
-        writeExtractedTags(id);
+        
+        // pull info for tags that require special handling: note,pb & revs
+        extractSpecialTags(srcDoc, id, xslt, revSet);
         
         return id;
     }
 
     private Text doTransform(Source srcDoc, JuxtaXslt xslt) throws IOException, TransformerException, FileNotFoundException {
         
-        // be sur ewe are using the saxon parser
+        // be sure to use the saxon parser
         System.setProperty("javax.xml.transform.TransformerFactory", "net.sf.saxon.TransformerFactoryImpl");
         
         // setup source, xslt and result
@@ -198,29 +192,10 @@ public class SourceTransformer {
         return parsedContent;
     }
 
-    private void extractSpecialTags(final Source source, final JuxtaXslt xslt, final RevisionSet revSet) throws SAXException, IOException  {
-        JuxtaExtractor extract = new JuxtaExtractor( source, xslt, revSet);
-        this.notes = extract.getNotes();
-        this.pageBeaks = extract.getPageBreaks();
-    }
-    
-    private void writeExtractedTags( final Long witnessId ) {
-        // add in any note tag information that was discovered
-        // during the transformation process.
-        if (!this.notes.isEmpty()) {
-            for (Note note : this.notes) {
-                note.setWitnessId( witnessId );
-            }
-            this.noteDao.create(this.notes);
-        }
-        
-        // add page breaks too!
-        if ( this.pageBeaks.isEmpty() == false ) {
-            for ( PageBreak pb : this.pageBeaks ) {
-                pb.setWitnessId( witnessId );
-            }
-            this.pbDao.create(this.pageBeaks);
-        }
+    private void extractSpecialTags(final Source source, final Long witnessId, final JuxtaXslt xslt, final RevisionSet revSet) throws SAXException, IOException  {
+        JuxtaExtractor extract = new JuxtaExtractor( source, witnessId, xslt, revSet);
+        this.noteDao.create( extract.getNotes() );
+        this.pbDao.create( extract.getPageBreaks() );
     }
     
     /**
@@ -251,23 +226,21 @@ public class SourceTransformer {
      * @author loufoster
      */
     private class JuxtaExtractor extends DefaultHandler  {
-        private boolean extractNotes;
-        private boolean extractPb;
         private Note currNote = null;
         private StringBuilder currNoteContent;
         private List<Note> notes = new ArrayList<Note>();
         private List<PageBreak> breaks = new ArrayList<PageBreak>();
         private Map<String, Range> identifiedRanges = Maps.newHashMap();
-        private JuxtaXslt xslt;        
+        private JuxtaXslt xslt;     
+        private Long witnessId;
         private long currPos = 0;
         private boolean isExcluding = false;
         private Stack<String> exclusionContext = new Stack<String>();
         private Stack<String> xmlIdStack = new Stack<String>();
 
-        private JuxtaExtractor(final Source source, final JuxtaXslt xslt, RevisionSet revSet) throws SAXException, IOException {          
-            this.extractPb = true;
-            this.extractNotes= true;
+        private JuxtaExtractor(final Source source, final Long witnessId, final JuxtaXslt xslt, RevisionSet revSet) throws SAXException, IOException {          
             this.xslt = xslt;
+            this.witnessId = witnessId;
             Util.saxParser().parse( new InputSource( sourceDao.getContentReader(source) ), this);
         }
         
@@ -290,9 +263,9 @@ public class SourceTransformer {
                 this.exclusionContext.push(qName);
             }
                         
-            if ( qName.equals("note") && this.extractNotes) {
+            if ( qName.equals("note") ) {
                 handleNote(attributes);
-            } else if (qName.equals("pb") && this.extractPb) {
+            } else if (qName.equals("pb") ) {
                 handlePageBreak(attributes);
             } else {
                 final String idVal = getIdValue(attributes);
@@ -311,6 +284,7 @@ public class SourceTransformer {
         
         private void handleNote(Attributes attributes) {
             this.currNote = new Note();
+            this.currNote.setWitnessId( this.witnessId );
             this.currNote.setAnchorRange(new Range(this.currPos, this.currPos));
             this.currNoteContent = new StringBuilder();
 
@@ -331,6 +305,7 @@ public class SourceTransformer {
 
         private void handlePageBreak(Attributes attributes) {
             PageBreak pb = new PageBreak();
+            pb.setWitnessId(this.witnessId);
             pb.setOffset(this.currPos);
             
             for (int idx = 0; idx<attributes.getLength(); idx++) {  
