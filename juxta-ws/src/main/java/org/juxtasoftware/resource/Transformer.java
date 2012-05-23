@@ -138,8 +138,6 @@ public class Transformer extends BaseResource {
         String xslt = IOUtils.toString( ClassLoader.getSystemResourceAsStream("xslt/basic.xslt"), "utf-8");
         xslt = xslt.replaceAll("\\{LB_LIST\\}", "*");
         xslt = xslt.replaceAll("\\{LINEBREAK\\}", "&#10;");
-        xslt = xslt.replaceAll("\\{NOTE\\}", "ns:note");
-        xslt = xslt.replaceAll("\\{PB\\}", "ns:pb");
         
         BufferedReader br = new BufferedReader(this.sourceDao.getContentReader(src));
         List<String> namespaces = new ArrayList<String>();
@@ -194,8 +192,12 @@ public class Transformer extends BaseResource {
                 sb.append(ns).append(" ");
             }
             xslt = xslt.replaceAll("\\{NAMESPACE\\}", sb.toString() );
+            xslt = xslt.replaceAll("\\{NOTE\\}", "ns:note");
+            xslt = xslt.replaceAll("\\{PB\\}", "ns:pb");
         } else {
             xslt = xslt.replaceAll("\\{NAMESPACE\\}", "");
+            xslt = xslt.replaceAll("\\{NOTE\\}", "note");
+            xslt = xslt.replaceAll("\\{PB\\}", "pb");
         }
         
         JuxtaXslt jxXslt = new JuxtaXslt();

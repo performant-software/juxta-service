@@ -109,6 +109,9 @@ public class JuxtaXslt extends WorkspaceMember {
         }
         int endPos = xslt.indexOf("\"", pos);
         String tags = xslt.substring(pos,endPos);
+        if ( tags.equals("*")) {
+            return true;
+        }
         return tags.contains(tagName);
     }
 }
