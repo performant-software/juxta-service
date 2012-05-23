@@ -79,13 +79,20 @@ public class JuxtaXslt extends WorkspaceMember {
         }
         while ( pos > -1 && pos < limitPos) {
             int endPos = xslt.indexOf("\"", pos);
-            String tags = xslt.substring(pos,endPos);
-            if ( tags.contains(tagName)  ) {
+            String tag = stripNamespace( xslt.substring(pos,endPos) );
+            if ( tag.equals(tagName)  ) {
                 return true;
             }
             pos = xslt.indexOf("match=\"", endPos)+7;
         }
         return false;
+    }
+    
+    private String stripNamespace( final String tagName ) {
+        if ( tagName.contains(":") ) {
+            return tagName.split(":")[1];
+        }
+        return tagName;
     }
     
     /**
