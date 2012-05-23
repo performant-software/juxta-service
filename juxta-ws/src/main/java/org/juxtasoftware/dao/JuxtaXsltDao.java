@@ -23,12 +23,6 @@ public interface JuxtaXsltDao extends JuxtaDao<JuxtaXslt> {
     List<Usage> getUsage( final JuxtaXslt xslt );
     
     /**
-     * Get the basic tag stripper xslt
-     * @return
-     */
-    JuxtaXslt getTagStripper( );
-    
-    /**
      * List all XSLTs in the workspace.
      * @param ws
      * @return

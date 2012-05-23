@@ -59,11 +59,6 @@ public class JuxtaXsltDaoImpl extends JuxtaDaoImpl<JuxtaXslt> implements JuxtaXs
             }
         });    
     }
-
-    @Override
-    public JuxtaXslt getTagStripper() {
-        return find(1L);
-    }
     
     @Override
     public List<Usage> getUsage(JuxtaXslt xslt) {
