@@ -106,11 +106,6 @@ public class SourceTransformer {
         }
         extractSpecialTags(srcDoc, xslt, revSet);
         writeExtractedTags(origWit.getId());
-
-        // if notes or pbs are INCLUDED they have just been handled above. Remove them now
-        if ( xslt.isExcluded("note") == false) {
-            xslt.addExclusion( "note");
-        }
         
         // redo the transform
         Text parsedContent = srcDoc.getText();
@@ -149,11 +144,6 @@ public class SourceTransformer {
         // pull info for tags that require special handling: note,pb & revs
         extractSpecialTags(srcDoc, xslt, revSet);
         
-        // if notes or pbs are INCLUDED they have just been handled above. Remove them now
-        if ( xslt.isExcluded("note") == false) {
-            xslt.addExclusion( "note");
-        }
-        
         // transform into a new text_content object        
         Text parsedContent = srcDoc.getText();
         if (srcDoc.getText().getType().equals(Text.Type.XML)) {     
@@ -184,21 +174,14 @@ public class SourceTransformer {
 
     private Text doTransform(Source srcDoc, JuxtaXslt xslt) throws IOException, TransformerException, FileNotFoundException {
         
-        // use the saxon transformer cuz it understands xslt with REPLACE() which
-        // is necessary to make the output match the client-size xslt output
+        // be sur ewe are using the saxon parser
         System.setProperty("javax.xml.transform.TransformerFactory", "net.sf.saxon.TransformerFactoryImpl");
         
         // setup source, xslt and result
         File outFile = File.createTempFile("xform"+srcDoc.getId(), "xml");
         outFile.deleteOnExit();
         javax.xml.transform.Source xmlSource = new StreamSource( this.sourceDao.getContentReader(srcDoc) );
-        //String stringRegex = "\"replace(replace(replace(., '[\\n\\r]', ''), '^\\s+', ' '), '\\s+$', ' ')\"";
-        //String stringRegex = "\"replace(., '[\\n\\r]', '')\"";
-        //String stringRegex = "\"replace( '\\s+$', ' ')\"";
-        //String fixedXslt = xslt.getXslt().replace("\".\"", stringRegex);
-        String fixedXslt = xslt.getXslt();
-        System.out.println(fixedXslt);
-        javax.xml.transform.Source xsltSource =  new StreamSource( new StringReader(fixedXslt) );
+        javax.xml.transform.Source xsltSource =  new StreamSource( new StringReader(xslt.getXslt()) );
         javax.xml.transform.Result result = new StreamResult( outFile );
  
         // create an instance of TransformerFactory and do the transform
@@ -216,21 +199,9 @@ public class SourceTransformer {
     }
 
     private void extractSpecialTags(final Source source, final JuxtaXslt xslt, final RevisionSet revSet) throws SAXException, IOException  {
-        
-        // if everything has been excluded, there is noting to do here!
-        if ( xslt.isExcluded("note") && xslt.isExcluded("pb") && revSet == null ) {
-            return;
-        }
-        
-        // create config for parser. Note that the parser by default creates
-        // a new text record. In this case it is useless. Just delete it immediately
-        try {
         JuxtaExtractor extract = new JuxtaExtractor( source, xslt, revSet);
         this.notes = extract.getNotes();
         this.pageBeaks = extract.getPageBreaks();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
     
     private void writeExtractedTags( final Long witnessId ) {
@@ -275,9 +246,9 @@ public class SourceTransformer {
     }
     
     /**
-     * Adapt parser to handle only special case tags: notes, page breaks and revision sites
+     * JuxtaExtractor is a SAX xml parser that will collect the position information
+     * for tags that require special handling by Juxta. Notes & Page Breaks
      * @author loufoster
-     *
      */
     private class JuxtaExtractor extends DefaultHandler  {
         private boolean extractNotes;
@@ -287,17 +258,15 @@ public class SourceTransformer {
         private List<Note> notes = new ArrayList<Note>();
         private List<PageBreak> breaks = new ArrayList<PageBreak>();
         private Map<String, Range> identifiedRanges = Maps.newHashMap();
-        private JuxtaXslt xslt;
-        
-        private StringBuilder sb = new StringBuilder();
+        private JuxtaXslt xslt;        
         private long currPos = 0;
         private boolean isExcluding = false;
         private Stack<String> exclusionContext = new Stack<String>();
         private Stack<String> xmlIdStack = new Stack<String>();
 
         private JuxtaExtractor(final Source source, final JuxtaXslt xslt, RevisionSet revSet) throws SAXException, IOException {          
-            this.extractPb = !xslt.isExcluded("pb");
-            this.extractNotes= !xslt.isExcluded("note");
+            this.extractPb = true;
+            this.extractNotes= true;
             this.xslt = xslt;
             Util.saxParser().parse( new InputSource( sourceDao.getContentReader(source) ), this);
         }
@@ -316,17 +285,11 @@ public class SourceTransformer {
                 return;
             }
             
-            if (qName.equals("pb") ) {
-                System.err.println("PB");
-            }
-            
-            if (this.xslt.isExcluded(qName)) {
+            if ( isSpecialTag(qName) == false && this.xslt.isExcluded(qName)) {
                 this.isExcluding = true;
                 this.exclusionContext.push(qName);
             }
-            
-            System.err.println(qName+" start pos "+this.currPos);
-            
+                        
             if ( qName.equals("note") && this.extractNotes) {
                 handleNote(attributes);
             } else if (qName.equals("pb") && this.extractPb) {
@@ -340,6 +303,10 @@ public class SourceTransformer {
                     this.xmlIdStack.push("NA");
                 }
             }
+        }
+        
+        private boolean isSpecialTag( final String qName ) { 
+            return (qName.equals("note") || qName.equals("pb"));
         }
         
         private void handleNote(Attributes attributes) {
@@ -406,6 +373,10 @@ public class SourceTransformer {
                 }
                 this.currNote = null;
                 this.currNoteContent = null;
+            } else if (qName.equals("pb")) {
+                // pagebreaks always include a linebreak. add 1 to
+                // current position to account for this
+                this.currPos++;
             } else {
                 // if the tag has an identifier, save it off for crossreference with targeted notes
                 if ( this.xmlIdStack.empty() == false ) {
@@ -415,8 +386,7 @@ public class SourceTransformer {
                     }
                 }
                 
-                if ( qName.equals("pb") || this.xslt.hasLineBreak(qName)){
-                    sb.append("\n");
+                if ( this.xslt.hasLineBreak(qName)){
                     this.currPos++;
                 }
             }            
@@ -432,19 +402,17 @@ public class SourceTransformer {
                 
                 // All whitespace from the last \n on is junk. Strip it
                 txt = txt.replaceAll("[\\n]\\s*$", "");
-                System.err.println("["+txt+"]");
+                //System.err.println("["+txt+"]");
                 if ( this.currNote != null ) {
                     this.currNoteContent.append(txt);
                 } else {
                     this.currPos += txt.length();
-                    sb.append(txt);
                 }
             }
         }
         
         @Override
         public void endDocument() throws SAXException {
-            System.err.println("["+sb.toString()+"]");   
             // at the end of parsing, find all notes that have a target
             // specified. Look up that id and set the associated range
             // as the note anchor point
