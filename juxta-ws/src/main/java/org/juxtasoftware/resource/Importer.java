@@ -14,6 +14,7 @@ import org.juxtasoftware.dao.JuxtaXsltDao;
 import org.juxtasoftware.dao.SourceDao;
 import org.juxtasoftware.dao.WitnessDao;
 import org.juxtasoftware.model.ComparisonSet;
+import org.juxtasoftware.model.JuxtaXslt;
 import org.juxtasoftware.model.Source;
 import org.juxtasoftware.model.Witness;
 import org.juxtasoftware.service.importer.ImportService;
@@ -252,10 +253,10 @@ public class Importer extends BaseResource implements ApplicationContextAware {
         this.setDao.delete(set);
         
         // kill the witnesses and associated sources
-        List<Long> templateIdList = new ArrayList<Long>();
+        List<Long> xsltIdList = new ArrayList<Long>();
         for ( Witness witness :witnesses ) {
             Long sourceId  = witness.getSourceId();
-            templateIdList.add( witness.getXsltId() );
+            xsltIdList.add( witness.getXsltId() );
             
             // Next, kill the witness
             this.witnessDao.delete(witness);
@@ -264,14 +265,12 @@ public class Importer extends BaseResource implements ApplicationContextAware {
             Source s = this.sourceDao.find(this.workspace.getId(), sourceId);
             this.sourceDao.delete(s);
         }
-        
-        // TODO
-        
-//        // Finally, iterate over all templates and kill them too
-//        for (Long templateId : templateIdList ) {
-//            Template t = this.templateDao.find(templateId);
-//            this.templateDao.delete(t);
-//        }
+
+        // Finally, iterate over the XSLTs used and kill them too
+        for (Long xsltId : xsltIdList ) {
+            JuxtaXslt xslt = this.xsltDao.find(xsltId);
+            this.xsltDao.delete(xslt);
+        }
     }
     
     /**

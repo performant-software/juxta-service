@@ -89,7 +89,10 @@ public class JuxtaXslt extends WorkspaceMember {
     }
     
     private String stripNamespace( final String tagName ) {
-        if ( tagName.contains(":") ) {
+        if ( tagName.contains("*[")  ) {
+            int pos = tagName.lastIndexOf("']");
+            return tagName.substring(16,pos);
+        } else if ( tagName.contains(":") ) {
             return tagName.split(":")[1];
         }
         return tagName;
@@ -101,6 +104,9 @@ public class JuxtaXslt extends WorkspaceMember {
      * @return
      */
     public boolean hasLineBreak( final String tagName ) {
+        if ( tagName.equals("lb") ) {
+            System.err.println("fgvv");
+        }
         int pos = xslt.indexOf("<!--breaks-->");
         int limitPos = xslt.indexOf("<xsl:template match=\"text()\">");
         pos = xslt.indexOf("match=\"", pos)+7;
@@ -112,6 +118,13 @@ public class JuxtaXslt extends WorkspaceMember {
         if ( tags.equals("*")) {
             return true;
         }
-        return tags.contains(tagName);
+        String[] tagArray = tags.split("\\|");
+        for ( int i=0; i<tagArray.length; i++) {
+            String tag = stripNamespace(tagArray[i]);
+            if ( tag.equals(tagName) ) {
+                return true;
+            }
+        }
+        return false;
     }
 }

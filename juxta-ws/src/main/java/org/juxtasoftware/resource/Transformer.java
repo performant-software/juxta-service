@@ -1,9 +1,7 @@
 package org.juxtasoftware.resource;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Set;
 
 import org.apache.commons.io.IOUtils;
 import org.juxtasoftware.dao.JuxtaXsltDao;
@@ -15,6 +13,8 @@ import org.juxtasoftware.model.RevisionSet;
 import org.juxtasoftware.model.Source;
 import org.juxtasoftware.model.Workspace;
 import org.juxtasoftware.service.SourceTransformer;
+import org.juxtasoftware.util.NamespaceExtractor;
+import org.juxtasoftware.util.NamespaceExtractor.NamespaceInfo;
 import org.restlet.data.Status;
 import org.restlet.representation.Representation;
 import org.restlet.resource.Post;
@@ -139,61 +139,12 @@ public class Transformer extends BaseResource {
         xslt = xslt.replaceAll("\\{LB_LIST\\}", "*");
         xslt = xslt.replaceAll("\\{LINEBREAK\\}", "&#10;");
         
-        BufferedReader br = new BufferedReader(this.sourceDao.getContentReader(src));
-        List<String> namespaces = new ArrayList<String>();
-        while (true) {
-            String line = br.readLine();
-            if ( line == null ) {
-                break;
-            }
-            
-            // default namespace?
-            if ( line.contains("xmlns=\"") ) {
-                int pos = line.indexOf("xmlns=\"")+7;
-                int end = line.indexOf('"', pos);
-                String namespace = "xmlns:ns=\""+line.substring(pos,end)+"\"";
-                namespaces.add( namespace );
-            } 
-            
-            // no-namespace loc?
-            if ( line.contains(":noNamespaceSchemaLocation=\"") ) {
-                int pos = line.indexOf(":noNamespaceSchemaLocation=\"")+28;
-                int end = line.indexOf('"', pos);
-                String namespace = "xmlns:ns=\""+line.substring(pos,end)+"\"";
-                namespaces.add( namespace );               
-            } 
-            
-            // specifc namespace?
-            if ( line.contains("xmlns:") ) {                
-                int pos = line.indexOf("xmlns:")+6;
-                while ( pos > -1  ) {
-                    int nsPos = pos;
-                    int nsEndPos = line.indexOf("=\"", pos);
-                    pos = nsEndPos+2;
-                    int end = line.indexOf('"', pos);
-                    String url = line.substring(pos,end);
-                    if ( url.contains("w3.org") == false ) {
-                        String namespace = "xmlns:"+line.substring(nsPos,nsEndPos)+"=\""+url+"\"";
-                        namespaces.add(namespace);
-                    }
-                    int newPos = line.indexOf("xmlns:", end);
-                    if (newPos > -1 ) {
-                        pos = newPos+6;
-                    } else {
-                        pos = -1;
-                    }
-                }
-            }
-        }
-        
+        // for now act like desktop: if namespaces are included in the xml, wildcard all tag names
+        Set<NamespaceInfo> namespaces = NamespaceExtractor.extract( this.sourceDao.getContentReader(src) );        
         if ( namespaces.size() > 0 ) {
-            StringBuilder sb = new StringBuilder();
-            for ( String ns : namespaces ) {
-                sb.append(ns).append(" ");
-            }
-            xslt = xslt.replaceAll("\\{NAMESPACE\\}", sb.toString() );
-            xslt = xslt.replaceAll("\\{NOTE\\}", "ns:note");
-            xslt = xslt.replaceAll("\\{PB\\}", "ns:pb");
+            xslt = xslt.replaceAll("\\{NAMESPACE\\}", "");
+            xslt = xslt.replaceAll("\\{NOTE\\}", getWildcardName("note"));
+            xslt = xslt.replaceAll("\\{PB\\}", getWildcardName("pb"));
         } else {
             xslt = xslt.replaceAll("\\{NAMESPACE\\}", "");
             xslt = xslt.replaceAll("\\{NOTE\\}", "note");
@@ -207,5 +158,9 @@ public class Transformer extends BaseResource {
         Long id = this.xsltDao.create(jxXslt);
         jxXslt.setId(id);
         return jxXslt;
+    }
+    
+    private String getWildcardName( final String name ) {
+        return "*[local-name()='"+name+"']";
     }
 }

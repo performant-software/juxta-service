@@ -13,6 +13,7 @@ import org.juxtasoftware.model.ComparisonSet;
 import org.juxtasoftware.model.Source;
 import org.juxtasoftware.model.Workspace;
 import org.juxtasoftware.service.importer.jxt.JxtImportServiceImpl;
+import org.juxtasoftware.service.importer.jxt.XmlTemplateParser;
 import org.juxtasoftware.service.importer.ps.ParallelSegmentationImportImpl;
 import org.juxtasoftware.util.BackgroundTaskStatus;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -18,6 +18,7 @@ import java.util.zip.ZipInputStream;
 
 import javax.xml.stream.XMLStreamException;
 
+import org.apache.commons.io.IOUtils;
 import org.juxtasoftware.Constants;
 import org.juxtasoftware.dao.AlignmentDao;
 import org.juxtasoftware.dao.CacheDao;
@@ -33,6 +34,7 @@ import org.juxtasoftware.model.Alignment.AlignedAnnotation;
 import org.juxtasoftware.model.CollatorConfig;
 import org.juxtasoftware.model.ComparisonSet;
 import org.juxtasoftware.model.JuxtaAnnotation;
+import org.juxtasoftware.model.JuxtaXslt;
 import org.juxtasoftware.model.RevisionSet;
 import org.juxtasoftware.model.Source;
 import org.juxtasoftware.model.Witness;
@@ -40,10 +42,10 @@ import org.juxtasoftware.model.Workspace;
 import org.juxtasoftware.service.ComparisonSetCollator;
 import org.juxtasoftware.service.SourceTransformer;
 import org.juxtasoftware.service.Tokenizer;
-import org.juxtasoftware.service.XmlTemplateParser;
 import org.juxtasoftware.service.importer.ImportService;
 import org.juxtasoftware.service.importer.jxt.ManifestParser.SourceInfo;
 import org.juxtasoftware.service.importer.jxt.MovesParser.JxtMoveInfo;
+import org.juxtasoftware.service.importer.jxt.XmlTemplateParser.TemplateInfo;
 import org.juxtasoftware.util.BackgroundTaskSegment;
 import org.juxtasoftware.util.BackgroundTaskStatus;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -168,9 +170,11 @@ public class JxtImportServiceImpl implements ImportService<InputStream> {
         try {
             for (Witness witness : witnesses) {
                 Source s = this.sourceDao.find(this.ws.getId(), witness.getSourceId());
+                JuxtaXslt xslt = this.xsltDao.find(witness.getXsltId());
                 this.witnessDao.delete(witness);
                 this.revisionsDao.deleteSourceRevisionSets(s.getId());
                 this.sourceDao.delete(s);
+                this.xsltDao.delete(xslt);
             }
         } catch (Exception e) {
             throw new RuntimeException("Unable to overwrite set; witnesses are in use in another set.");
@@ -243,14 +247,13 @@ public class JxtImportServiceImpl implements ImportService<InputStream> {
      * @throws Exception
      */
     private void parseTemplates( File sessionDataDir ) throws Exception {
-        // TODO
-//        this.taskStatus.setNote("Parsing templates");
-//        final File templates = new File(sessionDataDir, "templates.xml");
-//        if (!templates.isFile()) {
-//            throw new IOException("No templates.xml");
-//        }
-//        this.templateParser.parse( new FileInputStream(templates ) );
-//        this.taskSegment.incrementValue();
+        this.taskStatus.setNote("Parsing templates");
+        final File templates = new File(sessionDataDir, "templates.xml");
+        if (!templates.isFile()) {
+            throw new IOException("No templates.xml");
+        }
+        this.templateParser.parse( new FileInputStream(templates ) );
+        this.taskSegment.incrementValue();
     }
     
       
@@ -262,96 +265,104 @@ public class JxtImportServiceImpl implements ImportService<InputStream> {
      * @throws Exception
      */
     private void populateSet( List<SourceInfo> sources, List<JxtMoveInfo> moves ) throws Exception {
-        // TODO
-//        // Use collected data to create soures, templates, witness and
-//        // add them all to the comparison set
-//        Set<Witness> witnesses = new HashSet<Witness>();
-//        this.taskStatus.setNote("Adding witnesses to comparison set");
-//        for ( SourceInfo srcInfo : sources ) {
-//
-//            // the only way a source can have no template is if it 
-//            // is a plain text file instead of xml. 
-//            Template parseTemplate = null;
-//            String srcName = srcInfo.getSrcFile().getName();
-//            this.taskStatus.setNote("Adding raw source document: "+srcName); 
-//            int extPos = srcName.lastIndexOf('.');
-//            String ext = ".txt";
-//            if ( extPos > -1 ) {
-//                ext = srcName.substring(extPos);
-//            }
-//            boolean isXml = ext.equalsIgnoreCase(".xml");
-//            if ( isXml ) {
-//                parseTemplate = this.templateParser.findTemplate( srcInfo.getTemplateGuid() );
-//            }
-//            
-//            // create the juxta source (must always create a new one)
-//            // the reson: juxta desktop allows user to alter raw xml
-//            // also, others may have grabbed this source for other purposes
-//            Source source = createSource(srcInfo, isXml);
-//            
-//            // record any accepted revisions this witness may have had
-//            List<Integer> acceptedRevs = srcInfo.getAcceptedRevsions();
-//            RevisionSet revSet = null;
-//            if ( acceptedRevs.size() > 0) {
-//                revSet = new RevisionSet();
-//                revSet.setName(this.set.getName()+"-src-"+source.getId());
-//                revSet.setSourceId( source.getId() );
-//                revSet.setRevisionIndexes(acceptedRevs);
-//                Long id = this.revisionsDao.createRevisionSet(revSet);
-//                revSet.setId(id);
-//            }
-//            
-//            // if the source was associated with a parse template,
-//            // create it and use it to transform to a witness
-//            this.taskStatus.setNote("Transform raw "+srcName+" into witness");
-//            Long witnessId = null;
-//            if ( parseTemplate != null ) {
-//                
-//                // imports can never bet set as default and names
-//                // are prefixed with the set name. Only create 1x
-//                if ( parseTemplate.getId() == null ) {
-//                    // juxta docs have a bunch of biblio noise up front. this
-//                    // as handled with a root xpath, but this is no longer supported
-//                    // (forces the full doc to be sucked into memory). to compensate,
-//                    // make sure the biblio data is excluded here
-//                    if ( parseTemplate.getRootElement().getLocalName().equals("juxta-document")) {
-//                        excludeBiblioData( parseTemplate );
-//                    }
-//                    parseTemplate.setDefault(false);
-//                    parseTemplate.setName( parseTemplate.getName()+"."+set.getName().hashCode());
-//                    parseTemplate.setWorkspaceId( this.set.getWorkspaceId() );
-//                    
-//                    // if  template with this name already exists, update it
-//                    Workspace ws = this.workspaceDao.find( this.set.getWorkspaceId() );
-//                    Template orig = this.templateDao.find( ws, parseTemplate.getName() );
-//                    if ( orig != null ) {
-//                        parseTemplate.setId( orig.getId());
-//                        this.templateDao.update(parseTemplate);
-//                    } else {
-//                        // create a new template
-//                        Long id = this.templateDao.create(parseTemplate);
-//                        parseTemplate.setId(id);
-//                    }
-//                }
-//                // note: always create a new witness. others may have grabbed
-//                // a prior version and started using it. can't wipe it out
-//                // from under them - or change it!
-//                witnessId = this.transformer.transform(source, parseTemplate, revSet, srcInfo.getTitle());
-//                
-//            } else {
-//                // Just null transform it to a witness
-//                witnessId = this.transformer.transform(source, null, null, source.getName());
-//            }
-//            
-//            Witness newWitness = this.witnessDao.find(witnessId);
-//            witnesses.add(  newWitness );
-//        }
-//        
-//        // add all witnesses to the set and update with base witness
-//        this.taskStatus.setNote("Create comparison set");
-//        this.setDao.addWitnesses(this.set, witnesses);
-//        this.setDao.update(this.set);
-//        this.taskSegment.incrementValue();
+        // Use collected data to create soures, templates, witness and
+        // add them all to the comparison set
+        Set<Witness> witnesses = new HashSet<Witness>();
+        this.taskStatus.setNote("Adding witnesses to comparison set");
+        for ( SourceInfo srcInfo : sources ) {
+
+            // determine type of source
+            String srcName = srcInfo.getSrcFile().getName();
+            this.taskStatus.setNote("Adding raw source document: "+srcName); 
+            int extPos = srcName.lastIndexOf('.');
+            String ext = ".txt";
+            if ( extPos > -1 ) {
+                ext = srcName.substring(extPos);
+            }
+            boolean isXml = ext.equalsIgnoreCase(".xml");
+
+            // create the juxta source
+            Source source = createSource(srcInfo, isXml);
+            
+            // record any accepted revisions this witness may have had
+            List<Integer> acceptedRevs = srcInfo.getAcceptedRevsions();
+            RevisionSet revSet = null;
+            if ( acceptedRevs.size() > 0) {
+                revSet = new RevisionSet();
+                revSet.setName(this.set.getName()+"-src-"+source.getId());
+                revSet.setSourceId( source.getId() );
+                revSet.setRevisionIndexes(acceptedRevs);
+                Long id = this.revisionsDao.createRevisionSet(revSet);
+                revSet.setId(id);
+            }
+            
+            // if the source was associated with a parse template,
+            // create it and use it to transform to a witness
+            this.taskStatus.setNote("Transform raw "+srcName+" into witness");
+            Long witnessId = null;
+            JuxtaXslt xslt = null;
+            if ( isXml ) {
+                xslt = generateXslt( source, srcInfo.getTemplateGuid(), srcInfo.getTitle() );
+                witnessId = this.transformer.transform(source, xslt, revSet, srcInfo.getTitle());
+            } else {
+                // Just null transform it to a witness
+              witnessId = this.transformer.transform(source, null, null, source.getName());
+            }
+
+            // add all witnesses to the set and update with base witness
+            Witness newWitness = this.witnessDao.find(witnessId);
+            witnesses.add(  newWitness );
+        }
+
+        this.taskStatus.setNote("Create comparison set");
+        this.setDao.addWitnesses(this.set, witnesses);
+        this.setDao.update(this.set);
+        this.taskSegment.incrementValue();
+    }
+
+    private JuxtaXslt generateXslt(Source source, String guid, String finalName) throws IOException {
+        JuxtaXslt jxXslt = new JuxtaXslt();
+        jxXslt.setName(finalName+"-transform");
+        jxXslt.setWorkspaceId( this.ws.getId() );
+        String xslt = IOUtils.toString( ClassLoader.getSystemResourceAsStream("xslt/basic.xslt"), "utf-8");
+        
+        
+        // desktop has no concept of namespaces. Blank them
+        // out here, and specify WILDACARD namespace prefix everywhere
+        xslt = xslt.replaceAll("\\{NAMESPACE\\}", "");
+        xslt = xslt.replaceAll("\\{NOTE\\}", wildCardNamespace("note") );
+        xslt = xslt.replaceAll("\\{PB\\}", wildCardNamespace("pb") );
+        xslt = xslt.replaceAll("\\{LINEBREAK\\}", "&#10;");
+        
+        // get the template exclusion / linebreak info and insert to XSLT
+        TemplateInfo info = this.templateParser.findTemplateInfo(guid);
+        StringBuilder lb = new StringBuilder();
+        for ( String tag : info.getLineBreaks() ) {
+            if ( lb.length() > 0 ) {
+                lb.append("|");
+            }
+            lb.append( wildCardNamespace(tag) );
+        }
+        xslt = xslt.replaceAll("\\{LB_LIST\\}", lb.toString());
+        
+        // all desktop excludes are global excludes. Add them to the xslt
+        StringBuilder excludes = new StringBuilder();
+        for ( String tag : info.getExcludes() ) {
+            excludes.append("\n    <xsl:template match=\"");
+            excludes.append( wildCardNamespace(tag) ).append("\"/>"); 
+        }
+        final String key = "<!--global-exclusions-->";
+        int pos = xslt.indexOf(key)+key.length();
+        xslt = xslt.substring(0, pos) + excludes.toString() + xslt.substring(pos);
+       
+        jxXslt.setXslt(xslt);
+        Long id = this.xsltDao.create(jxXslt);
+        jxXslt.setId(id);
+        return jxXslt;
+    }
+    
+    private String wildCardNamespace( final String tag ) {
+        return "*[local-name()='"+tag+"']";
     }
 
     private Source createSource(SourceInfo srcInfo, boolean isXml) throws FileNotFoundException, IOException, XMLStreamException {
@@ -364,24 +375,7 @@ public class JxtImportServiceImpl implements ImportService<InputStream> {
         Long srcId = this.sourceDao.create(this.ws, name, isXml, new FileReader(srcInfo.getSrcFile()));
         return this.sourceDao.find(this.ws.getId(), srcId);
     }
-
-    // TODO
-//    private void excludeBiblioData(Template parseTemplate) {
-//        for ( TagAction tagAct : parseTemplate.getTagActions()) {
-//            if ( tagAct.getTag().getLocalName().equals("bibliographic")) {
-//                tagAct.setAction( "EXCLUDE" );
-//                return;
-//            }
-//        }
-//        
-//        TagAction tagAction = new TagAction();
-//        tagAction.setAction("EXCLUDE");
-//        tagAction.setTemplate(parseTemplate);
-//        tagAction.setTag( new WildcardQName("*", "*", "bibliographic"));
-//        parseTemplate.getTagActions().add( tagAction );
-//        
-//    }
-
+    
     /**
      * Tokenize the comparison set
      * @param cfg  

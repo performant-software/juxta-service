@@ -351,7 +351,9 @@ public class SourceTransformer {
             } else if (qName.equals("pb")) {
                 // pagebreaks always include a linebreak. add 1 to
                 // current position to account for this
-                this.currPos++;
+                if ( this.currNote == null ) {
+                    this.currPos++;
+                }
             } else {
                 // if the tag has an identifier, save it off for crossreference with targeted notes
                 if ( this.xmlIdStack.empty() == false ) {
@@ -361,9 +363,17 @@ public class SourceTransformer {
                     }
                 }
                 
-                if ( this.xslt.hasLineBreak(qName)){
+                // if this tag is in the midst of a note, check it for 
+                // linebreaks and add a hard break now. Also, do NOT
+                // increment position count if we are collecting a note.
+                if ( this.currNote != null ) {
+                    if ( this.xslt.hasLineBreak(qName) ){ 
+                        this.currNoteContent.append("<br/>");
+                    }
+                } else  if ( this.xslt.hasLineBreak(qName) ){
                     this.currPos++;
                 }
+               
             }            
         }
         
