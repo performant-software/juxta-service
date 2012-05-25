@@ -396,10 +396,12 @@ public class SourceTransformer {
             if ( this.isExcluding == false ) {
                 String txt = new String(ch, start, length);
                 
-                // remove all newline + trailing space combinations, then 
-                // kill any leftover newlines
+                // remove last newline and trailing space (right trim)
                 txt = txt.replaceAll("[\\n]\\s*$", "");
-                txt = txt.replaceAll("[\\n]", "");
+                
+                // remove first newline and traiing whitespace.
+                // this will leave any leading whitespace before the 1st newline
+                txt = txt.replaceAll("[\\n]\\s*", "");
 
                 //System.err.println("["+txt+"]");
                 if ( this.currNote != null ) {
