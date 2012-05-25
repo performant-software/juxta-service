@@ -18,7 +18,6 @@ import java.util.zip.ZipInputStream;
 
 import javax.xml.stream.XMLStreamException;
 
-import org.apache.commons.io.IOUtils;
 import org.juxtasoftware.Constants;
 import org.juxtasoftware.dao.AlignmentDao;
 import org.juxtasoftware.dao.CacheDao;
@@ -43,9 +42,11 @@ import org.juxtasoftware.service.ComparisonSetCollator;
 import org.juxtasoftware.service.SourceTransformer;
 import org.juxtasoftware.service.Tokenizer;
 import org.juxtasoftware.service.importer.ImportService;
+import org.juxtasoftware.service.importer.JuxtaXsltFactory;
+import org.juxtasoftware.service.importer.XmlTemplateParser;
+import org.juxtasoftware.service.importer.XmlTemplateParser.TemplateInfo;
 import org.juxtasoftware.service.importer.jxt.ManifestParser.SourceInfo;
 import org.juxtasoftware.service.importer.jxt.MovesParser.JxtMoveInfo;
-import org.juxtasoftware.service.importer.jxt.XmlTemplateParser.TemplateInfo;
 import org.juxtasoftware.util.BackgroundTaskSegment;
 import org.juxtasoftware.util.BackgroundTaskStatus;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -75,6 +76,7 @@ public class JxtImportServiceImpl implements ImportService<InputStream> {
     @Autowired private ManifestParser manifestParser;
     @Autowired private MovesParser movesParser;
     @Autowired private XmlTemplateParser templateParser;
+    @Autowired private JuxtaXsltFactory xsltFactory;
     @Autowired private SourceDao sourceDao;
     @Autowired private JuxtaXsltDao xsltDao;
     @Autowired private NameRepository nameRepo;
@@ -166,7 +168,7 @@ public class JxtImportServiceImpl implements ImportService<InputStream> {
         // clear out all prior data (NOTE: delete all witnesses wil also clear out all
         // aligment and annotation data )
         this.setDao.deleteAllWitnesses(this.set);
-        this.cacheDao.deleteHeatmap(this.set.getId());
+        this.cacheDao.deleteAll(this.set.getId());
         try {
             for (Witness witness : witnesses) {
                 Source s = this.sourceDao.find(this.ws.getId(), witness.getSourceId());
@@ -302,7 +304,8 @@ public class JxtImportServiceImpl implements ImportService<InputStream> {
             Long witnessId = null;
             JuxtaXslt xslt = null;
             if ( isXml ) {
-                xslt = generateXslt( source, srcInfo.getTemplateGuid(), srcInfo.getTitle() );
+                TemplateInfo info = this.templateParser.findTemplateInfo(srcInfo.getTemplateGuid());
+                xslt = this.xsltFactory.create(source.getWorkspaceId(), srcInfo.getTitle(), info);
                 witnessId = this.transformer.transform(source, xslt, revSet, srcInfo.getTitle());
             } else {
                 // Just null transform it to a witness
@@ -318,51 +321,6 @@ public class JxtImportServiceImpl implements ImportService<InputStream> {
         this.setDao.addWitnesses(this.set, witnesses);
         this.setDao.update(this.set);
         this.taskSegment.incrementValue();
-    }
-
-    private JuxtaXslt generateXslt(Source source, String guid, String finalName) throws IOException {
-        JuxtaXslt jxXslt = new JuxtaXslt();
-        jxXslt.setName(finalName+"-transform");
-        jxXslt.setWorkspaceId( this.ws.getId() );
-        String xslt = IOUtils.toString( ClassLoader.getSystemResourceAsStream("xslt/basic.xslt"), "utf-8");
-        
-        
-        // desktop has no concept of namespaces. Blank them
-        // out here, and specify WILDACARD namespace prefix everywhere
-        xslt = xslt.replaceAll("\\{NAMESPACE\\}", "");
-        xslt = xslt.replaceAll("\\{NOTE\\}", wildCardNamespace("note") );
-        xslt = xslt.replaceAll("\\{PB\\}", wildCardNamespace("pb") );
-        xslt = xslt.replaceAll("\\{LINEBREAK\\}", "&#10;");
-        
-        // get the template exclusion / linebreak info and insert to XSLT
-        TemplateInfo info = this.templateParser.findTemplateInfo(guid);
-        StringBuilder lb = new StringBuilder();
-        for ( String tag : info.getLineBreaks() ) {
-            if ( lb.length() > 0 ) {
-                lb.append("|");
-            }
-            lb.append( wildCardNamespace(tag) );
-        }
-        xslt = xslt.replaceAll("\\{LB_LIST\\}", lb.toString());
-        
-        // all desktop excludes are global excludes. Add them to the xslt
-        StringBuilder excludes = new StringBuilder();
-        for ( String tag : info.getExcludes() ) {
-            excludes.append("\n    <xsl:template match=\"");
-            excludes.append( wildCardNamespace(tag) ).append("\"/>"); 
-        }
-        final String key = "<!--global-exclusions-->";
-        int pos = xslt.indexOf(key)+key.length();
-        xslt = xslt.substring(0, pos) + excludes.toString() + xslt.substring(pos);
-       
-        jxXslt.setXslt(xslt);
-        Long id = this.xsltDao.create(jxXslt);
-        jxXslt.setId(id);
-        return jxXslt;
-    }
-    
-    private String wildCardNamespace( final String tag ) {
-        return "*[local-name()='"+tag+"']";
     }
 
     private Source createSource(SourceInfo srcInfo, boolean isXml) throws FileNotFoundException, IOException, XMLStreamException {

@@ -1,9 +1,11 @@
-package org.juxtasoftware.service.importer.jxt;
+package org.juxtasoftware.service.importer;
 
 import java.io.InputStream;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -100,7 +102,11 @@ public class XmlTemplateParser {
     
     public TemplateInfo findTemplateInfo( final String guid ) {
         return this.infoMap.get( guid );
-    }    
+    } 
+    
+    public List<TemplateInfo> getTemplates() {
+        return new ArrayList<TemplateInfo>( this.infoMap.values());
+    }
     
     /**
      * Error handler for parsing template config. Ignore warnings and re-throw
