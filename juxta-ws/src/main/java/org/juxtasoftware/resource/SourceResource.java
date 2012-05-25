@@ -317,7 +317,9 @@ public class SourceResource extends BaseResource implements ApplicationContextAw
                 Witness w = this.witnessDao.find(u.getId());
                 this.witnessDao.delete(w);
                 JuxtaXslt xslt = this.xsltDao.find( w.getXsltId() );
-                this.xsltDao.delete( xslt );
+                if ( xslt != null ) {
+                    this.xsltDao.delete( xslt );
+                }
             } else if ( u.getType().equals(Usage.Type.COMPARISON_SET)) {
                 // set must have all of its collation data reset
                 ComparisonSet set = this.setDao.find( u.getId());
