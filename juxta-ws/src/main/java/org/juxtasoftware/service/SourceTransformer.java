@@ -231,6 +231,7 @@ public class SourceTransformer {
         private List<Note> notes = new ArrayList<Note>();
         private List<PageBreak> breaks = new ArrayList<PageBreak>();
         private Map<String, Range> identifiedRanges = Maps.newHashMap();
+        private Map<String,Integer> tagOccurences = Maps.newHashMap();
         private JuxtaXslt xslt;     
         private Long witnessId;
         private long currPos = 0;
@@ -253,14 +254,18 @@ public class SourceTransformer {
         
         @Override
         public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
+            // always count up the number of occurrences for this tag
+            countOccurrences(qName);
+            
             if ( this.isExcluding ) {
                 this.exclusionContext.push(qName);
                 return;
             }
             
-            if ( isSpecialTag(qName) == false && this.xslt.isExcluded(qName)) {
+            if ( isSpecialTag(qName) == false && this.xslt.isExcluded(qName, this.tagOccurences.get(qName))) {
                 this.isExcluding = true;
                 this.exclusionContext.push(qName);
+                System.err.println(qName+"["+this.tagOccurences.get(qName)+"] is excluded");
             }
                         
             if ( qName.equals("note") ) {
@@ -278,6 +283,15 @@ public class SourceTransformer {
             }
         }
         
+        private void countOccurrences(String qName) {
+            Integer cnt = this.tagOccurences.get(qName);
+            if ( cnt == null ) {
+                this.tagOccurences.put(qName, 1);
+            } else {
+                this.tagOccurences.put(qName, cnt+1);
+            }
+        }
+
         private boolean isSpecialTag( final String qName ) { 
             return (qName.equals("note") || qName.equals("pb"));
         }
@@ -381,13 +395,21 @@ public class SourceTransformer {
         public void characters(char[] ch, int start, int length) throws SAXException {
             if ( this.isExcluding == false ) {
                 String txt = new String(ch, start, length);
+                
                 // remove formatting: if a line startes with \n, all following whitespace
                 // is formatting. Ditch it.
                 txt = txt.replaceAll("^[\\n]\\s*", "");
                 
                 // All whitespace from the last \n on is junk. Strip it
                 txt = txt.replaceAll("[\\n]\\s*$", "");
-                //System.err.println("["+txt+"]");
+                
+//                // remove last newline and trailing space (right trim)
+//                txt = txt.replaceAll("[\\n]\\s*$", "");
+//                
+//                // remove first newline and traiing whitespace.
+//                // this will leave any leading whitespace before the 1st newline
+//                txt = txt.replaceAll("[\\n]\\s*", "");
+//                System.err.println("["+txt+"]");
                 if ( this.currNote != null ) {
                     this.currNoteContent.append(txt);
                 } else {
