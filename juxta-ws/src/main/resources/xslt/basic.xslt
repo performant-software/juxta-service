@@ -5,6 +5,7 @@
     <xsl:output method="text" indent="no"/>
     <xsl:strip-space elements="*"/>
     <xsl:variable name="new-line" select="'&#10;'" />
+    <xsl:variable name="tab" select="'&#9;'" />
     <xsl:variable name="display-linebreak" select="'{LINEBREAK}'" />
     <!--special-handling-->
     <xsl:template match="{NOTE}"/>
@@ -26,12 +27,20 @@
               includinf the newline itself -->
          <!-- first, left trim the original text to eliminate xml-formatting whitespace -->     
          <xsl:variable name="left-trimmed">
+             <!-- if the first char is a space, we want to preserve it -->
+             <xsl:variable name="tmp" select="substring(., 1, 1)"/>
              <xsl:choose>
-                <!-- if the first char is a space, we want to preserve it -->
-                <xsl:when test="substring(.,1,1) = ' '">
+                <xsl:when test="$tmp = ' ' or $tmp = $tab">
+                    <!-- extract the leading non-formattng-space pad for this element -->
+                    <xsl:variable name="pad">
+                        <xsl:call-template name="find-left-pad">
+                            <xsl:with-param name="string" select="." />
+                        </xsl:call-template>
+                    </xsl:variable>      
+                    <!-- left trim all whitespace and add the pad found above -->
                     <xsl:call-template name="left-trim">
                         <xsl:with-param name="string" select="." />
-                        <xsl:with-param name="pad" select="' '" />
+                        <xsl:with-param name="pad" select="$pad" />
                     </xsl:call-template>
                 </xsl:when>
                 <xsl:otherwise>
@@ -43,7 +52,7 @@
                 </xsl:otherwise>
              </xsl:choose>
          </xsl:variable>
-         
+
          <!-- next, right trim any unwanted space -->
          <xsl:choose>
              <!-- if there is anything before the last newline, throw away evertying after that
@@ -60,16 +69,35 @@
                  <!-- nothing after the last newline, so nothing to trim -->
                 <xsl:value-of select="$left-trimmed"/>
              </xsl:otherwise>
-         </xsl:choose>
-
+         </xsl:choose>       
     </xsl:template>
     
+    <!-- find all of the leading space characters up until newline or non-whitespace -->
+    <xsl:template name="find-left-pad">
+        <xsl:param name="string" select="''"/>
+        <xsl:param name="pad" select="''"/>
+        <xsl:variable name="tmp" select="substring($string, 1, 1)"/>
+        <xsl:choose>
+            <xsl:when test="$tmp = ' '  or $tmp = $tab">
+                <xsl:variable name="new-pad" select="concat($pad, ' ')"/>
+                <xsl:call-template name="find-left-pad">
+                    <xsl:with-param name="string" select="substring-after($string, $tmp)"/>
+                    <xsl:with-param name="pad" select="$new-pad"/>
+                </xsl:call-template>
+            </xsl:when>
+            <xsl:otherwise>
+                <xsl:value-of select="$pad"/>
+            </xsl:otherwise>
+        </xsl:choose>
+    </xsl:template>
+    
+    <!-- remove all leading whitespace and replace with the specified pad -->
     <xsl:template name="left-trim">
         <xsl:param name="string" select="''"/>
         <xsl:param name="pad" select="''"/>
         <xsl:variable name="tmp" select="substring($string, 1, 1)"/>
         <xsl:choose>
-            <xsl:when test="$tmp = ' ' or $tmp = $new-line">
+            <xsl:when test="normalize-space($tmp) = ''">
                 <xsl:call-template name="left-trim">
                     <xsl:with-param name="string" select="substring-after($string, $tmp)"/>
                     <xsl:with-param name="pad" select="$pad"/>
@@ -81,11 +109,12 @@
         </xsl:choose>
     </xsl:template>
     
+    <!-- remove all trailing whitespace from an element -->
     <xsl:template name="right-trim">
         <xsl:param name="string" select="''"/>
         <xsl:variable name="tmp" select="substring($string, string-length($string), 1)"/>
         <xsl:choose>
-            <xsl:when test="$tmp = ' '">
+            <xsl:when test="$tmp = ' ' or $tmp = $tab">
                 <xsl:call-template name="right-trim">
                     <xsl:with-param name="string" select="substring($string, 1, string-length($string)-1)"/>
                 </xsl:call-template>
