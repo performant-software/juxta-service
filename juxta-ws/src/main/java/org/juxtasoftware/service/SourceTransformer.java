@@ -396,20 +396,12 @@ public class SourceTransformer {
             if ( this.isExcluding == false ) {
                 String txt = new String(ch, start, length);
                 
-                // remove formatting: if a line startes with \n, all following whitespace
-                // is formatting. Ditch it.
-                txt = txt.replaceAll("^[\\n]\\s*", "");
-                
-                // All whitespace from the last \n on is junk. Strip it
+                // remove all newline + trailing space combinations, then 
+                // kill any leftover newlines
                 txt = txt.replaceAll("[\\n]\\s*$", "");
-                
-//                // remove last newline and trailing space (right trim)
-//                txt = txt.replaceAll("[\\n]\\s*$", "");
-//                
-//                // remove first newline and traiing whitespace.
-//                // this will leave any leading whitespace before the 1st newline
-//                txt = txt.replaceAll("[\\n]\\s*", "");
-//                System.err.println("["+txt+"]");
+                txt = txt.replaceAll("[\\n]", "");
+
+                //System.err.println("["+txt+"]");
                 if ( this.currNote != null ) {
                     this.currNoteContent.append(txt);
                 } else {
