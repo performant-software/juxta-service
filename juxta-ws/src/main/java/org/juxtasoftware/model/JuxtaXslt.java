@@ -1,5 +1,9 @@
 package org.juxtasoftware.model;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+
 import com.google.common.base.Objects;
 
 public class JuxtaXslt extends WorkspaceMember {
@@ -66,14 +70,42 @@ public class JuxtaXslt extends WorkspaceMember {
     }
     
     /**
-     * Returns TRUE if this tag has been globally excluded from the source
+     * Returns true of this tag occurrence has been specifically excluded or
+     * the tag has been globally excluded
      * @param tagName
      * @return
      */
-    public boolean isExcluded( final String tagName ) {
-        int pos = xslt.indexOf("<!--global-exclusions-->");
-        int limitPos = xslt.indexOf("<!--single-exclusions-->");
-        pos = xslt.indexOf("match=\"", pos)+7;
+    public boolean isExcluded( final String tagName, final int occurence ) {
+        // first check the global exclude...
+        final String global = "<!--global-exclusions-->";
+        final String single = "<!--single-exclusions-->";
+        final String breaks = "<!--breaks-->";
+        final String matchKey = "match=\"";
+        final String testKey = "test=\"";
+        int pos = xslt.indexOf(global);
+        int limitPos = xslt.indexOf(single);
+        pos = xslt.indexOf(matchKey, pos)+matchKey.length();
+        if ( pos < limitPos ) {
+            while ( pos > -1 && pos < limitPos) {
+                int endPos = xslt.indexOf("\"", pos);
+                String tag = stripNamespace( xslt.substring(pos,endPos) );
+                if ( tag.equals(tagName)  ) {
+                    return true;
+                }
+                pos = xslt.indexOf(matchKey, endPos);
+                if ( pos > -1 ) {
+                    pos += matchKey.length();
+                }
+            }
+        }
+        
+        // now see if it has been singly excluded. Valid search range is between 
+        // single exclusion marker and breaks marker. Final all instances
+        // of 'match="' and see if the tag name matches
+        final String strOccurrence = Integer.toString(occurence);
+        pos = xslt.indexOf(global);
+        limitPos = xslt.indexOf(breaks);
+        pos = xslt.indexOf(matchKey, pos)+matchKey.length();
         if ( pos > limitPos ) {
             return false;
         }
@@ -81,10 +113,25 @@ public class JuxtaXslt extends WorkspaceMember {
             int endPos = xslt.indexOf("\"", pos);
             String tag = stripNamespace( xslt.substring(pos,endPos) );
             if ( tag.equals(tagName)  ) {
-                return true;
+                // found a match. See if the specified occurrence is excluded
+                int testPos = xslt.indexOf(testKey, pos)+testKey.length();
+                int endTest = xslt.indexOf("\"", testPos);
+                String conditions = xslt.substring(testPos, endTest);
+                
+                // strip out everything by a space separated list of occurrences
+                // generate a set and see if the taget number is present
+                conditions = conditions.replaceAll("(\\$count\\s+!=\\s+|\\s+and\\s+)", " ").trim();
+                Set<String> nums = new HashSet<String>( Arrays.asList(conditions.split(" ")) );
+                if ( nums.contains( strOccurrence) ) {
+                    return true;
+                }
             }
-            pos = xslt.indexOf("match=\"", endPos)+7;
+            pos = xslt.indexOf(matchKey, endPos);
+            if ( pos > -1 ) {
+                pos += matchKey.length();
+            }
         }
+        
         return false;
     }
     
@@ -104,9 +151,6 @@ public class JuxtaXslt extends WorkspaceMember {
      * @return
      */
     public boolean hasLineBreak( final String tagName ) {
-        if ( tagName.equals("lb") ) {
-            System.err.println("fgvv");
-        }
         int pos = xslt.indexOf("<!--breaks-->");
         int limitPos = xslt.indexOf("<xsl:template match=\"text()\">");
         pos = xslt.indexOf("match=\"", pos)+7;
