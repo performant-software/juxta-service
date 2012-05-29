@@ -8,6 +8,7 @@ import eu.interedition.text.Range;
 public class RevisionInfo {
     private final Name name;
     private final Range range;
+    private Long annotationId;
     
     public RevisionInfo( final String localName, final Range r) {
         if ( localName.equals("add")) {
@@ -31,6 +32,13 @@ public class RevisionInfo {
         return (this.name.getLocalName().equals("del") ||  this.name.getLocalName().equals("delSpan"));
     }
     
+    public Long getAnnotationId() {
+        return this.annotationId;
+    }
+    public void setAnnotationId( final Long id) {
+        this.annotationId = id;
+    }
+    
     public Name getName() {
         return this.name;
     }
@@ -41,6 +49,6 @@ public class RevisionInfo {
 
     @Override
     public String toString() {
-        return "RevisionInfo [name=" + name + ", range=" + range + "]";
+        return "RevisionInfo [name=" + name + ", range=" + range + ", annotationId=" + annotationId + "]";
     }
 }

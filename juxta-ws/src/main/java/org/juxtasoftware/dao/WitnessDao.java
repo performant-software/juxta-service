@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.juxtasoftware.model.ComparisonSet;
+import org.juxtasoftware.model.RevisionInfo;
 import org.juxtasoftware.model.Usage;
 import org.juxtasoftware.model.Witness;
 import org.juxtasoftware.model.Workspace;
@@ -92,4 +93,9 @@ public interface WitnessDao extends JuxtaDao<Witness> {
      * @return
      */
     boolean hasRevisions(Witness witness);
+    
+    /**
+     * Get a list of revisions that are included in this witness
+     */
+    List<RevisionInfo> getRevisions( Witness witness) ;
 }

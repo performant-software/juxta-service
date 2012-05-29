@@ -53,19 +53,18 @@ public class RevisionInjector implements StreamInjector<RevisionInfo> {
     public void injectContentStart(StringBuilder line, final long currPositon) {
         if ( this.currRevision != null && this.tagStarted == false ) {
             if ( this.currRevision.getRange().getStart() == currPositon) {
-                // TODO
-//                StringBuffer tag = new StringBuffer();
-//                long id = this.currRevision.getAnnotationId();
-//                String type = this.currRevision.getType().toString().toLowerCase();
-//                String accept = "reject";
-//                if ( this.currRevision.isAccepted()) {
-//                    accept = "accept";
-//                }
-//                tag.append("<span id=\"rev-").append(id).append("\" ");
-//                tag.append(" class=\"rev ").append(type).append(" plain-revs ").append(accept).append("\">");
-//                
-//                line.append(tag);
-//                this.tagStarted = true;
+                StringBuffer tag = new StringBuffer();
+                long id = this.currRevision.getAnnotationId();
+                String type = "add";
+                if ( this.currRevision.isDelete() ) {
+                    type = "delete";
+                }
+                String accept = "accept";
+                tag.append("<span id=\"rev-").append(id).append("\" ");
+                tag.append(" class=\"rev ").append(type).append(" plain-revs ").append(accept).append("\">");
+                
+                line.append(tag);
+                this.tagStarted = true;
             }
         }
     }

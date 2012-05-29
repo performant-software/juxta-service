@@ -12,6 +12,7 @@ import java.util.Set;
 
 import org.juxtasoftware.dao.WitnessDao;
 import org.juxtasoftware.model.ComparisonSet;
+import org.juxtasoftware.model.RevisionInfo;
 import org.juxtasoftware.model.Usage;
 import org.juxtasoftware.model.Witness;
 import org.juxtasoftware.model.Workspace;
@@ -152,12 +153,31 @@ public class WitnessDaoImpl extends JuxtaDaoImpl<Witness> implements WitnessDao 
     }
     
     @Override
-    public boolean hasRevisions(Witness witness) {
+    public boolean hasRevisions(final Witness witness) {
+        final Long txtId = ((RelationalText)witness.getText()).getId();
         StringBuilder sql = new StringBuilder();
         sql.append("select count(*) as cnt from text_annotation where text=?"); 
         sql.append(" and name in (select id from text_qname where local_name=? or local_name=? or local_name=? or local_name=?)");
-        int cnt = this.jt.queryForInt(sql.toString(), witness.getId(), "add", "addSpan", "del", "delSpan");
+        int cnt = this.jt.queryForInt(sql.toString(), txtId, "add", "addSpan", "del", "delSpan");
         return ( cnt > 0);
+    }
+    
+    @Override
+    public List<RevisionInfo> getRevisions(final Witness witness) {
+        final Long txtId = ((RelationalText)witness.getText()).getId();
+        StringBuilder sql = new StringBuilder();
+        sql.append("select n.local_name as name, ta.id as id, ta.range_start as start, ta.range_end as end from text_annotation as ta"); 
+        sql.append(" inner join text_qname n on n.id = ta.name where text=?");
+        sql.append(" and name in (select id from text_qname where local_name=? or local_name=? or local_name=? or local_name=?)");
+        return this.jt.query(sql.toString(), new RowMapper<RevisionInfo>(){
+
+            @Override
+            public RevisionInfo mapRow(ResultSet rs, int rowNum) throws SQLException {
+                Range rng = new Range( rs.getLong("start"), rs.getLong("end"));
+                RevisionInfo inf = new RevisionInfo(rs.getString("name"), rng);
+                inf.setAnnotationId(rs.getLong("id"));
+                return inf;
+            }}, txtId, "add", "addSpan", "del", "delSpan");
     }
     
     @Override
