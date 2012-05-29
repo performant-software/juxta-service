@@ -7,10 +7,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 
-import org.juxtasoftware.Constants;
 import org.juxtasoftware.model.JuxtaXslt;
 import org.juxtasoftware.model.Note;
 import org.juxtasoftware.model.PageBreak;
+import org.juxtasoftware.model.RevisionInfo;
 import org.juxtasoftware.service.importer.jxt.Util;
 import org.xml.sax.Attributes;
 import org.xml.sax.InputSource;
@@ -19,7 +19,6 @@ import org.xml.sax.helpers.DefaultHandler;
 
 import com.google.common.collect.Maps;
 
-import eu.interedition.text.Name;
 import eu.interedition.text.Range;
 
 /**
@@ -41,7 +40,7 @@ public class JuxtaTagExtractor extends DefaultHandler  {
     private Stack<String> exclusionContext = new Stack<String>();
     private Stack<String> xmlIdStack = new Stack<String>();
     private Stack<Long> revisionStartOffsetStack = new Stack<Long>();
-    private List<RevisionRange> revisions = new ArrayList<RevisionRange>();
+    private List<RevisionInfo> revisions = new ArrayList<RevisionInfo>();
     
     public void setWitnessId( final Long witnessId ) {
         this.witnessId = witnessId;
@@ -52,7 +51,7 @@ public class JuxtaTagExtractor extends DefaultHandler  {
         Util.saxParser().parse( new InputSource(sourceReader), this);
     }
     
-    public List<RevisionRange> getRevisions() {
+    public List<RevisionInfo> getRevisions() {
         return this.revisions;
     }
     public List<Note> getNotes() {
@@ -211,7 +210,7 @@ public class JuxtaTagExtractor extends DefaultHandler  {
             // lastly, wrap up any annotations on a revision
             if ( isRevision(qName)) {
                 final Range range = new Range(this.revisionStartOffsetStack.pop(), this.currPos);
-                this.revisions.add( new RevisionRange(qName, range) );
+                this.revisions.add( new RevisionInfo(qName, range) );
             }
         }            
     }
@@ -250,33 +249,6 @@ public class JuxtaTagExtractor extends DefaultHandler  {
                     note.setAnchorRange( tgtRange );
                 }
             }
-        }
-    }
-    
-    public static class RevisionRange {
-        private final Name name;
-        private final Range range;
-        private RevisionRange( final String qName, final Range r) {
-            if ( qName.equals("add")) {
-                this.name = Constants.TEI_ADD;
-            } else if ( qName.equals("addSpan")) {
-                this.name = Constants.TEI_ADD_SPAN;
-            } else if ( qName.equals("del")) {
-                this.name = Constants.TEI_DEL;
-            } else if ( qName.equals("delSpan")) {
-                this.name = Constants.TEI_DEL_SPAN;
-            } else {
-                throw new RuntimeException("Illegal revision tag name: " + qName);
-            }
-            this.range = new Range(r);
-        }
-        
-        public Name getName() {
-            return this.name;
-        }
-        
-        public Range getRange() {
-            return this.range;
         }
     }
 }   

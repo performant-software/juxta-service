@@ -152,6 +152,15 @@ public class WitnessDaoImpl extends JuxtaDaoImpl<Witness> implements WitnessDao 
     }
     
     @Override
+    public boolean hasRevisions(Witness witness) {
+        StringBuilder sql = new StringBuilder();
+        sql.append("select count(*) as cnt from text_annotation where text=?"); 
+        sql.append(" and name in (select id from text_qname where local_name=? or local_name=? or local_name=? or local_name=?)");
+        int cnt = this.jt.queryForInt(sql.toString(), witness.getId(), "add", "addSpan", "del", "delSpan");
+        return ( cnt > 0);
+    }
+    
+    @Override
     public List<Usage> getUsage(Witness witness) {
         String setSql = "select distinct set_id,name from juxta_comparison_set_member " +
             "inner join juxta_comparison_set on juxta_comparison_set.id = set_id " +

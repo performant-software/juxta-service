@@ -25,7 +25,6 @@ import org.juxtasoftware.dao.CacheDao;
 import org.juxtasoftware.dao.ComparisonSetDao;
 import org.juxtasoftware.dao.JuxtaAnnotationDao;
 import org.juxtasoftware.dao.JuxtaXsltDao;
-import org.juxtasoftware.dao.RevisionDao;
 import org.juxtasoftware.dao.SourceDao;
 import org.juxtasoftware.dao.WitnessDao;
 import org.juxtasoftware.dao.WorkspaceDao;
@@ -45,9 +44,9 @@ import org.juxtasoftware.service.importer.ImportService;
 import org.juxtasoftware.service.importer.JuxtaXsltFactory;
 import org.juxtasoftware.service.importer.XmlTemplateParser;
 import org.juxtasoftware.service.importer.XmlTemplateParser.TemplateInfo;
+import org.juxtasoftware.service.importer.jxt.JxtRevisionExtractor.RevisionOccurrence;
 import org.juxtasoftware.service.importer.jxt.ManifestParser.SourceInfo;
 import org.juxtasoftware.service.importer.jxt.MovesParser.JxtMoveInfo;
-import org.juxtasoftware.service.importer.jxt.JxtRevisionExtractor.RevisionInfo;
 import org.juxtasoftware.util.BackgroundTaskSegment;
 import org.juxtasoftware.util.BackgroundTaskStatus;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -85,7 +84,6 @@ public class JxtImportServiceImpl implements ImportService<InputStream> {
     @Autowired private CacheDao cacheDao;
     @Autowired private SourceTransformer transformer;
     @Autowired private ComparisonSetDao setDao;
-    @Autowired private RevisionDao revisionsDao;
     @Autowired private WitnessDao witnessDao;
     @Autowired private Tokenizer tokenizer;
     @Autowired private ComparisonSetCollator collator;
@@ -176,7 +174,6 @@ public class JxtImportServiceImpl implements ImportService<InputStream> {
                 Source s = this.sourceDao.find(this.ws.getId(), witness.getSourceId());
                 JuxtaXslt xslt = this.xsltDao.find(witness.getXsltId());
                 this.witnessDao.delete(witness);
-                this.revisionsDao.deleteSourceRevisionSets(s.getId());
                 this.sourceDao.delete(s);
                 this.xsltDao.delete(xslt);
             }
@@ -325,7 +322,7 @@ public class JxtImportServiceImpl implements ImportService<InputStream> {
             // extract the exclusion info and add single exclusions to the XSLT
             JxtRevisionExtractor extractor = new JxtRevisionExtractor();
             extractor.extract( this.sourceDao.getContentReader(source), acceptedRevsions);
-            for (RevisionInfo rev : extractor.getExcludedRevisions() ) {
+            for (RevisionOccurrence rev : extractor.getExcludedRevisions() ) {
                 xslt.addSingleExclusion( rev.getTagName(), rev.getOccurrence() );
             }
         }

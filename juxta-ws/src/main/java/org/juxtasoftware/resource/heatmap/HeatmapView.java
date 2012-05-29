@@ -22,7 +22,6 @@ import org.juxtasoftware.dao.ComparisonSetDao;
 import org.juxtasoftware.dao.JuxtaAnnotationDao;
 import org.juxtasoftware.dao.NoteDao;
 import org.juxtasoftware.dao.PageBreakDao;
-import org.juxtasoftware.dao.RevisionDao;
 import org.juxtasoftware.dao.WitnessDao;
 import org.juxtasoftware.model.Alignment;
 import org.juxtasoftware.model.Alignment.AlignedAnnotation;
@@ -58,7 +57,6 @@ public class HeatmapView implements ApplicationContextAware {
     @Autowired private NoteDao noteDao;
     @Autowired private PageBreakDao pbDao;
     @Autowired private WitnessDao witnessDao;
-    @Autowired private RevisionDao revisionDao;
     @Autowired private QNameFilters filters;
     @Autowired private HeatmapStreamDirective heatmapDirective;
     
@@ -130,7 +128,7 @@ public class HeatmapView implements ApplicationContextAware {
         // Last, wrap the body with ui (title, comparison set details)
         map.put("hasNotes", this.noteDao.hasNotes( base.getId() ) );
         map.put("hasBreaks", this.pbDao.hasBreaks( base.getId() ) );
-        map.put("hasRevisions", this.revisionDao.hasRevisions(base));
+        map.put("hasRevisions", this.witnessDao.hasRevisions(base) );
         map.put("setId", set.getId());
         map.put("baseId", base.getId());
         map.put("baseName", base.getName() );
@@ -241,7 +239,7 @@ public class HeatmapView implements ApplicationContextAware {
         final BreakInjector pbInjector = this.context.getBean(BreakInjector.class);
         pbInjector.initialize( this.pbDao.find(base.getId()) );
         //final RevisionInjector revisionInjector = this.context.getBean(RevisionInjector.class);
-        //revisionInjector.initialize( this.revisionDao.getRevisions(base) );
+       // revisionInjector.initialize( this.revisionDao.getRevisions(base) );
         // TODO
         
         // create a temp file in which to assemble the heatmap data

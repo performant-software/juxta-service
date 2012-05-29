@@ -3,7 +3,7 @@ package org.juxtasoftware.resource.heatmap;
 import java.util.Iterator;
 import java.util.List;
 
-import org.juxtasoftware.model.Revision;
+import org.juxtasoftware.model.RevisionInfo;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -16,15 +16,15 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
-public class RevisionInjector implements StreamInjector<Revision> {
+public class RevisionInjector implements StreamInjector<RevisionInfo> {
 
-    private List<Revision> revisions;
-    private Iterator<Revision> revisionItr;
-    private Revision currRevision;
+    private List<RevisionInfo> revisions;
+    private Iterator<RevisionInfo> revisionItr;
+    private RevisionInfo currRevision;
     private boolean tagStarted = false;
     
     @Override
-    public void initialize(List<Revision> data) {
+    public void initialize(List<RevisionInfo> data) {
         this.revisions = data;
         this.revisionItr = this.revisions.iterator();
         if ( this.revisionItr.hasNext() ) {
@@ -33,7 +33,7 @@ public class RevisionInjector implements StreamInjector<Revision> {
     }
 
     @Override
-    public List<Revision> getData() {
+    public List<RevisionInfo> getData() {
         return this.revisions;
     }
     @Override
@@ -53,19 +53,19 @@ public class RevisionInjector implements StreamInjector<Revision> {
     public void injectContentStart(StringBuilder line, final long currPositon) {
         if ( this.currRevision != null && this.tagStarted == false ) {
             if ( this.currRevision.getRange().getStart() == currPositon) {
-                
-                StringBuffer tag = new StringBuffer();
-                long id = this.currRevision.getAnnotationId();
-                String type = this.currRevision.getType().toString().toLowerCase();
-                String accept = "reject";
-                if ( this.currRevision.isAccepted()) {
-                    accept = "accept";
-                }
-                tag.append("<span id=\"rev-").append(id).append("\" ");
-                tag.append(" class=\"rev ").append(type).append(" plain-revs ").append(accept).append("\">");
-                
-                line.append(tag);
-                this.tagStarted = true;
+                // TODO
+//                StringBuffer tag = new StringBuffer();
+//                long id = this.currRevision.getAnnotationId();
+//                String type = this.currRevision.getType().toString().toLowerCase();
+//                String accept = "reject";
+//                if ( this.currRevision.isAccepted()) {
+//                    accept = "accept";
+//                }
+//                tag.append("<span id=\"rev-").append(id).append("\" ");
+//                tag.append(" class=\"rev ").append(type).append(" plain-revs ").append(accept).append("\">");
+//                
+//                line.append(tag);
+//                this.tagStarted = true;
             }
         }
     }

@@ -23,7 +23,7 @@ import org.xml.sax.helpers.DefaultHandler;
 final class JxtRevisionExtractor  extends DefaultHandler{
     private Set<Integer> includedRevisions;
     private Integer revisionCount = 0;
-    private Set<RevisionInfo> excludedRevisonsInfo = new HashSet<RevisionInfo>();
+    private Set<RevisionOccurrence> excludedRevisonsInfo = new HashSet<RevisionOccurrence>();
     private Map<String, Integer> tagCounts = new HashMap<String, Integer>();
     
     public void extract( final Reader srcReader, final List<Integer> includedRevisions ) throws SAXException, IOException {
@@ -40,7 +40,7 @@ final class JxtRevisionExtractor  extends DefaultHandler{
         Util.saxParser().parse( new InputSource( srcReader), this );
     }
     
-    public Set<RevisionInfo>  getExcludedRevisions() {
+    public Set<RevisionOccurrence>  getExcludedRevisions() {
         return this.excludedRevisonsInfo;
     }
     
@@ -59,12 +59,12 @@ final class JxtRevisionExtractor  extends DefaultHandler{
             // add revisions that are not part of the inclusion list are excluded
             if ( isAdd(qName) ) {
                 if ( this.includedRevisions.contains( this.revisionCount ) == false ) {
-                    this.excludedRevisonsInfo.add( new RevisionInfo(qName, cnt) );
+                    this.excludedRevisonsInfo.add( new RevisionOccurrence(qName, cnt) );
                 }
             } else {
                 // delete revsions are excluded unless they are part of the list
                 if ( this.includedRevisions.contains( this.revisionCount ) ) {
-                    this.excludedRevisonsInfo.add( new RevisionInfo(qName, cnt) );
+                    this.excludedRevisonsInfo.add( new RevisionOccurrence(qName, cnt) );
                 }
             }
         }
@@ -83,11 +83,11 @@ final class JxtRevisionExtractor  extends DefaultHandler{
     /**
      * @author loufoster
      */
-    static class RevisionInfo {
+    static class RevisionOccurrence {
         private final String tagName;
         private final int occurrence;
        
-        public RevisionInfo( final String tagName, final int occurrence) {
+        public RevisionOccurrence( final String tagName, final int occurrence) {
             this.tagName = tagName;
             this.occurrence = occurrence;
         }
@@ -118,7 +118,7 @@ final class JxtRevisionExtractor  extends DefaultHandler{
                 return false;
             if (getClass() != obj.getClass())
                 return false;
-            RevisionInfo other = (RevisionInfo) obj;
+            RevisionOccurrence other = (RevisionOccurrence) obj;
             if (occurrence != other.occurrence)
                 return false;
             if (tagName == null) {

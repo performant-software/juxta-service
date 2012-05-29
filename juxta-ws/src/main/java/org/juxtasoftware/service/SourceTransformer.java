@@ -27,9 +27,9 @@ import org.juxtasoftware.dao.PageBreakDao;
 import org.juxtasoftware.dao.SourceDao;
 import org.juxtasoftware.dao.WitnessDao;
 import org.juxtasoftware.model.JuxtaXslt;
+import org.juxtasoftware.model.RevisionInfo;
 import org.juxtasoftware.model.Source;
 import org.juxtasoftware.model.Witness;
-import org.juxtasoftware.service.JuxtaTagExtractor.RevisionRange;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.Scope;
@@ -189,7 +189,7 @@ public class SourceTransformer {
         this.noteDao.create( extractor.getNotes() );
         this.pbDao.create( extractor.getPageBreaks() );
         List<Annotation> revAnnotations = new ArrayList<Annotation>();
-        for (RevisionRange rev : extractor.getRevisions() ) {
+        for (RevisionInfo rev : extractor.getRevisions() ) {
             revAnnotations.add( new SimpleAnnotation(w.getText(), rev.getName(), rev.getRange(), null));
         }
         this.annotationRepository.create(revAnnotations);

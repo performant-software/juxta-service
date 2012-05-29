@@ -13,7 +13,6 @@ import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.juxtasoftware.dao.ComparisonSetDao;
 import org.juxtasoftware.dao.JuxtaXsltDao;
-import org.juxtasoftware.dao.RevisionDao;
 import org.juxtasoftware.dao.SourceDao;
 import org.juxtasoftware.dao.WitnessDao;
 import org.juxtasoftware.model.ComparisonSet;
@@ -55,7 +54,6 @@ import eu.interedition.text.Range;
 public class SourceResource extends BaseResource implements ApplicationContextAware {
 
     @Autowired private SourceDao sourceDao;
-    @Autowired private RevisionDao revisionDao;
     @Autowired private ComparisonSetDao setDao;
     @Autowired private WitnessDao witnessDao;
     @Autowired private JuxtaXsltDao xsltDao;
@@ -120,7 +118,6 @@ public class SourceResource extends BaseResource implements ApplicationContextAw
         Map<String,Object> map = new HashMap<String,Object>();
         map.put("name", this.source.getName());
         map.put("sourceId", this.source.getId());
-        map.put("hasRevisionSets", this.revisionDao.hasRevisionSets(this.source.getId()));
         map.put("page", "source");
         map.put("title", "Juxta Source: "+this.source.getName());
         map.put("text",  toTextRepresentation( StringEscapeUtils.escapeHtml(reader.toString())));

@@ -85,4 +85,11 @@ public interface WitnessDao extends JuxtaDao<Witness> {
      * @return
      */
     List<Usage> getUsage( final Witness witness );
+
+    /**
+     * Return true if the specified witness has revision sites included
+     * @param base
+     * @return
+     */
+    boolean hasRevisions(Witness witness);
 }
