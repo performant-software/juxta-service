@@ -240,8 +240,9 @@ public class HeatmapView implements ApplicationContextAware {
         noteInjector.initialize( this.noteDao.find(base.getId()) );
         final BreakInjector pbInjector = this.context.getBean(BreakInjector.class);
         pbInjector.initialize( this.pbDao.find(base.getId()) );
-        final RevisionInjector revisionInjector = this.context.getBean(RevisionInjector.class);
-        revisionInjector.initialize( this.revisionDao.getRevisions(base) );
+        //final RevisionInjector revisionInjector = this.context.getBean(RevisionInjector.class);
+        //revisionInjector.initialize( this.revisionDao.getRevisions(base) );
+        // TODO
         
         // create a temp file in which to assemble the heatmap data
         File heatmapFile = File.createTempFile("heatmap", ".dat");
@@ -266,7 +267,7 @@ public class HeatmapView implements ApplicationContextAware {
             
             // as long as any injectors hav content to stuff
             // into the document at this position, kepp spinning
-            while ( revisionInjector.hasContent(pos) ||
+            while ( /*revisionInjector.hasContent(pos) ||*/
                     pbInjector.hasContent(pos) ||
                     noteInjector.hasContent(pos) ||
                     changeInjector.hasContent(pos) ) { 
@@ -274,7 +275,7 @@ public class HeatmapView implements ApplicationContextAware {
                 // inject heatmap markup into the basic 
                 // witness data stream. put revsions first so their markup
                 // wraps all others.
-                revisionInjector.injectContentStart(line, pos);
+                //revisionInjector.injectContentStart(line, pos);
                 pbInjector.injectContentStart(line, pos);
                 noteInjector.injectContentStart(line, pos);
                 changeInjector.injectContentStart(line, pos);  
@@ -285,7 +286,7 @@ public class HeatmapView implements ApplicationContextAware {
                 changeInjector.injectContentEnd(line, pos); 
                 noteInjector.injectContentEnd(line, pos);
                 pbInjector.injectContentEnd(line, pos); 
-                revisionInjector.injectContentEnd(line, pos);
+                //revisionInjector.injectContentEnd(line, pos);
             }
   
             

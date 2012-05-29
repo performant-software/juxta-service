@@ -9,6 +9,7 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -34,7 +35,6 @@ import org.juxtasoftware.model.CollatorConfig;
 import org.juxtasoftware.model.ComparisonSet;
 import org.juxtasoftware.model.JuxtaAnnotation;
 import org.juxtasoftware.model.JuxtaXslt;
-import org.juxtasoftware.model.RevisionSet;
 import org.juxtasoftware.model.Source;
 import org.juxtasoftware.model.Witness;
 import org.juxtasoftware.model.Workspace;
@@ -47,12 +47,14 @@ import org.juxtasoftware.service.importer.XmlTemplateParser;
 import org.juxtasoftware.service.importer.XmlTemplateParser.TemplateInfo;
 import org.juxtasoftware.service.importer.jxt.ManifestParser.SourceInfo;
 import org.juxtasoftware.service.importer.jxt.MovesParser.JxtMoveInfo;
+import org.juxtasoftware.service.importer.jxt.JxtRevisionExtractor.RevisionInfo;
 import org.juxtasoftware.util.BackgroundTaskSegment;
 import org.juxtasoftware.util.BackgroundTaskStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
+import org.xml.sax.SAXException;
 
 import com.google.common.base.Preconditions;
 import com.google.common.io.ByteStreams;
@@ -284,19 +286,7 @@ public class JxtImportServiceImpl implements ImportService<InputStream> {
             boolean isXml = ext.equalsIgnoreCase(".xml");
 
             // create the juxta source
-            Source source = createSource(srcInfo, isXml);
-            
-            // record any accepted revisions this witness may have had
-            List<Integer> acceptedRevs = srcInfo.getAcceptedRevsions();
-            RevisionSet revSet = null;
-            if ( acceptedRevs.size() > 0) {
-                revSet = new RevisionSet();
-                revSet.setName(this.set.getName()+"-src-"+source.getId());
-                revSet.setSourceId( source.getId() );
-                revSet.setRevisionIndexes(acceptedRevs);
-                Long id = this.revisionsDao.createRevisionSet(revSet);
-                revSet.setId(id);
-            }
+            Source source = createSource(srcInfo, isXml);           
             
             // if the source was associated with a parse template,
             // create it and use it to transform to a witness
@@ -304,12 +294,14 @@ public class JxtImportServiceImpl implements ImportService<InputStream> {
             Long witnessId = null;
             JuxtaXslt xslt = null;
             if ( isXml ) {
+                // record any accepted revisions this witness may have had
                 TemplateInfo info = this.templateParser.findTemplateInfo(srcInfo.getTemplateGuid());
                 xslt = this.xsltFactory.create(source.getWorkspaceId(), srcInfo.getTitle(), info);
-                witnessId = this.transformer.transform(source, xslt, revSet, srcInfo.getTitle());
+                addRevisonExclusions(source, xslt, srcInfo.getAcceptedRevsions() );
+                witnessId = this.transformer.transform(source, xslt, srcInfo.getTitle());
             } else {
                 // Just null transform it to a witness
-              witnessId = this.transformer.transform(source, null, null, source.getName());
+              witnessId = this.transformer.transform(source, null, source.getName());
             }
 
             // add all witnesses to the set and update with base witness
@@ -321,6 +313,23 @@ public class JxtImportServiceImpl implements ImportService<InputStream> {
         this.setDao.addWitnesses(this.set, witnesses);
         this.setDao.update(this.set);
         this.taskSegment.incrementValue();
+    }
+
+    private void addRevisonExclusions(Source source, JuxtaXslt xslt, List<Integer> acceptedRevsions) throws SAXException, IOException {
+        if ( acceptedRevsions.size() == 0 ) {
+            // when none are accepted, add an exclusion for all 
+            // add tag and addSpan tags. The deletes remain
+            xslt.addGlobalExclusion("add");
+            xslt.addGlobalExclusion("addSpan");
+        } else {
+            // extract the exclusion info and add single exclusions to the XSLT
+            JxtRevisionExtractor extractor = new JxtRevisionExtractor();
+            extractor.extract( this.sourceDao.getContentReader(source), acceptedRevsions);
+            for (RevisionInfo rev : extractor.getExcludedRevisions() ) {
+                xslt.addSingleExclusion( rev.getTagName(), rev.getOccurrence() );
+            }
+        }
+        this.xsltDao.update(xslt.getId(), new StringReader(xslt.getXslt()));
     }
 
     private Source createSource(SourceInfo srcInfo, boolean isXml) throws FileNotFoundException, IOException, XMLStreamException {

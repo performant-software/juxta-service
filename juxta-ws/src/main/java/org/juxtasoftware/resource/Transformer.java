@@ -5,11 +5,9 @@ import java.util.Set;
 
 import org.apache.commons.io.IOUtils;
 import org.juxtasoftware.dao.JuxtaXsltDao;
-import org.juxtasoftware.dao.RevisionDao;
 import org.juxtasoftware.dao.SourceDao;
 import org.juxtasoftware.dao.WitnessDao;
 import org.juxtasoftware.model.JuxtaXslt;
-import org.juxtasoftware.model.RevisionSet;
 import org.juxtasoftware.model.Source;
 import org.juxtasoftware.model.Workspace;
 import org.juxtasoftware.service.SourceTransformer;
@@ -40,7 +38,6 @@ import eu.interedition.text.Text;
 public class Transformer extends BaseResource {
     @Autowired private SourceDao sourceDao;
     @Autowired private JuxtaXsltDao xsltDao;
-    @Autowired private RevisionDao revisionDao;
     @Autowired private WitnessDao witnessDao;
     @Autowired private SourceTransformer transformer;
     
@@ -118,14 +115,8 @@ public class Transformer extends BaseResource {
                 "Witness '"+finalName+"' already exists in workspace '"+this.workspace.getName()+"'");
         }
         
-        RevisionSet revSet = null;
-        if ( json.has("revision")) {
-            Long revId = json.get("revision").getAsLong();
-            revSet = this.revisionDao.getRevsionSet(revId);
-        }
-
         try {
-            Long witnessId = this.transformer.transform(srcDoc, xslt, revSet, finalName);
+            Long witnessId = this.transformer.transform(srcDoc, xslt, finalName);
             return toTextRepresentation( witnessId.toString() );
         } catch (Exception e) {
             LOG.error("Caught Excepion: unable to transform source", e);
