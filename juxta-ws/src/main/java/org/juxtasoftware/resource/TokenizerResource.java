@@ -87,7 +87,14 @@ public class TokenizerResource extends BaseResource {
     }
 
     private Representation doTokenization() {
-        LOG.info("Tokenize set "+this.set.getId() );  
+        LOG.info("Tokenize set "+this.set.getId() ); 
+        int witCnt = this.comparisonSetDao.getWitnesses(this.set).size();
+        if ( witCnt < 2 ) {
+            this.set.setStatus(ComparisonSet.Status.ERROR);
+            this.comparisonSetDao.update(this.set);
+            setStatus(Status.CLIENT_ERROR_PRECONDITION_FAILED);
+            return toTextRepresentation("Collation requires at least 2 witnesses. This set has "+witCnt+".");
+        }
         this.comparisonSetDao.clearCollationData(this.set);
         CollatorConfig cfg = this.comparisonSetDao.getCollatorConfig(set);
         this.taskManager.submit( new TokenizeTask(this.tokenizer, cfg, set) );
