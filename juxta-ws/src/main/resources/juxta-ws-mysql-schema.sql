@@ -51,21 +51,17 @@ CREATE TABLE IF NOT EXISTS juxta_xslt (
     FOREIGN KEY (workspace_id) REFERENCES juxta_workspace (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE IF NOT EXISTS juxta_revision_set (
-    id BIGINT NOT NULL AUTO_INCREMENT,
-    name VARCHAR(255) NOT NULL,
-    source_id BIGINT NOT NULL,
-    PRIMARY KEY (id),
-    INDEX( name ),
-    INDEX( source_id),
-    FOREIGN KEY (source_id) REFERENCES juxta_source (id) ON DELETE CASCADE 
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE IF NOT EXISTS juxta_revision_set_index (
-    set_id BIGINT NOT NULL,
-    revision_index BIGINT NOT NULL,
-    PRIMARY KEY (set_id, revision_index),
-    FOREIGN KEY (set_id) REFERENCES juxta_revision_set (id) ON DELETE CASCADE
+CREATE TABLE IF NOT EXISTS juxta_revision (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    witness_id BIGINT NOT NULL,
+    revision_type ENUM('ADD','DELETE') not null,
+    start BIGINT NOT NULL,
+    end BIGINT NOT NULL,
+    content TEXT,
+    is_included BOOL NOT NULL,
+    PRIMARY KEY (id),
+    FOREIGN KEY (witness_id) REFERENCES juxta_witness (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS juxta_witness (
@@ -73,7 +69,6 @@ CREATE TABLE IF NOT EXISTS juxta_witness (
     name VARCHAR(255) NOT NULL,
     source_id BIGINT NOT NULL,
     xslt_id BIGINT,
-    revision_set_id BIGINT,
     text_id BIGINT NOT NULL,
     fragment_start BIGINT NOT NULL,
     fragment_end BIGINT NOT NULL,
@@ -83,7 +78,6 @@ CREATE TABLE IF NOT EXISTS juxta_witness (
     PRIMARY KEY(id),
     FOREIGN KEY (source_id) REFERENCES juxta_source (id),
     FOREIGN KEY (xslt_id) REFERENCES juxta_xslt (id),
-    FOREIGN KEY (revision_set_id) REFERENCES juxta_revision_set (id),
     FOREIGN KEY (text_id) REFERENCES text_content (id),
     FOREIGN KEY (workspace_id) REFERENCES juxta_workspace (id) ON DELETE CASCADE,
     UNIQUE INDEX(name, workspace_id)

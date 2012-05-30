@@ -153,8 +153,10 @@ function toggleRevisionStyle() {
     if ( active ) {
         $("#revisions-button").addClass("pressed");
         revTags.removeClass("plain-revs");
+        revTags.addClass("reveal");          
     } else {
         $("#revisions-button").removeClass("pressed");
+        revTags.removeClass("reveal");    
         revTags.addClass("plain-revs");
     }
 }

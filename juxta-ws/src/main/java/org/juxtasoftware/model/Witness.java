@@ -14,7 +14,6 @@ public class Witness extends WorkspaceMember implements Comparand {
 
     @Expose private String name;
     @Expose private Long xsltId;
-    @Expose private Long revisionSetId;
     @Expose private Long sourceId;
     @Expose private Date created;
     @Expose private Date updated;
@@ -26,7 +25,6 @@ public class Witness extends WorkspaceMember implements Comparand {
         this.workspaceId = that.workspaceId;
         this.name = that.name;
         this.xsltId = that.xsltId;
-        this.revisionSetId = that.revisionSetId;
         this.sourceId = that.sourceId;
         this.text = that.text;
         this.fragmentRange = new Range(that.fragmentRange);
@@ -53,14 +51,6 @@ public class Witness extends WorkspaceMember implements Comparand {
 
     public Text getText() {
         return text;
-    }
-
-    public Long getRevisionSetId() {
-        return revisionSetId;
-    }
-
-    public void setRevisionSetId(Long revisionSetId) {
-        this.revisionSetId = revisionSetId;
     }
 
     public Date getCreated() {

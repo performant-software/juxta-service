@@ -3,6 +3,7 @@ package org.juxtasoftware.dao.impl;
 import static eu.interedition.text.rdbms.RelationalTextRepository.selectTextFrom;
 
 import java.io.Reader;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Date;
@@ -18,6 +19,7 @@ import org.juxtasoftware.model.Witness;
 import org.juxtasoftware.model.Workspace;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.support.DataAccessUtils;
+import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
@@ -90,7 +92,6 @@ public class WitnessDaoImpl extends JuxtaDaoImpl<Witness> implements WitnessDao 
         ps.addValue("fragment_end", object.getFragment().getEnd());
         ps.addValue("source_id", object.getSourceId());
         ps.addValue("xslt_id", object.getXsltId());
-        ps.addValue("revision_set_id", object.getRevisionSetId());
         ps.addValue("text_id", ((RelationalText) object.getText()).getId());
         ps.addValue("workspace_id", object.getWorkspaceId());
         ps.addValue("created", new Date());
@@ -134,7 +135,6 @@ public class WitnessDaoImpl extends JuxtaDaoImpl<Witness> implements WitnessDao 
         final StringBuilder sql = new StringBuilder();
         sql.append("select w.id as w_id, w.name as w_name, w.created as w_created, w.updated as w_updated, ");
         sql.append("       w.source_id as w_source_id, w.xslt_id as w_xslt_id,");
-        sql.append("       w.revision_set_id as w_revision_set_id,");
         sql.append("       w.fragment_start as w_fragment_start, ");
         sql.append("       w.fragment_end as w_fragment_end, ");
         sql.append("       w.workspace_id as w_workspace_id, ");
@@ -153,31 +153,56 @@ public class WitnessDaoImpl extends JuxtaDaoImpl<Witness> implements WitnessDao 
     }
     
     @Override
-    public boolean hasRevisions(final Witness witness) {
-        final Long txtId = ((RelationalText)witness.getText()).getId();
+    public void addRevisions(final List<RevisionInfo> revs) {
+        if ( revs.size() == 0 ) {
+            return;
+        }
         StringBuilder sql = new StringBuilder();
-        sql.append("select count(*) as cnt from text_annotation where text=?"); 
-        sql.append(" and name in (select id from text_qname where local_name=? or local_name=? or local_name=? or local_name=?)");
-        int cnt = this.jt.queryForInt(sql.toString(), txtId, "add", "addSpan", "del", "delSpan");
+        sql.append("insert into juxta_revision");
+        sql.append(" (witness_id, revision_type, start, end, is_included, content)");
+        sql.append(" values (?,?,?,?,?,?)");
+        this.jt.batchUpdate(sql.toString(), new BatchPreparedStatementSetter() {
+
+                @Override
+                public void setValues(PreparedStatement ps, int i) throws SQLException {
+                    ps.setLong(1, revs.get(i).getWitnessId() );
+                    ps.setString(2, revs.get(i).getType().toString());
+                    ps.setLong(3, revs.get(i).getRange().getStart() );
+                    ps.setLong(4, revs.get(i).getRange().getEnd());
+                    ps.setBoolean(5, revs.get(i).isIncluded());
+                    ps.setString(6, revs.get(i).getText());
+                }
+
+                @Override
+                public int getBatchSize() {
+                    return revs.size();
+                }
+                
+            } );
+    }
+    
+    @Override
+    public boolean hasRevisions(final Witness witness) {
+        final String sql ="select count(*) as cnt from juxta_revision where witness_id=?"; 
+        int cnt = this.jt.queryForInt(sql, witness.getId());
         return ( cnt > 0);
     }
     
     @Override
     public List<RevisionInfo> getRevisions(final Witness witness) {
-        final Long txtId = ((RelationalText)witness.getText()).getId();
         StringBuilder sql = new StringBuilder();
-        sql.append("select n.local_name as name, ta.id as id, ta.range_start as start, ta.range_end as end from text_annotation as ta"); 
-        sql.append(" inner join text_qname n on n.id = ta.name where text=?");
-        sql.append(" and name in (select id from text_qname where local_name=? or local_name=? or local_name=? or local_name=?)");
+        sql.append("select id,witness_id,revision_type,start,end,content,is_included"); 
+        sql.append(" from juxta_revision where witness_id=?");
         return this.jt.query(sql.toString(), new RowMapper<RevisionInfo>(){
 
             @Override
             public RevisionInfo mapRow(ResultSet rs, int rowNum) throws SQLException {
                 Range rng = new Range( rs.getLong("start"), rs.getLong("end"));
-                RevisionInfo inf = new RevisionInfo(rs.getString("name"), rng);
-                inf.setAnnotationId(rs.getLong("id"));
+                RevisionInfo.Type type = RevisionInfo.Type.valueOf( rs.getString("revision_type"));
+                RevisionInfo inf = new RevisionInfo( rs.getLong("id"), rs.getLong("witness_id"),
+                    type, rng, rs.getString("content"), rs.getBoolean("is_included") );
                 return inf;
-            }}, txtId, "add", "addSpan", "del", "delSpan");
+            }}, witness.getId());
     }
     
     @Override
@@ -221,10 +246,7 @@ public class WitnessDaoImpl extends JuxtaDaoImpl<Witness> implements WitnessDao 
             witness.setWorkspaceId( rs.getLong("w_workspace_id") );
             witness.setCreated( rs.getTimestamp("w_created") );
             witness.setUpdated( rs.getTimestamp("w_updated") );
-            Object revSetIdObj = rs.getObject("w_revision_set_id");
-            if ( revSetIdObj != null) {
-                witness.setRevisionSetId( (Long)revSetIdObj );
-            }
+
             witness.setText( RelationalTextRepository.mapTextFrom(rs, "wt") );
             return witness;
         }

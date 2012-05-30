@@ -39,7 +39,7 @@ public class JuxtaTagExtractor extends DefaultHandler  {
     private boolean isExcluding = false;
     private Stack<String> exclusionContext = new Stack<String>();
     private Stack<String> xmlIdStack = new Stack<String>();
-    private Stack<Long> revisionStartOffsetStack = new Stack<Long>();
+    private Stack<ExtractRevision> revisionExtractStack = new Stack<ExtractRevision>();
     private List<RevisionInfo> revisions = new ArrayList<RevisionInfo>();
     
     public void setWitnessId( final Long witnessId ) {
@@ -76,32 +76,34 @@ public class JuxtaTagExtractor extends DefaultHandler  {
             return;
         }
         
-        if ( isSpecialTag(qName) == false && this.xslt.isExcluded(qName, this.tagOccurences.get(qName))) {
-            this.isExcluding = true;
-            this.exclusionContext.push(qName);
-            System.err.println(qName+"["+this.tagOccurences.get(qName)+"] is excluded");
-        }
-                    
-        if ( qName.equals("note") ) {
+        // cache the exclusion state of this tag. Kinda expensive and used multiple times
+        final boolean isExcluded = this.xslt.isExcluded(qName, this.tagOccurences.get(qName));
+        
+        // Handle all tags with special extraction behavior first
+        if ( isRevision(qName) ) {
+            this.revisionExtractStack.push( new ExtractRevision(isExcluded, this.currPos) );
+        } else if ( qName.equals("note") ) {
             handleNote(attributes);
         } else if (qName.equals("pb") ) {
             handlePageBreak(attributes);
         } else {
-            final String idVal = getIdValue(attributes);
-            if ( idVal != null ) {
-                this.identifiedRanges.put(idVal, new Range(this.currPos, this.currPos));
-                this.xmlIdStack.push(idVal);
-            } else  {
-                this.xmlIdStack.push("NA");
-            }
-            
-            if ( isRevision(qName)) {
-               this.revisionStartOffsetStack.push( this.currPos );
+
+            if ( isExcluded ) {
+                this.isExcluding = true;
+                this.exclusionContext.push(qName);
+                System.err.println(qName+"["+this.tagOccurences.get(qName)+"] is excluded");
+            } else {
+                final String idVal = getIdValue(attributes);
+                if ( idVal != null ) {
+                    this.identifiedRanges.put(idVal, new Range(this.currPos, this.currPos));
+                    this.xmlIdStack.push(idVal);
+                } else  {
+                    this.xmlIdStack.push("NA");
+                }
             }
         }
     }
-    
-    
+
     private void countOccurrences(String qName) {
         Integer cnt = this.tagOccurences.get(qName);
         if ( cnt == null ) {
@@ -109,10 +111,6 @@ public class JuxtaTagExtractor extends DefaultHandler  {
         } else {
             this.tagOccurences.put(qName, cnt+1);
         }
-    }
-
-    private boolean isSpecialTag( final String qName ) { 
-        return (qName.equals("note") || qName.equals("pb"));
     }
     
     private void handleNote(Attributes attributes) {
@@ -174,7 +172,13 @@ public class JuxtaTagExtractor extends DefaultHandler  {
             return;
         }
         
-        if (qName.equals("note")) {
+        if ( isRevision(qName) ) {
+            ExtractRevision rev = this.revisionExtractStack.pop();
+            final Range range = new Range(rev.startPosition, this.currPos);
+            this.revisions.add( new RevisionInfo(this.witnessId, qName, range, rev.content.toString(), !rev.isExcluded) );
+
+            
+        } else if (qName.equals("note")) {
             this.currNote.setContent(this.currNoteContent.toString().replaceAll("\\s+", " ").trim());
             if ( this.currNote.getContent().length() == 0 ) {
                 this.notes.remove(this.currNote);
@@ -204,13 +208,10 @@ public class JuxtaTagExtractor extends DefaultHandler  {
                     this.currNoteContent.append("<br/>");
                 }
             } else  if ( this.xslt.hasLineBreak(qName) ){
-                this.currPos++;
-            }
-            
-            // lastly, wrap up any annotations on a revision
-            if ( isRevision(qName)) {
-                final Range range = new Range(this.revisionStartOffsetStack.pop(), this.currPos);
-                this.revisions.add( new RevisionInfo(qName, range) );
+                // Only add 1 for the linebreak if we are non-refvision or included revision
+                if ( this.revisionExtractStack.empty() || this.revisionExtractStack.peek().isExcluded == false) {
+                    this.currPos++;
+                }
             }
         }            
     }
@@ -231,7 +232,13 @@ public class JuxtaTagExtractor extends DefaultHandler  {
             if ( this.currNote != null ) {
                 this.currNoteContent.append(txt);
             } else {
-                this.currPos += txt.length();
+                if ( this.revisionExtractStack.empty() || this.revisionExtractStack.peek().isExcluded == false) {
+                    this.currPos += txt.length();
+                }
+                
+                if ( this.revisionExtractStack.empty() == false ) {
+                    this.revisionExtractStack.peek().content.append(txt);
+                }
             }
         }
     }
@@ -249,6 +256,19 @@ public class JuxtaTagExtractor extends DefaultHandler  {
                     note.setAnchorRange( tgtRange );
                 }
             }
+        }
+    }
+    
+    /**
+     * Track extraction of revision info during parse pass
+     */
+    static class ExtractRevision  {
+        final boolean isExcluded;
+        final long startPosition;
+        StringBuilder content = new StringBuilder();
+        ExtractRevision( boolean exclude, long start) {
+            this.isExcluded = exclude;
+            this.startPosition = start;
         }
     }
 }   

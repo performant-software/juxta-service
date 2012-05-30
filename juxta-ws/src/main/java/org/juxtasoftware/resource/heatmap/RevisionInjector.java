@@ -54,17 +54,32 @@ public class RevisionInjector implements StreamInjector<RevisionInfo> {
         if ( this.currRevision != null && this.tagStarted == false ) {
             if ( this.currRevision.getRange().getStart() == currPositon) {
                 StringBuffer tag = new StringBuffer();
-                long id = this.currRevision.getAnnotationId();
-                String type = "add";
-                if ( this.currRevision.isDelete() ) {
-                    type = "delete";
+                long id = this.currRevision.getId();
+                String type = this.currRevision.getType().toString().toLowerCase();
+                
+                String show = "hide-rev";
+                if ( this.currRevision.isIncluded() ) {
+                    show = "show-rev";
                 }
-                String accept = "accept";
+
                 tag.append("<span id=\"rev-").append(id).append("\" ");
-                tag.append(" class=\"rev ").append(type).append(" plain-revs ").append(accept).append("\">");
+                tag.append(" class=\"rev ").append(type).append(" plain-revs ").append(show).append("\">");
                 
                 line.append(tag);
-                this.tagStarted = true;
+                
+                // if this is something that was not incuded, add the content
+                // (invisibly) to line and end tag. Skip to next tag and say we are not started
+                if ( this.currRevision.isIncluded() == false ) {
+                    line.append(this.currRevision.getText());
+                    line.append("</span>");
+                    this.tagStarted = false;
+                    this.currRevision = null;
+                    if ( this.revisionItr.hasNext() ) {
+                        this.currRevision = this.revisionItr.next();
+                    } 
+                } else {
+                    this.tagStarted = true;
+                }
             }
         }
     }

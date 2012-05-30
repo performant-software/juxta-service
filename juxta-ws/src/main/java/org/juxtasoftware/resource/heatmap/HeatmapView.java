@@ -262,6 +262,11 @@ public class HeatmapView implements ApplicationContextAware {
                 done = true;
             } 
             
+            // TODO Stopped here!!!!!
+            // TODO revision injection breaks rev-original
+            // TODO probably should show alll revisions with the toggle click
+            
+            
             // as long as any injectors hav content to stuff
             // into the document at this position, kepp spinning
             while ( revisionInjector.hasContent(pos) ||

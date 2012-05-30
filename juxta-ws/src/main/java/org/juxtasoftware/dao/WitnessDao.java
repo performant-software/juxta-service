@@ -86,6 +86,12 @@ public interface WitnessDao extends JuxtaDao<Witness> {
      * @return
      */
     List<Usage> getUsage( final Witness witness );
+    
+    /**
+     * Add a set of revisons to this witness
+     * @param revs
+     */
+    void addRevisions( List<RevisionInfo> revs);
 
     /**
      * Return true if the specified witness has revision sites included

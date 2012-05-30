@@ -8,8 +8,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
-import java.util.ArrayList;
-import java.util.List;
 
 import javax.xml.stream.XMLStreamException;
 import javax.xml.transform.OutputKeys;
@@ -27,7 +25,6 @@ import org.juxtasoftware.dao.PageBreakDao;
 import org.juxtasoftware.dao.SourceDao;
 import org.juxtasoftware.dao.WitnessDao;
 import org.juxtasoftware.model.JuxtaXslt;
-import org.juxtasoftware.model.RevisionInfo;
 import org.juxtasoftware.model.Source;
 import org.juxtasoftware.model.Witness;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,12 +34,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.xml.sax.SAXException;
 
-import eu.interedition.text.Annotation;
 import eu.interedition.text.AnnotationRepository;
 import eu.interedition.text.Text;
 import eu.interedition.text.TextConsumer;
 import eu.interedition.text.TextRepository;
-import eu.interedition.text.mem.SimpleAnnotation;
 
 @Service
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
@@ -188,11 +183,7 @@ public class SourceTransformer {
         extractor.extract( this.sourceDao.getContentReader(source), xslt);
         this.noteDao.create( extractor.getNotes() );
         this.pbDao.create( extractor.getPageBreaks() );
-        List<Annotation> revAnnotations = new ArrayList<Annotation>();
-        for (RevisionInfo rev : extractor.getRevisions() ) {
-            revAnnotations.add( new SimpleAnnotation(w.getText(), rev.getName(), rev.getRange(), null));
-        }
-        this.annotationRepository.create(revAnnotations);
+        this.witnessDao.addRevisions(  extractor.getRevisions() );
     }
     
     /**

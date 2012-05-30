@@ -217,28 +217,20 @@ span.active {
     text-decoration: underline;
     color: #008000;
 }
-.rev.add.accept {
+.rev.show-rev{
     display: inline;
-    text-decoration: none;
 }
-.rev.add.reject {
+.rev.hide-rev{
     display: none;
 }
-
+.rev.reveal {
+    display:inline !important;
+}
 .rev.delete {
     font-weight: bold;
     text-decoration: line-through;
     color: #800000;
 } 
-.rev.delete.accept {
-    display: none;
-}
-.rev.delete.reject {
-    display: inline;
-    color: #800000;
-    text-decoration: none;
-} 
-
 .plain-revs {
     font-weight: 300 !important;
     color: #000 !important;
