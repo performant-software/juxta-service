@@ -93,9 +93,11 @@ public class SourceTransformer {
         // dump the transform results 
         this.witnessDao.updateContent(origWit, parsedContent);
         
-        // extract pb, note and revision tags
-        extractSpecialTags(srcDoc, this.witnessDao.find(origWit.getId()), xslt );
-               
+        // extract pb, note and revision tags of xml documents
+        if ( xslt != null ) {
+            extractSpecialTags(srcDoc, this.witnessDao.find(origWit.getId()), xslt );
+        }
+        
         // now it is safe to kill the original text text
         this.textRepository.delete( origWit.getText() );
     }
@@ -137,8 +139,10 @@ public class SourceTransformer {
         Long id = this.witnessDao.create(witness);
         witness.setId(id);
         
-        // extract pb, note and revision tags
-        extractSpecialTags(srcDoc, witness, xslt);
+        // extract pb, note and revision tags of xml documents
+        if ( xslt != null ) {
+            extractSpecialTags(srcDoc, witness, xslt);
+        }
         
         return id;
     }
