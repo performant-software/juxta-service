@@ -26,7 +26,9 @@ public class JuxtaXsltDaoImpl extends JuxtaDaoImpl<JuxtaXslt> implements JuxtaXs
 
     @Override
     public void delete(JuxtaXslt juxtaXslt) {
-        this.jt.update("delete from " + this.tableName + " where id = ?", juxtaXslt.getId());
+        if ( juxtaXslt != null ) {
+            this.jt.update("delete from " + this.tableName + " where id = ?", juxtaXslt.getId());
+        }
     }
 
     @Override

@@ -51,19 +51,6 @@ CREATE TABLE IF NOT EXISTS juxta_xslt (
     FOREIGN KEY (workspace_id) REFERENCES juxta_workspace (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-
-CREATE TABLE IF NOT EXISTS juxta_revision (
-    id BIGINT NOT NULL AUTO_INCREMENT,
-    witness_id BIGINT NOT NULL,
-    revision_type ENUM('ADD','DELETE') not null,
-    start BIGINT NOT NULL,
-    end BIGINT NOT NULL,
-    content TEXT,
-    is_included BOOL NOT NULL,
-    PRIMARY KEY (id),
-    FOREIGN KEY (witness_id) REFERENCES juxta_witness (id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
 CREATE TABLE IF NOT EXISTS juxta_witness (
     id BIGINT NOT NULL AUTO_INCREMENT,
     name VARCHAR(255) NOT NULL,
@@ -83,6 +70,17 @@ CREATE TABLE IF NOT EXISTS juxta_witness (
     UNIQUE INDEX(name, workspace_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+CREATE TABLE IF NOT EXISTS juxta_revision (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    witness_id BIGINT NOT NULL,
+    revision_type ENUM('ADD','DELETE') not null,
+    start BIGINT NOT NULL,
+    end BIGINT NOT NULL,
+    content TEXT,
+    is_included BOOL NOT NULL,
+    PRIMARY KEY (id),
+    FOREIGN KEY (witness_id) REFERENCES juxta_witness (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS juxta_comparison_set (
     id BIGINT NOT NULL AUTO_INCREMENT,
