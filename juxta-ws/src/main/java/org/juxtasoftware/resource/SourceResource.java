@@ -5,8 +5,10 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
@@ -306,6 +308,7 @@ public class SourceResource extends BaseResource implements ApplicationContextAw
         // set uses need special treatment; mark them as NOT collated,
         // clear their collation cache and remove all alignments
         List<Usage> usage = this.sourceDao.getUsage(this.source);
+        Set<JuxtaXslt> xslts = new HashSet<JuxtaXslt>();
         for (Usage u : usage) {
             // Manually delete the witness. This is necessary
             // cuz witness content is stored in the text_content area
@@ -313,15 +316,24 @@ public class SourceResource extends BaseResource implements ApplicationContextAw
             if ( u.getType().equals(Usage.Type.WITNESS)) {
                 Witness w = this.witnessDao.find(u.getId());
                 this.witnessDao.delete(w);
+                
+                // save the XSLTs to delete later. This is necessary in the
+                // case of witnesses generated from TEI PS source: each witness
+                // will refer to the SAME xslt.
                 JuxtaXslt xslt = this.xsltDao.find( w.getXsltId() );
                 if ( xslt != null ) {
-                    this.xsltDao.delete( xslt );
+                    xslts.add(xslt);
                 }
             } else if ( u.getType().equals(Usage.Type.COMPARISON_SET)) {
                 // set must have all of its collation data reset
                 ComparisonSet set = this.setDao.find( u.getId());
                 this.setDao.clearCollationData(set);
             }
+        }
+        
+        // Once everything else is gone, clear out the XSLT
+        for ( JuxtaXslt xslt : xslts ) {
+            this.xsltDao.delete(xslt);
         }
 
         this.sourceDao.delete(this.source);
