@@ -51,9 +51,11 @@ public final class JuxtaXsltFactory {
                 }
                 lb.append( wildCardNamespace(tag) );
             }
-            xslt = xslt.replaceAll("\\{LB_LIST\\}", lb.toString());
-        } else {
-            xslt = xslt.replaceAll("\\{LB_LIST\\}", "*" );
+            
+            String breaksXslt = IOUtils.toString( ClassLoader.getSystemResourceAsStream("xslt/breaks.xslt"), "utf-8");
+            breaksXslt = breaksXslt.replaceAll("\\{LB_LIST\\}", lb.toString());
+            int breakPos = xslt.indexOf("<!--breaks-->")+13;
+            xslt = xslt.substring(0, breakPos)+"\n    "+breaksXslt+xslt.substring(breakPos);
         }
         
         // all desktop excludes are global excludes. Add them to the xslt

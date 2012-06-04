@@ -1,0 +1,1 @@
+<xsl:template match="{TAG}"/>

@@ -16,9 +16,6 @@
     <!--global-exclusions-->
     <!--single-exclusions-->
     <!--breaks-->   
-    <xsl:template match="{LB_LIST}">
-        <xsl:call-template name="line-break"/>
-    </xsl:template>    
 
     <xsl:template match="text()">
          <!-- Rules: Newlines bound the formatting whitespace. At the start of

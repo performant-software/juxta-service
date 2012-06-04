@@ -79,6 +79,8 @@ public class XsltResource extends BaseResource {
             Map<String,String> templates = new HashMap<String,String>();
             templates.put("main", IOUtils.toString( ClassLoader.getSystemResourceAsStream("xslt/basic.xslt"), "utf-8"));
             templates.put("singleExclude", IOUtils.toString( ClassLoader.getSystemResourceAsStream("xslt/single-exclusion.xslt"), "utf-8"));
+            templates.put("globalExclude", IOUtils.toString( ClassLoader.getSystemResourceAsStream("xslt/global-exclusion.xslt"), "utf-8"));
+            templates.put("breaks", IOUtils.toString( ClassLoader.getSystemResourceAsStream("xslt/breaks.xslt"), "utf-8"));
             templates.put("linebreak", "<xsl:value-of select=\"$display-linebreak\"/>");
             
             Gson gson = new Gson();

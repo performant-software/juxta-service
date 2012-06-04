@@ -149,7 +149,6 @@ public class Transformer extends BaseResource {
     
     private JuxtaXslt getGenericXslt( final Source src, final String name ) throws IOException {
         String xslt = IOUtils.toString( ClassLoader.getSystemResourceAsStream("xslt/basic.xslt"), "utf-8");
-        xslt = xslt.replaceAll("\\{LB_LIST\\}", "*");
         xslt = xslt.replaceAll("\\{LINEBREAK\\}", "&#10;");
         
         // for now act like desktop: if namespaces are included in the xml, wildcard all tag names
@@ -163,6 +162,11 @@ public class Transformer extends BaseResource {
             xslt = xslt.replaceAll("\\{NOTE\\}", "note");
             xslt = xslt.replaceAll("\\{PB\\}", "pb");
         }
+        
+        String breaksXslt = IOUtils.toString( ClassLoader.getSystemResourceAsStream("xslt/breaks.xslt"), "utf-8");
+        breaksXslt = breaksXslt.replaceAll("\\{LB_LIST\\}", "*");
+        int breakPos = xslt.indexOf("<!--breaks-->")+13;
+        xslt = xslt.substring(0, breakPos)+"\n    "+breaksXslt+xslt.substring(breakPos);
         
         JuxtaXslt jxXslt = new JuxtaXslt();
         jxXslt.setName(name+"-transform");
