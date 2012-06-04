@@ -43,14 +43,18 @@ public final class JuxtaXsltFactory {
         xslt = xslt.replaceAll("\\{LINEBREAK\\}", "&#10;");
         
         // get the template exclusion / linebreak info and insert to XSLT
-        StringBuilder lb = new StringBuilder();
-        for ( String tag : info.getLineBreaks() ) {
-            if ( lb.length() > 0 ) {
-                lb.append("|");
+        if ( info.getLineBreaks().size() > 0 ) {
+            StringBuilder lb = new StringBuilder();
+            for ( String tag : info.getLineBreaks() ) {
+                if ( lb.length() > 0 ) {
+                    lb.append("|");
+                }
+                lb.append( wildCardNamespace(tag) );
             }
-            lb.append( wildCardNamespace(tag) );
+            xslt = xslt.replaceAll("\\{LB_LIST\\}", lb.toString());
+        } else {
+            xslt = xslt.replaceAll("\\{LB_LIST\\}", "*" );
         }
-        xslt = xslt.replaceAll("\\{LB_LIST\\}", lb.toString());
         
         // all desktop excludes are global excludes. Add them to the xslt
         StringBuilder excludes = new StringBuilder();

@@ -141,7 +141,7 @@ public class Transformer extends BaseResource {
             case TEI:
                 return getTeiXslt( name );
             case RAM:
-                return null;
+                return getRamXslt( name );
             default:
                 return  getGenericXslt( src, name );
         }
@@ -175,6 +175,12 @@ public class Transformer extends BaseResource {
     
     private JuxtaXslt getTeiXslt(final String name ) throws Exception {
         this.templateParser.parse( ClassLoader.getSystemResourceAsStream("tei-template.xml") );
+        TemplateInfo teiInfo = this.templateParser.getTemplates().get(0);
+        return this.xsltFactory.create(this.workspace.getId(), name, teiInfo);
+    }
+    
+    private JuxtaXslt getRamXslt(final String name ) throws Exception {
+        this.templateParser.parse( ClassLoader.getSystemResourceAsStream("ram.xml") );
         TemplateInfo teiInfo = this.templateParser.getTemplates().get(0);
         return this.xsltFactory.create(this.workspace.getId(), name, teiInfo);
     }
