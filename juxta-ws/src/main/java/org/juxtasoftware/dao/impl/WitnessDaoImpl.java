@@ -153,6 +153,12 @@ public class WitnessDaoImpl extends JuxtaDaoImpl<Witness> implements WitnessDao 
     }
     
     @Override
+    public void clearRevisions(Witness witness) {
+        final String sql = "delete from juxta_revision where witness_id=?";
+        this.jt.update(sql, witness.getId());
+    }
+    
+    @Override
     public void addRevisions(final List<RevisionInfo> revs) {
         if ( revs.size() == 0 ) {
             return;

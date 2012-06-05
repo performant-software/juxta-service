@@ -104,4 +104,10 @@ public interface WitnessDao extends JuxtaDao<Witness> {
      * Get a list of revisions that are included in this witness
      */
     List<RevisionInfo> getRevisions( Witness witness) ;
+    
+    /**
+     * Remove all revision info for the specified witness
+     * @param witness
+     */
+    public void clearRevisions(Witness witness);
 }

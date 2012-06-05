@@ -74,11 +74,11 @@ public class SourceTransformer {
         }
         
         // clear out old witness stuff; annotations, page breaks and notes - BUT NOT text
-        // can't kill it yet cuz witness refers to it. Must wait til after witness
-        // text is updated!
+        // can't kill it yet cuz witness refers to it. Must wait til after witness text is updated!
         this.annotationRepository.delete( text(origWit.getText()) );
         this.noteDao.deleteAll( origWit.getId() );
         this.pbDao.deleteAll( origWit.getId() );
+        this.witnessDao.clearRevisions( origWit );
         
         // redo the transform
         Text parsedContent = srcDoc.getText();
