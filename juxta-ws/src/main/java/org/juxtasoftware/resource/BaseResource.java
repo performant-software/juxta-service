@@ -225,6 +225,9 @@ public class BaseResource extends ServerResource {
      * @return
      */
     public Representation toHtmlRepresentation( final String ftlName, Map<String,Object> map, boolean useLayout ) {
+        return toHtmlRepresentation(ftlName, map, useLayout, true);
+    }
+    public Representation toHtmlRepresentation( final String ftlName, Map<String,Object> map, boolean useLayout, boolean gzip ) {
         Representation ftlRepresentation = null;
         if ( useLayout == false ) {
             ftlRepresentation = getTemplate(ftlName);
@@ -243,7 +246,7 @@ public class BaseResource extends ServerResource {
         
         map.put("baseUrl", getRequest().getHostRef().toString()+"/juxta"); 
         Representation r = new TemplateRepresentation(ftlRepresentation, FTL_CONFIG, map, MediaType.TEXT_HTML);
-        if ( this.zipSupported ) {
+        if ( this.zipSupported && gzip ) {
             return new EncodeRepresentation(Encoding.GZIP, r);
         }
         return r;  

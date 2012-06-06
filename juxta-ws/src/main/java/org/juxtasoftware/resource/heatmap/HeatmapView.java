@@ -121,7 +121,7 @@ public class HeatmapView implements ApplicationContextAware {
       
         // Next, the get heatmap main body (map, notes and margin boxes)
         // Grab it from cache if possible
-        if ( this.cacheDao.heatmapExists(set.getId(), base.getId())==false) {
+        if ( this.cacheDao.heatmapExists(set.getId(), base.getId()) == false) {
             renderHeatMap( set, base, witnesses );
         }
         
@@ -260,12 +260,7 @@ public class HeatmapView implements ApplicationContextAware {
             int data = reader.read();
             if ( data == -1 ) {
                 done = true;
-            } 
-            
-            // TODO Stopped here!!!!!
-            // TODO revision injection breaks rev-original
-            // TODO probably should show alll revisions with the toggle click
-            
+            }             
             
             // as long as any injectors hav content to stuff
             // into the document at this position, kepp spinning
@@ -316,10 +311,10 @@ public class HeatmapView implements ApplicationContextAware {
         map.put("numWitnesses", witnesses.size()-1);
         map.put("notes", noteInjector.getData() );
         
-        // create the main body of the heatmap. NOTE the false param
-        // this tells the base NOT to use the layout template when generating
-        // the representation
-        Representation heatmapFtl = this.parent.toHtmlRepresentation("heatmap_text.ftl", map, false);
+        // create the main body of the heatmap. NOTE the false params.
+        // The first one tells the base NOT to use the layout template when generating
+        // the representation. The second tells it NOT to GZIP the results
+        Representation heatmapFtl = this.parent.toHtmlRepresentation("heatmap_text.ftl", map, false, false);
                 
         // Stuff it in a cache for future fast response
         this.cacheDao.cacheHeatmap(set.getId(), base.getId(), heatmapFtl.getReader());

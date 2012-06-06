@@ -143,7 +143,9 @@ public class SideBySideView implements FileDirectiveListener, ApplicationContext
         map.put("fileReader", fileDirective );  
         map.put("witnessDetails", this.witnessDetails); 
         map.put("witnesses", witnesses);
-        Representation sbsFtl =  this.parent.toHtmlRepresentation("side_by_side.ftl", map);
+        
+        // IMPORTANT: the last FALSE param tells the base not to GZIP the results.
+        Representation sbsFtl =  this.parent.toHtmlRepresentation("side_by_side.ftl", map, true, false);
         
         // Stream data into cache DB (this invalidates the reader), then stream it back out of
         // the db, back to the client. 
