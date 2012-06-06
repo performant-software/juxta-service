@@ -201,6 +201,18 @@
             <groupId>eu.interedition</groupId>
             <artifactId>text</artifactId>
         </dependency>
+        
+        <!-- Encoding Utitlites -->
+        <dependency>
+            <groupId>net.sourceforge.jchardet</groupId>
+            <artifactId>jchardet</artifactId>
+            <version>1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>net.sourceforge.juniversalchardet</groupId>
+            <artifactId>juniversalchardet</artifactId>
+            <version>1.0.3</version>
+        </dependency>
 
         <!-- JUnit tests -->
         <dependency>

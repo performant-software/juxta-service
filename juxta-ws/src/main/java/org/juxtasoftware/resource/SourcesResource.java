@@ -1,5 +1,7 @@
 package org.juxtasoftware.resource;
 
+import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -22,6 +24,7 @@ import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.params.HttpMethodParams;
 import org.juxtasoftware.dao.SourceDao;
 import org.juxtasoftware.model.Source;
+import org.juxtasoftware.util.EncodingUtils;
 import org.restlet.data.MediaType;
 import org.restlet.data.Status;
 import org.restlet.ext.fileupload.RestletFileUpload;
@@ -267,8 +270,11 @@ public class SourcesResource extends BaseResource {
             }
             boolean isXml =  url.endsWith(".xml");
             contentStream = get.getResponseBodyAsStream();
-            return this.sourceDao.create(this.workspace, name, isXml, new InputStreamReader(contentStream) );
-
+            File fixed = EncodingUtils.fixEncoding( contentStream, isXml );
+            return this.sourceDao.create(this.workspace, name, isXml, new FileReader(fixed) );
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw e;
         } finally {
             get.releaseConnection();
         } 
