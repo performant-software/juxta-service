@@ -45,12 +45,11 @@ public final class EncodingUtils {
             // read from original encoding into 16-bit unicode
             FileInputStream fis =  new FileInputStream(tmpSrc);
             String nonUtf8Txt =  IOUtils.toString(fis,encoding);
-            //System.err.println(nonUtf8Txt);
             IOUtils.closeQuietly(fis);
             tmpSrc.delete();
             
             // setup encoders to translate the data. IF bad chars
-            // are encountered, replace them with 0xFFFD (uunkown utf-8 symbol)
+            // are encountered, replace them with 0xFFFD (unkown utf-8 symbol)
             Charset utf8cs = Charset.availableCharsets().get("UTF-8");
             CharsetEncoder utf8en = utf8cs.newEncoder();
             utf8en.onMalformedInput(CodingErrorAction.REPLACE);
@@ -58,18 +57,13 @@ public final class EncodingUtils {
             
             // encode the 16-bit unicode to UTF-8 and write out the bytes
             ByteBuffer utf8Buffer = utf8en.encode(CharBuffer.wrap(nonUtf8Txt));
-//            
-//            byte[] bytearray = new byte[utf8Buffer.remaining()];
-//            utf8Buffer.get(bytearray);
-            
+
             fos = new FileOutputStream(tmpSrc);
             WritableByteChannel channel = Channels.newChannel(fos);
             channel.write(utf8Buffer);
-            //fos.write( bytearray );
             fos.close();
             
-            // lastly, if this is xml, update the encoding statement to
-            // say "utf-8" (if one is present)
+            // lastly, if this is xml, be sure encoding says "utf-8" (if one is present)
             if ( isXml ) {
                 updateXmlEncodingDeclaration(tmpSrc);
             }

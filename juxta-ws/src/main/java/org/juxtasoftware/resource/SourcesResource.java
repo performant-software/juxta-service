@@ -224,6 +224,9 @@ public class SourcesResource extends BaseResource {
             if ( jsonObj.has("type") == false) {
                 throw new Exception("Missing information: type");
             }
+            if ( jsonObj.has("contentType") == false) {
+                throw new Exception("Missing information: contentType");
+            }
             if ( jsonObj.has("name") == false) {
                 throw new Exception("Missing information: name");
             }
@@ -231,6 +234,7 @@ public class SourcesResource extends BaseResource {
                 throw new Exception("Missing information: data");
             }
             String type = jsonObj.get("type").getAsString();
+            String contentType = jsonObj.get("contentType").getAsString();
             String name = jsonObj.get("name").getAsString();
             String data = jsonObj.get("data").getAsString();
             
@@ -239,13 +243,15 @@ public class SourcesResource extends BaseResource {
             }
             
             if ( type.equalsIgnoreCase("url")) {
-                ids.add( scrapeExternalUrl( name, data ) );
-            } else if ( type.equalsIgnoreCase("txt") ) {
-                ids.add( createSourceFromRawText( name, data ) );
-            } else if ( type.equalsIgnoreCase("xml") ) {
-                ids.add( createSourceFromRawXml( name, data ) );
-            } else {
-                throw new Exception("Invalid data type specified: "+type);
+                ids.add( scrapeExternalUrl( name, data, contentType ) );
+            } else if ( type.equalsIgnoreCase("raw") ) {
+                if ( contentType.equalsIgnoreCase("txt")) {
+                    ids.add( createSourceFromRawText( name, data ) );
+                } else if ( type.equalsIgnoreCase("xml") ) {
+                    ids.add( createSourceFromRawXml( name, data ) );
+                } else {
+                    throw new Exception("Invalid content type specified: "+type);
+                }
             }
         }
         return ids;  
@@ -259,18 +265,16 @@ public class SourcesResource extends BaseResource {
         return this.sourceDao.create(this.workspace, name, false, new StringReader(data));
     }
 
-    private Long scrapeExternalUrl(final String name, final String url) throws Exception {
+    private Long scrapeExternalUrl(final String name, final String url, final String contentType) throws Exception {
         HttpClient httpClient = newHttpClient();
-        InputStream contentStream = null;  
         GetMethod get = new GetMethod(url);
         try {
             int result = httpClient.executeMethod(get);
             if (result != 200) {
                 throw new IOException(result + " code returned for URL: " + url);
             }
-            boolean isXml =  url.endsWith(".xml");
-            contentStream = get.getResponseBodyAsStream();
-            File fixed = EncodingUtils.fixEncoding( contentStream, isXml );
+            boolean isXml =  contentType.equalsIgnoreCase("xml");
+            File fixed = EncodingUtils.fixEncoding( get.getResponseBodyAsStream(), isXml );
             return this.sourceDao.create(this.workspace, name, isXml, new FileReader(fixed) );
         } catch (Exception e) {
             e.printStackTrace();
