@@ -1,11 +1,10 @@
 package org.juxtasoftware.resource;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.StringReader;
 import java.lang.reflect.Type;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -125,12 +124,9 @@ public class SourcesResource extends BaseResource {
     }
 
     private Representation handleMutipartPost(Representation entity) {
-        JsonObject jsonHeader = null;
         String sourceName = null;
         String contentType = null;
         InputStream srcInputStream = null;
-        JsonArray jsonData = null;
-        JsonParser parser = new JsonParser();
         try {
             // pull the list of items in this multipart request
             DiskFileItemFactory factory = new DiskFileItemFactory();
@@ -138,82 +134,55 @@ public class SourcesResource extends BaseResource {
             RestletFileUpload upload = new RestletFileUpload(factory);
             List<FileItem> items = upload.parseRequest(getRequest());
             for ( FileItem item : items ) {
-                if ( item.getFieldName().equals("jsonHeader")) {
-                    jsonHeader = parser.parse( item.getString()).getAsJsonObject();
-                } else  if ( item.getFieldName().equals("sourceName")) {
+                if ( item.getFieldName().equals("sourceName")) {
                     sourceName = item.getString();
                 } else if ( item.getFieldName().equals("contentType")) {
                     contentType = item.getString();
                 } else if ( item.getFieldName().equals("sourceFile")) {
                     srcInputStream = item.getInputStream();
-                } else if ( item.getFieldName().equals("jsonData")) {
-                    jsonData = parser.parse( item.getString()).getAsJsonArray();
-                }
+                } 
             }
             
             // validate that everything needed is present
-            if ( srcInputStream == null && jsonData == null ) {
+            if ( srcInputStream == null  ) {
                 setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
-                return toTextRepresentation("Missing file and/or json data in post");
+                return toTextRepresentation("Missing file data in post");
             }
-            if ( srcInputStream != null ) {
-                if ( jsonHeader == null ) {
-                    if ( sourceName == null || contentType == null ) {
-                        setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
-                        return toTextRepresentation("Missing header information");
-                    }
-                } else {
-                    if ( jsonHeader.has("sourceName") == false || 
-                         jsonHeader.has("contentType") == false ) {
-                       setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
-                       return toTextRepresentation("Missing required data in json header");
-                   } else {
-                       sourceName = jsonHeader.get("sourceName").getAsString();
-                       contentType = jsonHeader.get("contentType").getAsString();
-                   }
-                }
+            if ( sourceName == null || contentType == null ) {
+                setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
+                return toTextRepresentation("Missing name and/or content type information");
             }
         } catch (Exception e) {
             LOG.error("Unable to parse multipart data", e);
             setStatus(Status.CLIENT_ERROR_BAD_REQUEST );
             return toTextRepresentation("File upload failed");
         }
-        
-        Gson gson = new Gson();
-        List<Long> idList = new ArrayList<Long>();
-        if ( jsonData != null ) {
-            try {
-                idList.addAll( createSources( jsonData ) );
-            } catch (Exception e) {
-                setStatus(Status.SERVER_ERROR_INTERNAL );
-                return toTextRepresentation("Unable to create source(s): "+e.toString());
-            }
+
+        // prevent duplicate file names
+        if (this.sourceDao.exists(this.workspace, sourceName)) {
+            setStatus(Status.CLIENT_ERROR_CONFLICT);
+            return toTextRepresentation("Source '" + sourceName + "' already exists in workspace '"
+                + this.workspace.getName() + "'");
         }
-        
-         if (srcInputStream != null) {
-             // prevent duplicate file names
-             if ( this.sourceDao.exists(this.workspace, sourceName)) {
-                 setStatus(Status.CLIENT_ERROR_CONFLICT, 
-                     "Source '"+sourceName+"' already exists in workspace '"+this.workspace.getName()+"'");
-                 return toTextRepresentation("");
-             }
-             
-             try {
-                 idList.add( createSource(sourceName, MediaType.valueOf(contentType), srcInputStream) );
-             } catch (IOException e) {
-                 setStatus(Status.SERVER_ERROR_INTERNAL);
-                 return toTextRepresentation("Unable to import source: "+e.getMessage());
-             } catch (XMLStreamException e) {
-                 setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
-                 String msg = e.getMessage();
-                 int pos = msg.indexOf(":");
-                 if ( pos > -1 ) {
-                     msg = msg.substring(pos+1).trim();
-                 }
-                 return toTextRepresentation("This document contains malformed xml - "+msg);
-             }
-         }
-        
+
+        List<Long> idList = new ArrayList<Long>();
+        try {
+            // create the source
+            idList.add(createSource(sourceName, MediaType.valueOf(contentType), srcInputStream));
+        } catch (IOException e) {
+            setStatus(Status.SERVER_ERROR_INTERNAL);
+            return toTextRepresentation("Unable to import source: " + e.getMessage());
+        } catch (XMLStreamException e) {
+            setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
+            String msg = e.getMessage();
+            int pos = msg.indexOf(":");
+            if (pos > -1) {
+                msg = msg.substring(pos + 1).trim();
+            }
+            return toTextRepresentation("This document contains malformed xml - " + msg);
+        }
+         
+        Gson gson = new Gson();
         return toJsonRepresentation( gson.toJson(idList) );
     }
     
@@ -239,30 +208,32 @@ public class SourcesResource extends BaseResource {
             String data = jsonObj.get("data").getAsString();
             
             if ( this.sourceDao.exists(this.workspace, name) ) {
-                throw new Exception("Source '"+name+"' already exists in workspace '"+this.workspace.getName()+"'");
+                throw new Exception("Source \""+name+"\" already exists");
             }
             
             if ( type.equalsIgnoreCase("url")) {
                 ids.add( scrapeExternalUrl( name, data, contentType ) );
             } else if ( type.equalsIgnoreCase("raw") ) {
-                if ( contentType.equalsIgnoreCase("txt")) {
-                    ids.add( createSourceFromRawText( name, data ) );
-                } else if ( type.equalsIgnoreCase("xml") ) {
-                    ids.add( createSourceFromRawXml( name, data ) );
-                } else {
-                    throw new Exception("Invalid content type specified: "+type);
-                }
+                ids.add( createSourceFromRawData( name, data, contentType) );
             }
         }
         return ids;  
     }
     
-    private Long createSourceFromRawXml(final String name, final String data) throws Exception {
-        return this.sourceDao.create(this.workspace, name, true, new StringReader(data));
-    }
-
-    private Long createSourceFromRawText(final String name, final String data) throws Exception {
-        return this.sourceDao.create(this.workspace, name, false, new StringReader(data));
+    private Long createSourceFromRawData(final String name, final String data, final String contentType) throws Exception {
+        if ( contentType.equalsIgnoreCase("txt")) {
+            File fixed = EncodingUtils.fixEncoding( new ByteArrayInputStream(data.getBytes()), false );
+            Long id = this.sourceDao.create(this.workspace, name, false, new FileReader(fixed));
+            fixed.delete();
+            return id;
+        } else if ( contentType.equalsIgnoreCase("xml")) {
+            File fixed = EncodingUtils.fixEncoding( new ByteArrayInputStream(data.getBytes()), true );
+            Long id = this.sourceDao.create(this.workspace, name, true, new FileReader(fixed));
+            fixed.delete();
+            return id;
+        } else {
+            throw new Exception("Invalid content type specified: "+contentType);
+        }
     }
 
     private Long scrapeExternalUrl(final String name, final String url, final String contentType) throws Exception {
@@ -275,7 +246,9 @@ public class SourcesResource extends BaseResource {
             }
             boolean isXml =  contentType.equalsIgnoreCase("xml");
             File fixed = EncodingUtils.fixEncoding( get.getResponseBodyAsStream(), isXml );
-            return this.sourceDao.create(this.workspace, name, isXml, new FileReader(fixed) );
+            Long id = this.sourceDao.create(this.workspace, name, isXml, new FileReader(fixed) );
+            fixed.delete();
+            return id;
         } catch (Exception e) {
             e.printStackTrace();
             throw e;
@@ -298,10 +271,16 @@ public class SourcesResource extends BaseResource {
     private Long createSource(final String sourceName, final MediaType contentType, InputStream srcInputStream) throws IOException, XMLStreamException {
         if ( MediaType.TEXT_XML.isCompatible( contentType ) ) {
             LOG.info("Accepting XML source document");
-            return this.sourceDao.create(this.workspace, sourceName, true, new InputStreamReader(srcInputStream));
+            File fixed = EncodingUtils.fixEncoding(srcInputStream, true);
+            Long id =  this.sourceDao.create(this.workspace, sourceName, true, new FileReader(fixed));
+            fixed.delete();
+            return id;
         } else if ( MediaType.TEXT_PLAIN.isCompatible( contentType ) ) {
             LOG.info("Accepting plain text source document");
-            return this.sourceDao.create(this.workspace, sourceName, false, new InputStreamReader(srcInputStream));
+            File fixed = EncodingUtils.fixEncoding(srcInputStream, false);
+            Long id = this.sourceDao.create(this.workspace, sourceName, false, new FileReader(fixed));
+            fixed.delete();
+            return id;
         } else {
             throw new IOException("Unsupported content type "+contentType);
         }
