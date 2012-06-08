@@ -17,12 +17,9 @@ import org.juxtasoftware.model.Source;
 import org.juxtasoftware.model.Usage;
 import org.juxtasoftware.model.Witness;
 import org.juxtasoftware.service.SourceTransformer;
-import org.restlet.data.CharacterSet;
-import org.restlet.data.Language;
 import org.restlet.data.MediaType;
 import org.restlet.data.Status;
 import org.restlet.representation.Representation;
-import org.restlet.representation.StringRepresentation;
 import org.restlet.resource.Delete;
 import org.restlet.resource.Get;
 import org.restlet.resource.Post;
@@ -35,6 +32,13 @@ import org.springframework.stereotype.Service;
 
 import com.google.gson.Gson;
 
+/**
+ * REsource to get/update XSLT for a witness.
+ * Also get the generic XSLT template.
+ * 
+ * @author loufoster
+ *
+ */
 @Service
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
 public class XsltResource extends BaseResource {
@@ -49,30 +53,58 @@ public class XsltResource extends BaseResource {
     @Override
     protected void doInit() throws ResourceException {
         super.doInit();
+        Long witnessId = null;
         if ( getRequest().getAttributes().containsKey("id")) {
-            this.xsltId = Long.parseLong( (String)getRequest().getAttributes().get("id"));
+            witnessId = Long.parseLong( (String)getRequest().getAttributes().get("id"));
+        }
+        if ( getRequest().getAttributes().containsKey("xsltId")) {
+            this.xsltId = Long.parseLong( (String)getRequest().getAttributes().get("xsltId"));
         }
         
         String lastSeg  = getRequest().getResourceRef().getLastSegment();
         this.templateRequest = ( lastSeg.equalsIgnoreCase("template"));
+        
+        validateParams(witnessId);
+    }
+    
+    private void validateParams( final Long witnessId) {
+        if ( this.templateRequest && (witnessId != null || this.xsltId != null) ) {
+            setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
+            return;
+        }
+        
+        if ( witnessId != null && this.xsltId != null) {
+            setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
+            return;
+        }
+        
+        if (witnessId != null ) {
+            Witness w = this.witnessDao.find(witnessId);
+            if ( validateModel(w) == false ) {
+                return;
+            }
+            this.xsltId = w.getXsltId();
+        }
     }
     
     @Get("json")
     public Representation getJson() {
-        if ( this.xsltId == null ) {
-            if ( this.templateRequest ) {
-                return getXsltTemplates();
-            } else {
-                List<JuxtaXslt> list = this.xsltDao.list(this.workspace);
-                Gson gson = new Gson();
-                return toJsonRepresentation( gson.toJson(list)); 
-            }
-        } else {
+        if ( this.templateRequest ) {
+            return getXsltTemplates();
+        }
+        
+        if ( this.xsltId != null ) {
             JuxtaXslt xslt = this.xsltDao.find(this.xsltId);
             Gson gson = new Gson();
-            return toJsonRepresentation( gson.toJson(xslt)); 
+            return toJsonRepresentation( gson.toJson(xslt));
         }
+        
+        // if all else has failed, just return the list of xslts
+        List<JuxtaXslt> list = this.xsltDao.list(this.workspace);
+        Gson gson = new Gson();
+        return toJsonRepresentation( gson.toJson(list));
     }
+
     
     private Representation getXsltTemplates() {
         try {
@@ -90,47 +122,25 @@ public class XsltResource extends BaseResource {
             return toTextRepresentation("Unable to retrieve XSLT templates: " +e.getMessage());
         }
     }
-
-    @Get("html")
-    public Representation getHtml() {
-        if ( this.xsltId == null ) {
-            if ( this.templateRequest ) {
-                setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
-                return null;
-            } else {
-                List<JuxtaXslt> list = this.xsltDao.list(this.workspace);
-                Gson gson = new Gson();
-                return toJsonRepresentation( gson.toJson(list)); 
-            }
-        } else {
-            JuxtaXslt xslt = this.xsltDao.find(this.xsltId);
-            return new StringRepresentation("<h2>"+xslt.getName()+"</h2><textarea style=\"width:90%;height:90%\" value=\""+xslt.getXslt()+"\"/>", 
-                MediaType.TEXT_HTML,
-                Language.DEFAULT,
-                CharacterSet.UTF_8); 
-        }
-    }
     
     @Get("xml")
     public Representation getXml() {
-        if ( this.xsltId == null ) {
-            setStatus(Status.CLIENT_ERROR_UNSUPPORTED_MEDIA_TYPE);
-            return null;
+        
+        if ( this.xsltId != null ) {
+            JuxtaXslt xslt = this.xsltDao.find(this.xsltId);
+            if ( xslt == null ) {
+                setStatus(Status.CLIENT_ERROR_NOT_FOUND);
+                return toTextRepresentation("xslt "+this.xsltId+" does not exist");
+            }
+            return toXmlRepresentation( xslt.getXslt() );
         }
-        if ( this.templateRequest ) {
-            setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
-            return null;
-        } 
-        JuxtaXslt xslt = this.xsltDao.find(this.xsltId);
-        return toXmlRepresentation( xslt.getXslt() );
+        
+        setStatus(Status.CLIENT_ERROR_UNSUPPORTED_MEDIA_TYPE);
+        return null;
     }
     
     @Post("json")
     public Representation createXslt( final String jsonData ) {
-        if ( this.templateRequest || this.xsltId != null) {
-            setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
-            return null;
-        } 
         Gson gson = new Gson();
         JuxtaXslt xslt = gson.fromJson(jsonData, JuxtaXslt.class);
         Long id = this.xsltDao.create(xslt);
@@ -139,12 +149,7 @@ public class XsltResource extends BaseResource {
     
     @Put
     public Representation updateXslt( final Representation entity ) {
-        if ( this.xsltId == null ) {
-            setStatus(Status.CLIENT_ERROR_METHOD_NOT_ALLOWED);
-            return null;
-        }
-        
-        if ( this.templateRequest ) {
+        if ( this.templateRequest || this.xsltId == null ) {
             setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
             return null;
         } 
@@ -156,8 +161,9 @@ public class XsltResource extends BaseResource {
         
         JuxtaXslt xslt = this.xsltDao.find(this.xsltId);
         if ( validateModel(xslt) == false ) {
-            return null;
-        }
+            setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
+            return toTextRepresentation("xslt "+this.xsltId+" does not exist");
+        }        
   
         try {
             this.xsltDao.update(this.xsltId, new InputStreamReader(entity.getStream()) );
@@ -185,17 +191,17 @@ public class XsltResource extends BaseResource {
     
     @Delete
     public void deletXslt( ) {
-        if ( this.xsltId == null ) {
-            setStatus(Status.CLIENT_ERROR_METHOD_NOT_ALLOWED);
-            return;
+        if ( this.xsltId != null ) {
+            JuxtaXslt xslt = this.xsltDao.find(this.xsltId);
+            if ( validateModel(xslt) != false ) {
+                try {
+                    this.xsltDao.delete(xslt);
+                } catch ( Exception e ) {
+                    setStatus(Status.CLIENT_ERROR_BAD_REQUEST, "cannot to delete xslt that is in use");
+                }
+            } 
         }
-        if ( this.templateRequest ) {
-            setStatus(Status.CLIENT_ERROR_METHOD_NOT_ALLOWED);
-            return;
-        } 
-        JuxtaXslt xslt = this.xsltDao.find(this.xsltId);
-        if ( validateModel(xslt) != false ) {
-            this.xsltDao.delete(xslt);
-        } 
+
+        setStatus(Status.CLIENT_ERROR_METHOD_NOT_ALLOWED);
     }
 }

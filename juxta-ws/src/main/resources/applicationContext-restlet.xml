@@ -76,12 +76,14 @@
     <bean name="/juxta/{type}/{id}/usage" class="org.juxtasoftware.resource.UsageResource" scope="prototype" autowire="byName" />
 
     <!-- XSLT resources -->
-    <bean name="/juxta/{workspace}/xslt/template" class="org.juxtasoftware.resource.XsltResource" scope="prototype" autowire="byName" />
     <bean name="/juxta/{workspace}/xslt" class="org.juxtasoftware.resource.XsltResource" scope="prototype" autowire="byName" />
-    <bean name="/juxta/{workspace}/xslt/{id}" class="org.juxtasoftware.resource.XsltResource" scope="prototype" autowire="byName" />
-    <bean name="/juxta/xslt/template" class="org.juxtasoftware.resource.XsltResource" scope="prototype" autowire="byName" />
+    <bean name="/juxta/{workspace}/xslt/template" class="org.juxtasoftware.resource.XsltResource" scope="prototype" autowire="byName" />
+    <bean name="/juxta/{workspace}/xslt/{xsltId}" class="org.juxtasoftware.resource.XsltResource" scope="prototype" autowire="byName" />
+    <bean name="/juxta/{workspace}/witness/{id}/xslt" class="org.juxtasoftware.resource.XsltResource" scope="prototype" autowire="byName" />
     <bean name="/juxta/xslt" class="org.juxtasoftware.resource.XsltResource" scope="prototype" autowire="byName" />
-    <bean name="/juxta/xslt/{id}" class="org.juxtasoftware.resource.XsltResource" scope="prototype" autowire="byName" />
+    <bean name="/juxta/xslt/template" class="org.juxtasoftware.resource.XsltResource" scope="prototype" autowire="byName" />
+    <bean name="/juxta/xslt/{xsltId}" class="org.juxtasoftware.resource.XsltResource" scope="prototype" autowire="byName" />
+    <bean name="/juxta/witness/{id}/xslt" class="org.juxtasoftware.resource.XsltResource" scope="prototype" autowire="byName" />
     
     <!-- transform -->
     <bean name="/juxta/{workspace}/transform" class="org.juxtasoftware.resource.Transformer" scope="prototype" autowire="byName" />
