@@ -217,7 +217,7 @@ public class Transformer extends BaseResource {
                             if ( line.contains("http://www.tei-")) {
                                 type = XmlType.TEI;
                                 break;
-                            } else if ( line.contains("http://www.rossettiarchive.org/ram.xsd")) {
+                            } else if ( line.contains("ram.xsd")) {
                                 type = XmlType.RAM;
                                 break;
                             }
