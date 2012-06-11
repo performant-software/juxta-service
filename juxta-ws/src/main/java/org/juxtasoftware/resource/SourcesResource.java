@@ -275,7 +275,7 @@ public class SourcesResource extends BaseResource {
             Long id =  this.sourceDao.create(this.workspace, sourceName, true, new FileReader(fixed));
             fixed.delete();
             return id;
-        } else if ( MediaType.TEXT_PLAIN.isCompatible( contentType ) ) {
+        } else if ( MediaType.TEXT_PLAIN.isCompatible( contentType ) || MediaType.TEXT_HTML.isCompatible( contentType ) ) {
             LOG.info("Accepting plain text source document");
             File fixed = EncodingUtils.fixEncoding(srcInputStream, false);
             Long id = this.sourceDao.create(this.workspace, sourceName, false, new FileReader(fixed));
