@@ -61,8 +61,12 @@ public class RevisionInjector implements StreamInjector<RevisionInfo> {
                 if ( this.currRevision.isIncluded() ) {
                     show = "show-rev";
                 }
+                String tagType = "ins";
+                if (type.equals("delete")) {
+                    tagType = "del";
+                }
 
-                tag.append("<span id=\"rev-").append(id).append("\" ");
+                tag.append("<"+tagType+" id=\"rev-").append(id).append("\" ");
                 tag.append(" class=\"rev ").append(type).append(" plain-revs ").append(show).append("\">");
                 
                 line.append(tag);
@@ -71,7 +75,7 @@ public class RevisionInjector implements StreamInjector<RevisionInfo> {
                 // (invisibly) to line and end tag. Skip to next tag and say we are not started
                 if ( this.currRevision.isIncluded() == false ) {
                     line.append(this.currRevision.getText());
-                    line.append("</span>");
+                    line.append("</"+tagType+">");
                     this.tagStarted = false;
                     this.currRevision = null;
                     if ( this.revisionItr.hasNext() ) {
@@ -87,9 +91,15 @@ public class RevisionInjector implements StreamInjector<RevisionInfo> {
     @Override
     public void  injectContentEnd(StringBuilder line, long currPosition) {
         if ( this.currRevision != null && this.tagStarted == true ) {
-           
+            
+            String type = this.currRevision.getType().toString().toLowerCase();
+            String tagType = "ins";
+            if (type.equals("delete")) {
+                tagType = "del";
+            }
+            
             if ( this.currRevision.getRange().getEnd() == currPosition) {
-                line.append("</span>");
+                line.append("</"+tagType+">");
 
                 this.currRevision = null;
                 if ( this.revisionItr.hasNext() ) {
