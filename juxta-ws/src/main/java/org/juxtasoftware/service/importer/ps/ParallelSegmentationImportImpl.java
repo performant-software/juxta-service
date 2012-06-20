@@ -226,7 +226,7 @@ public class ParallelSegmentationImportImpl implements ImportService<Source> {
         this.templateParser.parse( ClassLoader.getSystemResourceAsStream("tei-template.xml") );
         TemplateInfo teiInfo = this.templateParser.getTemplates().get(0);
         JuxtaXslt jxXslt = this.xsltFactory.create(teiSource.getWorkspaceId(), teiSource.getName(), teiInfo);
-        ParallelSegmentationParser parser = new ParallelSegmentationParser( teiInfo.getExcludes(), teiInfo.getLineBreaks());
+        
         
         // run the src text thru the parser for multiple passes
         // once for each witness listed in the listWit tag.
@@ -234,6 +234,7 @@ public class ParallelSegmentationImportImpl implements ImportService<Source> {
         for ( WitnessInfo info : this.listWitData ) {
             
             setStatusMsg("Parse WitnessID "+info.getGroupId()+" - '"+info.getDescription()+"' from source");
+            ParallelSegmentationParser parser = new ParallelSegmentationParser( teiInfo.getExcludes(), teiInfo.getLineBreaks());
             parser.parse(this.sourceDao.getContentReader(teiSource), info );
             Text witnessTxt = parser.getWitnessText();
             Witness witness = createWitness( ws, teiSource, jxXslt, witnessTxt, info );
