@@ -130,6 +130,7 @@ public class Transformer extends BaseResource {
         } catch (Exception e) {
             LOG.error("Caught Excepion: unable to transform source", e);
             setStatus(Status.SERVER_ERROR_INTERNAL);
+            this.xsltDao.delete(xslt);
             return toTextRepresentation("Transform Failed: "+e.getMessage());
         } 
     }
