@@ -253,4 +253,17 @@ public class JuxtaXslt extends WorkspaceMember {
         }
         return false;
     }
+    
+    /**
+     * Strip out all single exclusions from this template
+     */
+    public void stripSingleExclusions() {
+        final String single = "<!--single-exclusions-->";
+        int pos = this.xslt.indexOf(single)+single.length();
+        int endPos = this.xslt.indexOf("<!--breaks-->");
+        // +5 to preserve linefeed and formatting spaces
+        this.xslt = this.xslt.substring(0,pos+5)+this.xslt.substring(endPos);
+        System.err.println(this.xslt);
+        
+    }
 }

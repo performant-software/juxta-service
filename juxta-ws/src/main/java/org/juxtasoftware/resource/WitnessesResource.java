@@ -1,13 +1,22 @@
 package org.juxtasoftware.resource;
 
+import java.io.StringReader;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.juxtasoftware.dao.JuxtaXsltDao;
+import org.juxtasoftware.dao.SourceDao;
 import org.juxtasoftware.dao.WitnessDao;
+import org.juxtasoftware.model.JuxtaXslt;
+import org.juxtasoftware.model.Source;
 import org.juxtasoftware.model.Witness;
+import org.juxtasoftware.service.SourceTransformer;
+import org.restlet.data.Status;
 import org.restlet.representation.Representation;
 import org.restlet.resource.Get;
+import org.restlet.resource.Post;
+import org.restlet.resource.ResourceException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.Scope;
@@ -15,6 +24,8 @@ import org.springframework.stereotype.Service;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 /**
  * Resourcce to GET a json list of all avaiable witnesses
@@ -25,8 +36,19 @@ import com.google.gson.GsonBuilder;
 @Service
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
 public class WitnessesResource extends BaseResource {
-
+    private boolean isCopyRequest = false;
+    
     @Autowired private WitnessDao witnessDao;
+    @Autowired private JuxtaXsltDao xsltDao;
+    @Autowired private SourceTransformer transformer;
+    @Autowired private SourceDao sourceDao;
+    
+    @Override
+    protected void doInit() throws ResourceException {
+        
+        super.doInit();
+        String lastSeg  = getRequest().getResourceRef().getLastSegment();
+        this.isCopyRequest = ( lastSeg.equalsIgnoreCase("copy_settings"));    }
        
     /**
      * Get a HTML representation of all available witnesses
@@ -51,5 +73,43 @@ public class WitnessesResource extends BaseResource {
             .create();
         String out = gson.toJson(docs);
         return toJsonRepresentation(out);
+    }
+    
+    @Post("json")
+    public void handlePost( final String jsonData ) {
+        if ( this.isCopyRequest == false ) {
+            setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
+            return;
+        }
+        
+        JsonParser parser = new JsonParser();
+        JsonObject jsonObj =  parser.parse(jsonData).getAsJsonObject();
+        Long fromId = jsonObj.get("from").getAsLong();
+        Long toId = jsonObj.get("to").getAsLong();
+        Witness from = this.witnessDao.find(fromId);
+        Witness to = this.witnessDao.find(toId);
+        if ( validateModel(from) == false ) {
+            return;
+        }
+        if ( validateModel(to) == false ) {
+            return;
+        } 
+
+        // grab the xslt for the source and copy it into the
+        // destination. Strip all witness-specific single exclusions
+        JuxtaXslt srcXslt = this.xsltDao.find(from.getXsltId());
+        JuxtaXslt destXslt = this.xsltDao.find(to.getXsltId());
+        destXslt.setXslt( srcXslt.getXslt() );
+        destXslt.stripSingleExclusions();
+
+        try {
+            // save changes and redo transform
+            this.xsltDao.update(destXslt.getId(), new StringReader(destXslt.getXslt()));
+            Source src = this.sourceDao.find(to.getWorkspaceId(), to.getSourceId());
+            this.transformer.redoTransform(src, to);
+        } catch (Exception e) {
+            setStatus(Status.SERVER_ERROR_INTERNAL, e.getMessage());
+            LOG.error("Copy preparation settings failed", e);
+        } 
     }
 }
