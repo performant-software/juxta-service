@@ -80,39 +80,48 @@ public class HistogramResource extends BaseResource {
         }
         
         // next, get al of the differences and apply the above algorithm
-        byte[] histogram = createHistogram( (int)base.getText().getLength() );
-        QNameFilter changesFilter = this.filters.getDifferencesFilter();
-        AlignmentConstraint constraints = new AlignmentConstraint(this.set, this.baseWitnessId);
-        constraints.setFilter(changesFilter);
-        List<Alignment> diffs =  this.alignmentDao.list(constraints);
-        for (Alignment diff :  diffs ) {
+        LOG.info("Create histogram buffer size " + (int)base.getText().getLength());
+        try{
+            byte[] histogram = createHistogram( (int)base.getText().getLength() );
+            QNameFilter changesFilter = this.filters.getDifferencesFilter();
+            AlignmentConstraint constraints = new AlignmentConstraint(this.set, this.baseWitnessId);
+            constraints.setFilter(changesFilter);
+            List<Alignment> diffs =  this.alignmentDao.list(constraints);
+            for (Alignment diff :  diffs ) {
+                
+                // get the base witness annotation
+                AlignedAnnotation anno = diff.getWitnessAnnotation(this.baseWitnessId);
+                
+                // mark of its range in the histogram
+                int start = (int)anno.getRange().getStart();
+                int end = (int)anno.getRange().getEnd();
+                for (int i=start; i<end; i++) {
+                    histogram[i]++;
+                }
+            }
             
-            // get the base witness annotation
-            AlignedAnnotation anno = diff.getWitnessAnnotation(this.baseWitnessId);
+            LOG.info("Created histogram byte buffer. Now creating return data...");
+    
+            // scale to max value and stuff in out string
+            StringBuffer out = new StringBuffer();
+            for ( int i=0;i<histogram.length;i++) {
+                if ( out.length() > 0) {
+                    out.append(",");
+                }
+                double scaled = (double)histogram[i]/(double)maxValue;
+                if ( scaled > 1.0 ) {
+                    scaled = 1.0;
+                }
+                out.append(String.format("%1.2f",  scaled));
+            }
             
-            // mark of its range in the histogram
-            int start = (int)anno.getRange().getStart();
-            int end = (int)anno.getRange().getEnd();
-            for (int i=start; i<end; i++) {
-                histogram[i]++;
-            }
+            String jsonStr = "{\"baseName\": \""+base.getName()+"\", \"histogram\": ["+out.toString()+"]}";
+            return toJsonRepresentation( jsonStr );
+        } catch (Exception e) {
+            LOG.error("Unable to create histogram", e);
+            setStatus(Status.SERVER_ERROR_INSUFFICIENT_STORAGE);
+            return toTextRepresentation("unable to create histogram!");
         }
-
-        // scale to max value and stuff in out string
-        StringBuffer out = new StringBuffer();
-        for ( int i=0;i<histogram.length;i++) {
-            if ( out.length() > 0) {
-                out.append(",");
-            }
-            double scaled = (double)histogram[i]/(double)maxValue;
-            if ( scaled > 1.0 ) {
-                scaled = 1.0;
-            }
-            out.append(String.format("%1.2f",  scaled));
-        }
-        
-        String jsonStr = "{\"baseName\": \""+base.getName()+"\", \"histogram\": ["+out.toString()+"]}";
-        return toJsonRepresentation( jsonStr );
     }
     
     /**
