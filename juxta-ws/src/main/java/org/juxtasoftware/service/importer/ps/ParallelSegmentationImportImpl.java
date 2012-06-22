@@ -12,8 +12,8 @@ import java.util.Stack;
 
 import javax.xml.parsers.ParserConfigurationException;
 
-import org.juxtasoftware.dao.CacheDao;
 import org.juxtasoftware.dao.ComparisonSetDao;
+import org.juxtasoftware.dao.JuxtaXsltDao;
 import org.juxtasoftware.dao.NoteDao;
 import org.juxtasoftware.dao.PageBreakDao;
 import org.juxtasoftware.dao.SourceDao;
@@ -69,7 +69,6 @@ public class ParallelSegmentationImportImpl implements ImportService<Source> {
     @Autowired private SourceDao sourceDao;
     @Autowired private WitnessDao witnessDao;
     @Autowired private NoteDao noteDao;
-    @Autowired private CacheDao cacheDao;
     @Autowired private PageBreakDao pageBreakDao;
     @Autowired private ComparisonSetDao setDao;
     @Autowired private WorkspaceDao workspaceDao;
@@ -79,12 +78,14 @@ public class ParallelSegmentationImportImpl implements ImportService<Source> {
     @Autowired private WitnessParser witnessParser;
     @Autowired private XmlTemplateParser templateParser;
     @Autowired private JuxtaXsltFactory xsltFactory;
+    @Autowired private JuxtaXsltDao xsltDao;
         
     private ComparisonSet set;
     private BackgroundTaskStatus taskStatus = null;
     private BackgroundTaskSegment taskSegment = null;
     private List<WitnessInfo> listWitData = new ArrayList<WitnessInfo>();
-    private boolean deferCollation = false;
+    private boolean isReImport = false;
+    private Long originalXsltId = null;
     
     private static final Logger LOG = LoggerFactory.getLogger( ImportService.class.getName());
     
@@ -92,7 +93,7 @@ public class ParallelSegmentationImportImpl implements ImportService<Source> {
     }
     
     public void reimportSource(ComparisonSet set, Source importSrc) throws Exception {
-        this.deferCollation = true;
+        this.isReImport = true;
         doImport(set, importSrc, null);
     }
     
@@ -107,7 +108,7 @@ public class ParallelSegmentationImportImpl implements ImportService<Source> {
         if ( this.taskStatus != null ) {
             // set up the number of segments in the task
             int numSteps = 5;
-            if ( this.deferCollation ) {
+            if ( this.isReImport ) {
                 numSteps = 3;
             }
             this.taskSegment = this.taskStatus.add(1, new BackgroundTaskSegment( numSteps ));
@@ -119,7 +120,7 @@ public class ParallelSegmentationImportImpl implements ImportService<Source> {
         extractWitnessIdentifiers( importSrc );
         parseSource( importSrc );
         
-        if ( this.deferCollation == false ) {
+        if ( this.isReImport == false ) {
             set.setStatus(ComparisonSet.Status.COLLATING);
             this.setDao.update(this.set);
             
@@ -146,13 +147,15 @@ public class ParallelSegmentationImportImpl implements ImportService<Source> {
             return;
         }
         
-        // clear out all prior data (NOTE: delete all witnesses wil also clear out all
-        // aligment and annotation data )
-        this.setDao.deleteAllWitnesses(this.set);
-        this.cacheDao.deleteAll(this.set.getId());
+        // clear out all prior witness and supporting data 
+        this.setDao.clearCollationData(this.set);
         try {
             for (Witness witness : witnesses) {
-                this.witnessDao.delete(witness);
+                if ( this.originalXsltId == null ) {
+                    this.originalXsltId = witness.getXsltId();
+                }
+                this.noteDao.deleteAll( witness.getId() );
+                this.pageBreakDao.deleteAll( witness.getId() );
             }
         } catch (Exception e) {
             throw new RuntimeException("Unable to overwrite set; witnesses are in use in another set.");
@@ -220,13 +223,17 @@ public class ParallelSegmentationImportImpl implements ImportService<Source> {
         setStatusMsg("Parse "+set.getName());
         Workspace ws = this.workspaceDao.find(this.set.getWorkspaceId());
         
-        // parse the TEI template. There is only 1 template in this file
-        // so it is safe to get the first one in the resultant list. Use this
-        // to create a tei ps parser instance
-        this.templateParser.parse( ClassLoader.getSystemResourceAsStream("tei-template.xml") );
-        TemplateInfo teiInfo = this.templateParser.getTemplates().get(0);
-        JuxtaXslt jxXslt = this.xsltFactory.create(teiSource.getWorkspaceId(), teiSource.getName(), teiInfo);
-        
+        JuxtaXslt jxXslt = null;
+        if ( this.originalXsltId == null ) {
+            // parse the TEI template. There is only 1 template in this file
+            // so it is safe to get the first one in the resultant list. Use this
+            // to create a tei ps parser instance
+            this.templateParser.parse( ClassLoader.getSystemResourceAsStream("tei-template.xml") );
+            TemplateInfo teiInfo = this.templateParser.getTemplates().get(0);
+            jxXslt = this.xsltFactory.create(teiSource.getWorkspaceId(), teiSource.getName(), teiInfo);
+        } else {
+            jxXslt = this.xsltDao.find(this.originalXsltId);
+        }
         
         // run the src text thru the parser for multiple passes
         // once for each witness listed in the listWit tag.
@@ -234,7 +241,7 @@ public class ParallelSegmentationImportImpl implements ImportService<Source> {
         for ( WitnessInfo info : this.listWitData ) {
             
             setStatusMsg("Parse WitnessID "+info.getGroupId()+" - '"+info.getDescription()+"' from source");
-            ParallelSegmentationParser parser = new ParallelSegmentationParser( teiInfo.getExcludes(), teiInfo.getLineBreaks());
+            ParallelSegmentationParser parser = new ParallelSegmentationParser( jxXslt );
             parser.parse(this.sourceDao.getContentReader(teiSource), info );
             Text witnessTxt = parser.getWitnessText();
             Witness witness = createWitness( ws, teiSource, jxXslt, witnessTxt, info );
@@ -251,9 +258,11 @@ public class ParallelSegmentationImportImpl implements ImportService<Source> {
         }
         
         // add all witnesses to the set
-        setStatusMsg("Create comparison set");
-        this.setDao.addWitnesses(this.set, witnesses);
-        this.setDao.update(this.set);
+        if ( this.isReImport == false ) {
+            setStatusMsg("Populate comparison set");
+            this.setDao.addWitnesses(this.set, witnesses);
+            this.setDao.update(this.set);
+        }
         incrementStatus();
     }
     
@@ -271,14 +280,31 @@ public class ParallelSegmentationImportImpl implements ImportService<Source> {
      * @throws Exception
      */
     Witness createWitness(Workspace ws, Source source, JuxtaXslt jxXslt, Text witnessTxt, WitnessInfo info ) throws Exception{  
-        Witness witness = new Witness();
-        witness.setName( info.getName() );
-        witness.setSourceId( source.getId());
-        witness.setXsltId(jxXslt.getId());
-        witness.setWorkspaceId( this.set.getWorkspaceId() );
-        witness.setText(witnessTxt);
-        Long id = this.witnessDao.create(witness);
-        witness.setId( id );
+        Witness witness = null;
+        for (Witness testWit : this.setDao.getWitnesses(this.set) ) {
+            if ( testWit.getName().equals(info.getName())) {
+                witness = testWit;
+                break;
+            }
+        }
+        
+        if ( witness == null ) {
+            witness = new Witness();
+            witness.setName( info.getName() );
+            witness.setSourceId( source.getId());
+            witness.setXsltId(jxXslt.getId());
+            witness.setWorkspaceId( this.set.getWorkspaceId() );
+            witness.setText(witnessTxt);
+            Long id = this.witnessDao.create(witness);
+            witness.setId( id );
+        } else {
+            Text oldTxt = witness.getText();
+            this.witnessDao.updateContent(witness, witnessTxt);
+            
+            // now it is safe to kill the original text text
+            this.textRepository.delete( oldTxt );
+        }
+
         return witness;
     }
     
@@ -294,17 +320,16 @@ public class ParallelSegmentationImportImpl implements ImportService<Source> {
         private List<Note> notes = new ArrayList<Note>();
         private List<PageBreak> breaks = new ArrayList<PageBreak>();
         private Map<String, Range> identifiedRanges = Maps.newHashMap();
-        private Set<String> exclusions;
-        private Set<String> lineBeaks;
         private WitnessInfo witnessInfo;
         private long currPos = 0;
         private boolean isExcluding = false;
         private Stack<String> exclusionContext = new Stack<String>();
         private Stack<String> xmlIdStack = new Stack<String>();
+        private JuxtaXslt xslt;
+        private Map<String,Integer> tagOccurences = Maps.newHashMap();
 
-        public ParallelSegmentationParser(final Set<String> exclude, final Set<String> breaks ) {
-            this.lineBeaks = breaks;
-            this.exclusions = exclude;
+        public ParallelSegmentationParser(final JuxtaXslt xslt) {
+            this.xslt = xslt;
         }
         
         public void parse(final Reader sourceReader, WitnessInfo witnessInfo ) throws SAXException, IOException {          
@@ -325,12 +350,13 @@ public class ParallelSegmentationImportImpl implements ImportService<Source> {
         
         @Override
         public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
+            countOccurrences(qName);
             if ( this.isExcluding ) {
                 this.exclusionContext.push(qName);
                 return;
             }
             
-            if ( isSpecialTag(qName) == false && this.exclusions.contains(qName)) {
+            if ( isSpecialTag(qName) == false && this.xslt.isExcluded(qName, this.tagOccurences.get(qName))) {
                 this.isExcluding = true;
                 this.exclusionContext.push(qName);
             }
@@ -353,6 +379,15 @@ public class ParallelSegmentationImportImpl implements ImportService<Source> {
                 } else  {
                     this.xmlIdStack.push("NA");
                 }
+            }
+        }
+        
+        private void countOccurrences(String qName) {
+            Integer cnt = this.tagOccurences.get(qName);
+            if ( cnt == null ) {
+                this.tagOccurences.put(qName, 1);
+            } else {
+                this.tagOccurences.put(qName, cnt+1);
             }
         }
         
@@ -470,10 +505,10 @@ public class ParallelSegmentationImportImpl implements ImportService<Source> {
                 // linebreaks and add a hard break now. Also, do NOT
                 // increment position count if we are collecting a note.
                 if ( this.currNote != null ) {
-                    if ( this.lineBeaks.contains(qName) ){ 
+                    if ( this.xslt.hasLineBreak(qName) ){ 
                         this.currNoteContent.append("<br/>");
                     }
-                } else  if ( this.lineBeaks.contains(qName) ){
+                } else  if ( this.xslt.hasLineBreak(qName) ){
                     this.currPos++;
                     this.witnessContent.append("\n");
                 }  

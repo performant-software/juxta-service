@@ -415,11 +415,7 @@ public class SourceResource extends BaseResource implements ApplicationContextAw
             for ( Usage u : SourceResource.this.sourceDao.getUsage(this.origSource)) {
                 if ( u.getType().equals(Usage.Type.COMPARISON_SET)) {
                     set = SourceResource.this.setDao.find(u.getId());
-                    if ( set.getName().equals(this.origSource.getName())) {
-                        break;
-                    } else {
-                        set = null;
-                    }
+                    break;
                 }
             }
             
