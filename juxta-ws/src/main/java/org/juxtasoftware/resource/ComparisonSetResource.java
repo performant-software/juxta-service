@@ -87,26 +87,54 @@ public class ComparisonSetResource extends BaseResource {
     }
     
     /**
-    /* Accept json data to update the name of a comparison set.
-    /* format: { "name": "newName" }
+    /* Accept json data to update the name and/or status of a comparison set.
+    /* format: { "name": "newName", "status": "newStatus" }
+     * where newStatus can be: NOT_COLLATED, COLLATING, COLLATED, ERROR
      */
     @Put("json")
     public Representation rename(final String jsonStr ) {
         JsonParser parser = new JsonParser();
         JsonObject jsonObj =  parser.parse(jsonStr).getAsJsonObject();
-        String name = jsonObj.get("name").getAsString();
+        String name = null;
+        String status = null;
+        if (jsonObj.has("name")) {
+            name = jsonObj.get("name").getAsString();
+        }
+        if (jsonObj.has("status")) {
+            status = jsonObj.get("status").getAsString();
+        }
+        
+        if ( name == null && status == null ) {
+            setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
+            return toTextRepresentation("Missing name and/or status in json payload");
+        }
+        
+        ComparisonSet.Status setStatus = null;
+        if ( status != null ) {
+            setStatus = ComparisonSet.Status.valueOf(status.toUpperCase());
+            if ( setStatus == null ) {
+                setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
+                return toTextRepresentation("Invalid status '"+status+"' specified in json payload");
+            }
+        }        
         
         // make sure name chages don't cause conflicts
-        if ( this.set.getName().equals(name) == false ) {
-            if ( this.comparionSetDao.exists(this.workspace, name)) {
-                setStatus(Status.CLIENT_ERROR_CONFLICT);
-                return toTextRepresentation("Set "+name+" already exists in workspace "
-                    +this.workspace.getName());
+        if ( name != null ) {
+            if ( this.set.getName().equals(name) == false ) {
+                if ( this.comparionSetDao.exists(this.workspace, name)) {
+                    setStatus(Status.CLIENT_ERROR_CONFLICT);
+                    return toTextRepresentation("Set "+name+" already exists in workspace "
+                        +this.workspace.getName());
+                }
             }
+            this.set.setName( name );
+        }
+        
+        if ( status != null ) {
+            this.set.setStatus(setStatus);
         }
         
         // update the set 
-        this.set.setName( name );
         this.comparionSetDao.update( this.set );
         return toTextRepresentation( Long.toString(this.set.getId()) );
     }
