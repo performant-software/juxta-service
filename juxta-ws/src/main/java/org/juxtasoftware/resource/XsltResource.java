@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.io.IOUtils;
 import org.juxtasoftware.dao.ComparisonSetDao;
 import org.juxtasoftware.dao.JuxtaXsltDao;
 import org.juxtasoftware.dao.SourceDao;
@@ -17,6 +16,7 @@ import org.juxtasoftware.model.Source;
 import org.juxtasoftware.model.Usage;
 import org.juxtasoftware.model.Witness;
 import org.juxtasoftware.service.SourceTransformer;
+import org.juxtasoftware.service.importer.JuxtaXsltFactory;
 import org.restlet.data.MediaType;
 import org.restlet.data.Status;
 import org.restlet.representation.Representation;
@@ -109,10 +109,10 @@ public class XsltResource extends BaseResource {
     private Representation getXsltTemplates() {
         try {
             Map<String,String> templates = new HashMap<String,String>();
-            templates.put("main", IOUtils.toString( ClassLoader.getSystemResourceAsStream("xslt/basic.xslt"), "utf-8"));
-            templates.put("singleExclude", IOUtils.toString( ClassLoader.getSystemResourceAsStream("xslt/single-exclusion.xslt"), "utf-8"));
-            templates.put("globalExclude", IOUtils.toString( ClassLoader.getSystemResourceAsStream("xslt/global-exclusion.xslt"), "utf-8"));
-            templates.put("breaks", IOUtils.toString( ClassLoader.getSystemResourceAsStream("xslt/breaks.xslt"), "utf-8"));
+            templates.put("main", JuxtaXsltFactory.getGenericTemplate() );
+            templates.put("singleExclude", JuxtaXsltFactory.getSingleExclusionTemplate() );
+            templates.put("globalExclude", JuxtaXsltFactory.getGlobalExclusionTemplate() );
+            templates.put("breaks", JuxtaXsltFactory.getBreaksTemplate() );
             templates.put("linebreak", "<xsl:value-of select=\"$display-linebreak\"/>");
             
             Gson gson = new Gson();

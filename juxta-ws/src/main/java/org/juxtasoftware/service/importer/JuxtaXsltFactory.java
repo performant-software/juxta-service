@@ -20,6 +20,47 @@ import org.springframework.stereotype.Component;
 public final class JuxtaXsltFactory {
     @Autowired private JuxtaXsltDao xsltDao;
     
+    private static final String BASIC_XSLT = "xslt/basic-strip-ws.xslt";
+    private static final String SINGLE_XSLT = "xslt/single-exclusion.xslt";
+    private static final String GLOBAL_XSLT = "xslt/global-exclusion.xslt";
+    private static final String BREAKS_XSLT = "xslt/breaks.xslt";
+    
+    /**
+     * Get the generic XSLT template as a string
+     * @return
+     * @throws IOException
+     */
+    public static String getGenericTemplate() throws IOException {
+        return IOUtils.toString( ClassLoader.getSystemResourceAsStream(BASIC_XSLT), "utf-8");
+    }
+    
+    /**
+     * Get the single exclusion XSLT template fragment as a string
+     * @return
+     * @throws IOException
+     */
+    public static String getSingleExclusionTemplate() throws IOException {
+        return IOUtils.toString( ClassLoader.getSystemResourceAsStream(SINGLE_XSLT), "utf-8");
+    }
+    
+    /**
+     * Get the global exclusion XSLT template fragment as a string
+     * @return
+     * @throws IOException
+     */
+    public static String getGlobalExclusionTemplate() throws IOException {
+        return IOUtils.toString( ClassLoader.getSystemResourceAsStream(GLOBAL_XSLT), "utf-8");
+    }
+    
+    /**
+     * Get the linebreaks XSLT fragment as a string
+     * @return
+     * @throws IOException
+     */
+    public static String getBreaksTemplate() throws IOException {
+        return IOUtils.toString( ClassLoader.getSystemResourceAsStream(BREAKS_XSLT), "utf-8");
+    }
+    
     /**
      * Create a new instance of a JuxtaXslt based on setings extracted from a desktop template XML file
      * 
@@ -33,7 +74,7 @@ public final class JuxtaXsltFactory {
         JuxtaXslt jxXslt = new JuxtaXslt();
         jxXslt.setName(name+"-transform");
         jxXslt.setWorkspaceId( workspaceId );
-        String xslt = IOUtils.toString( ClassLoader.getSystemResourceAsStream("xslt/basic.xslt"), "utf-8");
+        String xslt = JuxtaXsltFactory.getGenericTemplate();
 
         // desktop has no concept of namespaces. Blank them
         // out here, and specify WILDACARD namespace prefix everywhere

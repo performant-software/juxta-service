@@ -41,13 +41,16 @@ public class JuxtaTagExtractor extends DefaultHandler  {
     private Stack<String> xmlIdStack = new Stack<String>();
     private Stack<ExtractRevision> revisionExtractStack = new Stack<ExtractRevision>();
     private List<RevisionInfo> revisions = new ArrayList<RevisionInfo>();
+    private boolean normalizeSpace;
+    //private long otherCnt = 0;
     
     public void setWitnessId( final Long witnessId ) {
         this.witnessId = witnessId;
     }
 
-    public void extract(final Reader sourceReader, final JuxtaXslt xslt) throws SAXException, IOException {          
+    public void extract(final Reader sourceReader, final JuxtaXslt xslt, boolean normalizeSpace) throws SAXException, IOException {          
         this.xslt = xslt;
+        this.normalizeSpace = normalizeSpace;
         Util.saxParser().parse( new InputSource(sourceReader), this);
     }
     
@@ -91,7 +94,6 @@ public class JuxtaTagExtractor extends DefaultHandler  {
             if ( isExcluded ) {
                 this.isExcluding = true;
                 this.exclusionContext.push(qName);
-                System.err.println(qName+"["+this.tagOccurences.get(qName)+"] is excluded");
             } else {
                 final String idVal = getIdValue(attributes);
                 if ( idVal != null ) {
@@ -138,6 +140,7 @@ public class JuxtaTagExtractor extends DefaultHandler  {
         PageBreak pb = new PageBreak();
         pb.setWitnessId(this.witnessId);
         pb.setOffset(this.currPos);
+        //System.err.println("======> PB "+this.currPos);
         
         for (int idx = 0; idx<attributes.getLength(); idx++) {  
             String name = attributes.getQName(idx);
@@ -208,7 +211,7 @@ public class JuxtaTagExtractor extends DefaultHandler  {
                     this.currNoteContent.append("<br/>");
                 }
             } else  if ( this.xslt.hasLineBreak(qName) ){
-                // Only add 1 for the linebreak if we are non-refvision or included revision
+                // Only add 1 for the linebreak if we are non-revision or included revision
                 if ( this.revisionExtractStack.empty() || this.revisionExtractStack.peek().isExcluded == false) {
                     this.currPos++;
                 }
@@ -220,15 +223,44 @@ public class JuxtaTagExtractor extends DefaultHandler  {
     public void characters(char[] ch, int start, int length) throws SAXException {
         if ( this.isExcluding == false ) {
             String txt = new String(ch, start, length);
-            
-            // remove last newline and trailing space (right trim)
-            txt = txt.replaceAll("[\\n]\\s*$", "");
-            
-            // remove first newline and traiing whitespace.
-            // this will leave any leading whitespace before the 1st newline
-            txt = txt.replaceAll("[\\n]\\s*", "");
 
-            //System.err.println("["+txt+"]");
+            if ( this.normalizeSpace == false ) {
+                // remove last newline and trailing space (right trim)
+                txt = txt.replaceAll("[\\n]\\s*$", "");
+                
+                // remove first newline and traiing whitespace.
+                // this will leave any leading whitespace before the 1st newline
+                txt = txt.replaceAll("[\\n]\\s*", "");
+                //this.otherCnt += txt.length();
+                //System.err.println("["+txt+"]"+txt.length()+" - "+this.otherCnt);
+            } else {
+                // Do not care about linefeeds for this. Strip them FIRST.
+                // If anything is left, there is more to do...
+                txt = txt.replace("\n", "");
+                if ( txt.length() > 0) {
+                    // see if the raw content has leading or trailing spaces
+                    String leading = "";
+                    if ( Character.isWhitespace(txt.charAt(0))) {
+                        leading = " ";
+                    }
+                    String trailing = "";
+                    if ( Character.isWhitespace(txt.charAt(txt.length()-1))) {
+                        trailing = " ";
+                    }
+                        
+                    // Do the equivalent of an XSLT 1.0 normalize space: trim
+                    // all leading and trailing whitespace and all whitespace
+                    // runs are cut to one space. If anything remains, append
+                    // the leading and/or trailing space saved from above
+                    txt = txt.trim().replaceAll("\\s+", " ");
+                    if ( txt.length() > 0) {
+                        txt = leading+txt+trailing;
+                        //this.otherCnt += txt.length();
+                        //System.err.println("["+txt+"]"+txt.length()+" - "+this.otherCnt);
+                    }
+                }
+            }
+
             if ( this.currNote != null ) {
                 this.currNoteContent.append(txt);
             } else {

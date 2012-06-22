@@ -6,7 +6,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Matcher;
 
-import org.apache.commons.io.IOUtils;
+import org.juxtasoftware.service.importer.JuxtaXsltFactory;
 
 import com.google.common.base.Objects;
 
@@ -105,7 +105,7 @@ public class JuxtaXslt extends WorkspaceMember {
         
         // if we got here, we need to add a new single exclusion for this tag occurrence.
         // NOTE: use Matcher to avoid problems caused by the $ in the replacement ext
-        String xsltFrag = IOUtils.toString( ClassLoader.getSystemResourceAsStream("xslt/single-exclusion.xslt"), "utf-8");
+        String xsltFrag = JuxtaXsltFactory.getSingleExclusionTemplate();
         xsltFrag = xsltFrag.replaceAll("\\{TAG\\}",  getWildcardName(tagName) );
         String condition = Matcher.quoteReplacement("$count != "+strOccurrence);
         try {
@@ -262,8 +262,6 @@ public class JuxtaXslt extends WorkspaceMember {
         int pos = this.xslt.indexOf(single)+single.length();
         int endPos = this.xslt.indexOf("<!--breaks-->");
         // +5 to preserve linefeed and formatting spaces
-        this.xslt = this.xslt.substring(0,pos+5)+this.xslt.substring(endPos);
-        System.err.println(this.xslt);
-        
+        this.xslt = this.xslt.substring(0,pos+5)+this.xslt.substring(endPos);  
     }
 }

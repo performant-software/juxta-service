@@ -184,7 +184,7 @@ public class SourceTransformer {
     public void extractSpecialTags(final Source source, final Witness w, final JuxtaXslt xslt )  throws SAXException, IOException {
         JuxtaTagExtractor extractor = new JuxtaTagExtractor( );
         extractor.setWitnessId( w.getId() );
-        extractor.extract( this.sourceDao.getContentReader(source), xslt);
+        extractor.extract( this.sourceDao.getContentReader(source), xslt, true);    // TODO true to normalize space
         this.noteDao.create( extractor.getNotes() );
         this.pbDao.create( extractor.getPageBreaks() );
         this.witnessDao.addRevisions(  extractor.getRevisions() );
