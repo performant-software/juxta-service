@@ -23,6 +23,7 @@ import org.restlet.resource.ResourceException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.Scope;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 import com.google.gson.Gson;
@@ -170,7 +171,13 @@ public class WitnessResource extends BaseResource {
         // from all sets that were using it)
         this.witnessDao.delete( witness ); 
         JuxtaXslt xslt = this.xsltDao.find( this.witness.getXsltId() );
-        this.xsltDao.delete( xslt );
+        try {
+            this.xsltDao.delete( xslt );
+        } catch ( DataIntegrityViolationException e) {
+            // This happens for TEI ps imports. One XSLT
+            // has multiple witnesses. Only when the last witness
+            // is deleted will this succeed
+        }
         
         // return the json list of itmes that were affected
         Gson gson = new Gson();
