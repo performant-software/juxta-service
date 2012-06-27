@@ -39,7 +39,7 @@ public final class NamespaceExtractor {
                 if ( line.contains(defaultNs) ) {
                     int pos = line.indexOf(defaultNs)+defaultNs.length();
                     int end = line.indexOf('"', pos);
-                    NamespaceInfo info = new NamespaceInfo(null, line.substring(pos,end), false);
+                    NamespaceInfo info = NamespaceInfo.createDefaultNamespace( line.substring(pos,end) );
                     namespaces.add( info );
                 } 
                 
@@ -47,8 +47,7 @@ public final class NamespaceExtractor {
                 if ( line.contains(noNamespace) ) {
                     int pos = line.indexOf(noNamespace)+noNamespace.length();
                     int end = line.indexOf('"', pos);
-                    NamespaceInfo info = new NamespaceInfo(null, line.substring(pos,end), true);
-                    namespaces.add( info );             
+                    namespaces.add( NamespaceInfo.createNoPrefixNamespace(line.substring(pos,end)) );             
                 } 
                 
                 // specifc namespace(s)?
@@ -62,7 +61,7 @@ public final class NamespaceExtractor {
                         String url = line.substring(pos,end);
                         if ( url.contains("XMLSchema-instance") == false ) {
                             String prefix = line.substring(nsPos,nsEndPos);
-                            namespaces.add( new NamespaceInfo(prefix, url, false) );
+                            namespaces.add( NamespaceInfo.create(prefix, url) );
                         }
                         int newPos = line.indexOf(ns, end);
                         if (newPos > -1 ) {
@@ -128,54 +127,68 @@ public final class NamespaceExtractor {
         return type;
     }
     
+    /**
+     * Namespace information.
+     * NOTES: 
+     *      a default namespace does not have a prefix in the XML, but must have one in the xslt
+     *      some xml docs include noNamespaceSchemaLocation. these have no prefix in XML nor XSLT
+     * @author loufoster
+     *
+     */
     public static class NamespaceInfo {
-        private final String prefix;
-        private final String url;
-        private String defaultPrefix;
-        private final boolean noNamespace;
+        private String prefix;
+        private String url;
+        private boolean noPrefix;
+        private boolean isDefault = false;
         
-        /**
-         * Create a blank namespace
-         */
-        public NamespaceInfo( ) {
-            this("","",true);
+        public static NamespaceInfo createBlankNamespace()  {
+            return new NamespaceInfo();
         }
-        
-        /**
-         * Create a namespace
-         * @param prefix Namespae prefix. This may be null when a default namespace is in use
-         * @param url Schema URL
-         * @param noNs Set this flag when noNamespaceSchemaLocation is present
-         */
-        public NamespaceInfo( final String prefix, final String url, final boolean noNs ) {
-            this.prefix = prefix;
-            this.url = url;
-            this.defaultPrefix = "jxt";
-            this.noNamespace = noNs;
+        public static NamespaceInfo createDefaultNamespace( final String url)  {
+            NamespaceInfo ns = new NamespaceInfo();
+            ns.isDefault = true;
+            ns.noPrefix = false;
+            ns.url = url;
+            return ns;
         }
-        
-        public String getDefaultPrefix() {
-            return this.defaultPrefix;
+        public static NamespaceInfo createNoPrefixNamespace( final String url)  {
+            NamespaceInfo ns = new NamespaceInfo();
+            ns.isDefault = false;
+            ns.noPrefix = true;
+            ns.url = url;
+            return ns;
         }
+        public static NamespaceInfo create( final String prefix, final String url)  {
+            NamespaceInfo ns = new NamespaceInfo();
+            ns.isDefault = false;
+            ns.noPrefix = false;
+            ns.url = url;
+            ns.prefix = prefix;
+            return ns;
+        }
+
+        private NamespaceInfo( ) {
+            this.isDefault = false;
+            this.noPrefix = true;
+            this.url = "";
+            this.prefix = "jxt";
+        }
+
         public void setDefaultPrefix(String string) {
-            this.defaultPrefix = string;
+            this.prefix = string;
+            this.isDefault = true;
         }
-        public boolean hasNoNamespace() {
-            return this.noNamespace;
+        public boolean hasNoPrefix() {
+            return this.noPrefix;
         }
         
         public boolean isDefault() {
-            return (this.prefix == null);
+            return this.isDefault;
         }
         public String getPrefix() {
-            if ( hasNoNamespace() ) {
+            if ( hasNoPrefix() ) {
                 return "";
             }
-            
-            if ( this.prefix == null ) {
-                return getDefaultPrefix();
-            }
-            
             return this.prefix;
         }
         
@@ -193,7 +206,7 @@ public final class NamespaceExtractor {
         
         
         public String addNamespacePrefix( final String tag ) {
-            if ( hasNoNamespace() == false  ) {
+            if ( hasNoPrefix() == false  ) {
                 return getPrefix() +":" + tag;
             } 
             return tag;

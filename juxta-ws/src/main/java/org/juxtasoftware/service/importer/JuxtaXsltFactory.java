@@ -106,7 +106,7 @@ public final class JuxtaXsltFactory {
         
         // stuff the correct namespace info in the declaration and setup
         // special note/pb handling
-        if ( namespace.hasNoNamespace()) {
+        if ( namespace.hasNoPrefix() ) {
             xslt = xslt.replaceAll("\\{NAMESPACE\\}", "");
             xslt = xslt.replaceAll("\\{NOTE\\}", "note" );
             xslt = xslt.replaceAll("\\{PB\\}", "pb" );

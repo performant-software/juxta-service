@@ -296,7 +296,7 @@ public class JxtImportServiceImpl implements ImportService<InputStream> {
             if ( isXml ) {
                 // extract namespace info
                 Set<NamespaceInfo> namespaces = NamespaceExtractor.extract( this.sourceDao.getContentReader(source) ); 
-                NamespaceInfo namespace = new NamespaceInfo();
+                NamespaceInfo namespace = NamespaceInfo.createBlankNamespace();
                 if ( namespaces.size() == 1 ) {
                     namespace = (NamespaceInfo)namespaces.toArray()[0];
                     XmlType xmlType = NamespaceExtractor.determineXmlType( this.sourceDao.getContentReader(source) );

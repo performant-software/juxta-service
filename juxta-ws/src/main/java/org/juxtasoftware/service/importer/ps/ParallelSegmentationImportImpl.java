@@ -224,7 +224,9 @@ public class ParallelSegmentationImportImpl implements ImportService<Source> {
             // to create a tei ps parser instance
             this.templateParser.parse( ClassLoader.getSystemResourceAsStream("tei-template.xml") );
             TemplateInfo teiInfo = this.templateParser.getTemplates().get(0);
-            NamespaceInfo ns = new NamespaceInfo(null, null, false);
+            
+            // this has to be TEI. Make up a default TEI namespace for use in tag extraction
+            NamespaceInfo ns = NamespaceInfo.createDefaultNamespace("http://www.tei-c.org/ns/1.0");
             ns.setDefaultPrefix("tei");
             jxXslt = this.xsltFactory.createFromTemplateInfo(teiSource.getWorkspaceId(), teiSource.getName(), teiInfo, ns);
         } else {
