@@ -30,9 +30,9 @@ import org.xml.sax.helpers.DefaultHandler;
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
 public class WitnessParser extends DefaultHandler {
     private static SAXParserFactory parserFactory;
-    private List<WitnessInfo> witnesses = new ArrayList<WitnessInfo>();
+    private List<PsWitnessInfo> witnesses = new ArrayList<PsWitnessInfo>();
     private Stack<String> groupIdStack = new Stack<String>();
-    private WitnessInfo currWitness = null;
+    private PsWitnessInfo currWitness = null;
     private StringBuilder currDesc = new StringBuilder();
 
     static {
@@ -55,7 +55,7 @@ public class WitnessParser extends DefaultHandler {
         }
     }
     
-    public List<WitnessInfo> getWitnesses() {
+    public List<PsWitnessInfo> getWitnesses() {
         return this.witnesses;
     }
     
@@ -67,7 +67,7 @@ public class WitnessParser extends DefaultHandler {
                 this.groupIdStack.push( id );
             }
         } else if ( qName.equals("witness") ) {
-            this.currWitness = new WitnessInfo( getId(attributes) );
+            this.currWitness = new PsWitnessInfo( getId(attributes) );
             if ( this.groupIdStack.empty() == false ) {
                 this.currWitness.groupId = this.groupIdStack.peek();
             }
@@ -112,11 +112,11 @@ public class WitnessParser extends DefaultHandler {
     /**
      * Collection of basic data from the witList tags
      */
-    public static class WitnessInfo {
+    public static class PsWitnessInfo {
         private final String id;
         private String groupId;
         private String description;
-        private WitnessInfo( final String id) {
+        private PsWitnessInfo( final String id) {
             this.id = id;
         }
         public boolean hasGroupAlias() {
@@ -139,7 +139,7 @@ public class WitnessParser extends DefaultHandler {
         }
         @Override
         public String toString() {
-            return "WitnessInfo [id=" + id + ", description=" + description + "]";
+            return "PsWitnessInfo [id=" + id + ", description=" + description + "]";
         }
         
     }

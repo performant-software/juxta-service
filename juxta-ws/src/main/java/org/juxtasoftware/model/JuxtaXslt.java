@@ -13,6 +13,7 @@ import com.google.common.base.Objects;
 public class JuxtaXslt extends WorkspaceMember {
     private String name;
     private String xslt;
+    private String defaultNamespace;
     
     public String getName() {
         return name;
@@ -25,6 +26,12 @@ public class JuxtaXslt extends WorkspaceMember {
     }
     public void setXslt(String xslt) {
         this.xslt = xslt;
+    }
+    public String getDefaultNamespace() {
+        return defaultNamespace;
+    }
+    public void setDefaultNamespace(String defaultNamespace) {
+        this.defaultNamespace = defaultNamespace;
     }
     
     @Override
@@ -50,13 +57,13 @@ public class JuxtaXslt extends WorkspaceMember {
      * be excluded from the restlating witness. If the tag is alread globally
      * excluded, this call does nothing
      * 
-     * @param tagName
+     * @param qName
      * @param occurrence
      * @throws IOException 
      */
-    public void addSingleExclusion(String tagName, Integer occurrence) throws IOException {
+    public void addSingleExclusion(String qName, Integer occurrence) throws IOException {
         // do nothing if the tag is already excluded
-        if ( isExcluded( tagName, occurrence ) ) {
+        if ( isExcluded( qName, occurrence ) ) {
             return;
         }
         
@@ -74,8 +81,8 @@ public class JuxtaXslt extends WorkspaceMember {
         pos = this.xslt.indexOf(matchKey, pos)+matchKey.length();
         while ( pos > -1 && pos < limitPos) {
             int endPos = this.xslt.indexOf("\"", pos);
-            String tag = stripNamespace( this.xslt.substring(pos,endPos) );
-            if ( tag.equals(tagName)  ) {
+            String tag = this.xslt.substring(pos,endPos);
+            if ( tag.equals(qName)  ) {
                 // found a match. See if the specified occurrence is excluded
                 int testPos = this.xslt.indexOf(testKey, pos)+testKey.length();
                 int endTest = this.xslt.indexOf("\"", testPos);
@@ -106,7 +113,7 @@ public class JuxtaXslt extends WorkspaceMember {
         // if we got here, we need to add a new single exclusion for this tag occurrence.
         // NOTE: use Matcher to avoid problems caused by the $ in the replacement ext
         String xsltFrag = JuxtaXsltFactory.getSingleExclusionTemplate();
-        xsltFrag = xsltFrag.replaceAll("\\{TAG\\}",  getWildcardName(tagName) );
+        xsltFrag = xsltFrag.replaceAll("\\{TAG\\}",  qName );
         String condition = Matcher.quoteReplacement("$count != "+strOccurrence);
         try {
         xsltFrag = xsltFrag.replaceAll("\\{CONDITION\\}",  condition );
@@ -120,13 +127,14 @@ public class JuxtaXslt extends WorkspaceMember {
     
     /**
      * Add a global tag exclusion. All occurrences of this tag will be
-     * excluded when transforming the source into a witness
-     * @param tag
+     * excluded when transforming the source into a witness.
+     * 
+     * @param qName The tag to exclude. It must include namespace
      */
-    public void addGlobalExclusion(String tag) {
+    public void addGlobalExclusion(String qName) {
         final String marker = "<!--global-exclusions-->";
         int pos = this.xslt.indexOf(marker)+marker.length();
-        String ex = "\n    <xsl:template match=\""+getWildcardName(tag)+"\"/>";
+        String ex = "\n    <xsl:template match=\""+qName+"\"/>";
         this.xslt = xslt.substring(0,pos)+ex+this.xslt.substring(pos);   
         
         // remove from breaks so there is not a template ambiguity
@@ -140,7 +148,7 @@ public class JuxtaXslt extends WorkspaceMember {
         String tags = xslt.substring(pos,endPos);
         
         // remove the tag and clean up an double | that may remain
-        String regex = "("+getWildcardName(tag)+"\\||\\|"+getWildcardName(tag)+")";
+        String regex = "("+qName+"\\||\\|"+qName+")";
         regex = regex.replace("*", "\\*");
         String newTags = tags.replaceAll(regex,"");
         
@@ -167,7 +175,7 @@ public class JuxtaXslt extends WorkspaceMember {
         if ( pos < limitPos ) {
             while ( pos > -1 && pos < limitPos) {
                 int endPos = xslt.indexOf("\"", pos);
-                String tag = stripNamespace( xslt.substring(pos,endPos) );
+                String tag = xslt.substring(pos,endPos);
                 if ( tag.equals(tagName)  ) {
                     return true;
                 }
@@ -190,7 +198,7 @@ public class JuxtaXslt extends WorkspaceMember {
         }
         while ( pos > -1 && pos < limitPos) {
             int endPos = xslt.indexOf("\"", pos);
-            String tag = stripNamespace( xslt.substring(pos,endPos) );
+            String tag = xslt.substring(pos,endPos);
             if ( tag.equals(tagName)  ) {
                 // found a match. See if the specified occurrence is excluded
                 int testPos = xslt.indexOf(testKey, pos)+testKey.length();
@@ -214,19 +222,6 @@ public class JuxtaXslt extends WorkspaceMember {
         return false;
     }
     
-    private String stripNamespace( final String tagName ) {
-        if ( tagName.contains("*[")  ) {
-            int pos = tagName.lastIndexOf("']");
-            return tagName.substring(16,pos);
-        } else if ( tagName.contains(":") ) {
-            return tagName.split(":")[1];
-        }
-        return tagName;
-    }
-    private String getWildcardName( final String name ) {
-        return "*[local-name()='"+name+"']";
-    }
-    
     /**
      * REturns TRUE if all occurrences of this tag have linebreaks
      * @param tagName
@@ -246,7 +241,7 @@ public class JuxtaXslt extends WorkspaceMember {
         }
         String[] tagArray = tags.split("\\|");
         for ( int i=0; i<tagArray.length; i++) {
-            String tag = stripNamespace(tagArray[i]);
+            String tag = tagArray[i];
             if ( tag.equals(tagName) ) {
                 return true;
             }

@@ -49,6 +49,9 @@ import org.juxtasoftware.service.importer.jxt.ManifestParser.SourceInfo;
 import org.juxtasoftware.service.importer.jxt.MovesParser.JxtMoveInfo;
 import org.juxtasoftware.util.BackgroundTaskSegment;
 import org.juxtasoftware.util.BackgroundTaskStatus;
+import org.juxtasoftware.util.NamespaceExtractor;
+import org.juxtasoftware.util.NamespaceExtractor.NamespaceInfo;
+import org.juxtasoftware.util.NamespaceExtractor.XmlType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.Scope;
@@ -283,18 +286,29 @@ public class JxtImportServiceImpl implements ImportService<InputStream> {
             boolean isXml = ext.equalsIgnoreCase(".xml");
 
             // create the juxta source
-            Source source = createSource(srcInfo, isXml);           
-            
+            Source source = createSource(srcInfo, isXml);     
+                  
             // if the source was associated with a parse template,
             // create it and use it to transform to a witness
             this.taskStatus.setNote("Transform raw "+srcName+" into witness");
             Long witnessId = null;
             JuxtaXslt xslt = null;
             if ( isXml ) {
+                // extract namespace info
+                Set<NamespaceInfo> namespaces = NamespaceExtractor.extract( this.sourceDao.getContentReader(source) ); 
+                NamespaceInfo namespace = new NamespaceInfo();
+                if ( namespaces.size() == 1 ) {
+                    namespace = (NamespaceInfo)namespaces.toArray()[0];
+                    XmlType xmlType = NamespaceExtractor.determineXmlType( this.sourceDao.getContentReader(source) );
+                    if ( xmlType.equals(XmlType.TEI)) {
+                        namespace.setDefaultPrefix("tei");
+                    }
+                }
+                
                 // record any accepted revisions this witness may have had
                 TemplateInfo info = this.templateParser.findTemplateInfo(srcInfo.getTemplateGuid());
-                xslt = this.xsltFactory.create(source.getWorkspaceId(), srcInfo.getTitle(), info);
-                addRevisonExclusions(source, xslt, srcInfo.getAcceptedRevsions() );
+                xslt = this.xsltFactory.createFromTemplateInfo(source.getWorkspaceId(), srcInfo.getTitle(), info, namespace);
+                addRevisonExclusions(source, xslt, namespace, srcInfo.getAcceptedRevsions() );
                 witnessId = this.transformer.transform(source, xslt, srcInfo.getTitle());
             } else {
                 // Just null transform it to a witness
@@ -312,23 +326,23 @@ public class JxtImportServiceImpl implements ImportService<InputStream> {
         this.taskSegment.incrementValue();
     }
 
-    private void addRevisonExclusions(Source source, JuxtaXslt xslt, List<Integer> acceptedRevsions) throws SAXException, IOException {
+    private void addRevisonExclusions(Source source, JuxtaXslt xslt, NamespaceInfo namespace, List<Integer> acceptedRevsions) throws SAXException, IOException {
         if ( acceptedRevsions.size() == 0 ) {
             // when none are accepted, add an exclusion for all 
             // add tag and addSpan tags. The deletes remain
-            xslt.addGlobalExclusion("add");
-            xslt.addGlobalExclusion("addSpan");
+            xslt.addGlobalExclusion( namespace.addNamespacePrefix("add") );
+            xslt.addGlobalExclusion( namespace.addNamespacePrefix("addSpan") );
         } else {
             // extract the exclusion info and add single exclusions to the XSLT
             JxtRevisionExtractor extractor = new JxtRevisionExtractor();
             extractor.extract( this.sourceDao.getContentReader(source), acceptedRevsions);
             for (RevisionOccurrence rev : extractor.getExcludedRevisions() ) {
-                xslt.addSingleExclusion( rev.getTagName(), rev.getOccurrence() );
+                xslt.addSingleExclusion( namespace.addNamespacePrefix(rev.getTagName()), rev.getOccurrence() );
             }
         }
         this.xsltDao.update(xslt.getId(), new StringReader(xslt.getXslt()));
     }
-
+    
     private Source createSource(SourceInfo srcInfo, boolean isXml) throws FileNotFoundException, IOException, XMLStreamException {
         
         String name = srcInfo.getTitle();

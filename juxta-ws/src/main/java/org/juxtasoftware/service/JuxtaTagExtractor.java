@@ -12,6 +12,7 @@ import org.juxtasoftware.model.Note;
 import org.juxtasoftware.model.PageBreak;
 import org.juxtasoftware.model.RevisionInfo;
 import org.juxtasoftware.service.importer.jxt.Util;
+import org.juxtasoftware.service.importer.ps.WitnessParser.PsWitnessInfo;
 import org.xml.sax.Attributes;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
@@ -23,7 +24,9 @@ import eu.interedition.text.Range;
 
 /**
  * JuxtaExtractor is a SAX xml parser that will collect the position information
- * for tags that require special handling by Juxta. Notes & Page Breaks
+ * for tags that require special handling by Juxta: notes, pagebreaks and revisions.
+ * If requested, it will also extract witness content from a TEI parallel segmented source
+ * 
  * @author loufoster
  */
 public class JuxtaTagExtractor extends DefaultHandler  {
@@ -34,7 +37,6 @@ public class JuxtaTagExtractor extends DefaultHandler  {
     private Map<String, Range> identifiedRanges = Maps.newHashMap();
     private Map<String,Integer> tagOccurences = Maps.newHashMap();
     private JuxtaXslt xslt;     
-    private Long witnessId;
     private long currPos = 0;
     private boolean isExcluding = false;
     private Stack<String> exclusionContext = new Stack<String>();
@@ -42,10 +44,18 @@ public class JuxtaTagExtractor extends DefaultHandler  {
     private Stack<ExtractRevision> revisionExtractStack = new Stack<ExtractRevision>();
     private List<RevisionInfo> revisions = new ArrayList<RevisionInfo>();
     private boolean normalizeSpace;
+    private PsWitnessInfo psWitnessInfo;
+    private StringBuilder psWitnessContent;
     //private long otherCnt = 0;
     
-    public void setWitnessId( final Long witnessId ) {
-        this.witnessId = witnessId;
+    /**
+     * For parallel segmentated sources, set the witness information that will
+     * be used to extract content. 
+     * @param info
+     */
+    public void setPsTargetWitness( final PsWitnessInfo info ) {
+        this.psWitnessInfo = info;
+        this.psWitnessContent = new StringBuilder();
     }
 
     public void extract(final Reader sourceReader, final JuxtaXslt xslt, boolean normalizeSpace) throws SAXException, IOException {          
@@ -63,17 +73,47 @@ public class JuxtaTagExtractor extends DefaultHandler  {
     public List<PageBreak> getPageBreaks() {
         return this.breaks;
     }
+    public String getPsWitnessContent() {
+        return this.psWitnessContent.toString();
+    }
     
     private boolean isRevision(final String qName ) {
-        return ( qName.equals("add") || qName.equals("addSpan") ||
-                 qName.equals("del") || qName.equals("delSpan"));
+        final String localName = stripNamespace(qName);
+        return ( localName.equals("add") || localName.equals("addSpan") ||
+            localName.equals("del") || localName.equals("delSpan"));
+    }
+    private boolean isNote( final String qName ) {
+        final String localName = stripNamespace(qName);
+        return ( localName.equals("note") );
+    }
+    private boolean isPageBreak( final String qName ) {
+        final String localName = stripNamespace(qName);
+        return ( localName.equals("pb") );
+    }
+    private boolean isPsWitnessContent( final String qName ) {
+        final String localName = stripNamespace(qName);
+        return ( localName.equals("rdg") ||  localName.equals("lem"));
+    }
+    private String stripNamespace( final String qName ) {
+        if ( qName.indexOf(":") > 0 ) {
+            return qName.substring(qName.indexOf(":")+1);
+        }
+        return qName;
     }
     
     @Override
     public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
+        // If there is a default namespace, the qName will not have it prepended here.
+        // Do it now because all of the exclusion/linefeed data in the XSLT must have it.
+        if ( this.xslt.getDefaultNamespace() != null && this.xslt.getDefaultNamespace().length() > 0) {
+            qName = this.xslt.getDefaultNamespace() + ":" + qName;
+        }
+        
         // always count up the number of occurrences for this tag
         countOccurrences(qName);
         
+        // if an exclusion is currently in process, just push this qName
+        // onto the context stack and bail
         if ( this.isExcluding ) {
             this.exclusionContext.push(qName);
             return;
@@ -83,19 +123,25 @@ public class JuxtaTagExtractor extends DefaultHandler  {
         final boolean isExcluded = this.xslt.isExcluded(qName, this.tagOccurences.get(qName));
         
         // Handle all tags with special extraction behavior first
-        if ( isRevision(qName) ) {
+        if ( this.psWitnessInfo != null && isPsWitnessContent(qName) ) {
+            // exclude content from witnesses we are not interested in
+            if ( matchesTargetWitness( attributes ) == false ) {
+                this.isExcluding = true;
+                this.exclusionContext.push(qName);
+            }
+        } else if ( isRevision(qName) ) {
             this.revisionExtractStack.push( new ExtractRevision(isExcluded, this.currPos) );
-        } else if ( qName.equals("note") ) {
+        } else if ( isNote(qName) ) {
             handleNote(attributes);
-        } else if (qName.equals("pb") ) {
+        } else if ( isPageBreak(qName) ) {
             handlePageBreak(attributes);
         } else {
-
+            // default handling for all other tags
             if ( isExcluded ) {
                 this.isExcluding = true;
                 this.exclusionContext.push(qName);
             } else {
-                final String idVal = getIdValue(attributes);
+                final String idVal = getAttributeValue("id", attributes);
                 if ( idVal != null ) {
                     this.identifiedRanges.put(idVal, new Range(this.currPos, this.currPos));
                     this.xmlIdStack.push(idVal);
@@ -104,6 +150,31 @@ public class JuxtaTagExtractor extends DefaultHandler  {
                 }
             }
         }
+    }
+    
+    private boolean matchesTargetWitness(Attributes attributes) {
+        // get the value of the wit or lem attribute (only 1 should be present)
+        String idAttr = getAttributeValue("wit", attributes);
+        if ( idAttr == null ) {
+            idAttr = getAttributeValue("lem", attributes);
+            if ( idAttr == null ) {
+                return false;
+            }
+        }
+        
+        // wit/lem ids are prefixed with # and separated by space.
+        // Strip the # and break up into tokens. See if one of the
+        // IDs matches the target ID for this parser pass.
+        idAttr = idAttr.replaceAll("#", "");
+        String[] ids = idAttr.split(" ");
+        for ( int i=0; i<ids.length; i++) {
+            String id = ids[i].trim();
+            if ( id.equals(this.psWitnessInfo.getId()) || 
+                 id.equals(this.psWitnessInfo.getGroupId()) ) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void countOccurrences(String qName) {
@@ -117,7 +188,6 @@ public class JuxtaTagExtractor extends DefaultHandler  {
     
     private void handleNote(Attributes attributes) {
         this.currNote = new Note();
-        this.currNote.setWitnessId( this.witnessId );
         this.currNote.setAnchorRange(new Range(this.currPos, this.currPos));
         this.currNoteContent = new StringBuilder();
 
@@ -138,7 +208,6 @@ public class JuxtaTagExtractor extends DefaultHandler  {
 
     private void handlePageBreak(Attributes attributes) {
         PageBreak pb = new PageBreak();
-        pb.setWitnessId(this.witnessId);
         pb.setOffset(this.currPos);
         //System.err.println("======> PB "+this.currPos);
         
@@ -154,18 +223,19 @@ public class JuxtaTagExtractor extends DefaultHandler  {
         this.breaks.add(pb);
     }
 
-    private String getIdValue( Attributes attributes ){
+    private String getAttributeValue( final String name, final Attributes attributes ){
         for (int idx = 0; idx<attributes.getLength(); idx++) {  
             String val = attributes.getQName(idx);
             if ( val.contains(":")) {
                 val = val.split(":")[1];
             }
-            if ( val.equals("id")) {
+            if ( val.equals(name)) {
                 return attributes.getValue(idx);
             }
         }
         return null;
     }
+    
     
     @Override
     public void endElement(String uri, String localName, String qName) throws SAXException {
@@ -175,24 +245,33 @@ public class JuxtaTagExtractor extends DefaultHandler  {
             return;
         }
         
+        // If there is a default namespace, the qName will not have it prepended here.
+        // Do it now because all of the exclusion/linefeed data in the XSLT must have it.
+        if ( this.xslt.getDefaultNamespace() != null && this.xslt.getDefaultNamespace().length() > 0) {
+            qName = this.xslt.getDefaultNamespace() + ":" + qName;
+        }
+        
         if ( isRevision(qName) ) {
             ExtractRevision rev = this.revisionExtractStack.pop();
             final Range range = new Range(rev.startPosition, this.currPos);
-            this.revisions.add( new RevisionInfo(this.witnessId, qName, range, rev.content.toString(), !rev.isExcluded) );
+            this.revisions.add( new RevisionInfo(qName, range, rev.content.toString(), !rev.isExcluded) );
 
             
-        } else if (qName.equals("note")) {
+        } else if ( isNote(qName) ) {
             this.currNote.setContent(this.currNoteContent.toString().replaceAll("\\s+", " ").trim());
             if ( this.currNote.getContent().length() == 0 ) {
                 this.notes.remove(this.currNote);
             }
             this.currNote = null;
             this.currNoteContent = null;
-        } else if (qName.equals("pb")) {
+        } else if ( isPageBreak(qName) ) {
             // pagebreaks always include a linebreak. add 1 to
             // current position to account for this
             if ( this.currNote == null ) {
                 this.currPos++;
+                if ( this.psWitnessContent != null ) {
+                    this.psWitnessContent.append("\n");
+                }
             }
         } else {
             // if the tag has an identifier, save it off for crossreference with targeted notes
@@ -214,6 +293,9 @@ public class JuxtaTagExtractor extends DefaultHandler  {
                 // Only add 1 for the linebreak if we are non-revision or included revision
                 if ( this.revisionExtractStack.empty() || this.revisionExtractStack.peek().isExcluded == false) {
                     this.currPos++;
+                    if ( this.psWitnessContent != null ) {
+                        this.psWitnessContent.append("\n");
+                    }
                 }
             }
         }            
@@ -266,6 +348,9 @@ public class JuxtaTagExtractor extends DefaultHandler  {
             } else {
                 if ( this.revisionExtractStack.empty() || this.revisionExtractStack.peek().isExcluded == false) {
                     this.currPos += txt.length();
+                    if ( this.psWitnessContent != null ) {
+                        this.psWitnessContent.append(txt);
+                    }
                 }
                 
                 if ( this.revisionExtractStack.empty() == false ) {

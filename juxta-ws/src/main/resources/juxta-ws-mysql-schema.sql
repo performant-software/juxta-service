@@ -46,6 +46,7 @@ CREATE TABLE IF NOT EXISTS juxta_xslt (
     workspace_id BIGINT NOT NULL default 1,
     name VARCHAR(255) NOT NULL,
     xslt text not null,
+    default_namespace VARCHAR(255),
     UNIQUE INDEX(name, workspace_id),
     PRIMARY KEY (id),
     FOREIGN KEY (workspace_id) REFERENCES juxta_workspace (id) ON DELETE CASCADE

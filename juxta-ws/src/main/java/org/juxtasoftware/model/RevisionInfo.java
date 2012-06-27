@@ -5,7 +5,7 @@ import eu.interedition.text.Range;
 public class RevisionInfo {
     public enum Type {ADD, DELETE};
     private final Long id;
-    private final Long witnessId;
+    private Long witnessId;
     private final Range range;
     private final boolean isIncluded;
     private final String text;
@@ -20,16 +20,15 @@ public class RevisionInfo {
         this.isIncluded = included;
     }
     
-    public RevisionInfo( final Long witId, final String localName, final Range r, final String txt, boolean included ) {
-        if ( localName.equals("add") || localName.equals("addSpan") ) {
+    public RevisionInfo( final String qName, final Range r, final String txt, boolean included ) {
+        if ( qName.contains("add") ) {
             this.type = Type.ADD;
-        } else if ( localName.equals("del") ||  localName.equals("delSpan")) {
+        } else if ( qName.contains("del") ) {
             this.type = Type.DELETE;
         } else {
-            throw new RuntimeException("Illegal revision tag name: " + localName);
+            throw new RuntimeException("Illegal revision tag name: " + qName);
         }
         this.id = null;
-        this.witnessId = witId;
         this.range = new Range(r);
         this.text = txt;
         this.isIncluded = included;
@@ -41,6 +40,10 @@ public class RevisionInfo {
 
     public Long getWitnessId() {
         return this.witnessId;
+    }
+    
+    public void setWitnessId( final Long witId ) {
+        this.witnessId = witId;
     }
     
     public boolean isIncluded() {

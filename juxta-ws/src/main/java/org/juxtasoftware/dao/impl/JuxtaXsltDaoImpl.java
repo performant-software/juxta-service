@@ -33,7 +33,7 @@ public class JuxtaXsltDaoImpl extends JuxtaDaoImpl<JuxtaXslt> implements JuxtaXs
 
     @Override
     public JuxtaXslt find(Long id) {
-        final String sql = "select id, workspace_id, name, xslt from juxta_xslt where id=?";
+        final String sql = "select id, workspace_id, name, xslt, default_namespace from juxta_xslt where id=?";
         return DataAccessUtils.uniqueResult(
             this.jt.query(sql, new RowMapper<JuxtaXslt>() {
                 
@@ -43,6 +43,7 @@ public class JuxtaXsltDaoImpl extends JuxtaDaoImpl<JuxtaXslt> implements JuxtaXs
                     xslt.setId( rs.getLong("id"));
                     xslt.setWorkspaceId( rs.getLong("workspace_id"));
                     xslt.setName( rs.getString("name"));
+                    xslt.setDefaultNamespace( rs.getString("default_namespace"));
                     xslt.setXslt( rs.getString("xslt"));
                     return xslt;
                 }    
@@ -118,6 +119,7 @@ public class JuxtaXsltDaoImpl extends JuxtaDaoImpl<JuxtaXslt> implements JuxtaXs
         ps.addValue("id", object.getId());
         ps.addValue("workspace_id", object.getWorkspaceId());
         ps.addValue("name", object.getName());
+        ps.addValue("default_namespace", object.getDefaultNamespace());
         ps.addValue("xslt", object.getXslt());
         return ps;
     }

@@ -1,11 +1,7 @@
 package org.juxtasoftware.resource;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.Reader;
 import java.util.Set;
 
-import org.apache.commons.io.IOUtils;
 import org.juxtasoftware.dao.JuxtaXsltDao;
 import org.juxtasoftware.dao.SourceDao;
 import org.juxtasoftware.dao.WitnessDao;
@@ -18,6 +14,7 @@ import org.juxtasoftware.service.importer.XmlTemplateParser;
 import org.juxtasoftware.service.importer.XmlTemplateParser.TemplateInfo;
 import org.juxtasoftware.util.NamespaceExtractor;
 import org.juxtasoftware.util.NamespaceExtractor.NamespaceInfo;
+import org.juxtasoftware.util.NamespaceExtractor.XmlType;
 import org.restlet.data.Status;
 import org.restlet.representation.Representation;
 import org.restlet.resource.Post;
@@ -47,8 +44,6 @@ public class Transformer extends BaseResource {
     @Autowired private SourceTransformer transformer;
     @Autowired private XmlTemplateParser templateParser;
     @Autowired private JuxtaXsltFactory xsltFactory;
-    
-    public enum XmlType {GENERIC, TEI, RAM};
     
     /**
      * Transform the source identified by <code>sourceID</id> into a new
@@ -136,105 +131,38 @@ public class Transformer extends BaseResource {
     }
 
     private JuxtaXslt createXsltFromTemplate(final Source src, final String name) throws Exception {
-        XmlType xmlType = determineXmlType(src);
-        LOG.info(src.toString()+" appears to be XmlType: "+xmlType.toString());
-        switch (xmlType ) {
-            case TEI:
-                return getTeiXslt( name );
-            case RAM:
-                return getRamXslt( name );
-            default:
-                return  getGenericXslt( src, name );
-        }
-    }
-    
-    private JuxtaXslt getGenericXslt( final Source src, final String name ) throws IOException {
-        String xslt = JuxtaXsltFactory.getGenericTemplate();
-        xslt = xslt.replaceAll("\\{LINEBREAK\\}", "&#10;");
-        
-        // for now act like desktop: if namespaces are included in the xml, wildcard all tag names
-        Set<NamespaceInfo> namespaces = NamespaceExtractor.extract( this.sourceDao.getContentReader(src) );        
-        if ( namespaces.size() > 0 ) {
-            xslt = xslt.replaceAll("\\{NAMESPACE\\}", "");
-            xslt = xslt.replaceAll("\\{NOTE\\}", getWildcardName("note"));
-            xslt = xslt.replaceAll("\\{PB\\}", getWildcardName("pb"));
+        // if a document has none or multiple namespaces, do not try to apply TEI or ram templates to it
+        Set<NamespaceInfo> namespaces = NamespaceExtractor.extract( this.sourceDao.getContentReader(src) ); 
+        if ( namespaces.size() == 0 || namespaces.size() > 1 ) {
+            return this.xsltFactory.create(this.workspace.getId(), name );
         } else {
-            xslt = xslt.replaceAll("\\{NAMESPACE\\}", "");
-            xslt = xslt.replaceAll("\\{NOTE\\}", "note");
-            xslt = xslt.replaceAll("\\{PB\\}", "pb");
+            // with only 1 namespace, see if it looks like one that has
+            // a custom template definition (TEI or RAM)
+            XmlType xmlType = NamespaceExtractor.determineXmlType( this.sourceDao.getContentReader(src) );
+            LOG.info(src.toString()+" appears to be XmlType: "+xmlType.toString());
+            switch (xmlType ) {
+                case TEI:
+                    return getTeiXslt( name, (NamespaceInfo)namespaces.toArray()[0] );
+                case RAM:
+                    return getRamXslt( name, (NamespaceInfo)namespaces.toArray()[0] );
+                default:
+                    return this.xsltFactory.create(this.workspace.getId(), name );
+            }
         }
-        
-        String breaksXslt = JuxtaXsltFactory.getBreaksTemplate();
-        breaksXslt = breaksXslt.replaceAll("\\{LB_LIST\\}", "*");
-        int breakPos = xslt.indexOf("<!--breaks-->")+13;
-        xslt = xslt.substring(0, breakPos)+"\n    "+breaksXslt+xslt.substring(breakPos);
-        
-        JuxtaXslt jxXslt = new JuxtaXslt();
-        jxXslt.setName(name+"-transform");
-        jxXslt.setWorkspaceId( this.workspace.getId() );
-        jxXslt.setXslt(xslt);
-        Long id = this.xsltDao.create(jxXslt);
-        jxXslt.setId(id);
-        return jxXslt;
     }
-    
-    private JuxtaXslt getTeiXslt(final String name ) throws Exception {
+
+    private JuxtaXslt getTeiXslt(final String name, final NamespaceInfo namespace ) throws Exception {
         this.templateParser.parse( ClassLoader.getSystemResourceAsStream("tei-template.xml") );
         TemplateInfo teiInfo = this.templateParser.getTemplates().get(0);
-        return this.xsltFactory.create(this.workspace.getId(), name, teiInfo);
+        namespace.setDefaultPrefix("tei");
+        return this.xsltFactory.createFromTemplateInfo(this.workspace.getId(), name, teiInfo, namespace);
     }
     
-    private JuxtaXslt getRamXslt(final String name ) throws Exception {
+    private JuxtaXslt getRamXslt(final String name, final NamespaceInfo namespace ) throws Exception {
         this.templateParser.parse( ClassLoader.getSystemResourceAsStream("ram.xml") );
-        TemplateInfo teiInfo = this.templateParser.getTemplates().get(0);
-        return this.xsltFactory.create(this.workspace.getId(), name, teiInfo);
+        TemplateInfo ramInfo = this.templateParser.getTemplates().get(0);
+        return this.xsltFactory.createFromTemplateInfo(this.workspace.getId(), name, ramInfo, namespace);
     }
 
-    private XmlType determineXmlType(Source src) {
-        Reader r = this.sourceDao.getContentReader(src);
-        BufferedReader  br = new BufferedReader(r);
-        boolean foundNs = false;
-        int noNsCount = 0;
-        XmlType type = XmlType.GENERIC;
-        try {
-            while ( true ) {
-                String line = br.readLine();
-                if ( line == null ) {
-                    break;
-                } else {
-                    if ( foundNs == false ) {
-                        foundNs = line.contains(" xmlns") ;
-                    } 
-                    
-                    if ( foundNs == true) {
-                        if ( line.contains(" xmlns")==false ) {
-                            noNsCount++;
-                            // once the first namespace has been found,
-                            // give up if we go a bit and see no more
-                            if (noNsCount > 5 ) {
-                                break;
-                            }
-                        } else {
-                            if ( line.contains("http://www.tei-")) {
-                                type = XmlType.TEI;
-                                break;
-                            } else if ( line.contains("ram.xsd")) {
-                                type = XmlType.RAM;
-                                break;
-                            }
-                        }
-                    }
-                } 
-            }
-        } catch (IOException e ) {
-            // swallow it
-        } finally {
-            IOUtils.closeQuietly(br);
-        }
-        return type;
-    }
-
-    private String getWildcardName( final String name ) {
-        return "*[local-name()='"+name+"']";
-    }
+    
 }

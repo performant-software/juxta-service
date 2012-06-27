@@ -25,6 +25,9 @@ import org.juxtasoftware.dao.PageBreakDao;
 import org.juxtasoftware.dao.SourceDao;
 import org.juxtasoftware.dao.WitnessDao;
 import org.juxtasoftware.model.JuxtaXslt;
+import org.juxtasoftware.model.Note;
+import org.juxtasoftware.model.PageBreak;
+import org.juxtasoftware.model.RevisionInfo;
 import org.juxtasoftware.model.Source;
 import org.juxtasoftware.model.Witness;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -183,10 +186,20 @@ public class SourceTransformer {
      */
     public void extractSpecialTags(final Source source, final Witness w, final JuxtaXslt xslt )  throws SAXException, IOException {
         JuxtaTagExtractor extractor = new JuxtaTagExtractor( );
-        extractor.setWitnessId( w.getId() );
         extractor.extract( this.sourceDao.getContentReader(source), xslt, true);    // TODO true to normalize space
-        this.noteDao.create( extractor.getNotes() );
+        for (Note note : extractor.getNotes()  ) {
+            note.setWitnessId(w.getId());
+        }
+        this.noteDao.create(extractor.getNotes());
+        
+        for (PageBreak pb : extractor.getPageBreaks()  ) {
+            pb.setWitnessId(w.getId());
+        }
         this.pbDao.create( extractor.getPageBreaks() );
+        
+        for (RevisionInfo rev : extractor.getRevisions()  ) {
+            rev.setWitnessId(w.getId());
+        }
         this.witnessDao.addRevisions(  extractor.getRevisions() );
     }
     

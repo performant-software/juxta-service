@@ -12,7 +12,7 @@ import junit.framework.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.juxtasoftware.service.importer.ps.WitnessParser;
-import org.juxtasoftware.service.importer.ps.WitnessParser.WitnessInfo;
+import org.juxtasoftware.service.importer.ps.WitnessParser.PsWitnessInfo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -27,9 +27,9 @@ public class WitnessParserTest {
     public void parseWitnessList() throws ParserConfigurationException, SAXException, IOException {
         InputStream data = getClass().getResourceAsStream("/autumn.xml");
         this.witnessParser.parse( new InputStreamReader(data) );
-        List<WitnessInfo> out = this.witnessParser.getWitnesses();
+        List<PsWitnessInfo> out = this.witnessParser.getWitnesses();
         Assert.assertTrue( out.size() == 5 );
-        for ( WitnessInfo info : out  ) {
+        for ( PsWitnessInfo info : out  ) {
             System.out.println(info);
         }
     }
@@ -38,10 +38,10 @@ public class WitnessParserTest {
     public void parseNestedWitnessList() throws ParserConfigurationException, SAXException, IOException {
         InputStream data = getClass().getResourceAsStream("/nested-witness.xml");
         this.witnessParser.parse( new InputStreamReader(data) );
-        List<WitnessInfo> out = this.witnessParser.getWitnesses();
+        List<PsWitnessInfo> out = this.witnessParser.getWitnesses();
         
         int groupCnt = 0;
-        for ( WitnessInfo info : out  ) {
+        for ( PsWitnessInfo info : out  ) {
             if ( info.hasGroupAlias() ) {
                 groupCnt++;
                 System.out.println("Grouped Witness: '"+info.getId()+"', group '"+info.getGroupId()+"'");
