@@ -190,6 +190,7 @@ public class JuxtaTagExtractor extends DefaultHandler  {
         this.currNote = new Note();
         this.currNote.setAnchorRange(new Range(this.currPos, this.currPos));
         this.currNoteContent = new StringBuilder();
+        //System.err.println("======> NOTE "+this.currPos);
 
         // search note tag attributes for type and target and add them to the note.
         for (int idx = 0; idx<attributes.getLength(); idx++) {  
@@ -286,10 +287,10 @@ public class JuxtaTagExtractor extends DefaultHandler  {
             // linebreaks and add a hard break now. Also, do NOT
             // increment position count if we are collecting a note.
             if ( this.currNote != null ) {
-                if ( this.xslt.hasLineBreak(qName) ){ 
+                if ( this.xslt.hasLineBreak(qName, this.tagOccurences.get(qName)) ){ 
                     this.currNoteContent.append("<br/>");
                 }
-            } else  if ( this.xslt.hasLineBreak(qName) ){
+            } else  if ( this.xslt.hasLineBreak(qName, this.tagOccurences.get(qName)) ){
                 // Only add 1 for the linebreak if we are non-revision or included revision
                 if ( this.revisionExtractStack.empty() || this.revisionExtractStack.peek().isExcluded == false) {
                     this.currPos++;
@@ -338,7 +339,7 @@ public class JuxtaTagExtractor extends DefaultHandler  {
                     if ( txt.length() > 0) {
                         txt = leading+txt+trailing;
                         //this.otherCnt += txt.length();
-                        //System.err.println("["+txt+"]"+txt.length()+" - "+this.otherCnt);
+                        //System.err.println("["+txt+"] - "+this.otherCnt+" vs pos: "+(this.currPos+txt.length()) );
                     }
                 }
             }

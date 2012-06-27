@@ -162,13 +162,12 @@ public class JuxtaXslt extends WorkspaceMember {
      * @param tagName
      * @return
      */
-    public boolean isExcluded( final String tagName, final int occurence ) {
+    public boolean isExcluded( final String tagName, final int occurrence ) {
         // first check the global exclude...
         final String global = "<!--global-exclusions-->";
         final String single = "<!--single-exclusions-->";
         final String breaks = "<!--breaks-->";
         final String matchKey = "match=\"";
-        final String testKey = "test=\"";
         int pos = xslt.indexOf( global );
         int limitPos = xslt.indexOf( single );
         pos = xslt.indexOf(matchKey, pos)+matchKey.length();
@@ -189,7 +188,6 @@ public class JuxtaXslt extends WorkspaceMember {
         // now see if it has been singly excluded. Valid search range is between 
         // single exclusion marker and breaks marker. Final all instances
         // of 'match="' and see if the tag name matches
-        final String strOccurrence = Integer.toString(occurence);
         pos = xslt.indexOf( single );
         limitPos = xslt.indexOf( breaks );
         pos = xslt.indexOf(matchKey, pos)+matchKey.length();
@@ -201,18 +199,12 @@ public class JuxtaXslt extends WorkspaceMember {
             String tag = xslt.substring(pos,endPos);
             if ( tag.equals(tagName)  ) {
                 // found a match. See if the specified occurrence is excluded
-                int testPos = xslt.indexOf(testKey, pos)+testKey.length();
-                int endTest = xslt.indexOf("\"", testPos);
-                String conditions = xslt.substring(testPos, endTest);
-                
-                // strip out everything by a space separated list of occurrences
-                // generate a set and see if the taget number is present
-                conditions = conditions.replaceAll("(\\$count\\s+!=\\s+|\\s+and\\s+)", " ").trim();
-                Set<String> nums = new HashSet<String>( Arrays.asList(conditions.split(" ")) );
-                if ( nums.contains( strOccurrence) ) {
+                if ( isOccurrenceInTest(pos, occurrence) ) {
                     return true;
                 }
             }
+            
+            // move on to next match (if any)
             pos = xslt.indexOf(matchKey, endPos);
             if ( pos > -1 ) {
                 pos += matchKey.length();
@@ -223,28 +215,101 @@ public class JuxtaXslt extends WorkspaceMember {
     }
     
     /**
-     * REturns TRUE if all occurrences of this tag have linebreaks
+     * REturns TRUE if the specified occurrence of a tag should include a linebreak
      * @param tagName
+     * @param occurrence
      * @return
      */
-    public boolean hasLineBreak( final String tagName ) {
-        int pos = xslt.indexOf("<!--breaks-->");
-        int limitPos = xslt.indexOf("<xsl:template match=\"text()\">");
-        pos = xslt.indexOf("match=\"", pos)+7;
+    public boolean hasLineBreak( final String tagName, final int occurrence ) {
+        // first, check for a GLOBAL linebreak for this tag: look at 
+        // the content between the quotes after the breaks marker and before the
+        // text template match start
+        final String breaksMarker = "<!--breaks-->";
+        final String matchKey = "match=\"";
+        int pos = this.xslt.indexOf(breaksMarker);
+        int limitPos = this.xslt.indexOf("<xsl:template match=\"text()\">");
+        pos = this.xslt.indexOf(matchKey, pos)+matchKey.length();
         if ( pos > limitPos ) {
             return false;
         }
         int endPos = xslt.indexOf("\"", pos);
         String tags = xslt.substring(pos,endPos);
+        
+        // if its a * then everything has a linebreak
         if ( tags.equals("*")) {
             return true;
         }
+        
+        // split up by the | marker and compare names
         String[] tagArray = tags.split("\\|");
         for ( int i=0; i<tagArray.length; i++) {
             String tag = tagArray[i];
             if ( tag.equals(tagName) ) {
                 return true;
             }
+        }
+        
+        // nothing found yet, now check for single exclusions and linebreaking
+        final String singleMarker = "<!--single-exclusions-->";
+        pos = this.xslt.indexOf(singleMarker);
+        limitPos = this.xslt.indexOf(breaksMarker);
+        pos = this.xslt.indexOf(matchKey, pos)+matchKey.length();
+        if ( pos > limitPos ) {
+            // no single exclusions... done
+            return false;
+        }
+        
+        // look at all instances of match= to see if the requested tag is found
+        while ( pos > -1 && pos < limitPos) {
+            endPos = this.xslt.indexOf("\"", pos);
+            String tag = this.xslt.substring(pos,endPos);
+            if ( tag.equals(tagName)  ) {
+                // found a match. If the requested occurrence is listed, 
+                // the occurrence is excluded and cannot have a linebreak
+                if ( isOccurrenceInTest(pos, occurrence)) {
+                    return false;
+                } else {
+                    // Occurrence is NOT excluded. See if has linebreaks applied
+                    final String endIfMarker = "</xsl:if>";
+                    final String lineBreakMarker = "$display-linebreak";
+                    int endIfPos = this.xslt.indexOf(endIfMarker, endPos);
+                    int lbPos = this.xslt.indexOf(lineBreakMarker, endPos);
+                    if ( lbPos > -1 && lbPos < endIfPos ) {
+                        return true;
+                    } else {
+                        return false;
+                    }
+                }
+            }
+            
+            // move on to next match (if any)
+            pos = this.xslt.indexOf(matchKey, endPos);
+            if ( pos > -1 ) {
+                pos += matchKey.length();
+            }
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Test if the soecified occurrence number appears in the test clause of a single exclusion
+     * @param startPos
+     * @param occurrence
+     * @return
+     */
+    private boolean isOccurrenceInTest( final int startPos, final int occurrence ) {
+        final String testKey = "test=\"";
+        int testPos = this.xslt.indexOf(testKey, startPos)+testKey.length();
+        int endTest = this.xslt.indexOf("\"", testPos);
+        String conditions = xslt.substring(testPos, endTest);
+        
+        // strip out everything by a space separated list of occurrences
+        // generate a set and see if the taget number is present
+        conditions = conditions.replaceAll("(\\$count\\s+!=\\s+|\\s+and\\s+)", " ").trim();
+        Set<String> nums = new HashSet<String>( Arrays.asList(conditions.split(" ")) );
+        if ( nums.contains( Integer.toString(occurrence)) ) {
+            return true;
         }
         return false;
     }
