@@ -443,6 +443,12 @@ public class HeatmapView implements ApplicationContextAware {
                     itr.remove();
                     continue;
                 }
+            } else {
+                if (change.getRange().length() == 0) {
+                    long start = change.getRange().getStart();
+                    long newStart = this.annotationDao.findNextTokenStart(baseTextId, start);
+                    change.adjustRange(newStart, newStart + 1);
+                }
             }
 
             prior = change;
