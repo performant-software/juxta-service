@@ -87,6 +87,7 @@ public class Transformer extends BaseResource {
 
         // if requested, get the xslt transform
         JuxtaXslt xslt = null;
+        boolean newXslt = false;
         Workspace pub = this.workspaceDao.getPublic();
         if ( json.has("xslt") ) {
             Long xsltId = json.get("xslt").getAsLong();
@@ -96,6 +97,7 @@ public class Transformer extends BaseResource {
             // based in the starter template
             if ( srcDoc.getText().getType().equals(Text.Type.XML)) {
                 try {
+                    newXslt = true;
                     xslt = createXsltFromTemplate(srcDoc, finalName);
                 } catch (Exception e) {
                     setStatus(Status.SERVER_ERROR_INTERNAL);
@@ -107,16 +109,18 @@ public class Transformer extends BaseResource {
         // validate template/workspace match (except public)
         if ( xslt != null && this.workspace.getId().equals(xslt.getWorkspaceId()) == false && xslt.getWorkspaceId().equals(pub.getId())==false){
             setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
-            return toTextRepresentation( "Template "+sourceId+
-                " does not exist in workspace "+this.workspace.getName());    
+            return toTextRepresentation( "Requested XSLT does not exist");    
         }
 
         
         // prevent duplicate witnesses from being created
         if ( this.witnessDao.exists(this.workspace, finalName) ) {
             setStatus(Status.CLIENT_ERROR_CONFLICT);
+            if ( newXslt ) {
+                this.xsltDao.delete(xslt);
+            }
             return toTextRepresentation(
-                "Witness '"+finalName+"' already exists in workspace '"+this.workspace.getName()+"'");
+                "Witness '"+finalName+"' already exists");
         }
         
         try {
@@ -125,7 +129,9 @@ public class Transformer extends BaseResource {
         } catch (Exception e) {
             LOG.error("Caught Excepion: unable to transform source", e);
             setStatus(Status.SERVER_ERROR_INTERNAL);
-            this.xsltDao.delete(xslt);
+            if ( newXslt ) {
+                this.xsltDao.delete(xslt);
+            }
             return toTextRepresentation("Transform Failed: "+e.getMessage());
         } 
     }

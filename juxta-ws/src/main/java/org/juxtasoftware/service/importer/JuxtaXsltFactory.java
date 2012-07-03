@@ -80,7 +80,7 @@ public final class JuxtaXsltFactory {
         xslt = xslt.substring(0, breakPos)+"\n    "+breaksXslt+xslt.substring(breakPos);
         
         JuxtaXslt jxXslt = new JuxtaXslt();
-        jxXslt.setName(name+"-transform");
+        jxXslt.setName(name+"-transform-"+System.currentTimeMillis());
         jxXslt.setWorkspaceId( workspaceId );
         jxXslt.setXslt(xslt);
         Long id = this.xsltDao.create(jxXslt);
@@ -100,7 +100,7 @@ public final class JuxtaXsltFactory {
      */
     public JuxtaXslt createFromTemplateInfo(final Long workspaceId, final String name, final TemplateInfo info, final NamespaceInfo namespace ) throws IOException {
         JuxtaXslt jxXslt = new JuxtaXslt();
-        jxXslt.setName(name+"-transform");
+        jxXslt.setName(name+"-transform-"+System.currentTimeMillis());
         jxXslt.setWorkspaceId( workspaceId );
         String xslt = JuxtaXsltFactory.getGenericTemplate();
         
