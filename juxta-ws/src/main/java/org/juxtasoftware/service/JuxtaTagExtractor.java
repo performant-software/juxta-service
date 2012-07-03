@@ -14,6 +14,7 @@ import org.juxtasoftware.model.RevisionInfo;
 import org.juxtasoftware.service.importer.jxt.Util;
 import org.juxtasoftware.service.importer.ps.WitnessParser.PsWitnessInfo;
 import org.xml.sax.Attributes;
+import org.xml.sax.EntityResolver;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
@@ -61,6 +62,15 @@ public class JuxtaTagExtractor extends DefaultHandler  {
     public void extract(final Reader sourceReader, final JuxtaXslt xslt, boolean normalizeSpace) throws SAXException, IOException {          
         this.xslt = xslt;
         this.normalizeSpace = normalizeSpace;
+                
+//        Util.saxParser().getParser().setEntityResolver( new EntityResolver(){
+//
+//            @Override
+//            public InputSource resolveEntity(String arg0, String arg1) throws SAXException, IOException {
+//                // TODO Auto-generated method stub
+//                return null;
+//            }
+//        });
         Util.saxParser().parse( new InputSource(sourceReader), this);
     }
     

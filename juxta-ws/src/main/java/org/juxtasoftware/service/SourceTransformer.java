@@ -16,6 +16,7 @@ import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.TransformerFactoryConfigurationError;
+import javax.xml.transform.sax.SAXSource;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 
@@ -36,7 +37,11 @@ import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.xml.sax.EntityResolver;
+import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
+import org.xml.sax.XMLReader;
+import org.xml.sax.helpers.XMLReaderFactory;
 
 import eu.interedition.text.AnnotationRepository;
 import eu.interedition.text.Text;
@@ -154,7 +159,7 @@ public class SourceTransformer {
         return id;
     }
 
-    private Text doTransform(Source srcDoc, JuxtaXslt xslt) throws IOException, TransformerException, FileNotFoundException {
+    private Text doTransform(Source srcDoc, JuxtaXslt xslt) throws IOException, TransformerException, FileNotFoundException, SAXException {
         
         // be sure to use the saxon parser
         System.setProperty("javax.xml.transform.TransformerFactory", "net.sf.saxon.TransformerFactoryImpl");
@@ -162,7 +167,25 @@ public class SourceTransformer {
         // setup source, xslt and result
         File outFile = File.createTempFile("xform"+srcDoc.getId(), "xml");
         outFile.deleteOnExit();
-        javax.xml.transform.Source xmlSource = new StreamSource( this.sourceDao.getContentReader(srcDoc) );
+        
+        XMLReader reader = XMLReaderFactory.createXMLReader();
+        reader.setEntityResolver(new EntityResolver() {
+
+            @Override
+            public InputSource resolveEntity(String publicId, String systemId) throws SAXException, IOException {
+                if (systemId.endsWith(".dtd") || systemId.endsWith(".ent")) {
+                    StringReader stringInput = new StringReader(" ");
+                    return new InputSource(stringInput);
+                }
+                else {
+                    return null; // use default behavior
+                }
+            }
+        });
+        SAXSource xmlSource = new SAXSource(reader, new InputSource( this.sourceDao.getContentReader(srcDoc) ));
+
+        
+        //javax.xml.transform.Source xmlSource = new StreamSource( this.sourceDao.getContentReader(srcDoc) );
         javax.xml.transform.Source xsltSource =  new StreamSource( new StringReader(xslt.getXslt()) );
         javax.xml.transform.Result result = new StreamResult( outFile );
  
