@@ -19,6 +19,7 @@ import javax.xml.transform.TransformerFactoryConfigurationError;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 
+import org.apache.commons.io.FilenameUtils;
 import org.juxtasoftware.dao.JuxtaXsltDao;
 import org.juxtasoftware.dao.NoteDao;
 import org.juxtasoftware.dao.PageBreakDao;
@@ -119,7 +120,10 @@ public class SourceTransformer {
      * @throws IOException
      * @throws TransformerException 
      */
-    public Long transform(Source srcDoc, JuxtaXslt xslt, String finalName) throws SAXException, IOException, TransformerException {        
+    public Long transform(final Source srcDoc, final JuxtaXslt xslt, final String finalName) throws SAXException, IOException, TransformerException {        
+        // trim off extension, if present
+        String witnessName = FilenameUtils.removeExtension(finalName);
+        
         // transform into a new text_content object        
         Text parsedContent = srcDoc.getText();
         if (srcDoc.getText().getType().equals(Text.Type.XML)) {     
@@ -132,7 +136,7 @@ public class SourceTransformer {
         
         // use the transformed content to create a juxta witness
         Witness witness = new Witness();
-        witness.setName(finalName);
+        witness.setName(witnessName);
         witness.setSourceId(srcDoc.getId());
         if ( xslt != null ) {
             witness.setXsltId(xslt.getId());

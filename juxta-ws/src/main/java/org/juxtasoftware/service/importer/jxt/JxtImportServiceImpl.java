@@ -67,7 +67,7 @@ import eu.interedition.text.NameRepository;
 
 /**
  * Service used to import JXT files from the desktop juxta. It supports only the 
- * latest version of juxta desktop (1.6.2). There is no support for target xpath
+ * latest version of juxta desktop (1.6.5). There is no support for target xpath
  * in the parse templates. For imports of documents using the juxta-document template,
  * the biblio data is stripped out to help compensate for this.
  * 
