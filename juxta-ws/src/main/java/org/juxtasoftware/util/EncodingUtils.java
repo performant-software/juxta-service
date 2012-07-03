@@ -34,14 +34,19 @@ public final class EncodingUtils {
         FileOutputStream fos =  new FileOutputStream(tmpSrc);
         IOUtils.copy(source, fos);
         IOUtils.closeQuietly(fos);
-        
+ 
         String encoding = detectEncoding(tmpSrc);
         if ( encoding.equalsIgnoreCase("UTF-8") == false) {
             LOG.info("Converting from "+encoding+" to UTF-8");
             
             // read from original encoding into 16-bit unicode
             FileInputStream fis =  new FileInputStream(tmpSrc);
-            String nonUtf8Txt =  IOUtils.toString(fis,encoding);
+            String nonUtf8Txt =  null;
+            if ( encoding.equals("UNK")) {
+                nonUtf8Txt = IOUtils.toString(fis);
+            } else {
+                nonUtf8Txt = IOUtils.toString(fis,encoding);    
+            }
             IOUtils.closeQuietly(fis);
             tmpSrc.delete();
             
@@ -66,6 +71,7 @@ public final class EncodingUtils {
                 stripXmlDeclaration(tmpSrc);
             }
         }
+   
 
         return tmpSrc;
     }
@@ -112,11 +118,11 @@ public final class EncodingUtils {
             encoding = detector.getDetectedCharset();
             if ( encoding == null ){
                 LOG.warn("Unable to detect encoding, default to utf-8");
-                encoding = "utf-8";
+                encoding = "UNK";
             }
         } catch (IOException e ) {
             LOG.error("Encoding detection failed, defaulting to utf-8", e);
-            encoding = "utf-8";
+            encoding = "UNK";
         } finally {
             IOUtils.closeQuietly(fis);
         }
