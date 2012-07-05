@@ -33,8 +33,8 @@
     
         <dependency>
             <groupId>net.sf.saxon</groupId>
-            <artifactId>saxon</artifactId>
-            <version>9.3</version>
+            <artifactId>Saxon-HE</artifactId>
+            <version>9.4</version>
         </dependency>
 
         <dependency>
@@ -204,11 +204,12 @@
         
         <!-- Encoding Utitlites -->
         <dependency>
-            <groupId>net.sourceforge.juniversalchardet</groupId>
+            <groupId>com.googlecode.juniversalchardet</groupId>
             <artifactId>juniversalchardet</artifactId>
             <version>1.0.3</version>
         </dependency>
-        <dependency>
+			            
+         <dependency>
             <groupId>net.sourceforge.jchardet</groupId>
             <artifactId>jchardet</artifactId>
             <version>1.0</version>
