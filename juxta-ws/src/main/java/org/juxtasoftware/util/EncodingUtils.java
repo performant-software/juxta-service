@@ -1,5 +1,6 @@
 package org.juxtasoftware.util;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -16,6 +17,8 @@ import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CodingErrorAction;
 
 import org.apache.commons.io.IOUtils;
+import org.mozilla.intl.chardet.nsDetector;
+import org.mozilla.intl.chardet.nsICharsetDetectionObserver;
 import org.mozilla.universalchardet.UniversalDetector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +38,7 @@ public final class EncodingUtils {
         IOUtils.copy(source, fos);
         IOUtils.closeQuietly(fos);
  
-        String encoding = detectEncoding(tmpSrc);
+        String encoding = EncodingUtils.detectEncoding(tmpSrc);
         if ( encoding.equalsIgnoreCase("UTF-8") == false) {
             LOG.info("Converting from "+encoding+" to UTF-8");
             
@@ -68,7 +71,7 @@ public final class EncodingUtils {
             // lastly, strip the xml declaration. It will be added on
             // when the content is validated and added to the repo
             if ( isXml ) {
-                stripXmlDeclaration(tmpSrc);
+                EncodingUtils.stripXmlDeclaration(tmpSrc);
             }
         }
    
@@ -116,10 +119,19 @@ public final class EncodingUtils {
             detector.dataEnd();
             IOUtils.closeQuietly(fis);
             encoding = detector.getDetectedCharset();
-            if ( encoding == null ){
-                LOG.warn("Unable to detect encoding, default to utf-8");
-                encoding = "UNK";
+            if ( encoding != null ){
+                return encoding;
             }
+            
+            // above failed, try a different encoding detector
+            encoding =  EncodingUtils.alternateEncodeDetect(srcFile);
+            if ( encoding != null ){
+                return encoding;
+            }
+            
+            // all else fails, just look for an encoding declaration in the src
+            encoding = EncodingUtils.scanFileForEncodingDeclaration(srcFile);
+ 
         } catch (IOException e ) {
             LOG.error("Encoding detection failed, defaulting to utf-8", e);
             encoding = "UNK";
@@ -127,5 +139,85 @@ public final class EncodingUtils {
             IOUtils.closeQuietly(fis);
         }
         return encoding;
+    }
+    
+    private static String scanFileForEncodingDeclaration(File srcFile) throws IOException {
+        BufferedReader r = new BufferedReader( new FileReader(srcFile ));
+        boolean foundHeader = false;
+        String encoding = null;
+        while (true) {
+            String line = r.readLine();
+            if ( line != null ) {
+                if ( foundHeader == false && line.contains("<?xml") ) {
+                    foundHeader = true;
+                    int pos = line.indexOf("<?xml");
+                    int encPos = line.indexOf("encoding=", pos);
+                    if  (encPos > -1 ) {
+                        line = line.replaceAll("\"", "'");
+                        int end = line.indexOf("'", encPos+10);
+                        encoding = line.substring(encPos+10, end);
+                        break;
+                    } else {
+                        int end = line.indexOf("?>", pos);
+                        if ( end > -1 ) {
+                            break;
+                        }
+                    }
+                } else if (foundHeader == true ) {
+                    int encPos = line.indexOf("encoding=");
+                    if  (encPos > -1 ) {
+                        line = line.replaceAll("\"", "'");
+                        int end = line.indexOf("'", encPos+10);
+                        encoding = line.substring(encPos+10, end);
+                        break;
+                    } else {
+                        int end = line.indexOf("?>");
+                        if ( end > -1 ) {
+                            break;
+                        }
+                    }
+                }
+            } else {
+                break;
+            }
+        }
+        IOUtils.closeQuietly(r);
+        return encoding;
+    }
+
+    private static String alternateEncodeDetect(File testFile) throws IOException {
+
+        nsDetector det = new nsDetector();
+        DetectListener listener = new DetectListener();
+        det.Init( listener );
+
+        BufferedInputStream imp = new BufferedInputStream(new FileInputStream(testFile));
+        byte[] buf = new byte[1024];
+        int len;
+        boolean done = false;
+        boolean isAscii = true;
+        while ((len = imp.read(buf, 0, buf.length)) != -1) {
+            if (isAscii) {
+                isAscii = det.isAscii(buf, len);
+            }
+            if (!isAscii && !done) {
+                done = det.DoIt(buf, len, false);
+            }
+        }
+        det.DataEnd();
+        imp.close();
+        return listener.getEncoding();
+    }
+    
+    private static class DetectListener implements nsICharsetDetectionObserver {
+        private String encoding;
+        public String getEncoding() {
+            return this.encoding;
+        }
+        
+        public void Notify(String charset) {
+            this.encoding = charset;
+        }
+        
     }
 }
