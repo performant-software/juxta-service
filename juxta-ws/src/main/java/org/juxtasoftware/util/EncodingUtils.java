@@ -131,9 +131,13 @@ public final class EncodingUtils {
             
             // all else fails, just look for an encoding declaration in the src
             encoding = EncodingUtils.scanFileForEncodingDeclaration(srcFile);
+            if ( encoding == null ) {
+                LOG.error("Unable to detect encoding");
+                encoding = "UNK";
+            }
  
         } catch (IOException e ) {
-            LOG.error("Encoding detection failed, defaulting to utf-8", e);
+            LOG.error("Encoding detection failed", e);
             encoding = "UNK";
         } finally {
             IOUtils.closeQuietly(fis);
