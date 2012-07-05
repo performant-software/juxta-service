@@ -137,24 +137,37 @@ public class Transformer extends BaseResource {
     }
 
     private JuxtaXslt createXsltFromTemplate(final Source src, final String name) throws Exception {
-        // if a document has none or multiple namespaces, do not try to apply TEI or ram templates to it
+        // if a document has multiple namespaces, do not try to apply TEI or ram templates to it, just generic
         Set<NamespaceInfo> namespaces = NamespaceExtractor.extract( this.sourceDao.getContentReader(src) ); 
-        if ( namespaces.size() == 0 || namespaces.size() > 1 ) {
+        if ( namespaces.size() > 1 ) {
             return this.xsltFactory.create(this.workspace.getId(), name );
         } else {
-            // with only 1 namespace, see if it looks like one that has
-            // a custom template definition (TEI or RAM)
+            // get the NS info....
+            NamespaceInfo nsInfo = NamespaceInfo.createBlankNamespace();
+            if ( namespaces.size() == 1 ) {
+                nsInfo = (NamespaceInfo)namespaces.toArray()[0];
+            }
+            
+            // create XSLT based on a scan thru the src to determine XML type
             XmlType xmlType = NamespaceExtractor.determineXmlType( this.sourceDao.getContentReader(src) );
             LOG.info(src.toString()+" appears to be XmlType: "+xmlType.toString());
             switch (xmlType ) {
                 case TEI:
-                    return getTeiXslt( name, (NamespaceInfo)namespaces.toArray()[0] );
+                    return getTeiXslt( name, nsInfo);
                 case RAM:
-                    return getRamXslt( name, (NamespaceInfo)namespaces.toArray()[0] );
+                    return getRamXslt( name, nsInfo);
+                case JUXTA:
+                    return getJuxtaXslt( name, nsInfo);
                 default:
                     return this.xsltFactory.create(this.workspace.getId(), name );
             }
         }
+    }
+
+    private JuxtaXslt getJuxtaXslt(String name, NamespaceInfo nsInfo) throws Exception {
+        this.templateParser.parse( ClassLoader.getSystemResourceAsStream("juxta-document.xml") );
+        TemplateInfo jxInfo = this.templateParser.getTemplates().get(0);
+        return this.xsltFactory.createFromTemplateInfo(this.workspace.getId(), name, jxInfo, nsInfo);
     }
 
     private JuxtaXslt getTeiXslt(final String name, final NamespaceInfo namespace ) throws Exception {

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<templates>
+    <template guid="jxt" isDefault="false" name="juxta" rootTagName="juxta-document">
+         <tag action="INCLUDE" name="juxta-document" newLine="false"/>
+         <tag action="EXCLUDE" name="bibliographic" newLine="false"/>
+         <tag action="INCLUDE" name="text" newLine="false"/>
+         <tag action="INCLUDE" name="m_s" newLine="false"/>
+         <tag action="INCLUDE" name="m_e" newLine="true"/>
+    </template>
+</templates>

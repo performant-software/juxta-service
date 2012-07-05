@@ -15,7 +15,7 @@ import org.apache.commons.io.IOUtils;
  */
 public final class NamespaceExtractor {
     
-    public enum XmlType {GENERIC, TEI, RAM};
+    public enum XmlType {GENERIC, TEI, RAM, JUXTA};
     
     /**
      * Scan the XML source and extract all of the namespace information
@@ -86,8 +86,8 @@ public final class NamespaceExtractor {
      */
     public static XmlType determineXmlType(final Reader srcReader) {
         BufferedReader  br = new BufferedReader(srcReader);
-        boolean foundNs = false;
-        int noNsCount = 0;
+        boolean foundDecl = false;
+        int lineCnt = 0;
         XmlType type = XmlType.GENERIC;
         try {
             while ( true ) {
@@ -95,27 +95,28 @@ public final class NamespaceExtractor {
                 if ( line == null ) {
                     break;
                 } else {
-                    if ( foundNs == false ) {
-                        foundNs = line.contains(" xmlns") ;
+                    if ( foundDecl == false ) {
+                        foundDecl = line.contains("<?xml") ;
                     } 
-                    
-                    if ( foundNs == true) {
-                        if ( line.contains(" xmlns")==false ) {
-                            noNsCount++;
-                            // once the first namespace has been found,
-                            // give up if we go a bit and see no more
-                            if (noNsCount > 5 ) {
-                                break;
-                            }
-                        } else {
-                            if ( line.contains("http://www.tei-")) {
-                                type = XmlType.TEI;
-                                break;
-                            } else if ( line.contains("ram.xsd")) {
-                                type = XmlType.RAM;
-                                break;
-                            }
+                    if ( foundDecl == true) {           
+                        if ( line.contains("http://www.tei-") || line.contains("tei2.dtd") || 
+                             line.contains("DOCTYPE teiCorpus") || line.contains("DOCTYPE TEI")) {
+                            type = XmlType.TEI;
+                            break;
+                        } else if ( line.contains("ram.xsd")) {
+                            type = XmlType.RAM;
+                            break;
                         }
+                        else if ( line.contains("juxta-document")) {
+                            type = XmlType.JUXTA;
+                            break;
+                        }
+                    }
+                    
+                    // just scan a small portion of the doc after the decl
+                    lineCnt++;
+                    if (lineCnt > 20 ) {
+                        break;
                     }
                 } 
             }
