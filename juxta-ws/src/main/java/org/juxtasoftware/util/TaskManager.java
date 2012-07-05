@@ -2,6 +2,7 @@ package org.juxtasoftware.util;
 
 import java.text.SimpleDateFormat;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.juxtasoftware.util.BackgroundTaskStatus.Status;
 import org.slf4j.Logger;
@@ -11,10 +12,12 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.Scope;
 import org.springframework.core.task.TaskExecutor;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 /**
- * Singleton manager of outstanding tasks for the web service
+ * Singleton manager of outstanding tasks for the web service. This manager 
+ * ensures that only 1 task is executing at a time
  * 
  * @author loufoster
  *
@@ -25,6 +28,7 @@ public class TaskManager {
 
     @Autowired @Qualifier("executor") private TaskExecutor taskExecutor;
     private ConcurrentHashMap<String, BackgroundTask> taskMap = new ConcurrentHashMap<String, BackgroundTask>(50);
+    private ConcurrentLinkedQueue<BackgroundTask> taskQueue = new ConcurrentLinkedQueue<BackgroundTask>();
     private final SimpleDateFormat dateFormater = new SimpleDateFormat("MM/dd H:mm:ss:SSS");
     private static final Logger LOG = LoggerFactory.getLogger( TaskManager.class.getName());
   
@@ -43,9 +47,7 @@ public class TaskManager {
         if ( task == null ) {
            createNewTask = true;
         } else {
-            if ( task.getStatus().equals(Status.CANCELED) || 
-                 task.getStatus().equals(Status.COMPLETE) ||
-                 task.getStatus().equals(Status.FAILED) ) {
+            if ( isDone(task) ) {
                 this.taskMap.remove( task.getName() );
                 createNewTask = true;
             } else {
@@ -55,7 +57,31 @@ public class TaskManager {
         
         if ( createNewTask ) {
             this.taskMap.put( newTask.getName(), newTask );
-            this.taskExecutor.execute(newTask);
+            this.taskQueue.add( newTask );
+        }
+    }
+    
+    private boolean isDone( final BackgroundTask task ) {
+        return (task.getStatus().equals(Status.CANCELED) || 
+                task.getStatus().equals(Status.COMPLETE) ||
+                task.getStatus().equals(Status.FAILED) );
+    }
+    
+    @Scheduled(fixedRate=2000)
+    public void manageQueue() {
+        
+        while ( this.taskQueue.size() > 0 ) {
+            BackgroundTask headTask = this.taskQueue.peek();
+            if ( isDone( headTask )) {
+                // pop the complete task and move on to next
+                this.taskQueue.poll();
+            } else if ( headTask.getStatus().equals(Status.PENDING) ) {
+                this.taskExecutor.execute(headTask);
+                break;
+            } else {
+                // task in=progress. stop now
+                break;
+            }
         }
     }
     

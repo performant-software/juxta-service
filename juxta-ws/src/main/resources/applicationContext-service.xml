@@ -37,8 +37,11 @@
 
     <context:component-scan base-package="org.juxtasoftware"/>
 
+    <!-- enabled @Scheduled -->
+    <task:annotation-driven />
     <task:executor id="executor" pool-size="5-25" queue-capacity="100" />
-
+    <task:scheduler id="scheduler" pool-size="1"/>
+   
     <!-- Juxta WS version property -->
     <bean id="version" class="java.lang.String" factory-method="valueOf">
         <constructor-arg value="1.7-SNAPSHOT"/>
