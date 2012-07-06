@@ -48,6 +48,13 @@ public interface AlignmentDao {
      */
     List<Alignment> list( final AlignmentConstraint constraints );
     
+    /**
+     * Get a count of alignments that match the constraints
+     * @param constraints
+     * @return
+     */
+    Long count( final AlignmentConstraint constraints );
+    
     
     /**
      * Find a specific alignment in a comparison set

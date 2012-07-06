@@ -113,6 +113,42 @@ public class AlignmentDaoImpl implements AlignmentDao, InitializingBean  {
         this.jdbcTemplate.query(sql.toString(), mapper );
         return mapper.getAlignments();    
     }
+    
+    @Override
+    public Long count(AlignmentConstraint constraint) {
+        StringBuilder sql = countAnnotationsQuery();
+        sql.append(" where a.set_id = ").append(constraint.getSetId());
+        if ( constraint.getFilter() != null ) {
+            sql.append(" and aqn.id in (");
+            int cnt = 0;
+            for ( Name qname : constraint.getFilter().getQNames() ) {
+                if ( cnt > 0){
+                    sql.append(",");
+                }
+                cnt++;
+                sql.append( ((RelationalName)qname).getId() );
+            }
+            sql.append(")");
+        }
+       
+        return this.jdbcTemplate.queryForLong(sql.toString());   
+    }
+    
+    private final StringBuilder countAnnotationsQuery( ) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("select count(*) as cnt ");
+        sb.append(" from ").append(TABLE_NAME).append(" as a "); 
+        sb.append(" inner join text_qname as aqn on a.qname_id=aqn.id ");
+        
+        sb.append(" inner join text_annotation as a1 on a1.id=a.annotation_a_id ");
+        sb.append(" inner join text_qname as a1_qn on a1.name=a1_qn.id ");
+        sb.append(" inner join juxta_witness as w1 on w1.text_id=a1.text ");
+        
+        sb.append(" inner join text_annotation as a2 on a2.id=a.annotation_b_id ");
+        sb.append(" inner join text_qname as a2_qn on a2.name=a2_qn.id ");
+        sb.append(" inner join juxta_witness as w2 on w2.text_id=a2.text ");
+        return sb;
+    }
 
     /**
      * Gener query to get all annotations for all alignments.

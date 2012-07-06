@@ -32,6 +32,25 @@ public interface CacheDao {
      * @param data
      */
     void cacheHeatmap( final Long setId, final Long baseId, Reader data);
+   
+    
+    boolean histogramExists(  final Long setId, final Long baseId  );
+    
+    /**
+     * Get a reader for a histogram data for specified set/base witness pair
+     * @param setId
+     * @param baseId
+     * @return
+     */
+    Reader getHistogram( final Long setId, final Long baseId );
+    
+    /**
+     * Cache histogram data
+     * @param setId
+     * @param baseId
+     * @param data
+     */
+    void cacheHistogram( final Long setId, final Long baseId, Reader data);
     
     /**
      * Remove ALL cached heatmap views for this set
