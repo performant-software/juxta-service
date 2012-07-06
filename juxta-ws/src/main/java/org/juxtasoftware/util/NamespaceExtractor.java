@@ -86,7 +86,6 @@ public final class NamespaceExtractor {
      */
     public static XmlType determineXmlType(final Reader srcReader) {
         BufferedReader  br = new BufferedReader(srcReader);
-        boolean foundDecl = false;
         int lineCnt = 0;
         XmlType type = XmlType.GENERIC;
         try {
@@ -95,25 +94,20 @@ public final class NamespaceExtractor {
                 if ( line == null ) {
                     break;
                 } else {
-                    if ( foundDecl == false ) {
-                        foundDecl = line.contains("<?xml") ;
-                    } 
-                    if ( foundDecl == true) {           
-                        if ( line.contains("http://www.tei-") || line.contains("tei2.dtd") || 
-                             line.contains("DOCTYPE teiCorpus") || line.contains("DOCTYPE TEI")) {
-                            type = XmlType.TEI;
-                            break;
-                        } else if ( line.contains("ram.xsd")) {
-                            type = XmlType.RAM;
-                            break;
-                        }
-                        else if ( line.contains("juxta-document")) {
-                            type = XmlType.JUXTA;
-                            break;
-                        }
+                    if ( line.contains("http://www.tei-") || line.contains("tei2.dtd") || 
+                         line.contains("teiCorpus") || line.contains("DOCTYPE TEI")) {
+                        type = XmlType.TEI;
+                        break;
+                    } else if ( line.contains("ram.xsd")) {
+                        type = XmlType.RAM;
+                        break;
                     }
-                    
-                    // just scan a small portion of the doc after the decl
+                    else if ( line.contains("juxta-document")) {
+                        type = XmlType.JUXTA;
+                        break;
+                    }
+
+                    // if we haven't found it  in 20 lines.. give up
                     lineCnt++;
                     if (lineCnt > 20 ) {
                         break;
