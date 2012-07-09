@@ -44,7 +44,12 @@ public final class EncodingUtils {
         
         // stream the input in original encoding to output in UTF-8
         File utf8Out = File.createTempFile("utf8out","dat");
-        Reader in = new InputStreamReader(new FileInputStream(tmpSrc), encoding);
+        Reader in = null;
+        if ( encoding == "UNK" ) {
+            in  = new InputStreamReader(new FileInputStream(tmpSrc) );
+        } else {
+            in  = new InputStreamReader(new FileInputStream(tmpSrc), encoding);
+        }
         Writer out = new OutputStreamWriter(new FileOutputStream(utf8Out), "UTF-8");
         int c;
         while ((c = in.read()) != -1){
