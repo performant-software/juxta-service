@@ -8,13 +8,10 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
-import java.nio.channels.Channels;
-import java.nio.channels.WritableByteChannel;
-import java.nio.charset.Charset;
-import java.nio.charset.CharsetEncoder;
-import java.nio.charset.CodingErrorAction;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.Reader;
+import java.io.Writer;
 
 import org.apache.commons.io.IOUtils;
 import org.mozilla.intl.chardet.nsDetector;
@@ -35,48 +32,34 @@ public final class EncodingUtils {
     public static File fixEncoding( InputStream source, boolean isXml ) throws IOException {
         File tmpSrc = File.createTempFile("src", "dat");
         FileOutputStream fos =  new FileOutputStream(tmpSrc);
-        IOUtils.copy(source, fos);
+        IOUtils.copyLarge(source, fos);
         IOUtils.closeQuietly(fos);
  
         String encoding = EncodingUtils.detectEncoding(tmpSrc);
-        if ( encoding.equalsIgnoreCase("UTF-8") == false) {
-            LOG.info("Converting from "+encoding+" to UTF-8");
-            
-            // read from original encoding into 16-bit unicode
-            FileInputStream fis =  new FileInputStream(tmpSrc);
-            String nonUtf8Txt =  null;
-            if ( encoding.equals("UNK")) {
-                nonUtf8Txt = IOUtils.toString(fis);
-            } else {
-                nonUtf8Txt = IOUtils.toString(fis,encoding);    
-            }
-            IOUtils.closeQuietly(fis);
-            tmpSrc.delete();
-            
-            // setup encoders to translate the data. IF bad chars
-            // are encountered, replace them with 0xFFFD (unkown utf-8 symbol)
-            Charset utf8cs = Charset.availableCharsets().get("UTF-8");
-            CharsetEncoder utf8en = utf8cs.newEncoder();
-            utf8en.onMalformedInput(CodingErrorAction.REPLACE);
-            utf8en.onUnmappableCharacter(CodingErrorAction.REPLACE);
-            
-            // encode the 16-bit unicode to UTF-8 and write out the bytes
-            ByteBuffer utf8Buffer = utf8en.encode(CharBuffer.wrap(nonUtf8Txt));
-
-            fos = new FileOutputStream(tmpSrc);
-            WritableByteChannel channel = Channels.newChannel(fos);
-            channel.write(utf8Buffer);
-            fos.close();
-            
-            // lastly, strip the xml declaration. It will be added on
-            // when the content is validated and added to the repo
-            if ( isXml ) {
-                EncodingUtils.stripXmlDeclaration(tmpSrc);
-            }
+        if ( encoding.equalsIgnoreCase("UTF-8") ) {
+            return tmpSrc;
         }
-   
-
-        return tmpSrc;
+        
+        LOG.info("Converting from "+encoding+" to UTF-8");
+        
+        // stream the input in original encoding to output in UTF-8
+        File utf8Out = File.createTempFile("utf8out","dat");
+        Reader in = new InputStreamReader(new FileInputStream(tmpSrc), encoding);
+        Writer out = new OutputStreamWriter(new FileOutputStream(utf8Out), "UTF-8");
+        int c;
+        while ((c = in.read()) != -1){
+            out.write(c);
+        }
+        IOUtils.closeQuietly(in);
+        IOUtils.closeQuietly(out);
+        tmpSrc.delete();
+        
+        // lastly, strip the xml declaration. It will be added on
+        // when the content is validated and added to the repo
+        if ( isXml ) {
+            EncodingUtils.stripXmlDeclaration(utf8Out);
+        }
+        return utf8Out;
     }
     
     private static void stripXmlDeclaration(File tmpSrc) throws IOException {
