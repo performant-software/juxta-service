@@ -6,6 +6,8 @@ import org.juxtasoftware.dao.WorkspaceDao;
 import org.juxtasoftware.model.QNameFilter;
 import org.juxtasoftware.model.Workspace;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import eu.interedition.text.NameRepository;
@@ -17,6 +19,7 @@ import eu.interedition.text.NameRepository;
  *
  */
 @Component
+@Scope(BeanDefinition.SCOPE_PROTOTYPE)
 public final class QNameFilters {
     private static final String DIFF_FILTER = "differences";
     private static final String REVISIONS_FILTER = "revisions";

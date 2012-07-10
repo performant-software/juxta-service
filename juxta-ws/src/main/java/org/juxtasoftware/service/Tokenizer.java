@@ -10,7 +10,6 @@ import java.io.Reader;
 import java.util.List;
 import java.util.Set;
 
-import eu.interedition.text.TextConsumer;
 import org.juxtasoftware.dao.ComparisonSetDao;
 import org.juxtasoftware.model.CollatorConfig;
 import org.juxtasoftware.model.CollatorConfig.HyphenationFilter;
@@ -21,8 +20,9 @@ import org.juxtasoftware.util.BackgroundTaskStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
@@ -31,11 +31,12 @@ import eu.interedition.text.Annotation;
 import eu.interedition.text.AnnotationRepository;
 import eu.interedition.text.Range;
 import eu.interedition.text.Text;
+import eu.interedition.text.TextConsumer;
 import eu.interedition.text.TextRepository;
 import eu.interedition.text.mem.SimpleAnnotation;
 
 @Service
-@Transactional
+@Scope(BeanDefinition.SCOPE_PROTOTYPE)
 public class Tokenizer {
     private static final int BATCH_SIZE = 5000;
     private static final Logger LOG = LoggerFactory.getLogger(Tokenizer.class);

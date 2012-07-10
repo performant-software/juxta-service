@@ -24,9 +24,9 @@ import org.juxtasoftware.diff.TranspositionSource;
 import org.juxtasoftware.diff.impl.SimpleTokenComparator;
 import org.juxtasoftware.model.Alignment;
 import org.juxtasoftware.model.Alignment.AlignedAnnotation;
-import org.juxtasoftware.model.CollatorConfig.HyphenationFilter;
 import org.juxtasoftware.model.AlignmentConstraint;
 import org.juxtasoftware.model.CollatorConfig;
+import org.juxtasoftware.model.CollatorConfig.HyphenationFilter;
 import org.juxtasoftware.model.ComparisonSet;
 import org.juxtasoftware.model.JuxtaAnnotation;
 import org.juxtasoftware.model.QNameFilter;
@@ -40,7 +40,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -54,7 +53,6 @@ import eu.interedition.text.TextRepository;
 import eu.interedition.text.rdbms.RelationalAnnotation;
 
 @Service
-@Transactional
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
 public class ComparisonSetCollator extends DiffCollator {
     @Autowired private QNameFilters filters;
@@ -222,7 +220,7 @@ public class ComparisonSetCollator extends DiffCollator {
         protected List<Difference> differences = new LinkedList<Difference>();
         protected Name addDelName;
         protected Name changeName;
-        private final int BATCH_SIZE = 500;
+        private final int BATCH_SIZE = 250;
         
         public MemoryDiffStore() {
             this.addDelName = nameRepository.get(Constants.ADD_DEL_NAME);
@@ -313,7 +311,7 @@ public class ComparisonSetCollator extends DiffCollator {
             try {
                 created = ComparisonSetCollator.this.alignmentDao.create(alignments);
             } catch (Exception e) {
-                e.printStackTrace();
+                LOG.error("Error creating alignments", e);
             }
             if ( created != alignments.size() ) {
                 LOG.error("Unable to create entries for all alignments. Expected count: "
