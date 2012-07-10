@@ -159,6 +159,11 @@ public class CollatorResource extends BaseResource {
         }
         
         @Override
+        public Type getType() {
+            return BackgroundTask.Type.COLLATE;
+        }
+        
+        @Override
         public void run() {
             try {
                 LOG.info("Begin collation task "+this.name);

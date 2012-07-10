@@ -37,7 +37,7 @@ import eu.interedition.text.mem.SimpleAnnotation;
 @Service
 @Transactional
 public class Tokenizer {
-    private static final int BATCH_SIZE = 15000;
+    private static final int BATCH_SIZE = 5000;
     private static final Logger LOG = LoggerFactory.getLogger(Tokenizer.class);
 
     @Autowired private AnnotationRepository annotationRepository;

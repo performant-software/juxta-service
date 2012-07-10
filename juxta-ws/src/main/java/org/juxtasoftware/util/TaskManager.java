@@ -2,7 +2,6 @@ package org.juxtasoftware.util;
 
 import java.text.SimpleDateFormat;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.juxtasoftware.util.BackgroundTaskStatus.Status;
 import org.slf4j.Logger;
@@ -12,7 +11,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.Scope;
 import org.springframework.core.task.TaskExecutor;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 /**
@@ -27,8 +25,8 @@ import org.springframework.stereotype.Component;
 public class TaskManager {
 
     @Autowired @Qualifier("executor") private TaskExecutor taskExecutor;
+    @Autowired @Qualifier("collate-executor") private TaskExecutor collateExecutor;
     private ConcurrentHashMap<String, BackgroundTask> taskMap = new ConcurrentHashMap<String, BackgroundTask>(50);
-    private ConcurrentLinkedQueue<BackgroundTask> taskQueue = new ConcurrentLinkedQueue<BackgroundTask>();
     private final SimpleDateFormat dateFormater = new SimpleDateFormat("MM/dd H:mm:ss:SSS");
     private static final Logger LOG = LoggerFactory.getLogger( TaskManager.class.getName());
   
@@ -57,7 +55,15 @@ public class TaskManager {
         
         if ( createNewTask ) {
             this.taskMap.put( newTask.getName(), newTask );
-            this.taskQueue.add( newTask );
+            // exec collate requests in thread pool that only allows a 
+            // small number of concurrent tasks
+            if ( newTask.getType().equals(BackgroundTask.Type.COLLATE)) {
+                this.collateExecutor.execute(newTask);
+            } else {
+                // All other tasks are streamed and need less bandwidth. Use thread pool that alows
+                // more simultaneous tasks
+                this.taskExecutor.execute(newTask);
+            }
         }
     }
     
@@ -65,24 +71,6 @@ public class TaskManager {
         return (task.getStatus().equals(Status.CANCELED) || 
                 task.getStatus().equals(Status.COMPLETE) ||
                 task.getStatus().equals(Status.FAILED) );
-    }
-    
-    @Scheduled(fixedRate=2000)
-    public void manageQueue() {
-        
-        while ( this.taskQueue.size() > 0 ) {
-            BackgroundTask headTask = this.taskQueue.peek();
-            if ( isDone( headTask )) {
-                // pop the complete task and move on to next
-                this.taskQueue.poll();
-            } else if ( headTask.getStatus().equals(Status.PENDING) ) {
-                this.taskExecutor.execute(headTask);
-                break;
-            } else {
-                // task in=progress. stop now
-                break;
-            }
-        }
     }
     
     public void cancel( final String taskName  ) {

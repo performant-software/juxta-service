@@ -39,8 +39,8 @@
 
     <!-- enabled @Scheduled -->
     <task:annotation-driven />
-    <task:executor id="executor" pool-size="5-25" queue-capacity="100" />
-    <task:scheduler id="scheduler" pool-size="1"/>
+    <task:executor id="executor" pool-size="15" queue-capacity="200" />
+    <task:executor id="collate-executor" pool-size="5" queue-capacity="200" />
    
     <!-- Juxta WS version property -->
     <bean id="version" class="java.lang.String" factory-method="valueOf">

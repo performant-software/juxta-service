@@ -38,11 +38,9 @@ import org.restlet.resource.Get;
 import org.restlet.resource.Post;
 import org.restlet.resource.Put;
 import org.restlet.resource.ResourceException;
-import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
@@ -53,7 +51,7 @@ import eu.interedition.text.Range;
 
 @Service
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
-public class SourceResource extends BaseResource implements ApplicationContextAware {
+public class SourceResource extends BaseResource  {
 
     @Autowired private SourceDao sourceDao;
     @Autowired private ComparisonSetDao setDao;
@@ -61,8 +59,8 @@ public class SourceResource extends BaseResource implements ApplicationContextAw
     @Autowired private JuxtaXsltDao xsltDao;
     @Autowired private SourceTransformer transformer;
     @Autowired private TaskManager taskManager;
+    @Autowired private ApplicationContext context;
     
-    private ApplicationContext context;
     private Range range = null;
     private Source source;
     private boolean isStatusRequest;
@@ -342,11 +340,6 @@ public class SourceResource extends BaseResource implements ApplicationContextAw
         Gson gson = new Gson();
         return toJsonRepresentation( gson.toJson(usage));
     }
-
-    @Override
-    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-        this.context = applicationContext;
-    }
     
     /**
      * Interface for an update task
@@ -467,6 +460,11 @@ public class SourceResource extends BaseResource implements ApplicationContextAw
             this.task = new BackgroundTaskStatus( update.getName() );
             this.startDate = new Date();
             this.updateExecutor = update;
+        }
+        
+        @Override
+        public Type getType() {
+            return BackgroundTask.Type.UPDATE;
         }
         
         @Override

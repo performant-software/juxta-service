@@ -36,11 +36,9 @@ import org.juxtasoftware.util.QNameFilters;
 import org.juxtasoftware.util.ftl.FileDirective;
 import org.juxtasoftware.util.ftl.HeatmapStreamDirective;
 import org.restlet.representation.Representation;
-import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
@@ -49,7 +47,7 @@ import eu.interedition.text.rdbms.RelationalText;
 
 @Service
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
-public class HeatmapView implements ApplicationContextAware {
+public class HeatmapView  {
     @Autowired private CacheDao cacheDao;
     @Autowired private AlignmentDao alignmentDao;
     @Autowired private JuxtaAnnotationDao annotationDao;
@@ -59,8 +57,8 @@ public class HeatmapView implements ApplicationContextAware {
     @Autowired private WitnessDao witnessDao;
     @Autowired private QNameFilters filters;
     @Autowired private HeatmapStreamDirective heatmapDirective;
+    @Autowired private ApplicationContext context;
     
-    private ApplicationContext context;
     private BaseResource parent;
     private int minimumEditDistance = 0;
 
@@ -482,11 +480,6 @@ public class HeatmapView implements ApplicationContextAware {
             }
         }
         return null;
-    }
-
-    @Override
-    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-        this.context = applicationContext;
     }
     
     /**

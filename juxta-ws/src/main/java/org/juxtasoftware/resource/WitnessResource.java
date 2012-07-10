@@ -159,16 +159,19 @@ public class WitnessResource extends BaseResource {
         
         // get a list of all uses of this witness.
         // Mark sets as NOT collated, clear their collation cache and remove all alignments
+        LOG.info("Get "+this.witness+" USAGE");
         List<Usage> usage = this.witnessDao.getUsage(this.witness);
         for (Usage u : usage) {
             if ( u.getType().equals(Usage.Type.COMPARISON_SET)) {
                 ComparisonSet set = this.setDao.find(u.getId());
+                LOG.info("Clear "+this.witness+" "+set+" colltion data");
                 this.setDao.clearCollationData(set);
             }
         }
 
         // delete the witness (this will cascade delete 
         // from all sets that were using it)
+        LOG.info("DELETE "+this.witness);
         this.witnessDao.delete( witness ); 
         JuxtaXslt xslt = this.xsltDao.find( this.witness.getXsltId() );
         try {

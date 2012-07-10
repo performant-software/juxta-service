@@ -11,10 +11,12 @@ import org.juxtasoftware.util.BackgroundTaskStatus.Status;
  *
  */
 public interface BackgroundTask extends Runnable {
+    public enum Type {TOKENIZE, COLLATE, IMPORT, UPDATE};
     public Status getStatus();
     public String getName();
     public void cancel();
     public Date getStartTime();
     public Date getEndTime();
     public String getMessage();
+    public Type getType();
 }

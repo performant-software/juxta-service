@@ -31,11 +31,9 @@ import org.restlet.representation.Representation;
 import org.restlet.resource.Get;
 import org.restlet.resource.Post;
 import org.restlet.resource.ResourceException;
-import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
@@ -51,7 +49,7 @@ import com.google.gson.JsonParser;
  */
 @Service
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
-public class Importer extends BaseResource implements ApplicationContextAware {
+public class Importer extends BaseResource  {
     private enum Action { IMPORT, STATUS, CANCEL }
     
     private Action action;
@@ -62,12 +60,7 @@ public class Importer extends BaseResource implements ApplicationContextAware {
     @Autowired private ComparisonSetDao setDao;
     @Autowired private WitnessDao witnessDao;
     @Autowired private SourceDao sourceDao;
-    @Autowired private JuxtaXsltDao xsltDao;    
-
-    @Override
-    public void setApplicationContext(ApplicationContext context) throws BeansException {
-        this.context = context;
-    }
+    @Autowired private JuxtaXsltDao xsltDao;   
     
     @Override
     protected void doInit() throws ResourceException {
@@ -293,6 +286,11 @@ public class Importer extends BaseResource implements ApplicationContextAware {
             this.task = new BackgroundTaskStatus( this.taskName );
             this.startDate = new Date();
             this.importer = importService;
+        }
+        
+        @Override
+        public Type getType() {
+            return BackgroundTask.Type.IMPORT;
         }
         
         @Override

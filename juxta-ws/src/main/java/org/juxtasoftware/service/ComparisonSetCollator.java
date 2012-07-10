@@ -37,6 +37,8 @@ import org.juxtasoftware.util.QNameFilters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -53,6 +55,7 @@ import eu.interedition.text.rdbms.RelationalAnnotation;
 
 @Service
 @Transactional
+@Scope(BeanDefinition.SCOPE_PROTOTYPE)
 public class ComparisonSetCollator extends DiffCollator {
     @Autowired private QNameFilters filters;
     @Autowired private ComparisonSetDao setDao;
@@ -219,6 +222,7 @@ public class ComparisonSetCollator extends DiffCollator {
         protected List<Difference> differences = new LinkedList<Difference>();
         protected Name addDelName;
         protected Name changeName;
+        private final int BATCH_SIZE = 500;
         
         public MemoryDiffStore() {
             this.addDelName = nameRepository.get(Constants.ADD_DEL_NAME);
@@ -228,7 +232,7 @@ public class ComparisonSetCollator extends DiffCollator {
         @Override
         public void add(Difference aignment) throws IOException {
             this.differences.add(aignment);
-            if ( differences.size() > 5000 ) {
+            if ( differences.size() > BATCH_SIZE ) {
                 save();
             }
         }
@@ -239,6 +243,7 @@ public class ComparisonSetCollator extends DiffCollator {
                     return w.getId();
                 }
             }
+            LOG.error("No witness found for annotaion "+a.toString());
             return null;
         }
         
@@ -304,8 +309,12 @@ public class ComparisonSetCollator extends DiffCollator {
                     jxBase, jxWitness, diff.getEditDistance());
                 alignments.add( align );
             }
-            
-            int created = ComparisonSetCollator.this.alignmentDao.create(alignments);
+            int created =0;
+            try {
+                created = ComparisonSetCollator.this.alignmentDao.create(alignments);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
             if ( created != alignments.size() ) {
                 LOG.error("Unable to create entries for all alignments. Expected count: "
                     +alignments.size()+", Actual: "+created);

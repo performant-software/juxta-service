@@ -127,6 +127,11 @@ public class TokenizerResource extends BaseResource {
         }
         
         @Override
+        public Type getType() {
+            return BackgroundTask.Type.TOKENIZE;
+        }
+        
+        @Override
         public void run() {
             try {
                 LOG.info("Begin task "+this.name);

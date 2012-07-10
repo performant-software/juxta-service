@@ -33,11 +33,9 @@ import org.restlet.data.Status;
 import org.restlet.representation.Representation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
@@ -51,17 +49,17 @@ import eu.interedition.text.rdbms.RelationalText;
  */
 @Service
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
-public class SideBySideView implements FileDirectiveListener, ApplicationContextAware {
+public class SideBySideView implements FileDirectiveListener  {
     
     @Autowired private ComparisonSetDao setDao;
     @Autowired private WitnessDao witnessDao;
     @Autowired private QNameFilters filters;
     @Autowired private AlignmentDao alignmentDao;
     @Autowired private CacheDao cacheDao;
+    @Autowired private ApplicationContext context;
     
     protected static final Logger LOG = LoggerFactory.getLogger( "SideBySideView" );
     
-    private ApplicationContext context;
     private BaseResource parent;
     private List<WitnessInfo> witnessDetails = new ArrayList<SideBySideView.WitnessInfo>(2);
     
@@ -336,11 +334,6 @@ public class SideBySideView implements FileDirectiveListener, ApplicationContext
         // close up the file
         writer.close();
         
-    }
-    
-    @Override
-    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-        this.context = applicationContext;
     }
     
     /**

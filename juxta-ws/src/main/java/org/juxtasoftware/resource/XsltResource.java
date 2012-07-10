@@ -25,11 +25,9 @@ import org.restlet.resource.Get;
 import org.restlet.resource.Post;
 import org.restlet.resource.Put;
 import org.restlet.resource.ResourceException;
-import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
@@ -46,16 +44,17 @@ import com.google.gson.JsonParser;
  */
 @Service
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
-public class XsltResource extends BaseResource implements ApplicationContextAware {
+public class XsltResource extends BaseResource  {
     @Autowired private JuxtaXsltDao xsltDao;
     @Autowired private SourceDao sourceDao;
     @Autowired private WitnessDao witnessDao;
     @Autowired private SourceTransformer transformer;
     @Autowired private ComparisonSetDao setDao;
+    @Autowired private ApplicationContext context;
+    
     private Long xsltId = null;
     private Long witnessId = null;
     private boolean templateRequest = false;
-    private ApplicationContext context;
     
     @Override
     protected void doInit() throws ResourceException {
@@ -223,10 +222,5 @@ public class XsltResource extends BaseResource implements ApplicationContextAwar
         }
 
         setStatus(Status.CLIENT_ERROR_METHOD_NOT_ALLOWED);
-    }
-
-    @Override
-    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-        this.context = applicationContext;
     }
 }
