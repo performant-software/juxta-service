@@ -220,7 +220,7 @@ public class ComparisonSetCollator extends DiffCollator {
         protected List<Difference> differences = new LinkedList<Difference>();
         protected Name addDelName;
         protected Name changeName;
-        private final int BATCH_SIZE = 250;
+        private final int BATCH_SIZE = 1500;
         
         public MemoryDiffStore() {
             this.addDelName = nameRepository.get(Constants.ADD_DEL_NAME);
@@ -249,8 +249,8 @@ public class ComparisonSetCollator extends DiffCollator {
         public void save() throws IOException {
             // run thru all resulting alignments and look for gaps
             // and stuff them in a map of gap annotations to be created.
-            final SortedMap<Long, Annotation>  newBaseGaps = Maps.newTreeMap();
-            final SortedMap<Long, Annotation>  newWitnessGaps = Maps.newTreeMap();
+            SortedMap<Long, Annotation>  newBaseGaps = Maps.newTreeMap();
+            SortedMap<Long, Annotation>  newWitnessGaps = Maps.newTreeMap();
             for (Difference a : this.differences ) {
                 final Annotation base = a.getBase();
                 final Annotation witness = a.getWitness();
@@ -274,13 +274,16 @@ public class ComparisonSetCollator extends DiffCollator {
             baseGaps.putAll(Maps.uniqueIndex(annotationRepository.create(newBaseGaps.values()), GapAnnotation.TO_OFFSET));
             witnessGaps.putAll(Maps.uniqueIndex(annotationRepository.create(newWitnessGaps.values()), GapAnnotation.TO_OFFSET));
             newBaseGaps.clear();
+            newBaseGaps = null;
             newWitnessGaps.clear();
+            newWitnessGaps = null;
 
-            // run thru all alignments AGAIN and substitue the newly created gap RelationalAnnotations
-            // for all GapAnnotations. This substitution lets linkRepo.create work - it can only deal
-            // with subclasses of RelationalAnnotation.
+            // run thru all alignments AGAIN and substitue the new annotations
+            // for any gap. Convert the results to juxta alignments. Remove each
+            // diff and gap as the process goes along rather than keeping multple copies
             List<Alignment> alignments = new ArrayList<Alignment>(this.differences.size());
-            for (Difference diff : this.differences ) {
+            while ( this.differences.size() > 0 ) {
+                Difference diff = this.differences.remove(0);
                 
                 Annotation base = diff.getBase();
                 final Range baseRange = base.getRange();
@@ -307,6 +310,8 @@ public class ComparisonSetCollator extends DiffCollator {
                     jxBase, jxWitness, diff.getEditDistance());
                 alignments.add( align );
             }
+            
+            // create the batch of alignments
             int created =0;
             try {
                 created = ComparisonSetCollator.this.alignmentDao.create(alignments);
@@ -319,6 +324,8 @@ public class ComparisonSetCollator extends DiffCollator {
             }
             
             // wipe out the cached data to be ready for the next round
+            alignments.clear();
+            alignments = null;
             this.differences.clear();
         }
     }
