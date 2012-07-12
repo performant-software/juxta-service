@@ -5,11 +5,15 @@ import org.juxtasoftware.model.Workspace;
 import org.restlet.data.Status;
 import org.restlet.representation.Representation;
 import org.restlet.resource.Delete;
+import org.restlet.resource.Get;
 import org.restlet.resource.ResourceException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 
 /**
  * Server resource for Workspace objects. Allows
@@ -33,6 +37,13 @@ public class WorkspaceResource extends BaseResource {
         if ( this.workspace == null ) {
             setStatus(Status.CLIENT_ERROR_NOT_FOUND, "Workspace "+wsName+" not found");
         }
+    }
+    
+    @Get("json")
+    public Representation toJson() {
+        Gson gson = new Gson();
+        JsonObject jsonObj = gson.toJsonTree(this.workspace).getAsJsonObject(); 
+        return toJsonRepresentation(jsonObj.toString()); 
     }
     
     @Delete
