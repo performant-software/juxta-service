@@ -64,7 +64,7 @@ CREATE TABLE IF NOT EXISTS juxta_witness (
     created DATETIME not null,
     updated DATETIME,
     PRIMARY KEY(id),
-    FOREIGN KEY (source_id) REFERENCES juxta_source (id),
+    FOREIGN KEY (source_id) REFERENCES juxta_source (id) ON DELETE CASCADE,
     FOREIGN KEY (xslt_id) REFERENCES juxta_xslt (id),
     FOREIGN KEY (text_id) REFERENCES text_content (id),
     FOREIGN KEY (workspace_id) REFERENCES juxta_workspace (id) ON DELETE CASCADE,

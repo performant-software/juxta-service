@@ -51,7 +51,7 @@
     
     <!-- workspace resources -->
     <bean name="/juxta/workspace" class="org.juxtasoftware.resource.WorkspacesResource" scope="prototype" autowire="byName" />
-    <bean name="/juxta/workspace/{id}" class="org.juxtasoftware.resource.WorkspaceResource" scope="prototype" autowire="byName" />
+    <bean name="/juxta/workspace/{name}" class="org.juxtasoftware.resource.WorkspaceResource" scope="prototype" autowire="byName" />
     
     <!-- import -->
     <bean name="/juxta/{workspace}/import" class="org.juxtasoftware.resource.Importer" scope="prototype" autowire="byName" />
