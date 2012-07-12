@@ -6,10 +6,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang.StringEscapeUtils;
-import org.juxtasoftware.dao.ComparisonSetDao;
 import org.juxtasoftware.dao.JuxtaXsltDao;
 import org.juxtasoftware.dao.WitnessDao;
-import org.juxtasoftware.model.ComparisonSet;
 import org.juxtasoftware.model.JuxtaXslt;
 import org.juxtasoftware.model.Usage;
 import org.juxtasoftware.model.Witness;
@@ -45,7 +43,6 @@ public class WitnessResource extends BaseResource {
     private Witness witness = null;
     private Range range = null;
     
-    @Autowired private ComparisonSetDao setDao;
     @Autowired private WitnessDao witnessDao;
     @Autowired private JuxtaXsltDao xsltDao;
 
@@ -157,22 +154,10 @@ public class WitnessResource extends BaseResource {
     public Representation deleteWitness() {   
         LOG.info("Delete witness "+this.witness.getId());
         
-        // get a list of all uses of this witness.
-        // Mark sets as NOT collated, clear their collation cache and remove all alignments
-        LOG.info("Get "+this.witness+" USAGE");
-        List<Usage> usage = this.witnessDao.getUsage(this.witness);
-        for (Usage u : usage) {
-            if ( u.getType().equals(Usage.Type.COMPARISON_SET)) {
-                ComparisonSet set = this.setDao.find(u.getId());
-                LOG.info("Clear "+this.witness+" "+set+" colltion data");
-                this.setDao.clearCollationData(set);
-            }
-        }
-
-        // delete the witness (this will cascade delete 
-        // from all sets that were using it)
+        // delete the witness  - this will schedule deletion of all
+        // witness text, annotations and sets collation data that used it
         LOG.info("DELETE "+this.witness);
-        this.witnessDao.delete( witness ); 
+        List<Usage> usage = this.witnessDao.delete( witness ); 
         JuxtaXslt xslt = this.xsltDao.find( this.witness.getXsltId() );
         try {
             this.xsltDao.delete( xslt );

@@ -15,7 +15,29 @@ import eu.interedition.text.Text;
 /**
  * Witness DAO - lookup witness data by set or name. Access to content stream
  */
-public interface WitnessDao extends JuxtaDao<Witness> {
+public interface WitnessDao  {
+    
+    /**
+     * Create a new witness
+     * @param w
+     * @return
+     */
+    Long create(final Witness w);
+    
+    /**
+     * Find a witness by it ID
+     * @param id
+     * @return
+     */
+    Witness find(final Long id);
+    
+    /**
+     * Delete the specified witness and return a list of items
+     * that are affected by the deletion
+     * @param wit
+     * @return
+     */
+    List<Usage> delete( final Witness wit );
     
     /**
      * Update the witness content

@@ -6,23 +6,31 @@ import java.io.Reader;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.juxtasoftware.dao.ComparisonSetDao;
 import org.juxtasoftware.dao.WitnessDao;
 import org.juxtasoftware.model.ComparisonSet;
+import org.juxtasoftware.model.ComparisonSet.Status;
 import org.juxtasoftware.model.RevisionInfo;
 import org.juxtasoftware.model.Usage;
 import org.juxtasoftware.model.Witness;
 import org.juxtasoftware.model.Workspace;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.dao.support.DataAccessUtils;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
+import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.stereotype.Repository;
 
 import eu.interedition.text.Range;
@@ -38,24 +46,39 @@ import eu.interedition.text.rdbms.RelationalTextRepository;
  *
  */
 @Repository
-public class WitnessDaoImpl extends JuxtaDaoImpl<Witness> implements WitnessDao {
+public class WitnessDaoImpl implements WitnessDao, InitializingBean {
 
+    protected SimpleJdbcInsert insert;
+    private String tableName;
+    @Autowired ComparisonSetDao setDao;
     @Autowired TextRepository textRepository;
+    @Autowired @Qualifier("executor") private TaskExecutor taskExecutor;
+    @Autowired private JdbcTemplate jdbcTemplate;
     
     public WitnessDaoImpl() {
-        super("juxta_witness");
+        this.tableName = "juxta_witness";
+    }
+    
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        this.insert = new SimpleJdbcInsert(this.jdbcTemplate).withTableName(tableName).usingGeneratedKeyColumns("id");
+    }
+
+    @Override
+    public Long create(Witness w) {
+        return insert.executeAndReturnKey(toInsertData(w)).longValue();
     }
     
     @Override
     public void rename(final Witness witness, final String newName) {
         final String sql = "update "+this.tableName+" set name = ? where id = ?";
-        this.jt.update(sql, newName, witness.getId());
+        this.jdbcTemplate.update(sql, newName, witness.getId());
     }
     
     @Override
     public void updateContent(final Witness witness, final Text newContent) {
         String sql = "update "+this.tableName+" set text_id=?, updated=? where id=?";
-        this.jt.update(sql, 
+        this.jdbcTemplate.update(sql, 
             ((RelationalText)newContent).getId(),
             new Date(),
             witness.getId() );
@@ -64,7 +87,7 @@ public class WitnessDaoImpl extends JuxtaDaoImpl<Witness> implements WitnessDao 
     @Override
     public Reader getContentStream(Witness witness) {
         final String sql = "select content from text_content where id=?";
-        return DataAccessUtils.uniqueResult( this.jt.query(sql, new RowMapper<Reader>(){
+        return DataAccessUtils.uniqueResult( this.jdbcTemplate.query(sql, new RowMapper<Reader>(){
             @Override
             public Reader mapRow(ResultSet rs, int rowNum) throws SQLException {
                 return rs.getCharacterStream("content");
@@ -75,16 +98,44 @@ public class WitnessDaoImpl extends JuxtaDaoImpl<Witness> implements WitnessDao 
     public List<Witness> list( final Workspace ws) {
         StringBuilder sql = getSqlBuilder();
         sql.append(" where workspace_id=? order by created desc, updated desc");
-        return jt.query(sql.toString(), new WitnessMapper(), ws.getId());
+        return jdbcTemplate.query(sql.toString(), new WitnessMapper(), ws.getId());
     }
     
     @Override
-    public void delete(Witness obj) {
-        this.jt.update("delete from "+this.tableName+" where id = ?", obj.getId());
-        this.textRepository.delete(obj.getText());
+    public List<Usage> delete(final Witness witness) {
+        // get a list of all uses of this witness.
+        // Mark sets as NOT collated, clear their collation cache and remove all
+        // alignments
+        final List<Usage> usage = getUsage(witness);
+        final Text delText = witness.getText();
+
+        // immediately delete the witness. This is quick, but orphans
+        // a bunch of data - data that can take a long time to delete.
+        // Push this extra deletion into a worker thread.
+        this.jdbcTemplate.update("delete from " + this.tableName + " where id = ?", witness.getId());
+        final List<ComparisonSet> sets = new ArrayList<ComparisonSet>();
+        for (Usage u : usage) {
+            if (u.getType().equals(Usage.Type.COMPARISON_SET)) {
+                ComparisonSet set = setDao.find(u.getId());
+                set.setStatus(Status.NOT_COLLATED);
+                this.setDao.update(set);
+                sets.add(set);
+            }
+        }
+
+        this.taskExecutor.execute(new Runnable() {
+            @Override
+            public void run() {
+                WitnessDaoImpl.this.textRepository.delete(delText);
+                for (ComparisonSet set : sets) {
+                    setDao.clearCollationData(set);
+                }
+            }
+        });
+
+        return usage;
     }
 
-    @Override
     protected SqlParameterSource toInsertData(Witness object) {
         final MapSqlParameterSource ps = new MapSqlParameterSource();
         ps.addValue("name", object.getName());
@@ -104,21 +155,21 @@ public class WitnessDaoImpl extends JuxtaDaoImpl<Witness> implements WitnessDao 
         sql.append(" join juxta_comparison_set_member csm on csm.witness_id = w.id");
         sql.append(" where csm.set_id = ?");
         return new HashSet<Witness>( 
-            this.jt.query(sql.toString(), new WitnessMapper(), set.getId()));
+            this.jdbcTemplate.query(sql.toString(), new WitnessMapper(), set.getId()));
     }
     
     @Override
     public Witness find(Workspace ws, String title) {
         StringBuilder sql = getSqlBuilder();
         sql.append(" where w.workspace_id = ? and w.name = ?");
-        return DataAccessUtils.uniqueResult( this.jt.query(sql.toString(), 
+        return DataAccessUtils.uniqueResult( this.jdbcTemplate.query(sql.toString(), 
             new WitnessMapper(), ws.getId(), title));
     }
     
     @Override
     public boolean exists( final Workspace ws, final String title) {
         final String sql = "select count(*) as cnt from " +this.tableName+ " where workspace_id=? and name=?";
-        int cnt = this.jt.queryForInt(sql, ws.getId(), title);
+        int cnt = this.jdbcTemplate.queryForInt(sql, ws.getId(), title);
         return ( cnt > 0);
     }
     
@@ -127,7 +178,7 @@ public class WitnessDaoImpl extends JuxtaDaoImpl<Witness> implements WitnessDao 
         StringBuilder sql = getSqlBuilder();
         sql.append(" join juxta_comparison_set_member csm on csm.witness_id = w.id");
         sql.append(" where csm.set_id = ? and w.name = ?");
-        return DataAccessUtils.uniqueResult( this.jt.query(sql.toString(), 
+        return DataAccessUtils.uniqueResult( this.jdbcTemplate.query(sql.toString(), 
             new WitnessMapper(), set.getId(), title));
     }
     
@@ -149,13 +200,13 @@ public class WitnessDaoImpl extends JuxtaDaoImpl<Witness> implements WitnessDao 
         StringBuilder sql = getSqlBuilder();
         sql.append(" where w.id = ?");
         return DataAccessUtils.uniqueResult(
-                this.jt.query(sql.toString(), new WitnessMapper(), id));
+                this.jdbcTemplate.query(sql.toString(), new WitnessMapper(), id));
     }
     
     @Override
     public void clearRevisions(Witness witness) {
         final String sql = "delete from juxta_revision where witness_id=?";
-        this.jt.update(sql, witness.getId());
+        this.jdbcTemplate.update(sql, witness.getId());
     }
     
     @Override
@@ -167,7 +218,7 @@ public class WitnessDaoImpl extends JuxtaDaoImpl<Witness> implements WitnessDao 
         sql.append("insert into juxta_revision");
         sql.append(" (witness_id, revision_type, start, end, is_included, content)");
         sql.append(" values (?,?,?,?,?,?)");
-        this.jt.batchUpdate(sql.toString(), new BatchPreparedStatementSetter() {
+        this.jdbcTemplate.batchUpdate(sql.toString(), new BatchPreparedStatementSetter() {
 
                 @Override
                 public void setValues(PreparedStatement ps, int i) throws SQLException {
@@ -190,7 +241,7 @@ public class WitnessDaoImpl extends JuxtaDaoImpl<Witness> implements WitnessDao 
     @Override
     public boolean hasRevisions(final Witness witness) {
         final String sql ="select count(*) as cnt from juxta_revision where witness_id=?"; 
-        int cnt = this.jt.queryForInt(sql, witness.getId());
+        int cnt = this.jdbcTemplate.queryForInt(sql, witness.getId());
         return ( cnt > 0);
     }
     
@@ -199,7 +250,7 @@ public class WitnessDaoImpl extends JuxtaDaoImpl<Witness> implements WitnessDao 
         StringBuilder sql = new StringBuilder();
         sql.append("select id,witness_id,revision_type,start,end,content,is_included"); 
         sql.append(" from juxta_revision where witness_id=?");
-        return this.jt.query(sql.toString(), new RowMapper<RevisionInfo>(){
+        return this.jdbcTemplate.query(sql.toString(), new RowMapper<RevisionInfo>(){
 
             @Override
             public RevisionInfo mapRow(ResultSet rs, int rowNum) throws SQLException {
@@ -216,7 +267,7 @@ public class WitnessDaoImpl extends JuxtaDaoImpl<Witness> implements WitnessDao 
         String setSql = "select distinct set_id,name from juxta_comparison_set_member " +
             "inner join juxta_comparison_set on juxta_comparison_set.id = set_id " +
             "where witness_id =?";
-        List<Usage> usage = this.jt.query(setSql, new RowMapper<Usage>(){
+        List<Usage> usage = this.jdbcTemplate.query(setSql, new RowMapper<Usage>(){
             @Override
             public Usage mapRow(ResultSet rs, int rowNum) throws SQLException {
                 return new Usage(Usage.Type.COMPARISON_SET, rs.getLong("set_id"), rs.getString("name"));
@@ -226,7 +277,7 @@ public class WitnessDaoImpl extends JuxtaDaoImpl<Witness> implements WitnessDao 
         
         // include the source (that we already know) that was used to generate this witness
         String nmSql = "select name from juxta_source where id=?";
-        String srcName = this.jt.queryForObject(nmSql, String.class, witness.getSourceId());
+        String srcName = this.jdbcTemplate.queryForObject(nmSql, String.class, witness.getSourceId());
         usage.add( new Usage(Usage.Type.SOURCE, witness.getSourceId(), srcName));
         return usage;
     }
