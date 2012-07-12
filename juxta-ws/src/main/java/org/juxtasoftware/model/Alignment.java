@@ -21,6 +21,12 @@ public class Alignment {
     private int group;
     private boolean manual = false;
     
+    // NOTE: rough size of alignment object has been determined to be 5600 bytes
+    // Determination was rough; dump bytes free, query a range of aligments
+    // get difference in bytes free and divide by alignment count. Average size
+    // was about  5600 bytes. Over estimate here for a bit of safety.
+    public static final long AVG_SIZE_BYTES = 7500;
+    
     private Map<Long, AlignedAnnotation> annotations = new HashMap<Long, Alignment.AlignedAnnotation>();
     
     public Alignment() {

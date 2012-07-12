@@ -35,6 +35,7 @@ import org.juxtasoftware.resource.BaseResource;
 import org.juxtasoftware.util.QNameFilters;
 import org.juxtasoftware.util.ftl.FileDirective;
 import org.juxtasoftware.util.ftl.HeatmapStreamDirective;
+import org.restlet.data.Status;
 import org.restlet.representation.Representation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -98,11 +99,20 @@ public class HeatmapView  {
             baseWitnessId = Long.parseLong(baseId);
         }
         
-        // Get all witness (and changeIndex) info. Pick out the base
+        // Get all witness (and changeIndex) info.
         Set<Witness> setWitnesses = this.setDao.getWitnesses(set);
         if ( setWitnesses.size() < 2) {
             return this.parent.toTextRepresentation("This set contains less than two witnesess. Unable to view heatmap.");
         }
+        
+        
+        if ( willOverrunMemory( set, baseWitnessId) ) {
+            this.parent.setStatus(Status.SERVER_ERROR_INSUFFICIENT_STORAGE);
+            return this.parent.toTextRepresentation(
+                "This comparison set it too large to visualize. Try breaking large witnesses up into smaller segments.");
+        }
+        
+        // pick out base witness
         List<SetWitness> witnesses = getWitnessInfo( set, setWitnesses, baseWitnessId );
         Witness base = null;
         for ( SetWitness w : witnesses ) {
@@ -147,6 +157,24 @@ public class HeatmapView  {
         return this.parent.toHtmlRepresentation("heatmap.ftl", map);
     }
     
+    private boolean willOverrunMemory(ComparisonSet set, Long baseWitnessId) {
+        
+        // set up a filter to get the annotations necessary for this histogram
+        QNameFilter changesFilter = this.filters.getDifferencesFilter();
+        AlignmentConstraint constraints = new AlignmentConstraint(set, baseWitnessId);
+        constraints.setFilter(changesFilter);
+        
+        // Get the number of annotations that will be returned and do a rough calcuation
+        // to see if generating this visuzlization will exhaust available memory - with a 5M pad
+        final Long count = this.alignmentDao.count(constraints);
+        final long estimatedByteUsage = count*Alignment.AVG_SIZE_BYTES;
+        final long bytesFree = Runtime.getRuntime().freeMemory();
+        if ( (bytesFree - estimatedByteUsage) / 1048576 <= 5) {
+            return true;
+        }
+        return false;
+    }
+
     private List<SetWitness> getWitnessInfo( ComparisonSet set, Set<Witness> setWitnesses, Long baseWitnessId ) {
         List<SetWitness> out = new ArrayList<SetWitness>();
         List<Witness> witnesses = new ArrayList<Witness>(setWitnesses);

@@ -95,6 +95,12 @@ public class SideBySideView implements FileDirectiveListener  {
             return parent.toHtmlRepresentation(sbsReader);
         }
         
+        if ( willOverrunMemory( set, witnessIds[0], witnessIds[1]) ) {
+            this.parent.setStatus(Status.SERVER_ERROR_INSUFFICIENT_STORAGE);
+            return this.parent.toTextRepresentation(
+                "This comparison set it too large to visualize. Try breaking large witnesses up into smaller segments.");
+        }
+        
         // get witnesses for each ID and initialize the changes map
         for ( int i=0; i<witnessIds.length; i++ ) {
             Witness w = this.witnessDao.find(witnessIds[i]);
@@ -151,6 +157,25 @@ public class SideBySideView implements FileDirectiveListener  {
         // This is usually in /etc/my.cnf. The setting to add is: max_allowed_packet=8M (or whaterver size)
         this.cacheDao.cacheSideBySide(set.getId(), witnessIds[0], witnessIds[1], sbsFtl.getReader());
         return parent.toHtmlRepresentation( this.cacheDao.getSideBySide(set.getId(),  witnessIds[0], witnessIds[1]));       
+    }
+    
+    private boolean willOverrunMemory(ComparisonSet set, Long wit1, Long wit2) {
+        
+        QNameFilter changesFilter = this.filters.getDifferencesFilter();
+        AlignmentConstraint constraints = new AlignmentConstraint(set);
+        constraints.addWitnessIdFilter( wit1 );
+        constraints.addWitnessIdFilter( wit2 );
+        constraints.setFilter(changesFilter);
+        
+        // Get the number of annotations that will be returned and do a rough calcuation
+        // to see if generating this visuzlization will exhaust available memory - with a 5M pad
+        final Long count = this.alignmentDao.count(constraints);
+        final long estimatedByteUsage = count*Alignment.AVG_SIZE_BYTES;
+        final long bytesFree = Runtime.getRuntime().freeMemory();
+        if ( (bytesFree - estimatedByteUsage) / 1048576 <= 5) {
+            return true;
+        }
+        return false;
     }
 
     @Override

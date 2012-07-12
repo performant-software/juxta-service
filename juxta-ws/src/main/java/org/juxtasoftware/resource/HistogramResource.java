@@ -98,12 +98,6 @@ public class HistogramResource extends BaseResource {
             }
         }
         
-        // NOTE: rough size of alignment object has been determined to be 5600 bytes
-        // Determination was rough; dump bytes free, query a range of aligments
-        // get difference in bytes free and divide by alignment count. Average size
-        // was about  5600 bytes. Over estimate here for a bit of safety.
-        final long estimatedAlignmentSize = 7500;
-        
         long bytesFree = Runtime.getRuntime().freeMemory();
         LOG.info("["+bytesFree+"] bytes free at start of histogram request");
         
@@ -115,7 +109,7 @@ public class HistogramResource extends BaseResource {
         // Get the number of annotations that will be returned and do a rough calcuation
         // to see if generating this histogram will exhaust available memory - with a 5M pad
         Long count = this.alignmentDao.count(constraints);
-        long estimatedByteUsage = count*estimatedAlignmentSize + base.getText().getLength();
+        long estimatedByteUsage = count*Alignment.AVG_SIZE_BYTES + base.getText().getLength();
         if ( (bytesFree - estimatedByteUsage) / 1048576 <= 5) {
             setStatus(Status.SERVER_ERROR_INSUFFICIENT_STORAGE);
             return toTextRepresentation("Insufficient resources to create histogram. Try again later.");
