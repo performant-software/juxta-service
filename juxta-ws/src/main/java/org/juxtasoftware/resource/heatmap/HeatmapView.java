@@ -60,6 +60,7 @@ public class HeatmapView  {
     @Autowired private HeatmapStreamDirective heatmapDirective;
     @Autowired private ApplicationContext context;
     
+    private List<Alignment> alignments;
     private BaseResource parent;
     private int minimumEditDistance = 0;
 
@@ -189,13 +190,12 @@ public class HeatmapView  {
             baseWitnessId = witnesses.get(0).getId();
         }
 
-        // get all alignments for this set and add up diff length
-        // for each annotaion
+        // get all alignments for this set and add up diff length for each annotaion
         QNameFilter changesFilter = this.filters.getDifferencesFilter();
         AlignmentConstraint constraints = new AlignmentConstraint(set, baseWitnessId);
         constraints.setFilter(changesFilter);
-        List<Alignment> diffList = this.alignmentDao.list(constraints);
-        for ( Alignment align : diffList ) {
+        this.alignments = this.alignmentDao.list(constraints);
+        for ( Alignment align : this.alignments ) {
             long longestDiff = -1;
             Long witnessId = null;
             for (AlignedAnnotation aa : align.getAnnotations() ) {
@@ -350,20 +350,13 @@ public class HeatmapView  {
     }    
 
     private List<Change> generateHeatmapChangelist( final ComparisonSet set, final Witness base, final List<SetWitness> witnesses ) {
-
-        // get all of the alignments and sort them in ascending
-        // range relative to the base witness
-        QNameFilter changesFilter = this.filters.getDifferencesFilter();
-        AlignmentConstraint constraints = new AlignmentConstraint(set, base.getId());
-        constraints.setFilter(changesFilter);
-        List<Alignment> diffList = this.alignmentDao.list(constraints);
         
         // if there are no differences, there is nothing to do.Bail early
-        if ( diffList.size() == 0) {
+        if ( this.alignments.size() == 0) {
             return new ArrayList<Change>();
         }
         
-        Collections.sort(diffList, new Comparator<Alignment>() {
+        Collections.sort(this.alignments, new Comparator<Alignment>() {
             @Override
             public int compare(Alignment a, Alignment b) {
                 // NOTE: There is a bug in interedition Range. It will
@@ -390,7 +383,7 @@ public class HeatmapView  {
         long changeIdx = 0;
         Map<Range, Change> changeMap = new HashMap<Range, Change>();
         List<Change> changes = new ArrayList<Change>();
-        for ( Alignment align : diffList ) {
+        for ( Alignment align : this.alignments ) {
             
             // the heatmap is from the perspective of the BASE
             // text, so only care about annotations that refer to it
