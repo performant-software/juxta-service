@@ -302,17 +302,21 @@ public class SourceResource extends BaseResource  {
     public Representation remove() {
         LOG.info("Delete source "+source.getId());
         
-        // get a list of all uses of this source. Comparison
-        // set uses need special treatment; mark them as NOT collated,
-        // clear their collation cache and remove all alignments
+        // Get a list of all uses of this source
         List<Usage> usage = this.sourceDao.getUsage(this.source);
         Set<JuxtaXslt> xslts = new HashSet<JuxtaXslt>();
         for (Usage u : usage) {
             // Manually delete the witness. This is necessary
             // cuz witness content is stored in the text_content area
-            // and will not cascade delete itself.
+            // and will not cascade delete itself. 
             if ( u.getType().equals(Usage.Type.WITNESS)) {
                 Witness w = this.witnessDao.find(u.getId());
+                
+                // NOTE: This will delete the witness immediately and mark
+                // all comparison sets that use it as NOT_COLLATED. It will
+                // kick off a worker thread to do two things: 
+                //    1 - clear all collation data for related sets
+                //    2 - wipe out the text_content for the witness
                 this.witnessDao.delete(w);
                 
                 // save the XSLTs to delete later. This is necessary in the
@@ -322,11 +326,7 @@ public class SourceResource extends BaseResource  {
                 if ( xslt != null ) {
                     xslts.add(xslt);
                 }
-            } else if ( u.getType().equals(Usage.Type.COMPARISON_SET)) {
-                // set must have all of its collation data reset
-                ComparisonSet set = this.setDao.find( u.getId());
-                this.setDao.clearCollationData(set);
-            }
+            } 
         }
         
         // Once everything else is gone, clear out the XSLT
@@ -334,8 +334,8 @@ public class SourceResource extends BaseResource  {
             this.xsltDao.delete(xslt);
         }
 
-        this.sourceDao.delete(this.source);
-        
+        // LASTLY, delete the source itself
+        this.sourceDao.delete(this.source);        
         
         Gson gson = new Gson();
         return toJsonRepresentation( gson.toJson(usage));
