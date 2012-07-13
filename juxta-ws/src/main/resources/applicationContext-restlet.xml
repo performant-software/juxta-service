@@ -32,7 +32,6 @@
     <bean id="juxtaWsAppliction" class="org.juxtasoftware.JuxtaWsApplication">
         <property name="router" ref="juxtaRouter"/>
         <property name="requestFilter" ref="filter" />
-        <property name="useAuthenticator" ref="useAuthenticator"/>
         <property name="statusService" ref="statusService" />
     </bean>
   

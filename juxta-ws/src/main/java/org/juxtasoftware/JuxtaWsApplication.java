@@ -10,16 +10,16 @@ import org.restlet.resource.Directory;
 import org.restlet.routing.Router;
 import org.restlet.security.ChallengeAuthenticator;
 import org.restlet.security.MapVerifier;
+import org.springframework.beans.factory.annotation.Autowired;
 
 public class JuxtaWsApplication extends Application {
-    private boolean useAuthenticator;
+    @Autowired private Boolean useAuthenticator;
+    @Autowired private String authenticatorUser;
+    @Autowired private String authenticatorPass;
+    
     private RequestFilter requestFilter;
     private ChallengeAuthenticator authenticator;
     private Router router;
-    
-    public void setUseAuthenticator( boolean useAuth ) {
-        this.useAuthenticator = useAuth;
-    }
     
     public void setRequestFilter( RequestFilter filter ) {
         this.requestFilter = filter;
@@ -42,7 +42,7 @@ public class JuxtaWsApplication extends Application {
         if ( this.useAuthenticator ) {
             // Create a simple password verifier  
             MapVerifier verifier = new MapVerifier();
-            verifier.getLocalSecrets().put("juxta", "juxta!@l0g1n!".toCharArray());
+            verifier.getLocalSecrets().put(this.authenticatorUser, this.authenticatorPass.toCharArray());
 
             // ... and use it to create an OPTIONAL challenge authenticator
             // It is optional to allow free access to the JS ad CSS files

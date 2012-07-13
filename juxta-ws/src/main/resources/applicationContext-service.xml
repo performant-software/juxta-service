@@ -53,7 +53,18 @@
     </bean>
     
     <!-- property to set usage ChallengeAuthenticator for all requests -->
-    <bean id="useAuthenticator" class="java.lang.String" factory-method="valueOf">
+    <bean id="useAuthenticator" class="java.lang.Boolean" factory-method="valueOf">
         <constructor-arg value="${juxta.enable.authenticator}" />
+    </bean>
+    <bean id="authenticatorUser" class="java.lang.String" factory-method="valueOf">
+        <constructor-arg value="${juxta.authenticator.user}" />
+    </bean>
+    <bean id="authenticatorPass" class="java.lang.String" factory-method="valueOf">
+        <constructor-arg value="${juxta.authenticator.password}" />
+    </bean>
+    
+    <!-- property to set max source size limit -->
+    <bean id="maxSourceSize" class="java.lang.Long" factory-method="valueOf">
+        <constructor-arg value="${juxta.source.max}" />
     </bean>
 </beans>
