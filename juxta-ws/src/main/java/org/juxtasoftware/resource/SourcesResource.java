@@ -17,6 +17,7 @@ import java.util.Map;
 import javax.xml.stream.XMLStreamException;
 
 import org.apache.commons.fileupload.FileItem;
+import org.apache.commons.fileupload.FileUploadBase.FileSizeLimitExceededException;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.methods.GetMethod;
@@ -50,6 +51,9 @@ import com.google.gson.JsonSerializer;
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
 public class SourcesResource extends BaseResource {
     @Autowired private SourceDao sourceDao;
+    
+    // Limit all source uploads to 1MB max
+    private static final int MAX_FILE_SIZE = 1024*1024;
 
     /**
      * Get Json representation of all available sources
@@ -119,7 +123,7 @@ public class SourcesResource extends BaseResource {
             return toJsonRepresentation( gson.toJson(idList) );
         } catch (Exception e) {
             setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
-            return toTextRepresentation( "Unable to create source(s): "+e.toString() );
+            return toTextRepresentation( e.getMessage() );
         }
     }
 
@@ -169,6 +173,12 @@ public class SourcesResource extends BaseResource {
         try {
             // create the source
             idList.add(createSource(sourceName, MediaType.valueOf(contentType), srcInputStream));
+        } catch ( FileSizeLimitExceededException e ) {
+            setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
+            final String out = "Source size is "+e.getActualSize()/1024+
+                "K.\nThis exceeds the Juxta size limit of "+MAX_FILE_SIZE/1024+"K.\n\n"+
+                "Try breaking the source into smaller segments and re-submitting.";
+            return toTextRepresentation(out);
         } catch (IOException e) {
             setStatus(Status.SERVER_ERROR_INTERNAL);
             return toTextRepresentation("Unable to import source: " + e.getMessage());
@@ -221,6 +231,13 @@ public class SourcesResource extends BaseResource {
     }
     
     private Long createSourceFromRawData(final String name, final String data, final String contentType) throws Exception {
+        if ( data.length() > MAX_FILE_SIZE ) {
+            String err = "Source size is "+data.length()/1024+
+                "K.\nThis exceeds the Juxta size limit of "+MAX_FILE_SIZE/1024+"K.\n\n"+
+                "Try breaking the source into smaller segments and re-submitting.";
+            throw new Exception(err);
+        }
+        
         if ( contentType.equalsIgnoreCase("txt")) {
             File fixed = EncodingUtils.fixEncoding( new ByteArrayInputStream(data.getBytes()), false );
             Long id = this.sourceDao.create(this.workspace, name, false, new FileReader(fixed));
@@ -246,6 +263,14 @@ public class SourcesResource extends BaseResource {
             }
             boolean isXml =  contentType.equalsIgnoreCase("xml");
             File fixed = EncodingUtils.fixEncoding( get.getResponseBodyAsStream(), isXml );
+            
+            if ( fixed.length() > MAX_FILE_SIZE ) {
+                String err = "Source size is "+fixed.length()/1024+
+                    "K.\nThis exceeds the Juxta size limit of "+MAX_FILE_SIZE/1024+"K.\n\n"+
+                    "Try breaking the source into smaller segments and re-submitting.";
+                throw new Exception(err);
+            }
+            
             Long id = this.sourceDao.create(this.workspace, name, isXml, new FileReader(fixed) );
             fixed.delete();
             return id;
@@ -268,10 +293,13 @@ public class SourcesResource extends BaseResource {
     }
 
 
-    private Long createSource(final String sourceName, final MediaType contentType, InputStream srcInputStream) throws IOException, XMLStreamException {
+    private Long createSource(final String sourceName, final MediaType contentType, InputStream srcInputStream) throws IOException, XMLStreamException, FileSizeLimitExceededException {
         if ( MediaType.TEXT_XML.isCompatible( contentType ) ) {
             LOG.info("Accepting XML source document");
             File fixed = EncodingUtils.fixEncoding(srcInputStream, true);
+            if ( fixed.length() > MAX_FILE_SIZE ) {
+                throw new FileSizeLimitExceededException(sourceName+" too big",fixed.length(), MAX_FILE_SIZE);
+            }
             Long id =  this.sourceDao.create(this.workspace, sourceName, true, new FileReader(fixed));
             fixed.delete();
             return id;

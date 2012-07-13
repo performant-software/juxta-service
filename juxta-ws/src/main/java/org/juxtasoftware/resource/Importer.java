@@ -55,7 +55,7 @@ public class Importer extends BaseResource  {
     private Action action;
     private Long setId = null;
     private boolean overwrite = false;
-    private ApplicationContext context;
+    @Autowired private ApplicationContext context;
     @Autowired private TaskManager taskManager;
     @Autowired private ComparisonSetDao setDao;
     @Autowired private WitnessDao witnessDao;
