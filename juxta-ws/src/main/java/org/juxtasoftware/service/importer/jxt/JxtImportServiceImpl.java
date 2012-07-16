@@ -53,6 +53,8 @@ import org.juxtasoftware.util.EncodingUtils;
 import org.juxtasoftware.util.NamespaceExtractor;
 import org.juxtasoftware.util.NamespaceExtractor.NamespaceInfo;
 import org.juxtasoftware.util.NamespaceExtractor.XmlType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.Scope;
@@ -99,6 +101,7 @@ public class JxtImportServiceImpl implements ImportService<InputStream> {
     private ComparisonSet set;
     private BackgroundTaskStatus taskStatus;
     private BackgroundTaskSegment taskSegment;
+    protected static final Logger LOG = LoggerFactory.getLogger( "JxtImportService" );
     
 
     /**
@@ -130,16 +133,20 @@ public class JxtImportServiceImpl implements ImportService<InputStream> {
             
             // parse the manifest found in the unzipped
             // directory into a list of source data
+            LOG.info("Parsing manifest");
             List<SourceInfo> sources = parseManifest(sessionDataDir);
             
             // parse out any transpositions
+            LOG.info("Parsing moves");
             List<JxtMoveInfo> moves = parseMoves(sessionDataDir);
             
             // Grab the associated templates and parse them out into a map.
             // this map is held internally in the template parser.
+            LOG.info("Parsing templates");
             parseTemplates(sessionDataDir);
                       
             // combine all of this data into the comparison set
+            LOG.info("Create set");
             prepareSet( );
             populateSet( sources, moves );
             
@@ -188,7 +195,7 @@ public class JxtImportServiceImpl implements ImportService<InputStream> {
     
     private void addTranspositions(List<JxtMoveInfo> moves) {
         this.taskStatus.setNote("Adding Transpositions");
-        
+        LOG.info("Adding Transpositions");
         List<Alignment> moveLinks = new ArrayList<Alignment>();
         for ( JxtMoveInfo move : moves ) {
             Alignment link = new Alignment();
@@ -198,6 +205,11 @@ public class JxtImportServiceImpl implements ImportService<InputStream> {
             
             for ( String title : move.getWitnessTitles() ) {
                 Witness witness = this.witnessDao.find(this.set, title);
+                if ( witness == null ) {
+                    LOG.error("Unable to import moves. Witness "+title+" not found");
+                    this.taskSegment.incrementValue();
+                    return;
+                }
                 JuxtaAnnotation anno = new JuxtaAnnotation(witness, Constants.TRANSPOSITION_NAME, move.getWitnessRange(title) );
                 Long annoId = this.annotationDao.create(anno);
                 AlignedAnnotation aa =  new AlignedAnnotation(anno.getName(), witness.getId(), annoId, anno.getRange());
