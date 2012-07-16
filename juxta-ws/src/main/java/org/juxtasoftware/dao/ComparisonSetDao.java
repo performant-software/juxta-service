@@ -27,6 +27,8 @@ public interface ComparisonSetDao extends JuxtaDao<ComparisonSet> {
     void deleteAllWitnesses( final ComparisonSet set );
     void deleteWitness( final ComparisonSet set, final Witness witness );
     boolean isWitness( final ComparisonSet set, final Witness witness );
+    void setTokenzedLength(final ComparisonSet set, final Witness witness, final long tokenizedLength );
+    long getTokenzedLength(final ComparisonSet set, final Witness witness );
     
     // collation reset
     void clearCollationData( final ComparisonSet set);

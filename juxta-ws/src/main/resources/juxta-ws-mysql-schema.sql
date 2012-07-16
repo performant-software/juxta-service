@@ -120,6 +120,7 @@ CREATE TABLE IF NOT EXISTS juxta_collator_config (
 CREATE TABLE IF NOT EXISTS juxta_comparison_set_member (
     set_id BIGINT NOT NULL,
     witness_id BIGINT NOT NULL,
+    tokenized_length BIGINT NOT NULL default 0,
 	UNIQUE (set_id, witness_id),
     FOREIGN KEY (set_id) REFERENCES juxta_comparison_set (id) ON DELETE CASCADE,
     FOREIGN KEY (witness_id) REFERENCES juxta_witness (id) ON DELETE CASCADE

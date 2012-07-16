@@ -90,6 +90,18 @@ public class ComparisionSetDaoImpl extends JuxtaDaoImpl<ComparisonSet> implement
     }
     
     @Override
+    public void setTokenzedLength(ComparisonSet set, Witness witness, long tokenizedLength) {
+        final String sql = "update "+SET_MEMBER_TABLE+" set tokenized_length=? where set_id=? and witness_id=?";
+        this.jt.update(sql, tokenizedLength, set.getId(), witness.getId());
+    }
+    
+    @Override
+    public long getTokenzedLength(ComparisonSet set, Witness witness) {
+        final String sql = "select tokenized_length from "+SET_MEMBER_TABLE+" where set_id=? and witness_id=?";
+        return this.jt.queryForLong(sql, set.getId(), witness.getId());
+    }
+    
+    @Override
     public List<Usage> getUsage(ComparisonSet set) {
         Set<Witness> witnesses = getWitnesses(set);
         List<Usage> usage = new ArrayList<Usage>();

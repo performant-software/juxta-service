@@ -185,7 +185,6 @@ public class HeatmapView  {
         return (estimatedByteUsage > Runtime.getRuntime().freeMemory());
     }
 
-        // TODO this is terrible!! Sucks way too much in memory
     private List<SetWitness> calculateChangeIndex( final ComparisonSet set, final List<Witness> witnesses, final Long baseWitnessId ) {
         List<SetWitness> out = new ArrayList<SetWitness>();
         Map<Long, Long> witnessDiffLen = new HashMap<Long, Long>();
@@ -223,15 +222,21 @@ public class HeatmapView  {
         // and sum up their lengths. Done this way because
         // all alignments are tied to tokens. If the basic
         // Text length was used, the data would be wrong - tokens 
-        // do not include whitespace/punctuation and text len does
+        // do not include whitespace/punctuation and text len does. 
+        // NOTE: This info should be cached in the comparison set member table. Try 
+        // pulling it from there first. If it is not present, it will have to 
+        // be calculated. Very memory intensive.
         long baseLen = 0;
         for (Witness w : witnesses ) {
             if ( w.getId().equals( baseWitnessId )) {
-                AnnotationConstraint constraint = new AnnotationConstraint( w);
-                constraint.setIncludeText( false );
-                constraint.setFilter( this.filters.getTokensFilter() );
-                for (JuxtaAnnotation token : this.annotationDao.list( constraint ) ) {
-                    baseLen += token.getRange().length();
+                baseLen = this.setDao.getTokenzedLength(set, w);
+                if ( baseLen == 0 ) {
+                    AnnotationConstraint constraint = new AnnotationConstraint( w);
+                    constraint.setIncludeText( false );
+                    constraint.setFilter( this.filters.getTokensFilter() );
+                    for (JuxtaAnnotation token : this.annotationDao.list( constraint ) ) {
+                        baseLen += token.getRange().length();
+                    }
                 }
                 break;
             }
@@ -386,7 +391,10 @@ public class HeatmapView  {
         long changeIdx = 0;
         Map<Range, Change> changeMap = new HashMap<Range, Change>();
         List<Change> changes = new ArrayList<Change>();
-        for ( Alignment align : this.alignments ) {
+        Iterator<Alignment> alignItr = this.alignments.iterator();
+        while ( alignItr.hasNext() ) {
+            Alignment align = alignItr.next();
+            alignItr.remove();
             
             // the heatmap is from the perspective of the BASE
             // text, so only care about annotations that refer to it

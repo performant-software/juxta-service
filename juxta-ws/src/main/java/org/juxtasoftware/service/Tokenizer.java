@@ -64,12 +64,13 @@ public class Tokenizer {
         for (Witness witness : witnesses) {
             taskStatus.setNote("Tokenizing '" + witness.getName() + "'");
             LOG.info("Tokenizing " + witness.getName());
-            tokenize(config, witness);
+            long totalTokenLen = tokenize(config, witness);
+            comparisonSetDao.setTokenzedLength(comparisonSet, witness, totalTokenLen);
             ts.incrementValue();            
         }
     }
     
-    private void tokenize(final CollatorConfig config, final Witness witness) throws IOException {
+    private long tokenize(final CollatorConfig config, final Witness witness) throws IOException {
         // purge any prior tokens for this witness
         final Text text = witness.getText();
         Preconditions.checkNotNull(text);
@@ -78,6 +79,7 @@ public class Tokenizer {
         // do the tokenization
         TokenizingConsumer tc = new TokenizingConsumer(config, witness);
         this.textRepository.read(text, tc);
+        return tc.getTokenizedLength();
     }
     
     
@@ -96,6 +98,7 @@ public class Tokenizer {
         private final boolean filterHyphens;
         private final boolean filterWhitespace;
         private final boolean filterPunctuation;
+        private long tokenizedLength;
         
         public TokenizingConsumer(CollatorConfig cfg, Witness w) {
             this.filterPunctuation = cfg.isFilterPunctuation();
@@ -104,6 +107,10 @@ public class Tokenizer {
             this.filterHyphens = cfg.getHyphenationFilter().equals(HyphenationFilter.FILTER_ALL);
             this.fragment = w.getFragment();
             this.text = w.getText();
+        }
+        
+        public long getTokenizedLength() {
+            return this.tokenizedLength;
         }
         
         private boolean isPunctuation( int c ) {
@@ -258,10 +265,12 @@ public class Tokenizer {
 
         private void joinLastToken(int end) {
             Annotation last = this.tokens.remove( this.tokens.size()-1 );
+            this.tokenizedLength += (end - last.getRange().getEnd());
             this.tokens.add(  new SimpleAnnotation(last.getText(), TOKEN_NAME, new Range(last.getRange().getStart(), end), null) ); 
         }
 
         private void createToken(int start, int end, boolean possbleWordbreak) {
+            this.tokenizedLength += (end - start);
             this.tokens.add(  new SimpleAnnotation(this.text, TOKEN_NAME, new Range(start, end), null) );
             if ( possbleWordbreak == false ) {
                 if ((this.tokens.size() % tokenizationBatchSize ) == 0) {
