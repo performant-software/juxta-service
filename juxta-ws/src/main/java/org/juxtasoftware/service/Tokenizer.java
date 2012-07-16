@@ -59,7 +59,11 @@ public class Tokenizer {
     public void tokenize(ComparisonSet comparisonSet, CollatorConfig config, BackgroundTaskStatus taskStatus) throws IOException {
         final Set<Witness> witnesses = comparisonSetDao.getWitnesses(comparisonSet);
         final BackgroundTaskSegment ts = taskStatus.add(1, new BackgroundTaskSegment(witnesses.size()));
-                
+              
+        taskStatus.setNote("Clearing old tokens");
+        LOG.info("Cleanup collation data ");
+        this.comparisonSetDao.clearCollationData(comparisonSet);
+        
         taskStatus.setNote("Tokenizing " + comparisonSet);
         for (Witness witness : witnesses) {
             taskStatus.setNote("Tokenizing '" + witness.getName() + "'");
@@ -280,7 +284,9 @@ public class Tokenizer {
         }
 
         private void write() {
+            LOG.info("Writing "+this.tokens.size()+" token annotations");
             Tokenizer.this.annotationRepository.create(this.tokens);
+            LOG.info("DONE Writing "+this.tokens.size()+" token annotations");
             this.tokens.clear();
         }
     }

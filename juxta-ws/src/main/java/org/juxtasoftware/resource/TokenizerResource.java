@@ -95,7 +95,6 @@ public class TokenizerResource extends BaseResource {
             setStatus(Status.CLIENT_ERROR_PRECONDITION_FAILED);
             return toTextRepresentation("Collation requires at least 2 witnesses. This set has "+witCnt+".");
         }
-        this.comparisonSetDao.clearCollationData(this.set);
         CollatorConfig cfg = this.comparisonSetDao.getCollatorConfig(set);
         this.taskManager.submit( new TokenizeTask(this.tokenizer, cfg, set) );
         return toTextRepresentation(this.set.getId().toString());

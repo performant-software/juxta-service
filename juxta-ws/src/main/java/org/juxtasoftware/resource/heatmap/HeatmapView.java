@@ -231,6 +231,7 @@ public class HeatmapView  {
             if ( w.getId().equals( baseWitnessId )) {
                 baseLen = this.setDao.getTokenzedLength(set, w);
                 if ( baseLen == 0 ) {
+                    LOG.warn("Missing tokenized length of witness "+w.getId()+". Re-calculating");
                     AnnotationConstraint constraint = new AnnotationConstraint( w);
                     constraint.setIncludeText( false );
                     constraint.setFilter( this.filters.getTokensFilter() );
@@ -238,6 +239,7 @@ public class HeatmapView  {
                         baseLen += token.getRange().length();
                     }
                 }
+                this.setDao.setTokenzedLength(set, w, baseLen);
                 break;
             }
         }
