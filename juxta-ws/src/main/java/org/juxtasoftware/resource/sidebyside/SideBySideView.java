@@ -98,7 +98,8 @@ public class SideBySideView implements FileDirectiveListener  {
         if ( willOverrunMemory( set, witnessIds[0], witnessIds[1]) ) {
             this.parent.setStatus(Status.SERVER_ERROR_INSUFFICIENT_STORAGE);
             return this.parent.toTextRepresentation(
-                "This comparison set it too large to visualize. Try breaking large witnesses up into smaller segments.");
+                "The server has insufficent resources to generate this visualization." +
+                "\nTry again later. If this fails, try breaking large witnesses up into smaller segments.");
         }
         
         // get witnesses for each ID and initialize the changes map
@@ -171,11 +172,11 @@ public class SideBySideView implements FileDirectiveListener  {
         // to see if generating this visuzlization will exhaust available memory - with a 5M pad
         final Long count = this.alignmentDao.count(constraints);
         final long estimatedByteUsage = count*Alignment.AVG_SIZE_BYTES;
-        final long bytesFree = Runtime.getRuntime().freeMemory();
-        if ( (bytesFree - estimatedByteUsage) / 1048576 <= 5) {
-            return true;
-        }
-        return false;
+        Runtime.getRuntime().gc();
+        Runtime.getRuntime().runFinalization();
+        LOG.info("SBS ["+ estimatedByteUsage+"] ESTIMATED USAGE");
+        LOG.info("SBS ["+ Runtime.getRuntime().freeMemory()+"] ESTIMATED FREE");
+        return (estimatedByteUsage > Runtime.getRuntime().freeMemory());
     }
 
     @Override

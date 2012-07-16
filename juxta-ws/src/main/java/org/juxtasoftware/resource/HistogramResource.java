@@ -97,10 +97,7 @@ public class HistogramResource extends BaseResource {
                 break;
             }
         }
-        
-        long bytesFree = Runtime.getRuntime().freeMemory();
-        LOG.info("["+bytesFree+"] bytes free at start of histogram request");
-        
+                
         // set up a filter to get the annotations necessary for this histogram
         QNameFilter changesFilter = this.filters.getDifferencesFilter();
         AlignmentConstraint constraints = new AlignmentConstraint(this.set, this.baseWitnessId);
@@ -108,11 +105,16 @@ public class HistogramResource extends BaseResource {
         
         // Get the number of annotations that will be returned and do a rough calcuation
         // to see if generating this histogram will exhaust available memory - with a 5M pad
-        Long count = this.alignmentDao.count(constraints);
-        long estimatedByteUsage = count*Alignment.AVG_SIZE_BYTES + base.getText().getLength();
-        if ( (bytesFree - estimatedByteUsage) / 1048576 <= 5) {
+        final Long count = this.alignmentDao.count(constraints);
+        final long estimatedByteUsage = count*Alignment.AVG_SIZE_BYTES + base.getText().getLength();
+        Runtime.getRuntime().gc();
+        Runtime.getRuntime().runFinalization();
+        LOG.info("HISTOGRAM ["+ estimatedByteUsage+"] ESTIMATED USAGE");
+        LOG.info("HISTOGRAM ["+ Runtime.getRuntime().freeMemory()+"] ESTIMATED FREE");
+        if (estimatedByteUsage > Runtime.getRuntime().freeMemory()) {
             setStatus(Status.SERVER_ERROR_INSUFFICIENT_STORAGE);
-            return toTextRepresentation("Insufficient resources to create histogram. Try again later.");
+            return toTextRepresentation(
+                "The server has insufficent resources to generate a histogram for this collation.");
         }
         
         // next, get al of the differences and apply the above algorithm
