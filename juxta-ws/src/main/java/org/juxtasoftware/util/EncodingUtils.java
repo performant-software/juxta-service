@@ -37,6 +37,9 @@ public final class EncodingUtils {
  
         String encoding = EncodingUtils.detectEncoding(tmpSrc);
         if ( encoding.equalsIgnoreCase("UTF-8") ) {
+            if ( isXml ) {
+                EncodingUtils.stripXmlDeclaration(tmpSrc);
+            }
             return tmpSrc;
         }
         
@@ -89,6 +92,7 @@ public final class EncodingUtils {
         }
         IOUtils.closeQuietly(fos);
         IOUtils.copy(new FileInputStream(out), new FileOutputStream(tmpSrc));
+        out.delete();
     }
 
     private static String detectEncoding(File srcFile) throws IOException {

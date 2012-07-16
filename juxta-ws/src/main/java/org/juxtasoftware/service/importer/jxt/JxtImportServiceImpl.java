@@ -49,6 +49,7 @@ import org.juxtasoftware.service.importer.jxt.ManifestParser.SourceInfo;
 import org.juxtasoftware.service.importer.jxt.MovesParser.JxtMoveInfo;
 import org.juxtasoftware.util.BackgroundTaskSegment;
 import org.juxtasoftware.util.BackgroundTaskStatus;
+import org.juxtasoftware.util.EncodingUtils;
 import org.juxtasoftware.util.NamespaceExtractor;
 import org.juxtasoftware.util.NamespaceExtractor.NamespaceInfo;
 import org.juxtasoftware.util.NamespaceExtractor.XmlType;
@@ -350,7 +351,9 @@ public class JxtImportServiceImpl implements ImportService<InputStream> {
             name = this.sourceDao.makeUniqueName(this.ws, name);
             srcInfo.setTitle(name);
         }
-        Long srcId = this.sourceDao.create(this.ws, name, isXml, new FileReader(srcInfo.getSrcFile()));
+        File fixed = EncodingUtils.fixEncoding(new FileInputStream(srcInfo.getSrcFile()), isXml);
+        Long srcId = this.sourceDao.create(this.ws, name, isXml, new FileReader(fixed));
+        fixed.delete();
         return this.sourceDao.find(this.ws.getId(), srcId);
     }
     
