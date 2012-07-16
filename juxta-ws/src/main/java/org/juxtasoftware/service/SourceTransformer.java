@@ -127,7 +127,10 @@ public class SourceTransformer {
      */
     public Long transform(final Source srcDoc, final JuxtaXslt xslt, final String finalName) throws SAXException, IOException, TransformerException {        
         // trim off extension, if present
-        String witnessName = FilenameUtils.removeExtension(finalName);
+        String witnessName = finalName;
+        if ( finalName.endsWith(".") == false ) {
+            witnessName = FilenameUtils.removeExtension(finalName);
+        }
         
         // transform into a new text_content object        
         Text parsedContent = srcDoc.getText();
