@@ -38,9 +38,9 @@ import eu.interedition.text.mem.SimpleAnnotation;
 @Service
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
 public class Tokenizer {
-    private static final int BATCH_SIZE = 10000;
     private static final Logger LOG = LoggerFactory.getLogger(Tokenizer.class);
 
+    @Autowired private Integer tokenizationBatchSize;
     @Autowired private AnnotationRepository annotationRepository;
     @Autowired private TextRepository textRepository;
     @Autowired private ComparisonSetDao comparisonSetDao;
@@ -89,7 +89,7 @@ public class Tokenizer {
      *
      */
     private class TokenizingConsumer implements TextConsumer {
-        private List<Annotation> tokens = Lists.newArrayListWithExpectedSize(BATCH_SIZE);
+        private List<Annotation> tokens = Lists.newArrayListWithExpectedSize(tokenizationBatchSize);
         private final Range fragment;
         private final Text text;
         private final boolean filterLinebreak;
@@ -264,7 +264,7 @@ public class Tokenizer {
         private void createToken(int start, int end, boolean possbleWordbreak) {
             this.tokens.add(  new SimpleAnnotation(this.text, TOKEN_NAME, new Range(start, end), null) );
             if ( possbleWordbreak == false ) {
-                if ((this.tokens.size() % BATCH_SIZE) == 0) {
+                if ((this.tokens.size() % tokenizationBatchSize ) == 0) {
                     write();
                 }
             }

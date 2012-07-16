@@ -67,4 +67,12 @@
     <bean id="maxSourceSize" class="java.lang.Long" factory-method="valueOf">
         <constructor-arg value="${juxta.source.max}" />
     </bean>
+    
+    <!-- batch limits -->
+    <bean id="tokenizationBatchSize" class="java.lang.Integer" factory-method="valueOf">
+        <constructor-arg value="${juxta.tokenization.batch}" />
+    </bean>
+    <bean id="collationBatchSize" class="java.lang.Integer" factory-method="valueOf">
+        <constructor-arg value="${juxta.collation.batch}" />
+    </bean>
 </beans>

@@ -61,6 +61,7 @@ public class ComparisonSetCollator extends DiffCollator {
     @Autowired private AlignmentDao alignmentDao;
     @Autowired private TextRepository textRepository;
     @Autowired private NameRepository nameRepository;
+    @Autowired private Integer collationBatchSize;
     
     private Set<Witness> witnessList;
     private ComparisonSet comparisonSet;
@@ -220,7 +221,6 @@ public class ComparisonSetCollator extends DiffCollator {
         protected List<Difference> differences = new LinkedList<Difference>();
         protected Name addDelName;
         protected Name changeName;
-        private final int BATCH_SIZE = 1500;
         
         public MemoryDiffStore() {
             this.addDelName = nameRepository.get(Constants.ADD_DEL_NAME);
@@ -230,7 +230,7 @@ public class ComparisonSetCollator extends DiffCollator {
         @Override
         public void add(Difference aignment) throws IOException {
             this.differences.add(aignment);
-            if ( differences.size() > BATCH_SIZE ) {
+            if ( differences.size() >= collationBatchSize ) {
                 save();
             }
         }
