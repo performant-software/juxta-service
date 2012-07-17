@@ -48,6 +48,16 @@ public class NoteInjector implements StreamInjector<Note> {
         }
         return false;
     }
+    
+    public boolean addTrailingNotes(StringBuilder line ) {
+        boolean added = false;
+        while ( this.currNote != null ) {
+            added = true;
+            injectContentStart( line, this.currNote.getAnchorRange().getStart() );
+            injectContentEnd( line, this.currNote.getAnchorRange().getEnd() );
+        }
+        return added;
+    }
 
     @Override
     public void injectContentStart(StringBuilder line, final long currPositon) {

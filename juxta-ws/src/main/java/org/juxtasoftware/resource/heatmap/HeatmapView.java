@@ -336,6 +336,11 @@ public class HeatmapView  {
             pos++;
         }
         
+        // append any unanchored notes that trail the end of doc
+        if ( noteInjector.addTrailingNotes(line) ) {
+            br.write(line.toString());
+        }
+        
         // close up the file
         br.close();
         
