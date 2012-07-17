@@ -225,6 +225,7 @@ var showMarginBoxes = function (alignId) {
    }
 
    // FIRST turn on some dimming and a wait cursor
+   $("#heatmap-text").trigger('diff-requested');
    $('#wait-popup').show();
 
    // hide ALL boxes. this to cover case when 1st click shows 4 and 2nd shows 1
@@ -275,10 +276,12 @@ var showMarginBoxes = function (alignId) {
             boxTop = boxTop + 5;
          }
          $('#wait-popup').hide();
+         $("#heatmap-text").trigger('diff-request-complete');
       },
       error : function(jqXHR, textStatus, errorThrown) {
          alert("Unable to determine differences.\n     " + jqXHR.responseText);
          $('#wait-popup').hide();
+         $("#heatmap-text").trigger('diff-request-complete');
       },
       xhrFields : {
          withCredentials : true
