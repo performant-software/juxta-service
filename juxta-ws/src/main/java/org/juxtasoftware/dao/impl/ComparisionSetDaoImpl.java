@@ -74,14 +74,16 @@ public class ComparisionSetDaoImpl extends JuxtaDaoImpl<ComparisonSet> implement
     }
     
     @Override
-    public ResourceInfo getInfo( final Workspace ws, final Long setid) {
-        final String sql = "select id,name,created,updated from juxta_comparison_set where id=? and workspace_id=?";
+    public ResourceInfo getInfo( final Long setId ) {
+        final String sql = 
+            "select w.id as id, w.name as name,w.created as created,w.updated as updated,ws.name as workspace " +
+            " from juxta_comparison_set w inner join juxta_workspace ws on workspace_id = ws.id where w.id=?";
         return DataAccessUtils.uniqueResult( this.jt.query(sql, new RowMapper<ResourceInfo>(){
 
             @Override
             public ResourceInfo mapRow(ResultSet rs, int rowNum) throws SQLException {
-                return new ResourceInfo(rs.getLong("id"), rs.getString("name"), rs.getDate("created"), rs.getDate("updated"));
-            }}, setid, ws.getId()));
+                return new ResourceInfo(rs.getLong("id"), rs.getString("workspace"), rs.getString("name"), rs.getDate("created"), rs.getDate("updated"));
+            }}, setId));
     }
     
     @Override

@@ -21,7 +21,7 @@ public interface ComparisonSetDao extends JuxtaDao<ComparisonSet> {
     boolean exists( final Workspace ws, final String setName );
     ComparisonSet find( final Workspace ws, final String setName );
     List<ComparisonSet> list( final Workspace ws);
-    ResourceInfo getInfo(final Workspace ws, final Long setId);
+    ResourceInfo getInfo(final Long setId);
     
     // witness management
     Set<Witness> getWitnesses( final ComparisonSet set );

@@ -32,11 +32,11 @@ public class InfoResource extends BaseResource {
     public Representation getJsonInfo() {
         ResourceInfo info = null;
         if ( type.equals("source") ) {
-            info = this.sourceDao.getInfo(this.workspace, this.id);
+            info = this.sourceDao.getInfo(this.id);
         } else if ( type.equals("witness") ) {
-            info = this.witnessDao.getInfo(this.workspace, this.id);
+            info = this.witnessDao.getInfo(this.id);
         } else if ( type.equals("set") ) {
-            info = this.setDao.getInfo(this.workspace, this.id);
+            info = this.setDao.getInfo(this.id);
         } else {
             setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
             return toTextRepresentation("IInvalid resource type requested");

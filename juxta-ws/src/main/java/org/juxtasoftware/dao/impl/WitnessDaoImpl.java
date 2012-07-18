@@ -71,14 +71,16 @@ public class WitnessDaoImpl implements WitnessDao, InitializingBean {
     }
     
     @Override
-    public ResourceInfo getInfo( final Workspace ws, final Long witness) {
-        final String sql = "select id,name,created,updated from juxta_witness where id=? and workspace_id=?";
+    public ResourceInfo getInfo( final Long witnessId ) {
+        final String sql = 
+            "select w.id as id, w.name as name,w.created as created,w.updated as updated,ws.name as workspace " +
+            " from juxta_witness w inner join juxta_workspace ws on workspace_id = ws.id where w.id=?";
         return DataAccessUtils.uniqueResult( this.jdbcTemplate.query(sql, new RowMapper<ResourceInfo>(){
 
             @Override
             public ResourceInfo mapRow(ResultSet rs, int rowNum) throws SQLException {
-                return new ResourceInfo(rs.getLong("id"), rs.getString("name"), rs.getDate("created"), rs.getDate("updated"));
-            }}, witness, ws.getId()));
+                return new ResourceInfo(rs.getLong("id"), rs.getString("workspace"), rs.getString("name"), rs.getDate("created"), rs.getDate("updated"));
+            }}, witnessId));
     }
     
     @Override

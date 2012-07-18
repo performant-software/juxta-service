@@ -27,11 +27,10 @@ public interface WitnessDao  {
     
     /**
      * Get brief info on this witness: name and dates
-     * @param ws
      * @param sourceId
      * @return
      */
-    ResourceInfo getInfo(final Workspace ws, final Long witness);
+    ResourceInfo getInfo(final Long witnessId);
     
     /**
      * Find a witness by it ID

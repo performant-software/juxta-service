@@ -26,11 +26,10 @@ public interface SourceDao  {
     
     /**
      * Get brief info on this source: name and dates
-     * @param ws
      * @param sourceId
      * @return
      */
-    ResourceInfo getInfo(final Workspace ws, final Long sourceId);
+    ResourceInfo getInfo(final Long sourceId);
     
     /**
      * Update the source name

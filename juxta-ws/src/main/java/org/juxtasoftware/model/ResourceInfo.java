@@ -4,12 +4,14 @@ import java.util.Date;
 
 public class ResourceInfo {
     private final Long id;
+    private final String workspace;
     private final String name;
     private final Date dateCreated;
     private final Date dateModified;
     
-    public ResourceInfo(final Long id, final String name, final Date create, final Date mod) {
+    public ResourceInfo(final Long id, final String ws, final String name, final Date create, final Date mod) {
         this.id = id;
+        this.workspace = ws;
         this.name = name;
         this.dateCreated = create;
         this.dateModified = mod;
@@ -19,6 +21,9 @@ public class ResourceInfo {
     }
     public String getName() {
         return name;
+    }
+    public String getWorkspace() {
+        return workspace;
     }
     public Date getDateCreated() {
         return dateCreated;
