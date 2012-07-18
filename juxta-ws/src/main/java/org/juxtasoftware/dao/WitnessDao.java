@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.juxtasoftware.model.ComparisonSet;
+import org.juxtasoftware.model.ResourceInfo;
 import org.juxtasoftware.model.RevisionInfo;
 import org.juxtasoftware.model.Usage;
 import org.juxtasoftware.model.Witness;
@@ -23,6 +24,14 @@ public interface WitnessDao  {
      * @return
      */
     Long create(final Witness w);
+    
+    /**
+     * Get brief info on this witness: name and dates
+     * @param ws
+     * @param sourceId
+     * @return
+     */
+    ResourceInfo getInfo(final Workspace ws, final Long witness);
     
     /**
      * Find a witness by it ID

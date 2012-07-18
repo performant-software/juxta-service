@@ -60,6 +60,9 @@
     <bean name="/juxta/import/{id}/status" class="org.juxtasoftware.resource.Importer" scope="prototype" autowire="byName" />
     <bean name="/juxta/import/{id}/cancel" class="org.juxtasoftware.resource.Importer" scope="prototype" autowire="byName" />
     
+    <!-- info resource -->
+    <bean name="/juxta/{workspace}/{type}/{id}/info" class="org.juxtasoftware.resource.InfoResource" scope="prototype" autowire="byName" />
+    
     <!-- source resources -->
     <bean name="/juxta/{workspace}/source" class="org.juxtasoftware.resource.SourcesResource" scope="prototype" autowire="byName" />
     <bean name="/juxta/{workspace}/source/{id}" class="org.juxtasoftware.resource.SourceResource" scope="prototype" autowire="byName" />

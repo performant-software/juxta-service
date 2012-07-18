@@ -6,6 +6,7 @@ import java.util.List;
 
 import javax.xml.stream.XMLStreamException;
 
+import org.juxtasoftware.model.ResourceInfo;
 import org.juxtasoftware.model.Source;
 import org.juxtasoftware.model.Usage;
 import org.juxtasoftware.model.Workspace;
@@ -22,6 +23,14 @@ public interface SourceDao  {
      * @throws IOException 
      */
     Long create(final Workspace ws, final String name, final Boolean isXml, Reader contentReader) throws IOException, XMLStreamException;
+    
+    /**
+     * Get brief info on this source: name and dates
+     * @param ws
+     * @param sourceId
+     * @return
+     */
+    ResourceInfo getInfo(final Workspace ws, final Long sourceId);
     
     /**
      * Update the source name

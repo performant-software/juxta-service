@@ -13,6 +13,7 @@ import javax.xml.stream.XMLStreamException;
 
 import org.codehaus.stax2.XMLInputFactory2;
 import org.juxtasoftware.dao.SourceDao;
+import org.juxtasoftware.model.ResourceInfo;
 import org.juxtasoftware.model.Source;
 import org.juxtasoftware.model.Usage;
 import org.juxtasoftware.model.Workspace;
@@ -65,6 +66,17 @@ public class SourceDaoImpl implements SourceDao, InitializingBean {
         ps.addValue("workspace_id", ws.getId());
         ps.addValue("created", new Date());
         return (Long)this.insert.executeAndReturnKey( ps );
+    }
+    
+    @Override
+    public ResourceInfo getInfo( final Workspace ws, final Long sourceId) {
+        final String sql = "select id,name,created,updated from juxta_source where id=? and workspace_id=?";
+        return DataAccessUtils.uniqueResult( this.jdbcTemplate.query(sql, new RowMapper<ResourceInfo>(){
+
+            @Override
+            public ResourceInfo mapRow(ResultSet rs, int rowNum) throws SQLException {
+                return new ResourceInfo(rs.getLong("id"), rs.getString("name"), rs.getDate("created"), rs.getDate("updated"));
+            }}, sourceId, ws.getId()));
     }
     
     @Override

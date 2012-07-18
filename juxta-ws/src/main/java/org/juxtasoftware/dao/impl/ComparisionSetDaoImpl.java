@@ -21,6 +21,7 @@ import org.juxtasoftware.dao.WitnessDao;
 import org.juxtasoftware.model.CollatorConfig;
 import org.juxtasoftware.model.CollatorConfig.HyphenationFilter;
 import org.juxtasoftware.model.ComparisonSet;
+import org.juxtasoftware.model.ResourceInfo;
 import org.juxtasoftware.model.Usage;
 import org.juxtasoftware.model.Witness;
 import org.juxtasoftware.model.Workspace;
@@ -70,6 +71,17 @@ public class ComparisionSetDaoImpl extends JuxtaDaoImpl<ComparisonSet> implement
         CollatorConfig cfg = new CollatorConfig();
         createCollatorConfig(id, cfg);
         return id;
+    }
+    
+    @Override
+    public ResourceInfo getInfo( final Workspace ws, final Long setid) {
+        final String sql = "select id,name,created,updated from juxta_comparison_set where id=? and workspace_id=?";
+        return DataAccessUtils.uniqueResult( this.jt.query(sql, new RowMapper<ResourceInfo>(){
+
+            @Override
+            public ResourceInfo mapRow(ResultSet rs, int rowNum) throws SQLException {
+                return new ResourceInfo(rs.getLong("id"), rs.getString("name"), rs.getDate("created"), rs.getDate("updated"));
+            }}, setid, ws.getId()));
     }
     
     @Override

@@ -16,6 +16,7 @@ import org.juxtasoftware.dao.ComparisonSetDao;
 import org.juxtasoftware.dao.WitnessDao;
 import org.juxtasoftware.model.ComparisonSet;
 import org.juxtasoftware.model.ComparisonSet.Status;
+import org.juxtasoftware.model.ResourceInfo;
 import org.juxtasoftware.model.RevisionInfo;
 import org.juxtasoftware.model.Usage;
 import org.juxtasoftware.model.Witness;
@@ -67,6 +68,17 @@ public class WitnessDaoImpl implements WitnessDao, InitializingBean {
     @Override
     public Long create(Witness w) {
         return insert.executeAndReturnKey(toInsertData(w)).longValue();
+    }
+    
+    @Override
+    public ResourceInfo getInfo( final Workspace ws, final Long witness) {
+        final String sql = "select id,name,created,updated from juxta_witness where id=? and workspace_id=?";
+        return DataAccessUtils.uniqueResult( this.jdbcTemplate.query(sql, new RowMapper<ResourceInfo>(){
+
+            @Override
+            public ResourceInfo mapRow(ResultSet rs, int rowNum) throws SQLException {
+                return new ResourceInfo(rs.getLong("id"), rs.getString("name"), rs.getDate("created"), rs.getDate("updated"));
+            }}, witness, ws.getId()));
     }
     
     @Override

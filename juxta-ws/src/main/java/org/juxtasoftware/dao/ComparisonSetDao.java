@@ -5,6 +5,7 @@ import java.util.Set;
 
 import org.juxtasoftware.model.CollatorConfig;
 import org.juxtasoftware.model.ComparisonSet;
+import org.juxtasoftware.model.ResourceInfo;
 import org.juxtasoftware.model.Usage;
 import org.juxtasoftware.model.Witness;
 import org.juxtasoftware.model.Workspace;
@@ -20,6 +21,7 @@ public interface ComparisonSetDao extends JuxtaDao<ComparisonSet> {
     boolean exists( final Workspace ws, final String setName );
     ComparisonSet find( final Workspace ws, final String setName );
     List<ComparisonSet> list( final Workspace ws);
+    ResourceInfo getInfo(final Workspace ws, final Long setId);
     
     // witness management
     Set<Witness> getWitnesses( final ComparisonSet set );
