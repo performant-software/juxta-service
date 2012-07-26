@@ -118,6 +118,16 @@ div.heatmap-div {
 #full-size-link {
     float: right;
 }
+#condensed-heatmap-footer {
+   background-color: whiteSmoke;
+   font-size: 0.85em;
+   font-weight: 400;
+   padding: 2px;
+   margin-bottom: 0;
+   border:0;
+   color: #557;
+}
+
 
 /* Div for headmap, notes and margin boxes */
 /* This version is when the SIMPLE UI is used */
