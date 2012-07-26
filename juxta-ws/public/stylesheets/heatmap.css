@@ -104,6 +104,10 @@ div.heatmap-div {
     margin: 1px;
     padding: 2px 6px;
 }
+.heatmap-div.condensed {
+    border: 0 !important;
+    float: none !important;
+}
 .condensed {
     width: auto !important;
     font-size: 0.9em !important;
