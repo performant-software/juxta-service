@@ -99,6 +99,22 @@ div.heatmap-div {
     cursor: default;
 }
 
+.juxta-button.condensed {
+    font-size: 0.8em;
+    margin: 1px;
+    padding: 2px 6px;
+}
+.condensed {
+    width: auto !important;
+    font-size: 0.9em !important;
+}
+#condensed-list-button {
+    float: left;
+}
+#full-size-link {
+    float: right;
+}
+
 /* Div for headmap, notes and margin boxes */
 /* This version is when the SIMPLE UI is used */
 div.simple-heatmap-div {

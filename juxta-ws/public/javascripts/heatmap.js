@@ -9,6 +9,9 @@
 var getMaxNonScrollHeight = function() {
    var maxH = $("#juxta-ws-content").parent().height();
    var extraH = $(".header").outerHeight() + $(".heatmap-toolbar").outerHeight();
+   if ( $("#condensed").text() === "true" ) {
+      extraH = extraH + $("#condensed-heatmap-footer").outerHeight()
+   }
    return (maxH - extraH );
 };
 

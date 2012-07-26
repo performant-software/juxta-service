@@ -12,6 +12,7 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import freemarker.core.Environment;
+import freemarker.template.TemplateBooleanModel;
 import freemarker.template.TemplateDirectiveBody;
 import freemarker.template.TemplateDirectiveModel;
 import freemarker.template.TemplateException;
@@ -43,11 +44,19 @@ public class HeatmapStreamDirective implements TemplateDirectiveModel {
         Long setId = Long.parseLong( val.toString());
         
         // REQUIRED base id
-        TemplateModel baseBal = env.getVariable("baseId");
-        if ( baseBal == null ) {
+        val = env.getVariable("baseId");
+        if ( val == null ) {
             throw new TemplateModelException("Missing required baseId variable");
         }
-        Long baseWitnessId = Long.parseLong( baseBal.toString());
+        Long baseWitnessId = Long.parseLong( val.toString());
+        
+        // REQUIRED condensed flag
+        val = env.getVariable("condensed");
+        if ( val == null ) {
+            throw new TemplateModelException("Missing required condensed variable");
+        }
+        TemplateBooleanModel boolModel = (TemplateBooleanModel)val;
+        boolean condensed = boolModel.getAsBoolean();
         
         // OPTIONAL starting line
         TemplateModel startVal = env.getVariable("startLine");
@@ -70,7 +79,7 @@ public class HeatmapStreamDirective implements TemplateDirectiveModel {
         }
         
         Writer out = env.getOut();
-        Reader reader = this.cacheDao.getHeatmap(setId, baseWitnessId);
+        Reader reader = this.cacheDao.getHeatmap(setId, baseWitnessId, condensed);
         int currLine = 0;
         while ( true ) {
             int data = reader.read();

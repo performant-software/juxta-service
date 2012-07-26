@@ -12,7 +12,7 @@
         <link href="${baseUrl}/stylesheets/sidebyside.css" rel="stylesheet" type="text/css">
         
         <!-- javascripts -->
-        <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+        <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
         <script type="text/javascript" src="${baseUrl}/javascripts/jquery.mousewheel.min.js"></script>   
         <script type="text/javascript" src="${baseUrl}/javascripts/raphael-min.js"></script>    
         <script type="text/javascript" src="${baseUrl}/javascripts/juxta-ws-common.js"></script>
@@ -23,8 +23,6 @@
     
     <body>
 
-        <#assign embedFlag = embedded?string>
-        <span id="embedded" style="display: none">${embedFlag}</span>
         <span id="curr-workspace" style="display: none">${workspace}</span>
         <span id="curr-workspace-id" style="display: none">${workspaceId}</span>
         <span id="serviceUrl" style="display: none">${baseUrl}</span>
@@ -68,10 +66,6 @@
 <#else>
     
     <div id="juxta-ws-content" class="juxta-ws-content">
-        
-        <#assign embedFlag = embedded?string>
-        <span id="embedded" style="display: none">${embedFlag}</span>
-    
         <#include "${content}">
     </div>     
 </#if>

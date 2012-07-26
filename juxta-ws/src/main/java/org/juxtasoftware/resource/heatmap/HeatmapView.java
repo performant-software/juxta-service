@@ -103,6 +103,12 @@ public class HeatmapView  {
             baseWitnessId = Long.parseLong(baseId);
         }
         
+        // Check if this visualization should be the condensed version
+        boolean condensed = false;
+        if (this.parent.getQuery().getValuesMap().containsKey("condensed")  ) {
+            condensed = true;
+        }
+        
         // Get all witness (and changeIndex) info.
         List<Witness> setWitnesses = new ArrayList<Witness>( this.setDao.getWitnesses(set) );
         if ( setWitnesses.size() < 2) {
@@ -129,8 +135,23 @@ public class HeatmapView  {
                 "\nTry again later. If this fails, try breaking large witnesses up into smaller segments.");
         }
         
-        // Calculate the change index for the witnesses
-        List<SetWitness> witnesses = calculateChangeIndex( set, setWitnesses, baseWitnessId );
+        // Calculate the change index for the witnesses ( not necessary in condensed view: no witness list)
+        List<SetWitness> witnesses; 
+        if ( condensed == false ){
+            witnesses = calculateChangeIndex( set, setWitnesses, baseWitnessId );
+        } else {
+            // grab the alignments
+            QNameFilter changesFilter = this.filters.getDifferencesFilter();
+            AlignmentConstraint constraints = new AlignmentConstraint(set, baseWitnessId);
+            constraints.setFilter(changesFilter);
+            this.alignments = this.alignmentDao.list(constraints);
+            
+            // just 0 out all change indexes for condensed views
+            witnesses = new ArrayList<HeatmapView.SetWitness>();
+            for (Witness w: setWitnesses ) {
+                witnesses.add( new SetWitness(w, true, 0.0f) );
+            }
+        }
                
         // init FTL data map
         Map<String, Object> map = new HashMap<String, Object>();
@@ -139,11 +160,12 @@ public class HeatmapView  {
       
         // Next, the get heatmap main body (map, notes and margin boxes)
         // Grab it from cache if possible
-        if ( this.cacheDao.heatmapExists(set.getId(), base.getId()) == false) {
-            renderHeatMap( set, base, witnesses );
+        if ( this.cacheDao.heatmapExists(set.getId(), base.getId(), condensed) == false) {
+            renderHeatMap( set, base, witnesses, condensed );
         }
         
         // Last, wrap the body with ui (title, comparison set details)
+        map.put("condensed", condensed );
         map.put("hasNotes", this.noteDao.hasNotes( base.getId() ) );
         map.put("hasBreaks", this.pbDao.hasBreaks( base.getId() ) );
         map.put("hasRevisions", this.witnessDao.hasRevisions(base) );
@@ -262,7 +284,7 @@ public class HeatmapView  {
         return out;
     }
     
-    private void renderHeatMap(ComparisonSet set, Witness base, List<SetWitness> witnesses) throws IOException {
+    private void renderHeatMap(ComparisonSet set, Witness base, List<SetWitness> witnesses, boolean condensed) throws IOException {
                
         // get a list of revisons, differeces, notes and breaks in ascending oder.
         // add this information to injectors that will be used to inject
@@ -346,6 +368,7 @@ public class HeatmapView  {
         
         // create the template map and stuff it with some basic data
         Map<String,Object> map = new HashMap<String,Object>();
+        map.put("condensed", condensed );
         map.put("baseName", base.getName());
         map.put("srcFile", heatmapFile.getAbsoluteFile());
         map.put("fileReader", new FileDirective());   
@@ -358,7 +381,7 @@ public class HeatmapView  {
         Representation heatmapFtl = this.parent.toHtmlRepresentation("heatmap_text.ftl", map, false, false);
                 
         // Stuff it in a cache for future fast response
-        this.cacheDao.cacheHeatmap(set.getId(), base.getId(), heatmapFtl.getReader());
+        this.cacheDao.cacheHeatmap(set.getId(), base.getId(), heatmapFtl.getReader(), condensed);
         
         // done with this file. kill it explicitly
         heatmapFile.delete();

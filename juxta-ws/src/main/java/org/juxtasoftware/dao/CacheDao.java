@@ -15,7 +15,7 @@ public interface CacheDao {
      * @param baseId
      * @return
      */
-    boolean heatmapExists(  final Long setId, final Long baseId  );
+    boolean heatmapExists(  final Long setId, final Long baseId, boolean condensed );
     
     /**
      * Get a reader for a heatmap view on the specified set/base witness pair
@@ -23,7 +23,7 @@ public interface CacheDao {
      * @param baseId
      * @return
      */
-    Reader getHeatmap( final Long setId, final Long baseId );
+    Reader getHeatmap( final Long setId, final Long baseId, boolean condensed  );
     
     /**
      * Cache a heatmap view with for the specified set/base witness pair
@@ -31,7 +31,7 @@ public interface CacheDao {
      * @param baseId
      * @param data
      */
-    void cacheHeatmap( final Long setId, final Long baseId, Reader data);
+    void cacheHeatmap( final Long setId, final Long baseId, Reader data, boolean condensed );
    
     
     boolean histogramExists(  final Long setId, final Long baseId  );
