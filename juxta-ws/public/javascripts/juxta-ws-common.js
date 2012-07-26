@@ -7,7 +7,7 @@ $.fn.exists = function () {
 }
 
 function isEmbedded() {
-    return ($("#embedded").text() == "true");
+    return $("#juxta-ws-content").exists();
 }
 
 function isHeatmap() {
