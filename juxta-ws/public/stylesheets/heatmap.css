@@ -17,14 +17,7 @@ div.files {
 .set-file {
     font: 14px "Helvetica Neue", Helvetica, Arial, sans-serif;
     font-weight: 300;
-    
 }
-
-
-.hidden {
-    display: none;
-}
-
 
 /** TOOLBAR **/
 .heatmap-toolbar {
@@ -108,9 +101,22 @@ div.heatmap-div {
     border: 0 !important;
     float: none !important;
 }
+.heatmap-text.condensed {
+    float: none !important;
+}
 .condensed {
     width: auto !important;
     font-size: 0.9em !important;
+}
+.margin-box.condensed {
+    width: 300px !important;
+    background-color: #EFF1EF;
+    font-size: 0.9em !important;
+}
+div.margin-boxes.condensed {
+    position: relative;
+    width: auto;
+    float: left !important;
 }
 #condensed-list-button {
     float: left;
@@ -119,13 +125,17 @@ div.heatmap-div {
     float: right;
 }
 #condensed-heatmap-footer {
-   background-color: whiteSmoke;
+   background-color: #f5f5f5;
    font-size: 0.85em;
    font-weight: 400;
    padding: 2px;
    margin-bottom: 0;
    border:0;
    color: #557;
+}
+.dimmed {
+    background-color: #fafafa;
+    color: #999;
 }
 
 
@@ -239,6 +249,7 @@ span.note-anchor-hidden {
 span.active {
     background-color: #bae2ba;
     outline: 1px solid #008000;
+    color: #050;
 }
 
 /** TEI Revsion tag styles **/

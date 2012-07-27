@@ -16,7 +16,7 @@
  <div class="margin-boxes<#if condensed> condensed</#if>" id="margin-boxes">
      <#assign x=numWitnesses>
      <#list 1..x as i>     
-          <div class="margin-box" id="box-${i}">
+          <div class="margin-box<#if condensed> condensed</#if>" id="box-${i}">
               <p class="box-title" id="box-title-${i}"/>
               <p class="box-content" id="box-txt-${i}"/>
           </div>

@@ -3,6 +3,7 @@
  */
 /*global $, document, Raphael, alert, window, location */
 
+
 /**
  * Get the maximum, non-scrolling height for the heatmap content area
  */
@@ -85,7 +86,7 @@ var showAndAlign = function (top, tgtEle, tgtClass, ownerDiv) {
       marginTop : 0,
       top : top
    });
-   tgtEle.removeClass("hidden");
+   tgtEle.show();
 
    var bot = tgtEle.position().top + tgtEle.outerHeight();
    if (bot > ownerDiv.height()) {
@@ -173,10 +174,10 @@ var togglePbTags = function() {
    var pbTags = $(".page-break");
    if ( $("#pb-button").hasClass("pushed") === false ) {
       $("#pb-button").addClass("pushed");
-      pbTags.removeClass("hidden");
+      pbTags.show();
    } else {
       $("#pb-button").removeClass("pushed");
-      pbTags.addClass("hidden");
+      pbTags.hide();
    }
 };
 
@@ -203,9 +204,13 @@ var clearBoxes = function () {
    $("#margin-boxes").fadeOut(250, function() {
       var priorActive = $(".active");
       priorActive.removeClass("active");
-      if ($("#notes-button").data("selected")) {
-         $("#note-boxes").fadeIn(250);
-         layoutNotes();
+      if ( $("#condensed").text() === 'true') {
+         if ($("#notes-button").data("selected")) {
+            $("#note-boxes").fadeIn(250);
+            layoutNotes();
+         } else {
+            $("#heatmap-text").removeClass("dimmed");
+         }
       }
    });
 };
@@ -215,8 +220,7 @@ var clearBoxes = function () {
  */
 var showMarginBoxes = function (alignId) {
 
-   // if we clicked same box, do nothing
-   // otherwise clear the ould one
+   // if we clicked same diff, do nothing otherwise clear the old one
    var priorActive = $(".active");
    if (priorActive.length > 0) {
       var priorId = priorActive.attr("id");
@@ -233,7 +237,7 @@ var showMarginBoxes = function (alignId) {
 
    // hide ALL boxes. this to cover case when 1st click shows 4 and 2nd shows 1
    // must ensure that the extra 3 are no longer shown
-   $('.margin-box').addClass('hidden');
+   $('.margin-box').hide();
 
    // make an ajax request to get json containing
    // data to fill out the margin boxes with detail
@@ -275,9 +279,21 @@ var showMarginBoxes = function (alignId) {
             var txtEle = $('#box-txt-' + boxId);
             txtEle.html(diff.fragment);
 
-            showAndAlign(boxTop, $("#box-" + boxId), 'margin-box', $("#margin-boxes"));
-            boxTop = boxTop + 5;
+            if ( $("#condensed").text() === 'false' )  {
+               showAndAlign(boxTop, $("#box-" + boxId), 'margin-box', $("#margin-boxes"));
+               boxTop = boxTop + 5;
+            } else {
+               $("#box-" + boxId).show();
+            }
          }
+         
+         if ( $("#condensed").text() === 'true' ) {
+            $("#heatmap-text").addClass("dimmed");
+            var x  = $("#heatmap-text").position().top + $("#heatmap-text").outerHeight();
+            $("#margin-boxes").css("left", ( $("#heatmap-text").width() - $("#margin-boxes").width())/2);
+            $("#margin-boxes").css("top", boxTop-x+40-$("#heatmap-scroller").scrollTop());  // to to get it down a bit from src diff
+         }
+         
          $('#wait-popup').hide();
          $("#heatmap-text").trigger('diff-request-complete');
       },
@@ -307,55 +323,59 @@ var initializeHeatmap = function() {
       $(".heatmap-scroller").css("overflow-y", "hidden");
    }
 
-   // initially show notes & pb
-   $("#notes-button").addClass("pushed");
-   $("#pb-button").addClass("pushed");
-
-   // create a bunch of raphael canvases
-   // for the non-base witnesses. Render the colored
-   // blocks in them to indicate change index
-   renderWitnessChangeIndexes();
-
-   // space the note boxes in the margins
-   layoutNotes();
-
+   // Setup the full heatmap UI as long as we are not in condensed mode
+   if ( $("#condensed").text() === 'false' ) {
+      
+      // initially, notes and pagebreaks are displayed. set buttons to pushed
+      $("#notes-button").addClass("pushed");
+      $("#pb-button").addClass("pushed");
+   
+      // create a bunch of raphael canvases
+      // for the non-base witnesses. Render the colored
+      // blocks in them to indicate change index
+      renderWitnessChangeIndexes();
+   
+      // space the note boxes in the margins and handle highlighting
+      // note / anchor pairs on mouse movement
+      layoutNotes();
+      $("#note-boxes").on("mouseenter", ".note", function(event) {
+         var noteId = $(this).attr("id");
+         $(this).addClass("highlighted");
+         var anchorId = "note-anchor-" + noteId.substring(5);
+         var anchorSpan = $("#" + anchorId);
+         anchorSpan.removeClass("note-anchor");
+         anchorSpan.addClass("note-anchor-highlighted");
+      });
+      $("#note-boxes").on("mouseleave", ".note", function(event) {
+         var noteId = $(this).attr("id");
+         $(this).removeClass("highlighted");
+         var anchorId = "note-anchor-" + noteId.substring(5);
+         var anchorSpan = $("#" + anchorId);
+         anchorSpan.removeClass("note-anchor-highlighted");
+         anchorSpan.addClass("note-anchor");
+      });
+        
+      // change base witness by clicking on name in witness list on left
+      $(".witness").on("click", function() {
+         var witnessId = $(this).attr("id");
+         // strip off 'witness-' and just get number
+         var id = witnessId.substring(8);
+         var setId = $('#setId').text();
+         var csUrl = $('#ajax-base-url').text() + setId + $('#view-heatmap-segment').text() + "&base=" + id;
+         window.location = csUrl;
+      });
+   } 
+   
    // clicks on background clear boxes
    // and revert to note display
    $("body").click(function() {
       clearBoxes();
    });
 
-   $(".witness").on("click", function() {
-      var witnessId = $(this).attr("id");
-      // strip off 'witness-' and just get number
-      var id = witnessId.substring(8);
-      var setId = $('#setId').text();
-      var csUrl = $('#ajax-base-url').text() + setId + $('#view-heatmap-segment').text() + "&base=" + id;
-      window.location = csUrl;
-   });
-
-   // click heatmap to show margin boc
+   // click heatmap to show margin box
    $("#heatmap-text").on("click", ".heatmap", function(event) {
       showMarginBoxes($(this).attr("id"));
       event.stopPropagation();
-   });
-
-   $("#note-boxes").on("mouseenter", ".note", function(event) {
-      var noteId = $(this).attr("id");
-      $(this).addClass("highlighted");
-      var anchorId = "note-anchor-" + noteId.substring(5);
-      var anchorSpan = $("#" + anchorId);
-      anchorSpan.removeClass("note-anchor");
-      anchorSpan.addClass("note-anchor-highlighted");
-   });
-
-   $("#note-boxes").on("mouseleave", ".note", function(event) {
-      var noteId = $(this).attr("id");
-      $(this).removeClass("highlighted");
-      var anchorId = "note-anchor-" + noteId.substring(5);
-      var anchorSpan = $("#" + anchorId);
-      anchorSpan.removeClass("note-anchor-highlighted");
-      anchorSpan.addClass("note-anchor");
    });
 };
 
