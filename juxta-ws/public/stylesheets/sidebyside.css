@@ -114,7 +114,7 @@ span.move  {
 
 /* Popup */
 .witnesses-popup {
-    visibility: hidden;
+    display: none;
     position: fixed;
     width:200px;
     height: auto;

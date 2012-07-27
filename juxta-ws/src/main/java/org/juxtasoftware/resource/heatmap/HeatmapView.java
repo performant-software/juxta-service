@@ -172,6 +172,7 @@ public class HeatmapView  {
         map.put("setId", set.getId());
         map.put("baseId", base.getId());
         map.put("baseName", base.getName() );
+        map.put("witnessCount", witnesses.size() );
         map.put("witnesses", witnesses );
         map.put("heatmapStreamer", this.heatmapDirective);
         map.put("page", "set");

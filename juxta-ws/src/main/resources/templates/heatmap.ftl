@@ -60,8 +60,22 @@
     <#if condensed>
         <div id="condensed-heatmap-footer" class="footer">
             <a class="juxta-button condensed" id="condensed-list-button">Witness List</a>
-            <a class="juxta-button condensed" id="full-size-link">View Full Size</a>
+            <a class="juxta-button condensed" id="full-size-link" title="View full-sized share in new browser window">View Full Size</a>
             <div style="clear: both"></div>
+        </div>
+        
+        <!-- popup for selecting a new base witness -->
+        <div id="pick-base-popup" class="witnesses-popup">
+            <div class="header">Select Base Witness</div>
+            <select id="witness-select" class="witness-select" size="${witnessCount}">
+                <#list witnesses as witness> 
+                    <option id="${witness.id}" class="witness-option">${witness.name}</option>
+                </#list>
+            </select>
+            <div class="popup-buttons" style="text-align: right">
+                <a id="base-cancel-button" class="juxta-button" >Cancel</a>
+                <a id="base-ok-button" class="juxta-button" >OK</a>
+            </div>
         </div>
     </#if>
         

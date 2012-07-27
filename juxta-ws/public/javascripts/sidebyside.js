@@ -732,11 +732,11 @@ function changeWitness(sourceButtonId) {
         "top" : top + "px",
         "left" : left + "px"
     });
-    $('.witnesses-popup').css("visibility", "visible");
+    $('.witnesses-popup').show();
 }
 
 function cancelWitnessChange() {
-    $('.witnesses-popup').css("visibility","hidden");
+    $('.witnesses-popup').hide();
 }
 
 function okWitnessChange() {
@@ -748,7 +748,7 @@ function okWitnessChange() {
             selectedId = $(this).attr("id");
         }
     });
-    $('.witnesses-popup').css("visibility","hidden");
+    $('.witnesses-popup').hide();
     
     // determine the two witness Ids using the knowledge 
     // of which id was just changed to find the other

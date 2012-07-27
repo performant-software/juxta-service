@@ -3,14 +3,13 @@
  */
 /*global $, document, Raphael, alert, window, location */
 
-
 /**
  * Get the maximum, non-scrolling height for the heatmap content area
  */
 var getMaxNonScrollHeight = function() {
    var maxH = $("#juxta-ws-content").parent().height();
    var extraH = $(".header").outerHeight() + $(".heatmap-toolbar").outerHeight();
-   if ( $("#condensed").text() === "true" ) {
+   if ($("#condensed").text() === "true") {
       extraH = extraH + $("#condensed-heatmap-footer").outerHeight()
    }
    return (maxH - extraH );
@@ -37,7 +36,7 @@ var renderWitnessChangeIndexes = function() {
       var boxW = $(this).width() / 8 - 2;
       var x = 1;
       var i;
-      for ( i = 0; i < 8; i+=1) {
+      for ( i = 0; i < 8; i += 1) {
          var box = paper.rect(x, 6, boxW, 10, 3);
          var currentLevel = i / 8.0;
          if (currentLevel <= changeIndex) {
@@ -56,7 +55,7 @@ var renderWitnessChangeIndexes = function() {
 /**
  * Purge the cached heatmap data and re-render the contents
  */
-var refreshHeatmap = function () {
+var refreshHeatmap = function() {
 
    // send an ajax DELETE to purge the heatmap cache for this set. Once
    // successful, just reload the page to get the updated view
@@ -78,7 +77,7 @@ var refreshHeatmap = function () {
 /**
  * Show a note or margin box in the gutter, and align it with the specified top position
  */
-var showAndAlign = function (top, tgtEle, tgtClass, ownerDiv) {
+var showAndAlign = function(top, tgtEle, tgtClass, ownerDiv) {
    tgtEle.width(ownerDiv.width() - 8);
    tgtEle.css({
       position : "relative",
@@ -113,7 +112,7 @@ var layoutNotes = function() {
       var anchorId = "note-anchor-" + noteId.substring(5);
       var anchor = $("#" + anchorId);
 
-      if ( anchor.exists() ) {
+      if (anchor.exists()) {
          // the first note just gets positioned directly.
          if (lastTop === -1) {
             top = anchor.position().top - scrollPos + scrollTop;
@@ -130,11 +129,11 @@ var layoutNotes = function() {
                top -= totalHeight;
             }
          }
-   
+
          if (firstTop === -1) {
             firstTop = top;
          }
-   
+
          showAndAlign(top, $(this), 'note', $("#note-boxes"));
          totalHeight += $(this).outerHeight();
          lastTop = top;
@@ -152,11 +151,11 @@ var layoutNotes = function() {
 };
 
 /**
- * Toggle view of revisions 
+ * Toggle view of revisions
  */
 var toggleRevisionStyle = function() {
    var revTags = $(".rev");
-   if ( $("#revisions-button").hasClass("pushed") === false ) {
+   if ($("#revisions-button").hasClass("pushed") === false) {
       $("#revisions-button").addClass("pushed");
       revTags.removeClass("plain-revs");
       revTags.addClass("reveal");
@@ -172,7 +171,7 @@ var toggleRevisionStyle = function() {
  */
 var togglePbTags = function() {
    var pbTags = $(".page-break");
-   if ( $("#pb-button").hasClass("pushed") === false ) {
+   if ($("#pb-button").hasClass("pushed") === false) {
       $("#pb-button").addClass("pushed");
       pbTags.show();
    } else {
@@ -186,7 +185,7 @@ var togglePbTags = function() {
  */
 var toggleNotes = function() {
    var notes = $(".note-anchor");
-   if ( $("#notes-button").hasClass("pushed") === false) {
+   if ($("#notes-button").hasClass("pushed") === false) {
       $("#notes-button").addClass("pushed");
       notes.removeClass("note-anchor-hidden");
       $("#note-boxes").show();
@@ -200,11 +199,11 @@ var toggleNotes = function() {
 /**
  * Clear out all margin boxes and replace with note boxes
  */
-var clearBoxes = function () {
+var clearBoxes = function() {
    $("#margin-boxes").fadeOut(250, function() {
       var priorActive = $(".active");
       priorActive.removeClass("active");
-      if ( $("#condensed").text() === 'true') {
+      if ($("#condensed").text() === 'true') {
          if ($("#notes-button").data("selected")) {
             $("#note-boxes").fadeIn(250);
             layoutNotes();
@@ -218,7 +217,7 @@ var clearBoxes = function () {
 /**
  * Show all margin boxes for the specified alignment
  */
-var showMarginBoxes = function (alignId) {
+var showMarginBoxes = function(alignId) {
 
    // if we clicked same diff, do nothing otherwise clear the old one
    var priorActive = $(".active");
@@ -268,7 +267,7 @@ var showMarginBoxes = function (alignId) {
 
          // fill boxes with change data
          var idx;
-         for ( idx = 0; idx < jsonData.length; idx+=1) {
+         for ( idx = 0; idx < jsonData.length; idx += 1) {
             var diff = jsonData[idx];
             var boxId = idx + 1;
 
@@ -279,21 +278,22 @@ var showMarginBoxes = function (alignId) {
             var txtEle = $('#box-txt-' + boxId);
             txtEle.html(diff.fragment);
 
-            if ( $("#condensed").text() === 'false' )  {
+            if ($("#condensed").text() === 'false') {
                showAndAlign(boxTop, $("#box-" + boxId), 'margin-box', $("#margin-boxes"));
                boxTop = boxTop + 5;
             } else {
                $("#box-" + boxId).show();
             }
          }
-         
-         if ( $("#condensed").text() === 'true' ) {
+
+         if ($("#condensed").text() === 'true') {
             $("#heatmap-text").addClass("dimmed");
-            var x  = $("#heatmap-text").position().top + $("#heatmap-text").outerHeight();
-            $("#margin-boxes").css("left", ( $("#heatmap-text").width() - $("#margin-boxes").width())/2);
-            $("#margin-boxes").css("top", boxTop-x+40-$("#heatmap-scroller").scrollTop());  // to to get it down a bit from src diff
+            var x = $("#heatmap-text").position().top + $("#heatmap-text").outerHeight();
+            $("#margin-boxes").css("left", ($("#heatmap-text").width() - $("#margin-boxes").width()) / 2);
+            $("#margin-boxes").css("top", boxTop - x + 40 - $("#heatmap-scroller").scrollTop());
+            // to to get it down a bit from src diff
          }
-         
+
          $('#wait-popup').hide();
          $("#heatmap-text").trigger('diff-request-complete');
       },
@@ -324,17 +324,17 @@ var initializeHeatmap = function() {
    }
 
    // Setup the full heatmap UI as long as we are not in condensed mode
-   if ( $("#condensed").text() === 'false' ) {
-      
+   if ($("#condensed").text() === 'false') {
+
       // initially, notes and pagebreaks are displayed. set buttons to pushed
       $("#notes-button").addClass("pushed");
       $("#pb-button").addClass("pushed");
-   
+
       // create a bunch of raphael canvases
       // for the non-base witnesses. Render the colored
       // blocks in them to indicate change index
       renderWitnessChangeIndexes();
-   
+
       // space the note boxes in the margins and handle highlighting
       // note / anchor pairs on mouse movement
       layoutNotes();
@@ -354,7 +354,7 @@ var initializeHeatmap = function() {
          anchorSpan.removeClass("note-anchor-highlighted");
          anchorSpan.addClass("note-anchor");
       });
-        
+
       // change base witness by clicking on name in witness list on left
       $(".witness").on("click", function() {
          var witnessId = $(this).attr("id");
@@ -364,8 +364,40 @@ var initializeHeatmap = function() {
          var csUrl = $('#ajax-base-url').text() + setId + $('#view-heatmap-segment').text() + "&base=" + id;
          window.location = csUrl;
       });
-   } 
-   
+   } else {
+      // show the pick base popover
+      $("#condensed-list-button").on("click", function() {
+         $(".witness-option").each(function(index) {
+            if ($(this).attr("id") == $("#baseId").text()) {
+               $(this).attr("selected", "selected");
+            }
+         });
+
+         $(this).position().top
+         $('.witnesses-popup').css({
+            "top" : $(this).position().top + $(this).outerHeight() - $('#pick-base-popup').outerHeight() + "px",
+            "left" : $(this).position().left + "px"
+         });
+         $('#pick-base-popup').show();
+      });
+
+      // pick new base
+      $("#base-ok-button").on("click", function() {
+         var newBaseId = "";
+         $(".witness-option").each(function(index) {
+            if ($(this).attr("selected") == "selected") {
+               newBaseId = $(this).attr("id");
+            }
+         });
+         var setId = $('#setId').text();
+         var csUrl = $('#ajax-base-url').text() + setId + $('#view-heatmap-segment').text() + "&base=" + newBaseId;
+         window.location = csUrl;
+      });
+      $("#base-cancel-button").on("click", function() {
+         $('#pick-base-popup').hide();
+      });
+   }
+
    // clicks on background clear boxes
    // and revert to note display
    $("body").click(function() {
