@@ -387,7 +387,7 @@ $(function() {
       }
 
       // when in locked mode, only show the RIGHT scrollbar
-      if (Juxta.SideBySide.isLocked()) {
+      if (window.Juxta.SideBySide.isLocked()) {
          $("#left-witness-text").css("overflow-y", "hidden");
       }
    };
@@ -685,7 +685,7 @@ $(function() {
          // when locked and moving wheel over the left witness,
          // just transfer the scroll to the RIGHT text and sync the two
          var currTop = 0;
-         if (Juxta.SideBySide.isLocked()) {
+         if ( window.Juxta.SideBySide.isLocked()) {
             $("#right-witness-text").data("action", "wheel");
             currTop = $("#right-witness-text").scrollTop();
             $("#right-witness-text").scrollTop(currTop -= (delta * 30));
@@ -706,7 +706,7 @@ $(function() {
          $("#right-witness-text").scrollTop(currTop -= (delta * 30));
          $("#right-gutter-div").scrollTop($("#right-witness-text").scrollTop());
 
-         if (Juxta.SideBySide.isLocked()) {
+         if ( window.Juxta.SideBySide.isLocked()) {
             // in locked mode sync the right and left texts
             syncScrolling();
          } else {
@@ -723,7 +723,7 @@ $(function() {
          // always keep the gutter in-sync with the text
          $("#left-gutter-div").scrollTop($("#left-witness-text").scrollTop());
 
-         if (Juxta.SideBySide.isLocked() === false) {
+         if ( window.Juxta.SideBySide.isLocked() === false) {
             // just update the connecting lines
             renderConnections();
          } else {
@@ -751,7 +751,7 @@ $(function() {
          $("#right-gutter-div").scrollTop($("#right-witness-text").scrollTop());
 
          // right drives the sync sync. Handle this here.
-         if (Juxta.SideBySide.isLocked()) {
+         if ( window.Juxta.SideBySide.isLocked()) {
             var data = $("#right-witness-text").data("action");
             $("#right-witness-text").data("action", "none");
             if (data === "none") {
@@ -762,6 +762,34 @@ $(function() {
             renderConnections();
          }
       });
+   };
+   
+   window.Juxta.SideBySide.syncDocuments = function ( topOffset ) {
+      var leftTop = $("#left-witness-text").scrollTop();
+      var diffTop;
+      var bestDiff = null;
+      var smallestDist = 99999999;
+      var testDist = 0;
+      $.each( $("#left-witness-text").find(".diff"), function(i, diff) {
+         diffTop = $(diff).offset().top - $("#left-witness-text").offset().top;
+         if ( diffTop > 0 ) {
+            testDist = diffTop - topOffset;
+            if ( testDist > 0 && testDist < smallestDist ) {
+               bestDiff =  diff;
+               smallestDist = testDist;
+            }
+            
+            var bottom = $("#left-witness-text").position().top + $("#left-witness-text").height();
+            if ( diffTop > bottom) {
+               return false;
+            }
+         }
+      });
+      
+      setTimeout( function() {
+         //$(bestDiff).css("color", "red");
+         alignOnDiff( $(bestDiff) );
+         }, 500);
    };
 
    /**
