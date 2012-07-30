@@ -26,12 +26,12 @@ $(document).ready(function() {
         });
     }
     
-    // init visualizations
-    if ( isHeatmap() ) {
-        initializeHeatmap();
-    } else if ( isSideBySide() ) {
-        initializeSideBySide();
-    }
+    $("body").on("heatmap-loaded", function() {
+       Juxta.Heatmap.initialize();
+    });
+    $("body").on("sidebyside-loaded", function() {
+       Juxta.SideBySide.initialize();
+    });
 });
 
 function initializeMenu() {

@@ -23,6 +23,7 @@
     
     <body>
 
+		<span id="embedded" style="display: none">${embedded?string}</span>
         <span id="curr-workspace" style="display: none">${workspace}</span>
         <span id="curr-workspace-id" style="display: none">${workspaceId}</span>
         <span id="serviceUrl" style="display: none">${baseUrl}</span>

@@ -1,5 +1,6 @@
 
 <div id="side-by-side">
+    <span id="embedded" style="display: none">${embedded?string}</span>
     <span id="setId" style="display: none">${setId}</span>
     <#assign witnessCount = witnesses?size>
     <span id="witness-count" style="display: none">${witnessCount}</span>
@@ -7,7 +8,7 @@
     <div id="left-witness" class="left-witness">
         <div class="header">
             <div class="sbs-title" title="${witnessDetails[0].name}">${witnessDetails[0].name}</div>
-            <a id="change-left" class="juxta-button sbs-button" href="javascript:changeWitness('change-left');">Change</a>
+            <a id="change-left" class="juxta-button sbs-button">Change</a>
             <div style="clear: both;"></div>
         </div>
         <span id="left-witness-id" style="display: none">${witnessDetails[0].id}</span>
@@ -24,7 +25,7 @@
     <div id="right-witness" class="right-witness">
         <div class="header">
             <div class="sbs-title" title="${witnessDetails[1].name}">${witnessDetails[1].name}</div>
-            <a id="change-right" class="juxta-button sbs-button" href="javascript:changeWitness('change-right');">Change</a>
+            <a id="change-right" class="juxta-button sbs-button">Change</a>
             <div style="clear: both;"></div>
         </div>
         <span id="right-witness-id" style="display: none">${witnessDetails[1].id}</span>
@@ -47,8 +48,8 @@
         </#list>
     </select>
     <div class="popup-buttons">
-        <a id="sbs-ok-button" class="juxta-button sbs-button" href="javascript:okWitnessChange();">OK</a>
-        <a id="sbs-cancel-button" class="juxta-button sbs-button" href="javascript:cancelWitnessChange();">Cancel</a>
+        <a id="sbs-ok-button" class="juxta-button sbs-button">OK</a>
+        <a id="sbs-cancel-button" class="juxta-button sbs-button">Cancel</a>
     </div>
 </div>
 

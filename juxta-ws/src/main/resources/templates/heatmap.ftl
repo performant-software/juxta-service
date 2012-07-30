@@ -34,20 +34,16 @@
         <#if (embedded && ( hasRevisions || hasNotes || hasBreaks)) || !embedded >
             <div class="heatmap-toolbar">
                 <#if hasRevisions>
-                    <a class="juxta-button" id="revisions-button" href="javascript:toggleRevisionStyle();" 
-                       title="Toggle revision styling">Revisions</a>
+                    <a class="juxta-button" id="revisions-button" title="Toggle revision styling">Revisions</a>
                 </#if>
                 <#if hasNotes >
-                    <a class="juxta-button" id="notes-button" href="javascript:toggleNotes();"
-                       title="Toggle notes visibiity">Notes</a>
+                    <a class="juxta-button" id="notes-button" title="Toggle notes visibiity">Notes</a>
                 </#if>
                 <#if hasBreaks>
-                    <a class="juxta-button" id="pb-button" href="javascript:togglePbTags();"
-                       title="Toggle page break visibility">Page Breaks</a>
+                    <a class="juxta-button" id="pb-button" title="Toggle page break visibility">Page Breaks</a>
                 </#if>
                 <#if !embedded>
-                    <a class="juxta-button" id="refresh-button" href="javascript:refreshHeatmap();"
-                       title="Refresh heatmap view">Refresh</a>
+                    <a class="juxta-button" id="refresh-button" title="Refresh heatmap view">Refresh</a>
                 </#if>
             </div> 
          </#if>
