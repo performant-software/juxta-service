@@ -15,7 +15,7 @@ $(function() {
       return locked;
    };
 
-   var getMaxWitnessHeight = function() {
+   window.Juxta.SideBySide.getMaxWitnessHeight = function() {
       return $("#side-by-side").data("maxWitnessHeight");
    };
 
@@ -352,9 +352,9 @@ $(function() {
       $("#right-gutter-div").height(height);
 
       // create papers to match size
-      $("#left-gutter-div").data("paper", new Raphael(document.getElementById('left-gutter-div'), 6, getMaxWitnessHeight() + 100));
+      $("#left-gutter-div").data("paper", new Raphael(document.getElementById('left-gutter-div'), 6, window.Juxta.SideBySide.getMaxWitnessHeight() + 100));
       $("#connections-div").data("paper", new Raphael(document.getElementById('connections-div'), width - 12, height));
-      $("#right-gutter-div").data("paper", new Raphael(document.getElementById('right-gutter-div'), 6, getMaxWitnessHeight() + 100));
+      $("#right-gutter-div").data("paper", new Raphael(document.getElementById('right-gutter-div'), 6, window.Juxta.SideBySide.getMaxWitnessHeight() + 100));
       renderAlignmentGutter();
    };
 
@@ -377,11 +377,11 @@ $(function() {
          newH = parent.height() - extraH;
       }
 
-      if (newH < getMaxWitnessHeight()) {
+      if (newH < window.Juxta.SideBySide.getMaxWitnessHeight()) {
          $(".witness-text").height(newH);
          $(".witness-text").css("overflow-y", "visible");
       } else {
-         $(".witness-text").height(getMaxWitnessHeight());
+         $(".witness-text").height(window.Juxta.SideBySide.getMaxWitnessHeight());
          $(".witness-text").css("overflow-y", "hidden");
          $("#scroll-mode-img").css("visibility", "hidden");
       }
@@ -408,7 +408,7 @@ $(function() {
          $("#left-witness-text").css("overflow-y", "hidden");
       } else {
          $("#scroll-mode-img").attr("src", imgSrc + "/unlock.gif");
-         if (getMaxWitnessHeight() > $("#left-witness-text").height()) {
+         if (window.Juxta.SideBySide.getMaxWitnessHeight() > $("#left-witness-text").height()) {
             $("#left-witness-text").css("overflow-y", "visible");
          }
       }
