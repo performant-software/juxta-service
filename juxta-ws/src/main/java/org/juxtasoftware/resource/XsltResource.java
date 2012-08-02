@@ -171,9 +171,21 @@ public class XsltResource extends BaseResource  {
         }        
   
         try {
+            // make sure this doesn't break an in-process collation
+            List<Usage> usage = this.xsltDao.getUsage(xslt);
+            for (Usage u : usage) {
+                if ( u.getType().equals(Usage.Type.COMPARISON_SET)) {
+                    ComparisonSet s = this.setDao.find(u.getId());
+                    if ( s.getStatus().equals(ComparisonSet.Status.COLLATING)) {
+                        setStatus(Status.CLIENT_ERROR_CONFLICT);
+                        return toTextRepresentation("Cannot prepare witness; related set '"+s.getName()+"' is collating.");
+                    }
+                }
+            }
+            
             // update the DB with new content for XSLT
             this.xsltDao.update(this.xsltId, new StringReader(updatedXslt) );
-            List<Usage> usage = this.xsltDao.getUsage(xslt);
+            
             
             // If this witness was generated from a TEI parallel segmented
             // source, it must be handled differently. Re-Import the source!

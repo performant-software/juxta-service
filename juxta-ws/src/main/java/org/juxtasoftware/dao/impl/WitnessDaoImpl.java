@@ -116,7 +116,7 @@ public class WitnessDaoImpl implements WitnessDao, InitializingBean {
     }
     
     @Override
-    public List<Usage> delete(final Witness witness) {
+    public void delete(final Witness witness) {
         // get a list of all uses of this witness.
         // Mark sets as NOT collated, clear their collation cache and remove all
         // alignments
@@ -146,8 +146,6 @@ public class WitnessDaoImpl implements WitnessDao, InitializingBean {
                 }
             }
         });
-
-        return usage;
     }
 
     protected SqlParameterSource toInsertData(Witness object) {

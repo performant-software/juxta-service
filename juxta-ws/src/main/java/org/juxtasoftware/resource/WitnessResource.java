@@ -6,8 +6,10 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang.StringEscapeUtils;
+import org.juxtasoftware.dao.ComparisonSetDao;
 import org.juxtasoftware.dao.JuxtaXsltDao;
 import org.juxtasoftware.dao.WitnessDao;
+import org.juxtasoftware.model.ComparisonSet;
 import org.juxtasoftware.model.JuxtaXslt;
 import org.juxtasoftware.model.Usage;
 import org.juxtasoftware.model.Witness;
@@ -45,6 +47,7 @@ public class WitnessResource extends BaseResource {
     
     @Autowired private WitnessDao witnessDao;
     @Autowired private JuxtaXsltDao xsltDao;
+    @Autowired private ComparisonSetDao setDao;
 
     /**
      * Extract the text ID and range info from the request attributes
@@ -157,7 +160,18 @@ public class WitnessResource extends BaseResource {
         // delete the witness  - this will schedule deletion of all
         // witness text, annotations and sets collation data that used it
         LOG.info("DELETE "+this.witness);
-        List<Usage> usage = this.witnessDao.delete( witness ); 
+        List<Usage> usage = this.witnessDao.getUsage( this.witness ); 
+        for (Usage u : usage ) {
+            if ( u.getType().equals(Usage.Type.COMPARISON_SET)) {
+                ComparisonSet s = this.setDao.find(u.getId());
+                if ( s.getStatus().equals(ComparisonSet.Status.COLLATING)) {
+                    setStatus(Status.CLIENT_ERROR_CONFLICT);
+                    return toTextRepresentation("Cannot delete witness; related set '"+s.getName()+"' is collating.");
+                }
+            }
+        }
+        
+        this.witnessDao.delete( this.witness );
         JuxtaXslt xslt = this.xsltDao.find( this.witness.getXsltId() );
         try {
             this.xsltDao.delete( xslt );

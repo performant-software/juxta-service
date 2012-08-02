@@ -280,6 +280,17 @@ public class SourceResource extends BaseResource  {
      * @return
      */
     private Representation updateSource( InputStream srcInputStream, final String newName )  {
+        List<Usage> usage = this.sourceDao.getUsage(this.source);
+        for (Usage u : usage) {
+            if ( u.getType().equals(Usage.Type.COMPARISON_SET)) {
+                ComparisonSet s = this.setDao.find(u.getId());
+                if ( s.getStatus().equals(ComparisonSet.Status.COLLATING)) {
+                    setStatus(Status.CLIENT_ERROR_CONFLICT);
+                    return toTextRepresentation("Cannot update source; related set '"+s.getName()+"' is collating.");
+                }
+            }
+        }
+        
         SourceUpdater updater = new SourceUpdater(this.source, srcInputStream, newName);
         this.taskManager.submit( new UpdateTask(updater));
         return toJsonRepresentation(this.source.getId().toString());
@@ -304,6 +315,17 @@ public class SourceResource extends BaseResource  {
         
         // Get a list of all uses of this source
         List<Usage> usage = this.sourceDao.getUsage(this.source);
+        
+        // first, be sure this is not part of a collating set
+        for (Usage u : usage) {
+            if ( u.getType().equals(Usage.Type.COMPARISON_SET)) {
+                ComparisonSet s = this.setDao.find(u.getId());
+                if ( s.getStatus().equals(ComparisonSet.Status.COLLATING)) {
+                    setStatus(Status.CLIENT_ERROR_CONFLICT);
+                    return toTextRepresentation("Cannot delete source; related set '"+s.getName()+"' is collating.");
+                }
+            }
+        }
         Set<JuxtaXslt> xslts = new HashSet<JuxtaXslt>();
         for (Usage u : usage) {
             // Manually delete the witness. This is necessary

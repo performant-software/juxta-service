@@ -210,9 +210,14 @@ public class ComparisonSetResource extends BaseResource {
     }
    
     @Delete
-    public void deleteComparisonSet() {
+    public Representation deleteComparisonSet() {
         LOG.info("Delete set "+this.set.getId());
+        if ( this.set.getStatus().equals(ComparisonSet.Status.COLLATING)) {
+            setStatus(Status.CLIENT_ERROR_CONFLICT);
+            return toTextRepresentation("Cannot delete set; collation is in progress");
+        }
         this.comparionSetDao.delete(set);
+        return toTextRepresentation("ok");
     }
 
     private static class SourceExclusion implements ExclusionStrategy {

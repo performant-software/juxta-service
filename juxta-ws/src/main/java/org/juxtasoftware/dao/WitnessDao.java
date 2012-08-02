@@ -45,7 +45,7 @@ public interface WitnessDao  {
      * @param wit
      * @return
      */
-    List<Usage> delete( final Witness wit );
+    void delete( final Witness wit );
     
     /**
      * Update the witness content

@@ -41,11 +41,6 @@
     <task:annotation-driven />
     <task:executor id="executor" pool-size="${juxta.concurrent.tasks}" queue-capacity="200" />
     <task:executor id="collate-executor" pool-size="${juxta.concurrent.collations}" queue-capacity="200" />
-   
-    <!-- Juxta WS version property -->
-    <bean id="version" class="java.lang.String" factory-method="valueOf">
-        <constructor-arg value="1.7-SNAPSHOT"/>
-    </bean>
     
     <!-- property containing the allow-access whitelist -->
     <bean id="allowAccessList" class="java.lang.String" factory-method="valueOf">
@@ -74,5 +69,11 @@
     </bean>
     <bean id="collationBatchSize" class="java.lang.Integer" factory-method="valueOf">
         <constructor-arg value="${juxta.collation.batch}" />
+    </bean>
+    
+       
+    <!-- Juxta WS version property -->
+    <bean id="version" class="java.lang.String" factory-method="valueOf">
+        <constructor-arg value="1.7-RC1"/>
     </bean>
 </beans>
