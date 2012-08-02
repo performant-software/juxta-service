@@ -155,6 +155,10 @@ public class ComparisonSetResource extends BaseResource {
     
     private Representation deleteWitnesses(String jsonWitnesses) {
         LOG.info("Delete Witnesses "+jsonWitnesses+" from set "+this.set.getId());
+        if ( this.set.getStatus().equals(ComparisonSet.Status.COLLATING)) {
+            setStatus(Status.CLIENT_ERROR_CONFLICT);
+            return toTextRepresentation("Cannot alter set; collation is in progress");
+        }
         JsonParser parser = new JsonParser();
         JsonArray jsonArray = parser.parse(jsonWitnesses).getAsJsonArray();
         Set<Witness> currWits = this.comparionSetDao.getWitnesses(this.set);
@@ -181,6 +185,10 @@ public class ComparisonSetResource extends BaseResource {
 
     private Representation addWitnesses( final String jsonWitnesses ) {
         LOG.info("Add Witnesses "+jsonWitnesses+" to set "+this.set.getId());
+        if ( this.set.getStatus().equals(ComparisonSet.Status.COLLATING)) {
+            setStatus(Status.CLIENT_ERROR_CONFLICT);
+            return toTextRepresentation("Cannot alter set; collation is in progress");
+        }
         JsonParser parser = new JsonParser();
         JsonArray jsonArray = parser.parse(jsonWitnesses).getAsJsonArray();
         Set<Witness> currWits = this.comparionSetDao.getWitnesses(this.set);
