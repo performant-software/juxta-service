@@ -5,9 +5,7 @@
         <li><a id="root" href="${baseUrl}">Home</a></li>
         
         <li><a id="source" href="${baseUrl}/${workspace}/source">Sources</a></li>   
-        
-        <li><a id="parse_template" href="${baseUrl}/${workspace}/template">Templates</a></li>
-        
+                
         <li><a id="witness" href="${baseUrl}/${workspace}/witness">Witnesses</a></li>
         
         <li><a id="set" href="${baseUrl}/${workspace}/set">Comparison Sets</a></li>
