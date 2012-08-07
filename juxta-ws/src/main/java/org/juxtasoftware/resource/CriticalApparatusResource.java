@@ -113,10 +113,15 @@ public class CriticalApparatusResource extends BaseResource {
     private JsonElement generateLemmas( final Witness base, final List<Witness> witnesses ) {
         
         QNameFilter changesFilter = this.filters.getDifferencesFilter();
-        AlignmentConstraint constraints = new AlignmentConstraint(set, baseWitnessId);
+        AlignmentConstraint constraints = new AlignmentConstraint(this.set, this.baseWitnessId);
         constraints.setFilter(changesFilter);
         List<Alignment> alignments = this.alignmentDao.list(constraints);
         
+        // add in transpositions
+        constraints = new AlignmentConstraint(this.set, this.baseWitnessId);
+        constraints.setFilter( this.filters.getTranspositionsFilter() );
+        alignments.addAll( this.alignmentDao.list(constraints) );
+
         if ( alignments.size() == 0) {
             return new JsonArray();
         }
@@ -182,8 +187,7 @@ public class CriticalApparatusResource extends BaseResource {
             Lemma lemma = itr.next();
             if (prior != null) {
                 // See if these are a candidate to merge
-                if ( lemma.hasMatchingGroup( prior ) && lemma.hasMatchingWitnesses(prior) ){ //&& 
-                     //lemma.getDifferenceFrequency() == prior.getDifferenceFrequency()) {
+                if ( lemma.hasMatchingGroup( prior ) && lemma.hasMatchingWitnesses(prior) ){ 
                     prior.merge(lemma);
                     itr.remove();
                     continue;
@@ -272,10 +276,6 @@ public class CriticalApparatusResource extends BaseResource {
         public final Range getRange() {
             return this.range;
         }
-        
-//        public final int getDifferenceFrequency() {
-//            return this.witnessRangeMap.size();
-//        }
         
         public final Map<Long, Range> getWitnessRangeMap() {
             return this.witnessRangeMap;
