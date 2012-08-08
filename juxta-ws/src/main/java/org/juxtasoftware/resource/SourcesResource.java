@@ -2,9 +2,10 @@ package org.juxtasoftware.resource;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.FileReader;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.lang.reflect.Type;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -22,6 +23,7 @@ import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.params.HttpMethodParams;
+import org.apache.commons.io.IOUtils;
 import org.juxtasoftware.dao.SourceDao;
 import org.juxtasoftware.model.Source;
 import org.juxtasoftware.util.EncodingUtils;
@@ -238,17 +240,22 @@ public class SourcesResource extends BaseResource {
         
         if ( contentType.equalsIgnoreCase("txt")) {
             File fixed = EncodingUtils.fixEncoding( new ByteArrayInputStream(data.getBytes()), false );
-            Long id = this.sourceDao.create(this.workspace, name, false, new FileReader(fixed));
-            fixed.delete();
-            return id;
+            return writeSourceData(fixed, name, false);
         } else if ( contentType.equalsIgnoreCase("xml")) {
             File fixed = EncodingUtils.fixEncoding( new ByteArrayInputStream(data.getBytes()), true );
-            Long id = this.sourceDao.create(this.workspace, name, true, new FileReader(fixed));
-            fixed.delete();
-            return id;
+            return writeSourceData(fixed, name, true);
         } else {
             throw new Exception("Invalid content type specified: "+contentType);
         }
+    }
+    
+    private Long writeSourceData( File srcFile, final String name, final boolean isXml )  throws IOException, XMLStreamException {
+        FileInputStream fis = new FileInputStream(srcFile);
+        InputStreamReader isr = new InputStreamReader(fis, "UTF-8");
+        Long id = this.sourceDao.create(this.workspace, name, isXml, isr);
+        IOUtils.closeQuietly(isr);
+        srcFile.delete();
+        return id;
     }
 
     private Long scrapeExternalUrl(final String name, final String url, final String contentType) throws Exception {
@@ -268,10 +275,7 @@ public class SourcesResource extends BaseResource {
                     "Try breaking the source into smaller segments and re-submitting.";
                 throw new Exception(err);
             }
-            
-            Long id = this.sourceDao.create(this.workspace, name, isXml, new FileReader(fixed) );
-            fixed.delete();
-            return id;
+            return writeSourceData(fixed, name, isXml);
         } catch (Exception e) {
             e.printStackTrace();
             throw e;
@@ -298,15 +302,14 @@ public class SourcesResource extends BaseResource {
             if ( this.maxSourceSize > 0 && fixed.length() > this.maxSourceSize ) {
                 throw new FileSizeLimitExceededException(sourceName+" too big",fixed.length(), this.maxSourceSize );
             }
-            Long id =  this.sourceDao.create(this.workspace, sourceName, true, new FileReader(fixed));
-            fixed.delete();
-            return id;
+            return writeSourceData(fixed, sourceName, true);
         } else if ( MediaType.TEXT_PLAIN.isCompatible( contentType ) || MediaType.TEXT_HTML.isCompatible( contentType ) ) {
             LOG.info("Accepting plain text source document");
             File fixed = EncodingUtils.fixEncoding(srcInputStream, false);
-            Long id = this.sourceDao.create(this.workspace, sourceName, false, new FileReader(fixed));
-            fixed.delete();
-            return id;
+            if ( this.maxSourceSize > 0 && fixed.length() > this.maxSourceSize ) {
+                throw new FileSizeLimitExceededException(sourceName+" too big",fixed.length(), this.maxSourceSize );
+            }
+            return writeSourceData(fixed, sourceName, false);
         } else {
             throw new IOException("Unsupported content type "+contentType);
         }

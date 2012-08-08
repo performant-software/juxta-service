@@ -6,9 +6,9 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -19,6 +19,7 @@ import java.util.zip.ZipInputStream;
 
 import javax.xml.stream.XMLStreamException;
 
+import org.apache.commons.io.IOUtils;
 import org.juxtasoftware.Constants;
 import org.juxtasoftware.dao.AlignmentDao;
 import org.juxtasoftware.dao.CacheDao;
@@ -154,6 +155,7 @@ public class JxtImportServiceImpl implements ImportService<InputStream> {
                         
             // tokenize and collate
             CollatorConfig cfg = this.setDao.getCollatorConfig(this.set);
+            this.set.setStatus(ComparisonSet.Status.COLLATING);
             tokenize( cfg );
             collate( cfg );
             
@@ -362,7 +364,10 @@ public class JxtImportServiceImpl implements ImportService<InputStream> {
             name = this.sourceDao.makeUniqueName(this.ws, name);
             srcInfo.setTitle(name);
         }
-        Long srcId = this.sourceDao.create(this.ws, name, isXml, new FileReader(srcInfo.getSrcFile()));
+        FileInputStream fis = new FileInputStream(srcInfo.getSrcFile());
+        InputStreamReader isr = new InputStreamReader(fis, "UTF-8");
+        Long srcId = this.sourceDao.create(this.ws, name, isXml, isr);
+        IOUtils.closeQuietly(isr);
         return this.sourceDao.find(this.ws.getId(), srcId);
     }
     

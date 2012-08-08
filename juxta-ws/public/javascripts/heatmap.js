@@ -257,7 +257,7 @@ $(function() {
 
       $.ajax({
          contentType : 'application/json',
-         accepts : 'application/json',
+         accepts : { json : 'application/json' }, 
          type : 'GET',
          url : url,
          dataType : 'json',

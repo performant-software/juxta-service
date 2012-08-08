@@ -71,7 +71,9 @@ public final class EncodingUtils {
     }
     
     private static void stripXmlDeclaration(File tmpSrc) throws IOException {
-        BufferedReader r = new BufferedReader( new FileReader(tmpSrc ));
+        FileInputStream fis = new FileInputStream(tmpSrc);
+        InputStreamReader isr = new InputStreamReader(fis, "UTF-8");
+        BufferedReader r = new BufferedReader( isr );
         File out = File.createTempFile("fix", "dat");
         FileOutputStream fos = new FileOutputStream(out);
         boolean pastHeader = false;
@@ -90,6 +92,7 @@ public final class EncodingUtils {
                 break;
             }
         }
+        IOUtils.closeQuietly( r );
         IOUtils.closeQuietly(fos);
         IOUtils.copy(new FileInputStream(out), new FileOutputStream(tmpSrc));
         out.delete();

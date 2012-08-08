@@ -3,9 +3,10 @@ package org.juxtasoftware.service;
 import static eu.interedition.text.query.Criteria.text;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
 
@@ -201,8 +202,12 @@ public class SourceTransformer {
         transformer.transform(xmlSource, result);
         
         // create a text repo entry for the new text
-        Text parsedContent = this.textRepository.create( new FileReader(outFile) );
+        FileInputStream fis = new FileInputStream(outFile);
+        InputStreamReader isr = new InputStreamReader(fis, "UTF-8");
+        Text parsedContent = this.textRepository.create( isr );
+        isr.close();
         outFile.delete();
+        
         return parsedContent;
     }
     

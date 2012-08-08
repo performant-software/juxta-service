@@ -1,8 +1,9 @@
 package org.juxtasoftware.util.ftl;
 
 import java.io.File;
-import java.io.FileReader;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.Writer;
 import java.util.Map;
 
@@ -66,16 +67,17 @@ public class FileDirective implements TemplateDirectiveModel {
         }
         
         // Stream in the data
-        FileReader fr = null;
+        InputStreamReader isr = null;
         final SimpleScalar scalarValue = (SimpleScalar)params.get("src");
         final String srcFile = scalarValue.getAsString();
         File src = new File( srcFile );
         try {
             Writer out = env.getOut();
-            fr = new FileReader(src);
+            FileInputStream fis = new FileInputStream(src);
+            isr = new InputStreamReader(fis, "UTF-8");
             int pos = 0;
             while (true) {
-                int data = fr.read();
+                int data = isr.read();
                 if (data == -1 ) {
                     break;
                 } else {
@@ -95,7 +97,7 @@ public class FileDirective implements TemplateDirectiveModel {
         } catch (Exception e) {
             e.printStackTrace();
         } finally  {
-            Closeables.closeQuietly(fr);
+            Closeables.closeQuietly(isr);
         }
         
         // notify others that we are done with the file
