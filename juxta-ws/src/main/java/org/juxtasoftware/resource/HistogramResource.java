@@ -75,7 +75,11 @@ public class HistogramResource extends BaseResource {
             Representation rep = new ReaderRepresentation( 
                 this.cacheDao.getHistogram(this.set.getId(), this.baseWitnessId), 
                 MediaType.APPLICATION_JSON);
-            return new EncodeRepresentation(Encoding.GZIP, rep);
+            if ( isZipSupported() ) {
+                return new EncodeRepresentation(Encoding.GZIP, rep);
+            } else {
+                return rep;
+            }
         }
         
         // Algorithm: 
@@ -172,7 +176,11 @@ public class HistogramResource extends BaseResource {
         
         // send cached data from DB up to client
         Representation rep = new ReaderRepresentation( this.cacheDao.getHistogram(this.set.getId(), this.baseWitnessId), MediaType.APPLICATION_JSON);
-        return new EncodeRepresentation(Encoding.GZIP, rep);
+        if ( isZipSupported() ) {
+            return new EncodeRepresentation(Encoding.GZIP, rep);
+        } else {
+            return rep;
+        }
     }
     
     /**

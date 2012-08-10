@@ -3,98 +3,30 @@ package org.juxtasoftware.dao;
 import java.io.Reader;
 
 /**
- * DAO to access collation cache
+ * DAO to access cached collation / visualization information
  * @author loufoster
  *
  */
 public interface CacheDao {
     
-    /**
-     * Check if a heamap view exists
-     * @param setId
-     * @param baseId
-     * @return
-     */
     boolean heatmapExists(  final Long setId, final Long baseId, boolean condensed );
-    
-    /**
-     * Get a reader for a heatmap view on the specified set/base witness pair
-     * @param setId
-     * @param baseId
-     * @return
-     */
     Reader getHeatmap( final Long setId, final Long baseId, boolean condensed  );
-    
-    /**
-     * Cache a heatmap view with for the specified set/base witness pair
-     * @param setId
-     * @param baseId
-     * @param data
-     */
     void cacheHeatmap( final Long setId, final Long baseId, Reader data, boolean condensed );
-   
-    
-    boolean histogramExists(  final Long setId, final Long baseId  );
-    
-    /**
-     * Get a reader for a histogram data for specified set/base witness pair
-     * @param setId
-     * @param baseId
-     * @return
-     */
-    Reader getHistogram( final Long setId, final Long baseId );
-    
-    /**
-     * Cache histogram data
-     * @param setId
-     * @param baseId
-     * @param data
-     */
-    void cacheHistogram( final Long setId, final Long baseId, Reader data);
-    
-    /**
-     * Remove ALL cached heatmap views for this set
-     * @param setId
-     */
     void deleteHeatmap( final Long setId );
     
-    /**
-     * Remove ALL cached side-by-side views for this set
-     * @param setId
-     */
-    void deleteSideBySide( final Long setId );
+    boolean criticalApparatusExists(  final Long setId, final Long baseId  );
+    Reader getCriticalApparatus( final Long setId, final Long baseId );
+    void cacheCriticalApparatus( final Long setId, final Long baseId, Reader data);
     
+    boolean histogramExists(  final Long setId, final Long baseId  );
+    Reader getHistogram( final Long setId, final Long baseId );
+    void cacheHistogram( final Long setId, final Long baseId, Reader data);
     
-    /**
-     * Cache a side by side view with for the witness pair
-     * @param setId
-     * @param witness1
-     * @param witness2
-     * @param data
-     */
-    void cacheSideBySide( final Long setId, final Long witness1, final Long witness2, Reader data);
-    
-    /**
-     * Check if a side-by-side view exists
-     * @param setId
-     * @param witness1
-     * @param witness2
-     * @return
-     */
     boolean sideBySideExists(  final Long setId, final Long witness1, final Long witness2  );
-    
-    /**
-     * Get a reader for a side-by-side view on the specified witness pair
-     * @param setId
-     * @param witness1
-     * @param witness2
-     * @return
-     */
+    void cacheSideBySide( final Long setId, final Long witness1, final Long witness2, Reader data);
+    void deleteSideBySide( final Long setId );
     Reader getSideBySide( final Long setId, final Long witness1, final Long witness2 );
     
-    /**
-     * Remove all cached data for the specified comparison set
-     * @param setId
-     */
+
     void deleteAll( final Long setId );
 }

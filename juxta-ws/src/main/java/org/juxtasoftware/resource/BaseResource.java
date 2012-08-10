@@ -91,6 +91,10 @@ public class BaseResource extends ServerResource {
         super.doInit();
     }
     
+    protected boolean isZipSupported() {
+        return this.zipSupported;
+    }
+    
     /**
      * Ensure that any model data used by this resource exists
      * and is accessible within the specified workspace

@@ -1,5 +1,6 @@
 package org.juxtasoftware.resource;
 
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -10,6 +11,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.juxtasoftware.dao.AlignmentDao;
+import org.juxtasoftware.dao.CacheDao;
 import org.juxtasoftware.dao.ComparisonSetDao;
 import org.juxtasoftware.dao.WitnessDao;
 import org.juxtasoftware.model.Alignment;
@@ -20,7 +22,11 @@ import org.juxtasoftware.model.QNameFilter;
 import org.juxtasoftware.model.Witness;
 import org.juxtasoftware.util.QNameFilters;
 import org.juxtasoftware.util.RangedTextReader;
+import org.restlet.data.Encoding;
+import org.restlet.data.MediaType;
 import org.restlet.data.Status;
+import org.restlet.engine.application.EncodeRepresentation;
+import org.restlet.representation.ReaderRepresentation;
 import org.restlet.representation.Representation;
 import org.restlet.resource.Get;
 import org.restlet.resource.ResourceException;
@@ -44,6 +50,7 @@ public class CriticalApparatusResource extends BaseResource {
     @Autowired private QNameFilters filters;
     @Autowired private AlignmentDao alignmentDao;
     @Autowired private WitnessDao witnessDao;
+    @Autowired private CacheDao cacheDao;
     
     private ComparisonSet set;
     private Long baseWitnessId;
@@ -82,6 +89,18 @@ public class CriticalApparatusResource extends BaseResource {
             this.baseWitnessId = witnesses.get(0).getId();
         }
         
+        // send back cached data id it is avaialable
+        if ( this.cacheDao.criticalApparatusExists(this.set.getId(), this.baseWitnessId)) {
+            Representation rep = new ReaderRepresentation( 
+                this.cacheDao.getCriticalApparatus(this.set.getId(), this.baseWitnessId), 
+                MediaType.APPLICATION_JSON);
+            if ( isZipSupported() ) {
+                return new EncodeRepresentation(Encoding.GZIP, rep);
+            } else {
+                return rep;
+            }
+        }
+        
         // init the json result
         JsonObject jsonObj = new JsonObject();
         
@@ -107,7 +126,16 @@ public class CriticalApparatusResource extends BaseResource {
         // add lemmas
         jsonObj.add("lemmas", generateLemmas(base, witnesses ) );
         
-        return toJsonRepresentation( jsonObj.toString() );
+        // cache data and return results
+        this.cacheDao.cacheCriticalApparatus(this.set.getId(), this.baseWitnessId, new StringReader(jsonObj.toString()));
+        Representation rep = new ReaderRepresentation( 
+            this.cacheDao.getCriticalApparatus(this.set.getId(), this.baseWitnessId), 
+            MediaType.APPLICATION_JSON);
+        if ( isZipSupported() ) {
+            return new EncodeRepresentation(Encoding.GZIP, rep);
+        } else {
+            return rep;
+        }
     }
     
     private JsonElement generateLemmas( final Witness base, final List<Witness> witnesses ) {
