@@ -48,6 +48,10 @@ public class BackgroundTaskStatus {
         }
     }
     
+    public void finish() {
+        this.status = Status.COMPLETE;
+    }
+    
     public boolean isActive() {
         return  ( this.status.equals(Status.PENDING) || this.status.equals(Status.PROCESSING) );
     }

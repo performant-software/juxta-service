@@ -57,7 +57,7 @@ public class TaskManager {
             this.taskMap.put( newTask.getName(), newTask );
             // exec collate requests in thread pool that only allows a 
             // small number of concurrent tasks
-            if ( newTask.getType().equals(BackgroundTask.Type.COLLATE)) {
+            if ( newTask.getType().equals(BackgroundTask.Type.COLLATE) || newTask.getType().equals(BackgroundTask.Type.VISUALIZE) ) {
                 this.collateExecutor.execute(newTask);
             } else {
                 // All other tasks are streamed and need less bandwidth. Use thread pool that alows
@@ -78,6 +78,11 @@ public class TaskManager {
         if ( task != null ) {
             task.cancel();
         }
+    }
+    
+    public boolean exists( final String name ) {
+        BackgroundTask task = this.taskMap.get( name );
+        return (task != null && task.getStatus().equals(Status.PROCESSING) );
     }
     
     public String getStatus( final String name ) {

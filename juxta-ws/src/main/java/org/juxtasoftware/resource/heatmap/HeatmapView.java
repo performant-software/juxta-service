@@ -4,9 +4,11 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -31,7 +33,11 @@ import org.juxtasoftware.model.JuxtaAnnotation;
 import org.juxtasoftware.model.QNameFilter;
 import org.juxtasoftware.model.Witness;
 import org.juxtasoftware.resource.BaseResource;
+import org.juxtasoftware.util.BackgroundTask;
+import org.juxtasoftware.util.BackgroundTaskCanceledException;
+import org.juxtasoftware.util.BackgroundTaskStatus;
 import org.juxtasoftware.util.QNameFilters;
+import org.juxtasoftware.util.TaskManager;
 import org.juxtasoftware.util.ftl.FileDirective;
 import org.juxtasoftware.util.ftl.HeatmapStreamDirective;
 import org.restlet.data.Status;
@@ -60,6 +66,7 @@ public class HeatmapView  {
     @Autowired private QNameFilters filters;
     @Autowired private HeatmapStreamDirective heatmapDirective;
     @Autowired private ApplicationContext context;
+    @Autowired private TaskManager taskManager;
     
     private List<Alignment> alignments;
     private BaseResource parent;
@@ -152,17 +159,22 @@ public class HeatmapView  {
                 witnesses.add( new SetWitness(w, true, 0.0f) );
             }
         }
-               
+        
+        // Asynchronously render heatmap main body (map, notes and margin boxes)
+        // Grab it from cache if possible. 
+        if ( this.cacheDao.heatmapExists(set.getId(), base.getId(), condensed) == false) {
+            final String taskId =  generateTaskId(set.getId(), base.getId(), condensed);
+            if ( this.taskManager.exists(taskId) == false ) {
+                HeatmapTask task = new HeatmapTask(taskId, set, base, witnesses, condensed);
+                this.taskManager.submit(task);
+            } 
+            return this.parent.toHtmlRepresentation( new StringReader("RENDERING "+taskId));
+        }
+                      
         // init FTL data map
         Map<String, Object> map = new HashMap<String, Object>();
         map.put("hasNotes", false);
         map.put("hasBreaks", false);
-      
-        // Next, the get heatmap main body (map, notes and margin boxes)
-        // Grab it from cache if possible
-        if ( this.cacheDao.heatmapExists(set.getId(), base.getId(), condensed) == false) {
-            renderHeatMap( set, base, witnesses, condensed );
-        }
         
         // Last, wrap the body with ui (title, comparison set details)
         map.put("condensed", condensed );
@@ -188,6 +200,15 @@ public class HeatmapView  {
         map.put("fragmentSegment", "/diff/fragment");
         
         return this.parent.toHtmlRepresentation("heatmap.ftl", map);
+    }
+    
+    private String generateTaskId( final Long setId, final Long baseId, final Boolean condensed) {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + setId.hashCode();
+        result = prime * result + baseId.hashCode();
+        result = prime * result + condensed.hashCode();
+        return "heatmap-"+result;
     }
     
     private boolean willOverrunMemory(ComparisonSet set, Long baseWitnessId) {
@@ -564,6 +585,88 @@ public class HeatmapView  {
         }
         public boolean isBase() {
             return this.isBase;
+        }
+    }
+    
+    /**
+     * Task to asynchronously render the visualization
+     */
+    private class HeatmapTask implements BackgroundTask {
+        private final String name;
+        private BackgroundTaskStatus status;
+        private final ComparisonSet set;
+        private final Witness base;
+        private final List<SetWitness> witnesses;
+        private final boolean condensed;
+        private Date startDate;
+        private Date endDate;
+        
+        public HeatmapTask(final String name, final ComparisonSet set, final Witness base, final List<SetWitness> witnesses, boolean condensed) {
+            this.name =  name;
+            this.status = new BackgroundTaskStatus( this.name );
+            this.set = set;
+            this.base = base;
+            this.witnesses = witnesses;
+            this.condensed = condensed;
+            this.startDate = new Date();
+        }
+        
+        @Override
+        public Type getType() {
+            return BackgroundTask.Type.VISUALIZE;
+        }
+        
+        @Override
+        public void run() {
+            try {
+                LOG.info("Begin heatmap task "+this.name);
+                this.status.begin();
+                HeatmapView.this.renderHeatMap(set, base, witnesses, condensed);
+                LOG.info("Heatmap task "+this.name+" COMPLETE");
+                this.endDate = new Date();   
+                this.status.finish();
+            } catch (IOException e) {
+                LOG.error(this.name+" task failed", e.toString());
+                this.status.fail(e.toString());
+                this.endDate = new Date();
+            } catch ( BackgroundTaskCanceledException e) {
+                LOG.info( this.name+" task was canceled");
+                this.endDate = new Date();
+            } catch (Exception e) {
+                LOG.error(this.name+" task failed", e);
+                this.status.fail(e.toString());
+                this.endDate = new Date();       
+            }
+        }
+        
+        @Override
+        public void cancel() {
+            this.status.cancel();
+        }
+
+        @Override
+        public BackgroundTaskStatus.Status getStatus() {
+            return this.status.getStatus();
+        }
+
+        @Override
+        public String getName() {
+            return this.name;
+        }
+        
+        @Override
+        public Date getEndTime() {
+            return this.endDate;
+        }
+        
+        @Override
+        public Date getStartTime() {
+            return this.startDate;
+        }
+        
+        @Override
+        public String getMessage() {
+            return this.status.getNote();
         }
     }
 }
