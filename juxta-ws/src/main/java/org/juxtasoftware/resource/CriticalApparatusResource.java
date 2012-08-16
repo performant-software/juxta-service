@@ -4,6 +4,7 @@ import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -20,8 +21,12 @@ import org.juxtasoftware.model.AlignmentConstraint;
 import org.juxtasoftware.model.ComparisonSet;
 import org.juxtasoftware.model.QNameFilter;
 import org.juxtasoftware.model.Witness;
+import org.juxtasoftware.util.BackgroundTask;
+import org.juxtasoftware.util.BackgroundTaskCanceledException;
+import org.juxtasoftware.util.BackgroundTaskStatus;
 import org.juxtasoftware.util.QNameFilters;
 import org.juxtasoftware.util.RangedTextReader;
+import org.juxtasoftware.util.TaskManager;
 import org.restlet.data.Encoding;
 import org.restlet.data.MediaType;
 import org.restlet.data.Status;
@@ -51,6 +56,7 @@ public class CriticalApparatusResource extends BaseResource {
     @Autowired private AlignmentDao alignmentDao;
     @Autowired private WitnessDao witnessDao;
     @Autowired private CacheDao cacheDao;
+    @Autowired private TaskManager taskManager;
     
     private ComparisonSet set;
     private Long baseWitnessId;
@@ -101,7 +107,26 @@ public class CriticalApparatusResource extends BaseResource {
             }
         }
         
+        // kick off a task to render the CA
+        final String taskId =  generateTaskId(set.getId(), this.baseWitnessId );
+        if ( this.taskManager.exists(taskId) == false ) {
+            CaTask task = new CaTask(taskId);
+            this.taskManager.submit(task);
+        } 
+        return toJsonRepresentation( "{\"status\": \"RENDERING\", \"taskId\": \""+taskId+"\"}" );
+    }
+    
+    private String generateTaskId( final Long setId, final Long baseId) {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + setId.hashCode();
+        result = prime * result + baseId.hashCode();
+        return "criticalapp-"+result;
+    }
+
+    private void render() {
         // init the json result
+        List<Witness> witnesses = new ArrayList<Witness>(this.setDao.getWitnesses( this.set ));
         JsonObject jsonObj = new JsonObject();
         
         // add base info
@@ -128,14 +153,6 @@ public class CriticalApparatusResource extends BaseResource {
         
         // cache data and return results
         this.cacheDao.cacheCriticalApparatus(this.set.getId(), this.baseWitnessId, new StringReader(jsonObj.toString()));
-        Representation rep = new ReaderRepresentation( 
-            this.cacheDao.getCriticalApparatus(this.set.getId(), this.baseWitnessId), 
-            MediaType.APPLICATION_JSON);
-        if ( isZipSupported() ) {
-            return new EncodeRepresentation(Encoding.GZIP, rep);
-        } else {
-            return rep;
-        }
     }
     
     private JsonElement generateLemmas( final Witness base, final List<Witness> witnesses ) {
@@ -353,6 +370,76 @@ public class CriticalApparatusResource extends BaseResource {
                     this.witnessRangeMap.put(witId, expanded);
                 }
             }
+        }
+    }
+    
+    /**
+     * Task to asynchronously render the visualization
+     */
+    private class CaTask implements BackgroundTask {
+        private final String name;
+        private BackgroundTaskStatus status;
+        private Date startDate;
+        private Date endDate;
+        
+        public CaTask(final String name) {
+            this.name =  name;
+            this.status = new BackgroundTaskStatus( this.name );
+            this.startDate = new Date();
+        }
+        
+        @Override
+        public Type getType() {
+            return BackgroundTask.Type.VISUALIZE;
+        }
+        
+        @Override
+        public void run() {
+            try {
+                LOG.info("Begin task "+this.name);
+                this.status.begin();
+                CriticalApparatusResource.this.render();
+                LOG.info("Task "+this.name+" COMPLETE");
+                this.endDate = new Date();   
+                this.status.finish();
+            } catch ( BackgroundTaskCanceledException e) {
+                LOG.info( this.name+" task was canceled");
+                this.endDate = new Date();
+            } catch (Exception e) {
+                LOG.error(this.name+" task failed", e);
+                this.status.fail(e.toString());
+                this.endDate = new Date();       
+            }
+        }
+        
+        @Override
+        public void cancel() {
+            this.status.cancel();
+        }
+
+        @Override
+        public BackgroundTaskStatus.Status getStatus() {
+            return this.status.getStatus();
+        }
+
+        @Override
+        public String getName() {
+            return this.name;
+        }
+        
+        @Override
+        public Date getEndTime() {
+            return this.endDate;
+        }
+        
+        @Override
+        public Date getStartTime() {
+            return this.startDate;
+        }
+        
+        @Override
+        public String getMessage() {
+            return this.status.getNote();
         }
     }
 }
