@@ -112,9 +112,16 @@ public class SideBySideView implements FileDirectiveListener  {
             this.witnessDetails.add( new WitnessInfo(w) );
         }
         
+        render(set);
+        return parent.toHtmlRepresentation( this.cacheDao.getSideBySide(set.getId(),  witnessIds[0], witnessIds[1]));       
+    }
+
+    private void render(final ComparisonSet set ) throws IOException {
         // special case! Only attempt to get and connect
         // differences if the comparands are different.
-        if ( witnessIds[0].equals( witnessIds[1] ) == false ) {
+        Long leftWitId = this.witnessDetails.get(0).getId();
+        Long rightWitId = this.witnessDetails.get(1).getId();
+        if ( leftWitId.equals(rightWitId ) == false ) {
             // generate the change lists for each witness and
             // update the changes map with this data
             generateWitnessChangeLists(set);
@@ -156,8 +163,7 @@ public class SideBySideView implements FileDirectiveListener  {
         // the db, back to the client. 
         // NOTE: this can be a big file. Be sure to update the mysql config to handle large posts.
         // This is usually in /etc/my.cnf. The setting to add is: max_allowed_packet=8M (or whaterver size)
-        this.cacheDao.cacheSideBySide(set.getId(), witnessIds[0], witnessIds[1], sbsFtl.getReader());
-        return parent.toHtmlRepresentation( this.cacheDao.getSideBySide(set.getId(),  witnessIds[0], witnessIds[1]));       
+        this.cacheDao.cacheSideBySide(set.getId(), leftWitId, rightWitId, sbsFtl.getReader());
     }
     
     private boolean willOverrunMemory(ComparisonSet set, Long wit1, Long wit2) {
