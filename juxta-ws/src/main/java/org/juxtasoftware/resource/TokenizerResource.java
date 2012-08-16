@@ -13,7 +13,6 @@ import org.juxtasoftware.util.BackgroundTaskStatus;
 import org.juxtasoftware.util.TaskManager;
 import org.restlet.data.Status;
 import org.restlet.representation.Representation;
-import org.restlet.resource.Get;
 import org.restlet.resource.Post;
 import org.restlet.resource.ResourceException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,12 +29,10 @@ import org.springframework.stereotype.Service;
 @Service
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
 public class TokenizerResource extends BaseResource {
-    private enum Action {TOKENIZE, STATUS, CANCEL}
     @Autowired private ComparisonSetDao comparisonSetDao;
     @Autowired private Tokenizer tokenizer;
     @Autowired private TaskManager taskManager;
     private ComparisonSet set;
-    private Action action;
        
     @Override
     protected void doInit() throws ResourceException {
@@ -47,46 +44,10 @@ public class TokenizerResource extends BaseResource {
         if ( validateModel(this.set) == false) {
             return;
         }
-        
-        String act  = getRequest().getResourceRef().getLastSegment().toUpperCase();
-        if ( act.equals("TOKENIZE")) {
-            this.action = Action.TOKENIZE;
-        } else {
-            this.action = Action.valueOf(act.toUpperCase());
-            if ( action == null ) {
-                setStatus(Status.CLIENT_ERROR_BAD_REQUEST, "Invalid action specified");
-            }
-        }
-    }
-    
-    @Get("json")
-    public Representation toJson() {
-        if ( this.action.equals(Action.STATUS) == false ) {
-            setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
-            return toTextRepresentation("Invalid GET action");
-        }
-        
-        String json = this.taskManager.getStatus( generateTaskName(this.set.getId()) );
-        return toJsonRepresentation(json);
     }
     
     @Post
     public Representation acceptPost() {
-        if ( this.action.equals(Action.TOKENIZE)  ) {
-            return doTokenization();
-        } else if ( this.action.equals(Action.CANCEL)  ) {
-            cancelTokenizer();
-        }
-        return null;
-    }
-    
-    private void cancelTokenizer() {
-        LOG.info("Cancel tokenizaton for set "+this.set.getId());
-        this.taskManager.cancel( generateTaskName(this.set.getId()) );
-        
-    }
-
-    private Representation doTokenization() {
         LOG.info("Tokenize set "+this.set.getId() ); 
         int witCnt = this.comparisonSetDao.getWitnesses(this.set).size();
         if ( witCnt < 2 ) {
@@ -95,33 +56,36 @@ public class TokenizerResource extends BaseResource {
             setStatus(Status.CLIENT_ERROR_PRECONDITION_FAILED);
             return toTextRepresentation("Collation requires at least 2 witnesses. This set has "+witCnt+".");
         }
-        CollatorConfig cfg = this.comparisonSetDao.getCollatorConfig(set);
-        this.taskManager.submit( new TokenizeTask(this.tokenizer, cfg, set) );
-        return toTextRepresentation(this.set.getId().toString());
+        
+        this.set.setStatus(ComparisonSet.Status.COLLATING);
+        this.comparisonSetDao.update(set);
+        
+        final String taskId = generateTaskName(this.set.getId());
+        this.taskManager.submit( new TokenizeTask(taskId) );
+        return toTextRepresentation( taskId );   
     }
     
-    private static String generateTaskName(long setId ) {
-        return "tokenize-"+setId;
+    private String generateTaskName(final Long setId ) {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + setId.hashCode();
+        return "tokenize-"+result;
     }
 
     /**
      * Task to asynchronously execute the tokenization
      */
-    private static class TokenizeTask implements BackgroundTask {
+    private class TokenizeTask implements BackgroundTask {
         private final String name;
         private BackgroundTaskStatus status;
-        private final Tokenizer tokenizer;
         private final CollatorConfig config;
-        private final ComparisonSet set;
         private Date startDate;
         private Date endDate;
         
-        public TokenizeTask(Tokenizer tokenizer, CollatorConfig cfg, ComparisonSet set ) {
-            this.name = generateTaskName(set.getId());
+        public TokenizeTask(final String name ) {
+            this.name = name;
             this.status = new BackgroundTaskStatus( this.name );
-            this.tokenizer = tokenizer;
-            this.config = cfg;
-            this.set = set;
+            this.config = comparisonSetDao.getCollatorConfig( set); 
             this.startDate = new Date();
         }
         
@@ -135,7 +99,7 @@ public class TokenizerResource extends BaseResource {
             try {
                 LOG.info("Begin task "+this.name);
                 this.status.begin();
-                this.tokenizer.tokenize(this.set, this.config, this.status);
+                tokenizer.tokenize( TokenizerResource.this.set, this.config, this.status);
                 LOG.info("task "+this.name+" COMPLETE");
                 this.endDate = new Date();
             } catch (IOException e) {

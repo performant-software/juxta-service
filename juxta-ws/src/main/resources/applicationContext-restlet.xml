@@ -128,21 +128,13 @@
     
     <!-- tokenizer -->
     <bean name="/juxta/{workspace}/set/{id}/tokenize" class="org.juxtasoftware.resource.TokenizerResource" scope="prototype" autowire="byName" />
-    <bean name="/juxta/{workspace}/set/{id}/tokenizer/status" class="org.juxtasoftware.resource.TokenizerResource" scope="prototype" autowire="byName" />
-    <bean name="/juxta/{workspace}/set/{id}/tokenizer/cancel" class="org.juxtasoftware.resource.TokenizerResource" scope="prototype" autowire="byName" />
     <bean name="/juxta/set/{id}/tokenize" class="org.juxtasoftware.resource.TokenizerResource" scope="prototype" autowire="byName" />
-    <bean name="/juxta/set/{id}/tokenizer/status" class="org.juxtasoftware.resource.TokenizerResource" scope="prototype" autowire="byName" />
-    <bean name="/juxta/set/{id}/tokenizer/cancel" class="org.juxtasoftware.resource.TokenizerResource" scope="prototype" autowire="byName" />
     
     <!-- collator -->
     <bean name="/juxta/{workspace}/set/{id}/collate" class="org.juxtasoftware.resource.CollatorResource" scope="prototype" autowire="byName" />
     <bean name="/juxta/{workspace}/set/{id}/collator" class="org.juxtasoftware.resource.CollatorResource" scope="prototype" autowire="byName" />
-    <bean name="/juxta/{workspace}/set/{id}/collator/status" class="org.juxtasoftware.resource.CollatorResource" scope="prototype" autowire="byName" />
-    <bean name="/juxta/{workspace}/set/{id}/collator/cancel" class="org.juxtasoftware.resource.CollatorResource" scope="prototype" autowire="byName" />
     <bean name="/juxta/set/{id}/collate" class="org.juxtasoftware.resource.CollatorResource" scope="prototype" autowire="byName" />
     <bean name="/juxta/set/{id}/collator" class="org.juxtasoftware.resource.CollatorResource" scope="prototype" autowire="byName" />
-    <bean name="/juxta/set/{id}/collator/status" class="org.juxtasoftware.resource.CollatorResource" scope="prototype" autowire="byName" />
-    <bean name="/juxta/set/{id}/collator/cancel" class="org.juxtasoftware.resource.CollatorResource" scope="prototype" autowire="byName" />
     
     <!-- histogram -->
     <bean name="/juxta/{workspace}/set/{id}/histogram" class="org.juxtasoftware.resource.HistogramResource" scope="prototype" autowire="byName" />
