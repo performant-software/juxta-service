@@ -619,10 +619,10 @@ public class HeatmapView  {
         @Override
         public void run() {
             try {
-                LOG.info("Begin heatmap task "+this.name);
+                LOG.info("Begin task "+this.name);
                 this.status.begin();
                 HeatmapView.this.renderHeatMap(set, base, witnesses, condensed);
-                LOG.info("Heatmap task "+this.name+" COMPLETE");
+                LOG.info("Task "+this.name+" COMPLETE");
                 this.endDate = new Date();   
                 this.status.finish();
             } catch (IOException e) {

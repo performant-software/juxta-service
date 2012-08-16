@@ -584,10 +584,10 @@ public class SideBySideView implements FileDirectiveListener  {
         @Override
         public void run() {
             try {
-                LOG.info("Begin heatmap task "+this.name);
+                LOG.info("Begin task "+this.name);
                 this.status.begin();
                 SideBySideView.this.render(set);
-                LOG.info("Heatmap task "+this.name+" COMPLETE");
+                LOG.info("Task "+this.name+" COMPLETE");
                 this.endDate = new Date();   
                 this.status.finish();
             } catch (IOException e) {
