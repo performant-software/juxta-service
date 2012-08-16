@@ -4,8 +4,10 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -26,7 +28,11 @@ import org.juxtasoftware.model.ComparisonSet;
 import org.juxtasoftware.model.QNameFilter;
 import org.juxtasoftware.model.Witness;
 import org.juxtasoftware.resource.BaseResource;
+import org.juxtasoftware.util.BackgroundTask;
+import org.juxtasoftware.util.BackgroundTaskCanceledException;
+import org.juxtasoftware.util.BackgroundTaskStatus;
 import org.juxtasoftware.util.QNameFilters;
+import org.juxtasoftware.util.TaskManager;
 import org.juxtasoftware.util.ftl.FileDirective;
 import org.juxtasoftware.util.ftl.FileDirectiveListener;
 import org.restlet.data.Status;
@@ -57,6 +63,7 @@ public class SideBySideView implements FileDirectiveListener  {
     @Autowired private AlignmentDao alignmentDao;
     @Autowired private CacheDao cacheDao;
     @Autowired private ApplicationContext context;
+    @Autowired private TaskManager taskManager;
     
     protected static final Logger LOG = LoggerFactory.getLogger( "SideBySideView" );
     
@@ -112,8 +119,22 @@ public class SideBySideView implements FileDirectiveListener  {
             this.witnessDetails.add( new WitnessInfo(w) );
         }
         
-        render(set);
-        return parent.toHtmlRepresentation( this.cacheDao.getSideBySide(set.getId(),  witnessIds[0], witnessIds[1]));       
+        // render side by side asynchronously
+        final String taskId =  generateTaskId(set.getId(), witnessIds[0], witnessIds[1]);
+        if ( this.taskManager.exists(taskId) == false ) {
+            SideBySideTask task = new SideBySideTask(taskId, set);
+            this.taskManager.submit(task);
+        } 
+        return this.parent.toHtmlRepresentation( new StringReader("RENDERING "+taskId));
+    }
+    
+    private String generateTaskId( final Long setId, final Long leftId, final Long rightId) {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + setId.hashCode();
+        result = prime * result + leftId.hashCode();
+        result = prime * result + rightId.hashCode();
+        return "sidebyside-"+result;
     }
 
     private void render(final ComparisonSet set ) throws IOException {
@@ -535,6 +556,82 @@ public class SideBySideView implements FileDirectiveListener  {
         @Override
         public String toString() { 
             return "AlignIDs: "+this.alignIdList+" range: "+this.range.toString();
+        }
+    }
+    
+    /**
+     * Task to asynchronously render the visualization
+     */
+    private class SideBySideTask implements BackgroundTask {
+        private final String name;
+        private BackgroundTaskStatus status;
+        private final ComparisonSet set;
+        private Date startDate;
+        private Date endDate;
+        
+        public SideBySideTask(final String name, final ComparisonSet set) {
+            this.name =  name;
+            this.status = new BackgroundTaskStatus( this.name );
+            this.set = set;
+            this.startDate = new Date();
+        }
+        
+        @Override
+        public Type getType() {
+            return BackgroundTask.Type.VISUALIZE;
+        }
+        
+        @Override
+        public void run() {
+            try {
+                LOG.info("Begin heatmap task "+this.name);
+                this.status.begin();
+                SideBySideView.this.render(set);
+                LOG.info("Heatmap task "+this.name+" COMPLETE");
+                this.endDate = new Date();   
+                this.status.finish();
+            } catch (IOException e) {
+                LOG.error(this.name+" task failed", e.toString());
+                this.status.fail(e.toString());
+                this.endDate = new Date();
+            } catch ( BackgroundTaskCanceledException e) {
+                LOG.info( this.name+" task was canceled");
+                this.endDate = new Date();
+            } catch (Exception e) {
+                LOG.error(this.name+" task failed", e);
+                this.status.fail(e.toString());
+                this.endDate = new Date();       
+            }
+        }
+        
+        @Override
+        public void cancel() {
+            this.status.cancel();
+        }
+
+        @Override
+        public BackgroundTaskStatus.Status getStatus() {
+            return this.status.getStatus();
+        }
+
+        @Override
+        public String getName() {
+            return this.name;
+        }
+        
+        @Override
+        public Date getEndTime() {
+            return this.endDate;
+        }
+        
+        @Override
+        public Date getStartTime() {
+            return this.startDate;
+        }
+        
+        @Override
+        public String getMessage() {
+            return this.status.getNote();
         }
     }
 }
