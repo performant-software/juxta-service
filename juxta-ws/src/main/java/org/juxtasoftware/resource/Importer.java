@@ -28,7 +28,6 @@ import org.restlet.data.MediaType;
 import org.restlet.data.Status;
 import org.restlet.ext.fileupload.RestletFileUpload;
 import org.restlet.representation.Representation;
-import org.restlet.resource.Get;
 import org.restlet.resource.Post;
 import org.restlet.resource.ResourceException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,10 +49,6 @@ import com.google.gson.JsonParser;
 @Service
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
 public class Importer extends BaseResource  {
-    private enum Action { IMPORT, STATUS, CANCEL }
-    
-    private Action action;
-    private Long setId = null;
     private boolean overwrite = false;
     @Autowired private ApplicationContext context;
     @Autowired private TaskManager taskManager;
@@ -64,20 +59,9 @@ public class Importer extends BaseResource  {
     
     @Override
     protected void doInit() throws ResourceException {
-        String act  = getRequest().getResourceRef().getLastSegment().toUpperCase();
-        this.action = Action.valueOf(act);
-        if ( this.action == null ) {
-            setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
-        }
-        
         // was the overwrite flag specified?
         if ( getQuery().getValuesMap().containsKey("overwrite"))   {
             this.overwrite = true;
-        }
-        
-        // grab import id for status checks and cancels
-        if ( getRequest().getAttributes().containsKey("id"))   {
-            this.setId = Long.parseLong( (String)getRequest().getAttributes().get("id"));
         }
 
         super.doInit();
@@ -91,37 +75,6 @@ public class Importer extends BaseResource  {
      */
     @Post
     public Representation acceptPost(Representation entity ) {
-        if ( this.action.equals(Action.IMPORT)) {
-            return doImport( entity );
-        } else if ( this.action.equals(Action.CANCEL)) {
-            cancelImport();
-            return toTextRepresentation("");
-        } else {
-            setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
-            return toTextRepresentation("Invalid action requested");
-        } 
-    }
-    
-    @Get("json")
-    public Representation handeGet() {
-        if ( this.action.equals(Action.STATUS)) {
-            return getImportStatus();
-        }
-        setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
-        return toTextRepresentation("Invalid action requested");
-    }
-    
-    private Representation getImportStatus() {
-        String json = this.taskManager.getStatus( generateTaskName(this.setId) );
-        return toJsonRepresentation(json);
-    }
-
-    private void cancelImport() {
-        LOG.info("Cancel import " + this.setId);
-        this.taskManager.cancel( generateTaskName(this.setId) );
-    }
-    
-    private Representation doImport( Representation entity ) {
     
         if ( entity == null ) {
             setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
@@ -176,10 +129,14 @@ public class Importer extends BaseResource  {
             
             // dump data into new set
             ImportService<InputStream> importService = this.context.getBean(JxtImportServiceImpl.class);
-            this.taskManager.submit( new ImportTask<InputStream>(importService, set, is));
+            BackgroundTask task =  new ImportTask<InputStream>(importService, set, is);
+            this.taskManager.submit(task);
             
-            // return set id so its import status can be tracked
-            return toTextRepresentation( set.getId().toString() );
+            // return set id  & task id so its import status can be tracked
+            JsonObject respJson = new JsonObject();
+            respJson.addProperty("setId", set.getId().toString());
+            respJson.addProperty("taskId", task.getName() );
+            return toJsonRepresentation( respJson.toString() );
         } catch (IOException e) {
             if ( getStatus() == Status.SUCCESS_OK ) {
                 setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
@@ -190,6 +147,7 @@ public class Importer extends BaseResource  {
 
     private Representation handleJsonPost(Representation entity) {
         
+        ComparisonSet set = null;
         try {
             JsonParser parser = new JsonParser();
             JsonObject jsonObj = parser.parse( entity.getText()).getAsJsonObject();
@@ -198,16 +156,22 @@ public class Importer extends BaseResource  {
             
             // create source and set
             Source src = this.sourceDao.find(this.workspace.getId(), srcId);
-            ComparisonSet set = createImportSet(setName);
+            set = createImportSet(setName);
             
             // dump data into new set
             ImportService<Source> importService = this.context.getBean(ParallelSegmentationImportImpl.class);
-            this.taskManager.submit( new ImportTask<Source>(importService, set, src));
+            BackgroundTask task = new ImportTask<Source>(importService, set, src);
+            this.taskManager.submit(task);
             
-            // return set id so its import status can be tracked
-            return toTextRepresentation( set.getId().toString() );
+            // return set id  & task id so its import status can be tracked
+            JsonObject respJson = new JsonObject();
+            respJson.addProperty("setId", set.getId().toString());
+            respJson.addProperty("taskId", task.getName() );
+            return toJsonRepresentation( respJson.toString() );
         } catch (Exception e) {
-            
+            if ( set != null ) {
+                cleanupCanceledImport(set);
+            }
             if ( getStatus() == Status.SUCCESS_OK ) {
                 setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
             }
@@ -233,8 +197,11 @@ public class Importer extends BaseResource  {
         }
     }
     
-    private static String generateTaskName(long setId ) {
-        return "import-"+setId;
+    private static String generateTaskName(Long setId ) {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + setId.hashCode();
+        return "import-"+result;
     }
     
     private void cleanupCanceledImport( ComparisonSet set ) {
