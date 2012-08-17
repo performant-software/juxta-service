@@ -35,7 +35,6 @@ import org.restlet.ext.fileupload.RestletFileUpload;
 import org.restlet.representation.Representation;
 import org.restlet.resource.Delete;
 import org.restlet.resource.Get;
-import org.restlet.resource.Post;
 import org.restlet.resource.Put;
 import org.restlet.resource.ResourceException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -63,7 +62,6 @@ public class SourceResource extends BaseResource  {
     
     private Range range = null;
     private Source source;
-    private boolean isStatusRequest;
 
     /**
      * Extract the doc ID from the request attributes. This is the doc that
@@ -91,11 +89,6 @@ public class SourceResource extends BaseResource  {
         }
         
         validateModel( this.source );
-        
-        // grab the last segment of the request and see if this
-        // is a status related request
-        String act = getRequest().getResourceRef().getLastSegment().toUpperCase();
-        this.isStatusRequest = ( act.equals("STATUS") || act.equals("CANCEL"));
     }
     
     /**
@@ -105,13 +98,6 @@ public class SourceResource extends BaseResource  {
      */
     @Get("html")
     public Representation toHtml() throws IOException {
-        
-        // don't support HTML status requests
-        if (isStatusRequest ) {
-            setStatus(Status.CLIENT_ERROR_NOT_FOUND);
-            return null;
-        }
-        
         final RangedTextReader reader = new RangedTextReader();
         reader.read( this.sourceDao.getContentReader(this.source), this.range );
 
@@ -131,12 +117,6 @@ public class SourceResource extends BaseResource  {
      */
     @Get("txt")
     public Representation toTxt() throws IOException {
-        // don't support TXT status requests
-        if (isStatusRequest ) {
-            setStatus(Status.CLIENT_ERROR_NOT_FOUND);
-            return null;
-        }
-        
         final RangedTextReader reader = new RangedTextReader();
         reader.read( this.sourceDao.getContentReader(this.source), this.range );
         return toTextRepresentation(reader.toString());
@@ -149,32 +129,15 @@ public class SourceResource extends BaseResource  {
      */
     @Get("json")
     public Representation toJson() throws IOException {
-        if ( this.isStatusRequest ) {
-            return getUpdateStatus();
-        } else {
-            final RangedTextReader reader = new RangedTextReader();
-            reader.read( this.sourceDao.getContentReader(this.source), this.range );
-            JsonObject obj = new JsonObject();
-            obj.addProperty("id", this.source.getId());
-            obj.addProperty("name", this.source.getName());
-            obj.addProperty("type", this.source.getText().getType().toString());
-            obj.addProperty("content", reader.toString());
-            Gson gson = new Gson();
-            return toTextRepresentation(gson.toJson(obj));
-        }
-    }
-    
-    /**
-     * Handle POST only to cancel updates
-     * @param entity
-     */
-    @Post
-    public void handlePost( Representation entity ) {
-        if ( this.isStatusRequest == false ) {
-            setStatus(Status.CLIENT_ERROR_NOT_FOUND);
-        } else {
-            cancelUpdate();
-        } 
+        final RangedTextReader reader = new RangedTextReader();
+        reader.read( this.sourceDao.getContentReader(this.source), this.range );
+        JsonObject obj = new JsonObject();
+        obj.addProperty("id", this.source.getId());
+        obj.addProperty("name", this.source.getName());
+        obj.addProperty("type", this.source.getText().getType().toString());
+        obj.addProperty("content", reader.toString());
+        Gson gson = new Gson();
+        return toTextRepresentation(gson.toJson(obj));
     }
     
     /**
@@ -245,16 +208,6 @@ public class SourceResource extends BaseResource  {
         return toTextRepresentation("Unsupported content type in put");
     }
     
-    private Representation getUpdateStatus() {
-        String json = this.taskManager.getStatus( "update-src-"+this.source.getId() );
-        return toJsonRepresentation(json);
-    }
-
-    private void cancelUpdate() {
-        LOG.info("Cancel source update " + this.source.getId());
-        this.taskManager.cancel( "update-src-"+this.source.getId() );
-    }
-    
     /**
      * Update a source that is encoded in TEI Parallel Segmentation. Requires
      * a re-import of the newly editied source.
@@ -267,7 +220,7 @@ public class SourceResource extends BaseResource  {
     private Representation updateParallelSegmentedSource(InputStream srcInputStream, String newName) throws Exception {
         TeiPsSourceUpdater updater = new TeiPsSourceUpdater(this.source, srcInputStream, newName);
         this.taskManager.submit( new UpdateTask(updater));
-        return toJsonRepresentation(this.source.getId().toString());
+        return toJsonRepresentation( updater.getName() );
     }
 
     /**
@@ -293,7 +246,7 @@ public class SourceResource extends BaseResource  {
         
         SourceUpdater updater = new SourceUpdater(this.source, srcInputStream, newName);
         this.taskManager.submit( new UpdateTask(updater));
-        return toJsonRepresentation(this.source.getId().toString());
+        return toJsonRepresentation( updater.getName() );
     }
 
     /**
@@ -405,7 +358,10 @@ public class SourceResource extends BaseResource  {
 
         @Override
         public String getName() {
-            return "update-src-"+this.origSource.getId();
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + this.origSource.getId().hashCode();
+            return "update-src-"+result;
         }
     }
     
@@ -463,7 +419,10 @@ public class SourceResource extends BaseResource  {
         
         @Override
         public String getName() {
-            return "update-src-"+this.origSource.getId();
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + this.origSource.getId().hashCode();
+            return "update-src-"+result;
         }
     }
     
