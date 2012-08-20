@@ -34,7 +34,15 @@ public class SetViewResource extends BaseResource {
 
         super.doInit();
         
-        Long setId = Long.parseLong( (String)getRequest().getAttributes().get("id"));
+        String idStr = (String) getRequest().getAttributes().get("id");
+        Long setId = null;
+        try {
+            setId = Long.parseLong(idStr);
+        } catch ( NumberFormatException e ) {
+            setStatus(Status.CLIENT_ERROR_BAD_REQUEST, "Invalid set id");
+            return;
+        }
+        
         this.set = this.setDao.find(setId);
         if ( validateModel(this.set) == false) {
             return;

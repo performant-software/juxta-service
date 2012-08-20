@@ -88,8 +88,13 @@ public class SideBySideView implements FileDirectiveListener  {
         String docsList[] = docs.split(",");
         Long witnessIds[] = new Long[2];
         if ( docsList.length == 2) {
-            witnessIds[0] = Long.parseLong(docsList[0]);
-            witnessIds[1] = Long.parseLong(docsList[1]);
+            try {
+                witnessIds[0] = Long.parseLong(docsList[0]);
+                witnessIds[1] = Long.parseLong(docsList[1]);
+            } catch ( NumberFormatException e) {
+                parent.getResponse().setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
+                return parent.toTextRepresentation("Invalid witness id");
+            }
         } else {
             parent.getResponse().setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
             return parent.toTextRepresentation("Malformed docs param");
@@ -113,7 +118,7 @@ public class SideBySideView implements FileDirectiveListener  {
         for ( int i=0; i<witnessIds.length; i++ ) {
             Witness w = this.witnessDao.find(witnessIds[i]);
             if ( w == null ) {
-                parent.getResponse().setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
+                parent.getResponse().setStatus(Status.CLIENT_ERROR_NOT_FOUND);
                 return parent.toTextRepresentation("Invalid witness ID "+witnessIds[i]);
             }
             this.witnessDetails.add( new WitnessInfo(w) );

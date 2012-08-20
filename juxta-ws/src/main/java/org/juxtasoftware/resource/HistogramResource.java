@@ -73,7 +73,14 @@ public class HistogramResource extends BaseResource {
             setStatus(Status.CLIENT_ERROR_BAD_REQUEST, "Missing base parameter");
         } else {
             String baseIdStr = getQuery().getValues("base");
-            Long baseId = Long.parseLong(baseIdStr);
+            
+            Long baseId = null;
+            try {
+                baseId = Long.parseLong(baseIdStr);
+            } catch (NumberFormatException e) {
+                setStatus(Status.CLIENT_ERROR_BAD_REQUEST, "Invalid base witness id");
+                return;
+            }
             this.baseWitness = this.witnessDao.find( baseId);
             if ( validateModel( this.baseWitness) == false ) {
                 return;

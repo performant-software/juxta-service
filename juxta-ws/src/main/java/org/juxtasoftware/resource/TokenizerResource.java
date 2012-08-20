@@ -39,7 +39,15 @@ public class TokenizerResource extends BaseResource {
 
         super.doInit();
         
-        Long id= Long.parseLong((String) getRequestAttributes().get("id"));
+        String idStr = (String) getRequestAttributes().get("id");
+        Long id = null;
+        try {
+            id = Long.parseLong(idStr);
+        } catch (NumberFormatException e ) {
+            setStatus(Status.CLIENT_ERROR_BAD_REQUEST, "Invalid source id");
+            return;
+        }
+        
         this.set = this.comparisonSetDao.find(id);
         if ( validateModel(this.set) == false) {
             return;
