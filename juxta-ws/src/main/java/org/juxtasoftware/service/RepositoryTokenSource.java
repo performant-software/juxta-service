@@ -32,24 +32,13 @@ public class RepositoryTokenSource implements TokenSource {
     }
 
     @Override
-    public List<Token> tokensOf(Text text, Set<Range> ranges) throws IOException {
-        // TODO Test if these ranges are ever non-contiguous
-        Long minStart = null;
-        Long maxEnd = null;
-        for (Range r : ranges ) {
-            if ( minStart == null || r.getStart() < minStart ) {
-                minStart = r.getStart();
-            }
-            if ( maxEnd == null || r.getEnd() > maxEnd ) {
-                maxEnd = r.getEnd();
-            }
-        }
-        Range mergedRange = new Range(minStart,maxEnd);
-        
+    public List<Token> tokensOf(Text text, Set<Range> ranges) throws IOException {        
         List<Token> tokens = new ArrayList<Token>();
         AnnotationConstraint constraint = new AnnotationConstraint(text);
         constraint.setFilter( this.tokenFilter );
-        constraint.setRange(mergedRange);
+        for (Range r : ranges ) {
+            constraint.addRange(r);
+        }
         constraint.setIncludeText(true);
         for ( JuxtaAnnotation anno : this.annotationDao.list(constraint) ) {
             String tokenText = anno.getContent();

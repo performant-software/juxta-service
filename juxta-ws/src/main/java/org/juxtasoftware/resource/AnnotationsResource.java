@@ -139,7 +139,7 @@ public class AnnotationsResource extends BaseResource {
         // build the constraints for the request; range, text and qname filter
         AnnotationConstraint constraint = new AnnotationConstraint( this.witness );
         constraint.setIncludeText( this.includeText );
-        constraint.setRange( this.range );
+        constraint.addRange( this.range );
         constraint.setFilter( this.filter );
         
         // get the constrained list of anotation data; convert to json 

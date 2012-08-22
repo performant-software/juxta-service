@@ -130,15 +130,29 @@ public class JuxtaAnnotationDaoImpl implements JuxtaAnnotationDao, InitializingB
             sql.append(")");
         } 
         
-        if ( constraint.getRange() != null ) {
-            sql.append(" and a.range_start >= ? and a.range_end <= ?");
-            sql.append(" order by a.range_start asc");
+        if ( constraint.getRanges().size() > 0 ) {
+            if ( constraint.getRanges().size() > 1 ) {
+                sql.append(" and (");
+            } else {
+                sql.append(" and ");
+            }
+            int cnt = 0;
+            for ( Range r : constraint.getRanges() ) {
+                if ( cnt > 0 ) {
+                    sql.append(" or");
+                }
+                sql.append(" a.range_start >= ").append(r.getStart()).append(" and a.range_end <= ").append(r.getEnd());
+                cnt++;
+            }
+            if ( constraint.getRanges().size() > 1 ) {
+                sql.append(") order by a.range_start asc");
+            } else {
+                sql.append(" order by a.range_start asc");
+            }
 
             annotations = this.jdbcTemplate.query(sql.toString(), 
                 new AnnotationMapper(), 
-                constraint.getTextId(), 
-                constraint.getRange().getStart(),
-                constraint.getRange().getEnd() );
+                constraint.getTextId() );
         } else {
 
             sql.append(" order by a.range_start asc");
