@@ -1,12 +1,5 @@
 package org.juxtasoftware.dao.impl;
 
-import static eu.interedition.text.query.Criteria.and;
-import static eu.interedition.text.query.Criteria.annotationName;
-import static eu.interedition.text.query.Criteria.or;
-import static eu.interedition.text.query.Criteria.text;
-import static org.juxtasoftware.Constants.GAP_NAME;
-import static org.juxtasoftware.Constants.TOKEN_NAME;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -15,7 +8,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.juxtasoftware.dao.AlignmentDao;
 import org.juxtasoftware.dao.ComparisonSetDao;
 import org.juxtasoftware.dao.WitnessDao;
 import org.juxtasoftware.model.CollatorConfig;
@@ -33,8 +25,6 @@ import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.stereotype.Repository;
 
-import eu.interedition.text.AnnotationRepository;
-
 /**
  * @author <a href="http://gregor.middell.net/" title="Homepage">Gregor Middell</a>
  */
@@ -42,8 +32,6 @@ import eu.interedition.text.AnnotationRepository;
 public class ComparisionSetDaoImpl extends JuxtaDaoImpl<ComparisonSet> implements ComparisonSetDao {
 
     @Autowired private WitnessDao witnessDao;
-    @Autowired private AlignmentDao alignmentDao;
-    @Autowired private AnnotationRepository annotatonRepo;
     @Autowired private CacheDaoImpl cacheDao;
     
     private SimpleJdbcInsert memberInsert;
@@ -88,19 +76,17 @@ public class ComparisionSetDaoImpl extends JuxtaDaoImpl<ComparisonSet> implement
     
     @Override
     public void clearCollationData( ComparisonSet set) {
-       
-        // clear alignments and cached visualization data
-        this.cacheDao.deleteAll(set.getId());
-        this.alignmentDao.clear(set);
-        
-        // clear tokens/gaps from all witnesses in set
-        for (Witness witness : getWitnesses(set) ) {
-            annotatonRepo.delete(and(text(witness.getText()), or(annotationName(GAP_NAME),annotationName(TOKEN_NAME))  ));
-        }
-        
         // flag set as uncollated
         set.setStatus(ComparisonSet.Status.NOT_COLLATED);
         update(set);
+        
+        // clear alignments, annotations and cached visualization data
+        this.cacheDao.deleteAll(set.getId());
+
+        // NOTE: the alignments will cascade delete with the annotations
+        // Also note: don't delete the manually created annotations
+        final String sql = "delete from juxta_annotation where set_id=? and manual=?";
+        this.jt.update(sql, set.getId(), 0);
     }
     
     @Override

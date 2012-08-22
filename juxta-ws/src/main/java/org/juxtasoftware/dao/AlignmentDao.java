@@ -27,21 +27,6 @@ public interface AlignmentDao {
     void delete( final Long id );
     
     /**
-     * Remove all automatic alignment data from a comparison set. This will leave alignments
-     * that were created manually (transpositions, direct posts to service)
-     * @param set
-     */
-    void clear( final ComparisonSet set);
-    
-    /**
-     * Remove all alignments created by juxta and all manual alignments if
-     * force is set to true. 
-     * @param set
-     * @param force
-     */
-    void clear( final ComparisonSet set, boolean force);
-    
-    /**
      * Get a list of alignments matching the given constraints
      * @param constraints
      * @return

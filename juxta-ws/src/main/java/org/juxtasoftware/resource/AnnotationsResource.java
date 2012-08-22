@@ -34,6 +34,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+import eu.interedition.text.Name;
+import eu.interedition.text.NameRepository;
 import eu.interedition.text.Range;
 import eu.interedition.text.Text;
 import eu.interedition.text.mem.SimpleName;
@@ -46,6 +48,7 @@ public class AnnotationsResource extends BaseResource {
     @Autowired private QNameFilterDao filterDao;
     @Autowired private WitnessDao witnessDao;
     @Autowired private JuxtaAnnotationDao annotationDao;
+    @Autowired private NameRepository qnameRepo;
     
     private ComparisonSet set =  null;
     private Witness witness = null;
@@ -153,21 +156,18 @@ public class AnnotationsResource extends BaseResource {
         for ( Iterator<JsonElement> itr = array.iterator(); itr.hasNext(); ) {
             JsonObject annoObj = itr.next().getAsJsonObject();
             
-            // get witness
-            Long witnessId= annoObj.get("witnessId").getAsLong();
-            Witness witness = this.witnessDao.find(witnessId);
-            
             // get name
             JsonObject nameObj = annoObj.get("name").getAsJsonObject();
-            SimpleName qname = new SimpleName( nameObj.get("namespace").getAsString(), 
-                                               nameObj.get("localName").getAsString() );
+            Name qname = this.qnameRepo.get( new SimpleName( nameObj.get("namespace").getAsString(), 
+                                                             nameObj.get("localName").getAsString() ) );
             
             // get range
             JsonObject rangeObj = annoObj.get("range").getAsJsonObject();
             Range range = new Range(rangeObj.get("start").getAsLong(), 
                                     rangeObj.get("end").getAsLong());
             
-            JuxtaAnnotation ano = new JuxtaAnnotation(witness,  qname, range, null, 0);
+            JuxtaAnnotation ano = new JuxtaAnnotation( this.set.getId(), witness,  qname, range);
+            ano.setManual();
             Long id = this.annotationDao.create(ano);
             annotationIds.add(id);
         }

@@ -5,11 +5,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.juxtasoftware.dao.ComparisonSetDao;
 import org.juxtasoftware.dao.JuxtaXsltDao;
 import org.juxtasoftware.dao.SourceDao;
 import org.juxtasoftware.dao.WitnessDao;
+import org.juxtasoftware.model.ComparisonSet;
 import org.juxtasoftware.model.JuxtaXslt;
 import org.juxtasoftware.model.Source;
+import org.juxtasoftware.model.Usage;
 import org.juxtasoftware.model.Witness;
 import org.juxtasoftware.service.SourceTransformer;
 import org.restlet.data.Status;
@@ -42,6 +45,7 @@ public class WitnessesResource extends BaseResource {
     @Autowired private JuxtaXsltDao xsltDao;
     @Autowired private SourceTransformer transformer;
     @Autowired private SourceDao sourceDao;
+    @Autowired private ComparisonSetDao setDao;
     
     @Override
     protected void doInit() throws ResourceException {
@@ -106,6 +110,12 @@ public class WitnessesResource extends BaseResource {
             // save changes and redo transform
             this.xsltDao.update(destXslt.getId(), new StringReader(destXslt.getXslt()));
             Source src = this.sourceDao.find(to.getWorkspaceId(), to.getSourceId());
+            for (Usage u: this.sourceDao.getUsage(src) ) {
+                if ( u.getType().equals(Usage.Type.COMPARISON_SET)) {
+                    ComparisonSet set = this.setDao.find(u.getId());
+                    this.setDao.clearCollationData(set);
+                }
+            }
             this.transformer.redoTransform(src, to);
         } catch (Exception e) {
             setStatus(Status.SERVER_ERROR_INTERNAL, e.getMessage());

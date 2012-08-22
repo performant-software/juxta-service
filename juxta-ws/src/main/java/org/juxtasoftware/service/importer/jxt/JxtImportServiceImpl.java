@@ -66,6 +66,7 @@ import com.google.common.io.ByteStreams;
 import com.google.common.io.Closeables;
 import com.google.common.io.Files;
 
+import eu.interedition.text.Name;
 import eu.interedition.text.NameRepository;
 
 /**
@@ -196,13 +197,14 @@ public class JxtImportServiceImpl implements ImportService<InputStream> {
     
     private void addTranspositions(List<JxtMoveInfo> moves) {
         this.taskStatus.setNote("Adding Transpositions");
+        Name transQname = this.nameRepo.get(Constants.TRANSPOSITION_NAME) ;
         LOG.info("Adding Transpositions");
         List<Alignment> moveLinks = new ArrayList<Alignment>();
         for ( JxtMoveInfo move : moves ) {
             Alignment link = new Alignment();
             link.setComparisonSetId(this.set.getId());
             link.setManual();
-            link.setName( this.nameRepo.get(Constants.TRANSPOSITION_NAME) );
+            link.setName( transQname );
             
             for ( String title : move.getWitnessTitles() ) {
                 Witness witness = this.witnessDao.find(this.set, title);
@@ -211,7 +213,8 @@ public class JxtImportServiceImpl implements ImportService<InputStream> {
                     this.taskSegment.incrementValue();
                     return;
                 }
-                JuxtaAnnotation anno = new JuxtaAnnotation(witness, Constants.TRANSPOSITION_NAME, move.getWitnessRange(title) );
+                JuxtaAnnotation anno = new JuxtaAnnotation( this.set.getId(), witness, transQname, move.getWitnessRange(title) );
+                anno.setManual();
                 Long annoId = this.annotationDao.create(anno);
                 AlignedAnnotation aa =  new AlignedAnnotation(anno.getName(), witness.getId(), annoId, anno.getRange());
                 link.addAnnotation( aa );

@@ -56,22 +56,6 @@ public class AlignmentDaoImpl implements AlignmentDao, InitializingBean  {
         return rowsAffected.length;
     }
     
-   @Override
-   public void clear(ComparisonSet set){
-       clear(set, false);
-   }
-   
-   @Override
-   public void clear( final ComparisonSet set, boolean force) {
-       if ( force == false ) {
-           final String sql = "delete from "+TABLE_NAME+" where set_id=? and manual=?";
-           this.jdbcTemplate.update(sql, set.getId(), 0);
-       } else {
-           final String sql = "delete from "+TABLE_NAME+" where set_id=?";
-           this.jdbcTemplate.update(sql, set.getId());
-       }
-    }
-    
     protected SqlParameterSource toSqlParameterSource(Alignment align) {
         final MapSqlParameterSource ps = new MapSqlParameterSource();
         ps.addValue("set_id", align.getComparisonSetId() );
@@ -140,13 +124,13 @@ public class AlignmentDaoImpl implements AlignmentDao, InitializingBean  {
         sb.append(" from ").append(TABLE_NAME).append(" as a "); 
         sb.append(" inner join text_qname as aqn on a.qname_id=aqn.id ");
         
-        sb.append(" inner join text_annotation as a1 on a1.id=a.annotation_a_id ");
-        sb.append(" inner join text_qname as a1_qn on a1.name=a1_qn.id ");
-        sb.append(" inner join juxta_witness as w1 on w1.text_id=a1.text ");
+        sb.append(" inner join juxta_annotation as a1 on a1.id=a.annotation_a_id ");
+        sb.append(" inner join text_qname as a1_qn on a1.qname_id=a1_qn.id ");
+        sb.append(" inner join juxta_witness as w1 on w1.text_id=a1.text_id ");
         
-        sb.append(" inner join text_annotation as a2 on a2.id=a.annotation_b_id ");
-        sb.append(" inner join text_qname as a2_qn on a2.name=a2_qn.id ");
-        sb.append(" inner join juxta_witness as w2 on w2.text_id=a2.text ");
+        sb.append(" inner join juxta_annotation as a2 on a2.id=a.annotation_b_id ");
+        sb.append(" inner join text_qname as a2_qn on a2.qname_id=a2_qn.id ");
+        sb.append(" inner join juxta_witness as w2 on w2.text_id=a2.text_id ");
         return sb;
     }
 
@@ -167,13 +151,13 @@ public class AlignmentDaoImpl implements AlignmentDao, InitializingBean  {
         sb.append(" from ").append(TABLE_NAME).append(" as a "); 
         sb.append(" inner join text_qname as aqn on a.qname_id=aqn.id ");
         
-        sb.append(" inner join text_annotation as a1 on a1.id=a.annotation_a_id ");
-        sb.append(" inner join text_qname as a1_qn on a1.name=a1_qn.id ");
-        sb.append(" inner join juxta_witness as w1 on w1.text_id=a1.text ");
+        sb.append(" inner join juxta_annotation as a1 on a1.id=a.annotation_a_id ");
+        sb.append(" inner join text_qname as a1_qn on a1.qname_id=a1_qn.id ");
+        sb.append(" inner join juxta_witness as w1 on w1.text_id=a1.text_id ");
         
-        sb.append(" inner join text_annotation as a2 on a2.id=a.annotation_b_id ");
-        sb.append(" inner join text_qname as a2_qn on a2.name=a2_qn.id ");
-        sb.append(" inner join juxta_witness as w2 on w2.text_id=a2.text ");
+        sb.append(" inner join juxta_annotation as a2 on a2.id=a.annotation_b_id ");
+        sb.append(" inner join text_qname as a2_qn on a2.qname_id=a2_qn.id ");
+        sb.append(" inner join juxta_witness as w2 on w2.text_id=a2.text_id ");
         return sb;
     }
 

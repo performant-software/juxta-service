@@ -1,19 +1,17 @@
 package org.juxtasoftware.service;
 
-import static eu.interedition.text.query.Criteria.and;
-import static eu.interedition.text.query.Criteria.annotationName;
-import static eu.interedition.text.query.Criteria.text;
-import static org.juxtasoftware.Constants.TOKEN_NAME;
-
 import java.io.IOException;
 import java.io.Reader;
 import java.util.List;
 import java.util.Set;
 
+import org.juxtasoftware.Constants;
 import org.juxtasoftware.dao.ComparisonSetDao;
+import org.juxtasoftware.dao.JuxtaAnnotationDao;
 import org.juxtasoftware.model.CollatorConfig;
 import org.juxtasoftware.model.CollatorConfig.HyphenationFilter;
 import org.juxtasoftware.model.ComparisonSet;
+import org.juxtasoftware.model.JuxtaAnnotation;
 import org.juxtasoftware.model.Witness;
 import org.juxtasoftware.util.BackgroundTaskSegment;
 import org.juxtasoftware.util.BackgroundTaskStatus;
@@ -24,16 +22,15 @@ import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 
 import eu.interedition.text.Annotation;
-import eu.interedition.text.AnnotationRepository;
+import eu.interedition.text.Name;
+import eu.interedition.text.NameRepository;
 import eu.interedition.text.Range;
 import eu.interedition.text.Text;
 import eu.interedition.text.TextConsumer;
 import eu.interedition.text.TextRepository;
-import eu.interedition.text.mem.SimpleAnnotation;
 
 @Service
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
@@ -41,9 +38,12 @@ public class Tokenizer {
     private static final Logger LOG = LoggerFactory.getLogger(Tokenizer.class);
 
     @Autowired private Integer tokenizationBatchSize;
-    @Autowired private AnnotationRepository annotationRepository;
+    @Autowired private JuxtaAnnotationDao annotationDao;
     @Autowired private TextRepository textRepository;
     @Autowired private ComparisonSetDao comparisonSetDao;
+    @Autowired private NameRepository qnameRepo;
+    private ComparisonSet set;
+    private Name tokenQName;
 
     /**
      * Break up the text of the all witnesses in the comparison set on whitespace boundaries. 
@@ -62,7 +62,10 @@ public class Tokenizer {
               
         taskStatus.setNote("Clearing old tokens");
         LOG.info("Cleanup collation data ");
+        this.set = comparisonSet;
         this.comparisonSetDao.clearCollationData(comparisonSet);
+        
+        this.tokenQName = this.qnameRepo.get(Constants.TOKEN_NAME);
         
         taskStatus.setNote("Tokenizing " + comparisonSet);
         for (Witness witness : witnesses) {
@@ -75,17 +78,11 @@ public class Tokenizer {
     }
     
     private long tokenize(final CollatorConfig config, final Witness witness) throws IOException {
-        // purge any prior tokens for this witness
         final Text text = witness.getText();
-        Preconditions.checkNotNull(text);
-        this.annotationRepository.delete(and(text(text), annotationName(TOKEN_NAME)));
-        
-        // do the tokenization
         TokenizingConsumer tc = new TokenizingConsumer(config, witness);
         this.textRepository.read(text, tc);
         return tc.getTokenizedLength();
     }
-    
     
     /**
      * Text consumer that splits the text stream into tokens based
@@ -95,9 +92,8 @@ public class Tokenizer {
      *
      */
     private class TokenizingConsumer implements TextConsumer {
-        private List<Annotation> tokens = Lists.newArrayListWithExpectedSize(tokenizationBatchSize);
-        private final Range fragment;
-        private final Text text;
+        private List<JuxtaAnnotation> tokens = Lists.newArrayListWithExpectedSize(tokenizationBatchSize);
+        private final Witness witness;
         private final boolean filterLinebreak;
         private final boolean filterHyphens;
         private final boolean filterWhitespace;
@@ -109,8 +105,7 @@ public class Tokenizer {
             this.filterWhitespace = cfg.isFilterWhitespace();
             this.filterLinebreak = cfg.getHyphenationFilter().equals(HyphenationFilter.FILTER_LINEBREAK);
             this.filterHyphens = cfg.getHyphenationFilter().equals(HyphenationFilter.FILTER_ALL);
-            this.fragment = w.getFragment();
-            this.text = w.getText();
+            this.witness = w;
         }
         
         public long getTokenizedLength() {
@@ -162,7 +157,8 @@ public class Tokenizer {
                 }
 
                 // make sure we are in bounds for the requested text fragment
-                if ( this.fragment.equals(Range.NULL) || (offset >= this.fragment.getStart() && offset < this.fragment.getEnd()) ) {
+                Range frag = this.witness.getFragment();
+                if ( frag.equals(Range.NULL) || (offset >= frag.getStart() && offset < frag.getEnd()) ) {
                     
                     // track start of whitespace run if whitespace is not ignored
                     if (this.filterWhitespace == false && Character.isWhitespace(read) && start == -1) {
@@ -270,12 +266,12 @@ public class Tokenizer {
         private void joinLastToken(int end) {
             Annotation last = this.tokens.remove( this.tokens.size()-1 );
             this.tokenizedLength += (end - last.getRange().getEnd());
-            this.tokens.add(  new SimpleAnnotation(last.getText(), TOKEN_NAME, new Range(last.getRange().getStart(), end), null) ); 
+            this.tokens.add(  new JuxtaAnnotation(set.getId(), this.witness, tokenQName, new Range(last.getRange().getStart(), end)) ); 
         }
 
         private void createToken(int start, int end, boolean possbleWordbreak) {
             this.tokenizedLength += (end - start);
-            this.tokens.add(  new SimpleAnnotation(this.text, TOKEN_NAME, new Range(start, end), null) );
+            this.tokens.add(  new JuxtaAnnotation(set.getId(), this.witness, tokenQName, new Range(start, end)) );
             if ( possbleWordbreak == false ) {
                 if ((this.tokens.size() % tokenizationBatchSize ) == 0) {
                     write();
@@ -285,8 +281,11 @@ public class Tokenizer {
 
         private void write() {
             LOG.info("Writing "+this.tokens.size()+" token annotations");
-            Tokenizer.this.annotationRepository.create(this.tokens);
-            LOG.info("DONE Writing "+this.tokens.size()+" token annotations");
+            int cnt = Tokenizer.this.annotationDao.create(this.tokens);
+            LOG.info("DONE Writing "+cnt+" token annotations");
+            if ( cnt != this.tokens.size() ) {
+                LOG.error("Not all tokens writtens: "+cnt+" of "+this.tokens.size());
+            }
             this.tokens.clear();
         }
     }

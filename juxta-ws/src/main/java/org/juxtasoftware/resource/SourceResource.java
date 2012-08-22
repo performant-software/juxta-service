@@ -344,12 +344,18 @@ public class SourceResource extends BaseResource  {
                 new InputStreamReader(this.srcInputStream));
             
             List<Usage> usage = sourceDao.getUsage(this.origSource);
+            
+            // FIRST pass: clear cached data, alignmsnts and flag set as uncollated
             for ( Usage use : usage ) {
                 if ( use.getType().equals(Usage.Type.COMPARISON_SET ) ) {
-                    // clear cached data, alignmsnts and flag set as uncollated
                     ComparisonSet set = SourceResource.this.setDao.find(use.getId());
                     SourceResource.this.setDao.clearCollationData(set);
-                } else if  ( use.getType().equals(Usage.Type.WITNESS) ) {
+                }
+            }
+            
+            // SECOND PASS: re-transform
+            for ( Usage use : usage ) {
+                if  ( use.getType().equals(Usage.Type.WITNESS) ) {
                     Witness oldWit = SourceResource.this.witnessDao.find( use.getId() );
                     SourceResource.this.transformer.redoTransform(this.origSource, oldWit);                     
                 }

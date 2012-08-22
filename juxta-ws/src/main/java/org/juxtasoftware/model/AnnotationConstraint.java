@@ -1,6 +1,7 @@
 package org.juxtasoftware.model;
 
 import eu.interedition.text.Range;
+import eu.interedition.text.Text;
 import eu.interedition.text.rdbms.RelationalText;
 
 /**
@@ -16,8 +17,8 @@ public class AnnotationConstraint {
     private final Long textId;
     private Long limit = null;
     
-    public AnnotationConstraint( final Long textId ) {
-        this.textId = textId;
+    public AnnotationConstraint( final Text text ) {
+        this.textId = ((RelationalText)text).getId();
     }
     public AnnotationConstraint( final Witness witness) {
         this.textId = new Long(((RelationalText)witness.getText()).getId());
@@ -59,16 +60,7 @@ public class AnnotationConstraint {
         this.includeText = includeText;
     }
     
-    /**
-     * Limit the total number of annotations to be returned
-     * @param limit
-     */
-    public void setLimit(final long limit ) {
-        this.limit = limit;
-    }
-    public Long getLimit() {
-        return this.limit;
-    }
+   
     @Override
     public int hashCode() {
         final int prime = 31;

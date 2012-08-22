@@ -3,16 +3,18 @@ package org.juxtasoftware.service;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
-import java.util.SortedMap;
 
 import org.juxtasoftware.Constants;
 import org.juxtasoftware.dao.AlignmentDao;
 import org.juxtasoftware.dao.ComparisonSetDao;
+import org.juxtasoftware.dao.JuxtaAnnotationDao;
 import org.juxtasoftware.diff.Comparison;
 import org.juxtasoftware.diff.DiffCollator;
 import org.juxtasoftware.diff.DiffCollatorConfiguration;
@@ -41,15 +43,12 @@ import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import eu.interedition.text.Annotation;
-import eu.interedition.text.AnnotationRepository;
 import eu.interedition.text.Name;
 import eu.interedition.text.NameRepository;
 import eu.interedition.text.Range;
-import eu.interedition.text.TextRepository;
 import eu.interedition.text.rdbms.RelationalAnnotation;
 
 @Service
@@ -57,9 +56,8 @@ import eu.interedition.text.rdbms.RelationalAnnotation;
 public class ComparisonSetCollator extends DiffCollator {
     @Autowired private QNameFilters filters;
     @Autowired private ComparisonSetDao setDao;
-    @Autowired private AnnotationRepository annotationRepository;
+    @Autowired private JuxtaAnnotationDao annotationDao;
     @Autowired private AlignmentDao alignmentDao;
-    @Autowired private TextRepository textRepository;
     @Autowired private NameRepository nameRepository;
     @Autowired private Integer collationBatchSize;
     
@@ -69,9 +67,6 @@ public class ComparisonSetCollator extends DiffCollator {
     private static final Logger LOG = LoggerFactory.getLogger( ComparisonSetCollator.class.getName());
 
     public void collate(ComparisonSet comparisonSet, CollatorConfig config, BackgroundTaskStatus taskStatus) throws IOException {
-
-        // First, remove any pre-existing alignment data
-        this.alignmentDao.clear(comparisonSet);
         
         // grab reference to key data used in the colaltion
         this.comparisonSet = comparisonSet;
@@ -110,7 +105,7 @@ public class ComparisonSetCollator extends DiffCollator {
         private CollatorConfigAdapter(CollatorConfig config) {
             this.config = config;
             this.tokenComparator = new SimpleTokenComparator();
-            this.tokenSource = new RepositoryTokenSource(this, annotationRepository, textRepository);
+            this.tokenSource = new RepositoryTokenSource(this, annotationDao, filters.getTokensFilter() );
         }
 
         @Override
@@ -221,10 +216,12 @@ public class ComparisonSetCollator extends DiffCollator {
         protected List<Difference> differences = new LinkedList<Difference>();
         protected Name addDelName;
         protected Name changeName;
+        protected Name gapName;
         
         public MemoryDiffStore() {
             this.addDelName = nameRepository.get(Constants.ADD_DEL_NAME);
             this.changeName = nameRepository.get(Constants.CHANGE_NAME);
+            this.gapName = nameRepository.get(Constants.GAP_NAME);
         }
         
         @Override
@@ -235,81 +232,73 @@ public class ComparisonSetCollator extends DiffCollator {
             }
         }
         
-        private Long findWitnessId(Annotation a) {
+        private Witness findWitness(Annotation a) {
             for ( Witness w : ComparisonSetCollator.this.witnessList) {
                 if ( w.getText().equals(a.getText()) ) {
-                    return w.getId();
+                    return w;
                 }
             }
             LOG.error("No witness found for annotaion "+a.toString());
             return null;
         }
         
+        private JuxtaAnnotation toJxGapAnno( Annotation a) {
+            Witness w= findWitness(a);
+            return new JuxtaAnnotation(comparisonSet.getId(), w, this.gapName, a.getRange());
+        }
+        
         @Override
         public void save() throws IOException {
-            // run thru all resulting alignments and look for gaps
-            // and stuff them in a map of gap annotations to be created.
-            SortedMap<Long, Annotation>  newBaseGaps = Maps.newTreeMap();
-            SortedMap<Long, Annotation>  newWitnessGaps = Maps.newTreeMap();
-            for (Difference a : this.differences ) {
-                final Annotation base = a.getBase();
-                final Annotation witness = a.getWitness();
-                if (base instanceof GapAnnotation) {
-                    final long offset = ((GapAnnotation) base).getOffset();
-                    if ( !newBaseGaps.containsKey(offset)) {
-                        newBaseGaps.put(offset, base);
-                    }
-                } else if (witness instanceof GapAnnotation) {
-                    final long offset = ((GapAnnotation) witness).getOffset();
-                    if ( !newWitnessGaps.containsKey(offset)) {
-                        newWitnessGaps.put(offset, witness);
-                    }
-                }
-            }
-
-            // create all gap annotations in the repo. This transforms the gap into a RelationalAnnotation
-            // that is pushed into the gap maps.
-            final SortedMap<Long, Annotation> baseGaps = Maps.newTreeMap();
-            final SortedMap<Long, Annotation> witnessGaps = Maps.newTreeMap();
-            baseGaps.putAll(Maps.uniqueIndex(annotationRepository.create(newBaseGaps.values()), GapAnnotation.TO_OFFSET));
-            witnessGaps.putAll(Maps.uniqueIndex(annotationRepository.create(newWitnessGaps.values()), GapAnnotation.TO_OFFSET));
-            newBaseGaps.clear();
-            newBaseGaps = null;
-            newWitnessGaps.clear();
-            newWitnessGaps = null;
-
-            // run thru all alignments AGAIN and substitue the new annotations
-            // for any gap. Convert the results to juxta alignments. Remove each
-            // diff and gap as the process goes along rather than keeping multple copies
+            Map<Range, JuxtaAnnotation>  baseGaps = new HashMap<Range, JuxtaAnnotation>();
+            Map<Range, JuxtaAnnotation>  witGaps = new HashMap<Range, JuxtaAnnotation>();
             List<Alignment> alignments = new ArrayList<Alignment>(this.differences.size());
             while ( this.differences.size() > 0 ) {
                 Difference diff = this.differences.remove(0);
                 
-                Annotation base = diff.getBase();
-                final Range baseRange = base.getRange();
-                if ( baseRange.length() == 0 ) {
-                    base = baseGaps.get(baseRange.getEnd());
+                // grab base anno and convert it into a jx anno. If the anno is a gap
+                // ge sure a record for it is created once
+                final Annotation base = diff.getBase();
+                JuxtaAnnotation jxBase = null;
+                if (base.getName().equals(GAP_NAME)) {
+                    if ( baseGaps.containsKey( base.getRange()) == false) {
+                        jxBase = toJxGapAnno(base);
+                        Long id = annotationDao.create(jxBase);
+                        jxBase.setId( id );
+                        baseGaps.put(base.getRange(), jxBase);
+                    } else {
+                        jxBase = baseGaps.get(base.getRange());
+                    }
+                } else {
+                    jxBase = (JuxtaAnnotation)base;
                 }
 
-                Annotation witness = diff.getWitness();
-                final Range witnessRange = witness.getRange();
-                if ( witnessRange.length() == 0 ) {
-                    witness = witnessGaps.get(witnessRange.getEnd());
+                // grab witness anno and convert it into a jx anno. If the anno is a gap
+                // ge sure a record for it is created once
+                final Annotation wit = diff.getWitness();
+                JuxtaAnnotation jxWit = null;
+                if (wit.getName().equals(GAP_NAME)) {
+                    if ( witGaps.containsKey( wit.getRange()) == false) {
+                        jxWit = toJxGapAnno(wit);
+                        Long id = annotationDao.create(jxWit);
+                        jxWit.setId( id );
+                        witGaps.put(wit.getRange(), jxWit);
+                    } else {
+                        jxWit = witGaps.get(wit.getRange());
+                    }
+                } else {
+                    jxWit = (JuxtaAnnotation)wit;
                 }
                 
-                // convert to alignment and add to list
+                // create an aligment with the converted/created annotations
                 Name name = this.changeName;
                 if ( diff.getType().equals(Difference.Type.ADD_DEL)) {
                     name = this.addDelName;
                 }
-                JuxtaAnnotation jxBase = new JuxtaAnnotation(findWitnessId(base), base.getText(), 
-                    base.getName(), base.getRange(), ((RelationalAnnotation)base).getId());
-                JuxtaAnnotation jxWitness = new JuxtaAnnotation(findWitnessId(witness), witness.getText(), 
-                    witness.getName(), witness.getRange(), ((RelationalAnnotation)witness).getId());
                 Alignment align =  new Alignment(comparisonSet.getId(), diff.getGroup(), name,  
-                    jxBase, jxWitness, diff.getEditDistance());
+                    jxBase, jxWit, diff.getEditDistance());
                 alignments.add( align );
-            }
+            }           
+
             
             // create the batch of alignments
             int created =0;

@@ -1,7 +1,5 @@
 package org.juxtasoftware.service;
 
-import static eu.interedition.text.query.Criteria.text;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -44,7 +42,6 @@ import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.XMLReaderFactory;
 
-import eu.interedition.text.AnnotationRepository;
 import eu.interedition.text.Text;
 import eu.interedition.text.TextConsumer;
 import eu.interedition.text.TextRepository;
@@ -53,7 +50,6 @@ import eu.interedition.text.TextRepository;
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
 @Transactional
 public class SourceTransformer {
-    @Autowired private AnnotationRepository annotationRepository;
     @Autowired private TextRepository textRepository;
     @Autowired private WitnessDao witnessDao;
     @Autowired private JuxtaXsltDao xsltDao;
@@ -85,7 +81,6 @@ public class SourceTransformer {
         
         // clear out old witness stuff; annotations, page breaks and notes - BUT NOT text
         // can't kill it yet cuz witness refers to it. Must wait til after witness text is updated!
-        this.annotationRepository.delete( text(origWit.getText()) );
         this.noteDao.deleteAll( origWit.getId() );
         this.pbDao.deleteAll( origWit.getId() );
         this.witnessDao.clearRevisions( origWit );

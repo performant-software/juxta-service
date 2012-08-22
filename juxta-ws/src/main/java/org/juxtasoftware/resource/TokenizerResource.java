@@ -65,9 +65,6 @@ public class TokenizerResource extends BaseResource {
             return toTextRepresentation("Collation requires at least 2 witnesses. This set has "+witCnt+".");
         }
         
-        this.set.setStatus(ComparisonSet.Status.COLLATING);
-        this.comparisonSetDao.update(set);
-        
         final String taskId = generateTaskName(this.set.getId());
         this.taskManager.submit( new TokenizeTask(taskId) );
         return toTextRepresentation( taskId );   

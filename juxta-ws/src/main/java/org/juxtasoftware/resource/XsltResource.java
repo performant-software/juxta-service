@@ -200,15 +200,19 @@ public class XsltResource extends BaseResource  {
                     }
                 }
             } else {
+                // FIRST PASS: clear collation data
+                for(Usage u : usage) {
+                    if ( u.getType().equals(Usage.Type.COMPARISON_SET)) {
+                        ComparisonSet set = this.setDao.find( u.getId());
+                        this.setDao.clearCollationData(set);
+                    }
+                }
+                // SECOND PASS: re-transform
                 for(Usage u : usage) {
                     if ( u.getType().equals(Usage.Type.WITNESS)) {
                         Witness origWit = this.witnessDao.find( u.getId() );
                         Source src = this.sourceDao.find(this.workspace.getId(), origWit.getSourceId());
                         this.transformer.redoTransform(src, origWit);
-                    } else if ( u.getType().equals(Usage.Type.COMPARISON_SET)) {
-                        ComparisonSet set = this.setDao.find( u.getId());
-                        this.setDao.clearCollationData(set);
-                        
                     }
                 }
             }

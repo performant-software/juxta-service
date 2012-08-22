@@ -147,6 +147,23 @@ CREATE TABLE IF NOT EXISTS juxta_page_break (
     FOREIGN KEY (witness_id) REFERENCES juxta_witness (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+CREATE TABLE IF NOT EXISTS juxta_annotation (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  set_id  BIGINT NOT NULL,
+  witness_id  BIGINT NOT NULL,
+  text_id bigint(20) NOT NULL,
+  qname_id bigint(20) NOT NULL,
+  range_start bigint(20) NOT NULL,
+  range_end bigint(20) NOT NULL,
+  manual BOOL not null default 0,
+  PRIMARY KEY (id),
+  FOREIGN KEY (set_id) REFERENCES juxta_comparison_set (id) ON DELETE CASCADE,
+  FOREIGN KEY (witness_id) REFERENCES juxta_witness (id) ON DELETE CASCADE,
+  FOREIGN KEY (text_id) REFERENCES text_content (id) ON DELETE CASCADE,
+  FOREIGN KEY (qname_id) REFERENCES text_qname (id),
+  KEY range_start (range_start,range_end)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
 
 CREATE TABLE IF NOT EXISTS juxta_alignment (
     id BIGINT NOT NULL AUTO_INCREMENT,
@@ -159,10 +176,12 @@ CREATE TABLE IF NOT EXISTS juxta_alignment (
     annotation_b_id BIGINT NOT NULL,
     PRIMARY KEY (id),
     FOREIGN KEY (set_id) REFERENCES juxta_comparison_set (id) ON DELETE CASCADE,
-    FOREIGN KEY (annotation_a_id) REFERENCES text_annotation (id) ON DELETE CASCADE,
-    FOREIGN KEY (annotation_a_id) REFERENCES text_annotation (id) ON DELETE CASCADE
+    FOREIGN KEY (annotation_a_id) REFERENCES juxta_annotation (id) ON DELETE CASCADE,
+    FOREIGN KEY (annotation_a_id) REFERENCES juxta_annotation (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 DROP TABLE text_annotation_link_data;
 DROP TABLE text_annotation_link_target;
 DROP TABLE text_annotation_link;
+DROP TABLE text_annotation_data;
+DROP TABLE text_annotation;
