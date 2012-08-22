@@ -37,7 +37,9 @@ public class AnnotationConstraint {
      * @param range
      */
     public final void addRange(Range range) {
-        this.ranges.add( range );
+        if ( range != null ) {
+            this.ranges.add( range );
+        }
     }
     public final QNameFilter getFilter() {
         return filter;

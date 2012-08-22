@@ -18,7 +18,7 @@ import eu.interedition.text.Range;
 import eu.interedition.text.Text;
 
 /**
- * @author <a href="http://gregor.middell.net/" title="Homepage">Gregor Middell</a>
+ * Source of token annotations to be used by the diff collator
  */
 public class RepositoryTokenSource implements TokenSource {
     private final TokenizerConfiguration config;
@@ -57,6 +57,10 @@ public class RepositoryTokenSource implements TokenSource {
                         tokenText = bits[0].trim() + bits[1].trim();
                     }
                 }   
+            }
+            
+            if ( this.config.isFilterCase()) {
+                tokenText = tokenText.toLowerCase();
             }
             
             tokens.add(new SimpleToken(anno, tokenText));
