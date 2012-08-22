@@ -34,10 +34,18 @@ public class AlignmentResource extends BaseResource {
         super.doInit();
         
         // make sure the set exists and is accessable
-        Long setId = Long.parseLong( (String)getRequest().getAttributes().get("setId"));
-        this.alignmentId = Long.parseLong( (String)getRequest().getAttributes().get("id"));
+        Long setId = getIdFromAttributes("setId");
+        if ( setId == null ) {
+            return;
+        }
         this.set = this.setDao.find( setId);
         if ( validateModel(this.set) == false ) {
+            return;
+        }
+        
+        // get/validate alignment ID
+        this.alignmentId = getIdFromAttributes("id");
+        if ( this.alignmentId == null ) {
             return;
         }
         

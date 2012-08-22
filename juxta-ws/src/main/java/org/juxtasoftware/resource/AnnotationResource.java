@@ -30,7 +30,7 @@ import eu.interedition.text.Text;
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
 public class AnnotationResource extends BaseResource {
 
-    private long annotationId;
+    private Long annotationId;
     private ComparisonSet set;
     private Witness witness;
     private boolean includeText;
@@ -44,7 +44,10 @@ public class AnnotationResource extends BaseResource {
         super.doInit();
         
         // get the set and validate that it exists and is in the wprkspace
-        Long setId = Long.parseLong( (String)getRequest().getAttributes().get("setId"));
+        Long setId = getIdFromAttributes("setId");
+        if ( setId == null ) {
+            return;
+        }
         this.set = this.setDao.find( setId);
         if ( validateModel(this.set) == false ) {
             return;
@@ -52,7 +55,10 @@ public class AnnotationResource extends BaseResource {
         
         // once the set is workspace validated, just make sure the witness
         // exists and is part of the set
-        Long witnessId = Long.parseLong( (String)getRequest().getAttributes().get("witnessId"));
+        Long witnessId = getIdFromAttributes("witnessId");
+        if ( witnessId == null ) {
+            return;
+        }
         this.witness = this.witnessDao.find( witnessId);
         if ( witness == null ) {
             setStatus(Status.CLIENT_ERROR_NOT_FOUND, "Invalid witness identifier specified");
@@ -63,7 +69,10 @@ public class AnnotationResource extends BaseResource {
             return;
         }
         
-        this.annotationId = Long.parseLong( (String)getRequest().getAttributes().get("annotationId"));
+        this.annotationId = getIdFromAttributes("annotationId");
+        if ( this.annotationId == null ) {
+            return;
+        }
         this.includeText = false;
         
         if (getQuery().getValuesMap().containsKey("content") ) {

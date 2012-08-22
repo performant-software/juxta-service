@@ -56,7 +56,10 @@ public class AlignmentsResource extends BaseResource {
     protected void doInit() throws ResourceException {
 
         super.doInit();
-        Long setId = Long.parseLong( (String)getRequest().getAttributes().get("setId"));
+        Long setId = getIdFromAttributes("setId");
+        if ( setId == null ) {
+            return;
+        }
         this.set = this.setDao.find( setId);
         if ( validateModel(this.set) == false ) {
             return;

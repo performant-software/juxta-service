@@ -91,6 +91,21 @@ public class BaseResource extends ServerResource {
         super.doInit();
     }
     
+    protected Long getIdFromAttributes( final String name ) {
+        Long val = null;
+        if ( getRequestAttributes().containsKey(name) ) {
+            String strVal = (String)getRequestAttributes().get(name);
+            try {
+                val = Long.parseLong(strVal);
+            } catch (NumberFormatException e) {
+                setStatus(Status.CLIENT_ERROR_BAD_REQUEST, "Invalid identifier specified");
+            }
+        } else {
+            setStatus(Status.CLIENT_ERROR_BAD_REQUEST, "Missing required "+name+" parameter");
+        }
+        return val;
+    }
+    
     protected boolean isZipSupported() {
         return this.zipSupported;
     }

@@ -63,7 +63,10 @@ public class AnnotationsResource extends BaseResource {
         super.doInit();
 
         // get the set and validate that it exists and is in the wprkspace
-        Long setId = Long.parseLong( (String)getRequest().getAttributes().get("setId"));
+        Long setId = getIdFromAttributes("setId");
+        if ( setId == null ) {
+            return;
+        }
         this.set = this.setDao.find( setId);
         if ( validateModel(this.set) == false ) {
             return;
@@ -71,7 +74,10 @@ public class AnnotationsResource extends BaseResource {
         
         // once the set is workspace validated, just make sure the witness
         // exists and is part of the set
-        Long witnessId = Long.parseLong( (String)getRequest().getAttributes().get("witnessId"));
+        Long witnessId = getIdFromAttributes("witnessId");
+        if ( witnessId == null ) {
+            return;
+        }
         this.witness = this.witnessDao.find( witnessId);
         if ( witness == null ) {
             setStatus(Status.CLIENT_ERROR_NOT_FOUND, "Invalid witness identifier specified");
@@ -151,20 +157,32 @@ public class AnnotationsResource extends BaseResource {
     public Representation fromJson( final String jsonStr ) {
         LOG.info("Create annotation from "+jsonStr);
         JsonParser parser = new JsonParser();
-        JsonArray array = parser.parse(jsonStr).getAsJsonArray();
+        JsonArray array = null;
+        try {
+            array = parser.parse(jsonStr).getAsJsonArray();
+        } catch ( Exception e ) {
+            setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
+            return toTextRepresentation("Invalid json payload");
+        }
+        
         List<Long> annotationIds = new ArrayList<Long>();
         for ( Iterator<JsonElement> itr = array.iterator(); itr.hasNext(); ) {
             JsonObject annoObj = itr.next().getAsJsonObject();
             
             // get name
-            JsonObject nameObj = annoObj.get("name").getAsJsonObject();
-            Name qname = this.qnameRepo.get( new SimpleName( nameObj.get("namespace").getAsString(), 
-                                                             nameObj.get("localName").getAsString() ) );
-            
-            // get range
-            JsonObject rangeObj = annoObj.get("range").getAsJsonObject();
-            Range range = new Range(rangeObj.get("start").getAsLong(), 
-                                    rangeObj.get("end").getAsLong());
+            Name qname = null;
+            Range range =null;
+            try {
+                JsonObject nameObj = annoObj.get("name").getAsJsonObject();
+                qname = this.qnameRepo.get( new SimpleName( nameObj.get("namespace").getAsString(), 
+                                                                 nameObj.get("localName").getAsString() ) );
+                JsonObject rangeObj = annoObj.get("range").getAsJsonObject();
+                range = new Range(rangeObj.get("start").getAsLong(), 
+                                        rangeObj.get("end").getAsLong());
+            } catch (Exception e) {
+                setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
+                return toTextRepresentation("Invalid json payload");
+            }
             
             JuxtaAnnotation ano = new JuxtaAnnotation( this.set.getId(), witness,  qname, range);
             ano.setManual();
