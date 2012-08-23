@@ -10,12 +10,14 @@ import org.juxtasoftware.dao.AlignmentDao;
 import org.juxtasoftware.dao.ComparisonSetDao;
 import org.juxtasoftware.dao.JuxtaAnnotationDao;
 import org.juxtasoftware.dao.QNameFilterDao;
+import org.juxtasoftware.dao.WitnessDao;
 import org.juxtasoftware.model.Alignment;
 import org.juxtasoftware.model.Alignment.AlignedAnnotation;
 import org.juxtasoftware.model.AlignmentConstraint;
 import org.juxtasoftware.model.ComparisonSet;
 import org.juxtasoftware.model.JuxtaAnnotation;
 import org.juxtasoftware.model.QNameFilter;
+import org.juxtasoftware.model.Witness;
 import org.juxtasoftware.util.AlignmentSerializer;
 import org.restlet.data.Status;
 import org.restlet.representation.Representation;
@@ -47,6 +49,7 @@ public class AlignmentsResource extends BaseResource {
     @Autowired private JuxtaAnnotationDao annotationDao;
     @Autowired private QNameFilterDao filterDao;
     @Autowired private NameRepository nameRepo;
+    @Autowired private WitnessDao witnessDao;
     
     private ComparisonSet set = null;
     private QNameFilter filter = null;
@@ -124,26 +127,60 @@ public class AlignmentsResource extends BaseResource {
     public Representation acceptJson( final String jsonStr ) {
         LOG.info("Create alignments from "+jsonStr);
         JsonParser parser = new JsonParser();
-        JsonArray jsonArray = parser.parse(jsonStr).getAsJsonArray();
+        JsonArray jsonArray = null;
+        try {
+            jsonArray = parser.parse(jsonStr).getAsJsonArray();
+        } catch ( Exception e) {
+            setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
+            return toTextRepresentation("Malformed json payload");
+        }
+        
         List<Alignment> alignments = new ArrayList<Alignment>();
         for ( Iterator<JsonElement>  itr = jsonArray.iterator(); itr.hasNext(); ) {
             JsonObject jsonObj = itr.next().getAsJsonObject();
-            JsonObject nameObj = jsonObj.get("name").getAsJsonObject();
-            Name linkQname = getQnameFromJson(nameObj);
+            
+            Name linkQname = null;
+            List<JuxtaAnnotation> annotations = new ArrayList<JuxtaAnnotation>();
             String editDistance = null;
-            if ( jsonObj.has("editDistance")) {
-                editDistance = jsonObj.get("editDistance").getAsString();
-            }
-        
-            JsonArray annoArray = jsonObj.get("annotations").getAsJsonArray();
-            Long aOneId = annoArray.get(0).getAsLong();
-            Long aTwoId = annoArray.get(1).getAsLong();
-            JuxtaAnnotation a1 = this.annotationDao.find(aOneId, false);
-            JuxtaAnnotation a2 = this.annotationDao.find(aTwoId, false);
-            if ( a1 == null || a2 == null ) {
+            try {
+                JsonObject nameObj = jsonObj.get("name").getAsJsonObject();
+                linkQname = getQnameFromJson(nameObj);
+                if ( jsonObj.has("editDistance")) {
+                    editDistance = jsonObj.get("editDistance").getAsString();
+                }
+            
+                // ensure that 2 entries exist for annotation
+                JsonArray annoArray = jsonObj.get("annotations").getAsJsonArray();
+                if ( annoArray.size() != 2 ) {
+                    setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
+                    return toTextRepresentation("Incorrect number of annotations in JSON payload");
+                }
+                
+                // extract/create annotation 
+                for ( int i=0; i<2; i++ ) {
+                    if ( annoArray.get(i).isJsonObject() ) {
+                        JuxtaAnnotation a = createAnnotation( annoArray.get(i).getAsJsonObject() );
+                        if ( a != null ) {
+                            annotations.add( a );
+                        } else {
+                            setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
+                            return toTextRepresentation("Invalid json payload for annotation");
+                        }
+                    } else {
+                        JuxtaAnnotation a = lookupAnnotation(annoArray.get(i).getAsLong() );
+                        if ( a != null) {
+                            annotations.add( a );
+                        } else {
+                            setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
+                            return toTextRepresentation("Invalid annotation ID specified for alignment");
+                        }
+                    }
+                }
+            } catch (Exception e) {
                 setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
-                return toTextRepresentation("Invalid annotation ID specified for alignment");
+                return toTextRepresentation("Missing required data in json payload");
             }
+           
             
             Alignment align = new Alignment();
             align.setName( linkQname );
@@ -154,13 +191,46 @@ public class AlignmentsResource extends BaseResource {
             }
             align.setComparisonSetId(this.set.getId());
             align.setManual();
-            align.addAnnotation( new AlignedAnnotation(a1) );
-            align.addAnnotation( new AlignedAnnotation(a2) );
+            align.addAnnotation( new AlignedAnnotation(annotations.get(0)) );
+            align.addAnnotation( new AlignedAnnotation(annotations.get(1)) );
+            if ( align.getAnnotations().size() != 2) {
+                setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
+                return toTextRepresentation("Invalid annotations specified in json payload");
+            }
             alignments.add( align );
         }
         
         int created = this.alignmentDao.create(alignments);
         return toTextRepresentation(""+created);
+    }
+
+    private JuxtaAnnotation lookupAnnotation(long id) {
+        return this.annotationDao.find(id, false);
+    }
+
+    private JuxtaAnnotation createAnnotation(JsonObject annoObj) {
+        Name qname = null;
+        Range range =null;
+        Witness witness = null;
+        try {
+            JsonObject nameObj = annoObj.get("name").getAsJsonObject();
+            qname = this.nameRepo.get( new SimpleName( nameObj.get("namespace").getAsString(), 
+                                                             nameObj.get("localName").getAsString() ) );
+            JsonObject rangeObj = annoObj.get("range").getAsJsonObject();
+            range = new Range(rangeObj.get("start").getAsLong(), 
+                                    rangeObj.get("end").getAsLong());
+            
+            Long id = annoObj.get("witnessId").getAsLong();
+            witness = this.witnessDao.find(id);
+        } catch (Exception e) {
+            return null;
+        }
+        
+        JuxtaAnnotation ano = new JuxtaAnnotation( this.set.getId(), witness,  qname, range);
+        ano.setManual();
+        Long id = this.annotationDao.create(ano);
+        ano.setId(id);
+        return ano;
     }
 
     private Name getQnameFromJson(JsonObject nameObj) {

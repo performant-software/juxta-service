@@ -165,7 +165,7 @@ public class AnnotationsResource extends BaseResource {
             return toTextRepresentation("Invalid json payload");
         }
         
-        List<Long> annotationIds = new ArrayList<Long>();
+        List<JuxtaAnnotation> annotations = new ArrayList<JuxtaAnnotation>();
         for ( Iterator<JsonElement> itr = array.iterator(); itr.hasNext(); ) {
             JsonObject annoObj = itr.next().getAsJsonObject();
             
@@ -186,11 +186,10 @@ public class AnnotationsResource extends BaseResource {
             
             JuxtaAnnotation ano = new JuxtaAnnotation( this.set.getId(), witness,  qname, range);
             ano.setManual();
-            Long id = this.annotationDao.create(ano);
-            annotationIds.add(id);
+            annotations.add(ano);
         }
-
-        return toJsonRepresentation( this.gson.toJson(annotationIds) );
+        Integer cnt = this.annotationDao.create(annotations);
+        return toTextRepresentation( cnt.toString() );
     }
     
     private static class TextExclusion implements ExclusionStrategy {
