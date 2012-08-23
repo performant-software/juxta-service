@@ -84,7 +84,7 @@ public class TaskManager {
         for ( Entry<String, BackgroundTask> entry  : this.taskMap.entrySet() ) {
             BackgroundTask task = entry.getValue();
             if ( isDone(task) ) {
-                Date endPlus30 = DateUtils.addMinutes(task.getEndTime(), 1);
+                Date endPlus30 = DateUtils.addMinutes(task.getEndTime(), 30);
                 Date now = new Date();
                 if ( endPlus30.before( now) ) {
                     LOG.info("Expiring completed task "+entry.getKey());
