@@ -72,8 +72,14 @@ public class SourceResource extends BaseResource  {
         
         super.doInit();
         
-        Long id = Long.parseLong((String) getRequestAttributes().get("id"));
+        Long id = getIdFromAttributes("id");
+        if ( id == null ) {
+            return;
+        }
         this.source = this.sourceDao.find(this.workspace.getId(), id);
+        if ( this.source == null ) {
+            setStatus(Status.CLIENT_ERROR_NOT_FOUND, "source "+id+" does not exist");
+        }
         
         // was a range set requested?
         if (getQuery().getValuesMap().containsKey("range") ) {

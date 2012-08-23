@@ -69,6 +69,10 @@ public class BaseResource extends ServerResource {
         if ( getRequestAttributes().containsKey("workspace") ) {
             String name = (String) getRequestAttributes().get("workspace");
             this.workspace = this.workspaceDao.find( name );
+            if ( this.workspace == null ) {
+                setStatus(Status.CLIENT_ERROR_NOT_FOUND, "Workspace not found");
+                return;
+            }
         } else {
             this.workspace = this.workspaceDao.getPublic();
         }
