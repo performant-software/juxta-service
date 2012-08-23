@@ -25,7 +25,10 @@ public class InfoResource extends BaseResource {
         super.doInit();
         
         this.type = (String) getRequestAttributes().get("type");
-        this.id = Long.parseLong((String) getRequestAttributes().get("id"));
+        this.id = getIdFromAttributes("id");
+        if ( this.id == null ) {
+            return;
+        }
     }
     
     @Get("json")
@@ -39,11 +42,11 @@ public class InfoResource extends BaseResource {
             info = this.setDao.getInfo(this.id);
         } else {
             setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
-            return toTextRepresentation("IInvalid resource type requested");
+            return toTextRepresentation("Invalid resource type requested");
         }
         
         if ( info == null ) {
-            setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
+            setStatus(Status.CLIENT_ERROR_NOT_FOUND);
             return toTextRepresentation("Invaid resource identifer specified");
         }
         

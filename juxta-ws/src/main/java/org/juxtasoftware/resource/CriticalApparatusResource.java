@@ -64,14 +64,24 @@ public class CriticalApparatusResource extends BaseResource {
     @Override
     protected void doInit() throws ResourceException {
         super.doInit();
-        Long id = Long.parseLong( (String)getRequest().getAttributes().get("id"));
+        Long id = getIdFromAttributes("id");
+        if ( id == null ) {
+            return;
+        }
         this.set = this.setDao.find(id);
-        validateModel(this.set);
+        if ( validateModel(this.set) == false ) {
+            return;
+        }
         
         this.baseWitnessId = null;
         if (getQuery().getValuesMap().containsKey("base")  ) {
             String baseId = getQuery().getValues("base");
-            this.baseWitnessId = Long.parseLong(baseId);
+            try {
+                this.baseWitnessId = Long.parseLong(baseId);
+            } catch (NumberFormatException e) {
+                setStatus(Status.CLIENT_ERROR_BAD_REQUEST, "Invalid witness identifier specified");
+                return;
+            }
         }
     }
     

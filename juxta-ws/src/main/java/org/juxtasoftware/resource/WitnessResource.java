@@ -57,10 +57,15 @@ public class WitnessResource extends BaseResource {
         
         super.doInit();
         
-        // this request must contain a witness if
-        Long id = Long.parseLong( (String)getRequest().getAttributes().get("witnessId"));
+        Long id = getIdFromAttributes("witnessId");
+        if ( id == null ) {
+            return;
+        }
         this.witness = this.witnessDao.find(id);
-        
+        if ( validateModel(this.witness) == false ) {
+            return;
+        }
+
         // was a range set requested?
         if (getQuery().getValuesMap().containsKey("range") ) {
             String rangeInfo = getQuery().getValues("range");
@@ -73,8 +78,6 @@ public class WitnessResource extends BaseResource {
                 getResponse().setStatus(Status.CLIENT_ERROR_BAD_REQUEST, "Invalid Range specified");
             }
         }
-        
-        validateModel(this.witness);
     }
     
     @Get("txt")

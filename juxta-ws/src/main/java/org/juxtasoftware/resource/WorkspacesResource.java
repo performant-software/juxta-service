@@ -57,9 +57,24 @@ public class WorkspacesResource extends BaseResource {
     @Post("json")
     public Representation acceptJson(final String jsonStr) {
         JsonParser parser = new JsonParser();
-        JsonObject jsonObj = parser.parse(jsonStr).getAsJsonObject();
+        JsonObject jsonObj = null;
+        try {
+            jsonObj = parser.parse(jsonStr).getAsJsonObject();
+        } catch (Exception e ) {
+            setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
+            return toTextRepresentation("malformed json payload");
+        }
         Workspace ws = new Workspace();
-        ws.setName( jsonObj.get("name").getAsString() );
+        if ( jsonObj.has("name") ) {
+            ws.setName( jsonObj.get("name").getAsString() );
+            if ( ws.getName().length() > 255 ) {
+                setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
+                return toTextRepresentation("workspace name too long");
+            }
+        } else {
+            setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
+            return toTextRepresentation("missing required json data");
+        }
         JsonElement desc = jsonObj.get("description");
         if ( desc != null ) {
             ws.setDescription( desc.getAsString() );

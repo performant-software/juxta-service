@@ -42,14 +42,20 @@ public class QNameFilterResource extends BaseResource {
 
         super.doInit();
         
-        Long id  = Long.parseLong( (String)getRequest().getAttributes().get("id"));
+        Long id = getIdFromAttributes("id");
+        if ( id == null ) {
+            return;
+        }
         this.filter = this.qnameFilterDao.find(id);
+        if ( validateModel( this.filter ) == false ) {
+            return;
+        }
         this.parser = new JsonParser();
         this.gson = new GsonBuilder()
             .excludeFieldsWithoutExposeAnnotation()
             .create();
         
-        validateModel( this.filter );
+        
     }
     
     @Get("html")

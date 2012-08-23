@@ -49,9 +49,12 @@ public class FragmentResource extends BaseResource {
 
         super.doInit();
         
-        Long setId = Long.parseLong( (String)getRequest().getAttributes().get("id"));
-        this.set = this.setDao.find( setId);
-        if ( validateModel(this.set) == false ) {
+        Long id = getIdFromAttributes("id");
+        if ( id == null ) {
+            return;
+        }
+        this.set = this.setDao.find(id);
+        if (validateModel(this.set) == false) {
             return;
         }
         
@@ -59,7 +62,12 @@ public class FragmentResource extends BaseResource {
             setStatus(Status.CLIENT_ERROR_BAD_REQUEST, "Missing base parameter");
         } else {
             String baseId = getQuery().getValues("base");
-            this.baseWitnessId = Long.parseLong(baseId);
+            try {
+                this.baseWitnessId = Long.parseLong(baseId);
+            } catch (NumberFormatException e) {
+                setStatus(Status.CLIENT_ERROR_BAD_REQUEST, "Invalid witness identifier specified");
+                return;
+            }
         }
         
         if (getQuery().getValuesMap().containsKey("range") == false) {

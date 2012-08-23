@@ -63,9 +63,12 @@ public class HistogramResource extends BaseResource {
 
         super.doInit();
         
-        Long setId = Long.parseLong( (String)getRequest().getAttributes().get("id"));
-        this.set = this.setDao.find(setId);
-        if ( validateModel(this.set) == false) {
+        Long id = getIdFromAttributes("id");
+        if ( id == null ) {
+            return;
+        }
+        this.set = this.setDao.find(id);
+        if (validateModel(this.set) == false) {
             return;
         }
         

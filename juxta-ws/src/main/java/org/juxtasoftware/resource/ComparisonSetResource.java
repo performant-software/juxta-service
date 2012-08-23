@@ -50,9 +50,14 @@ public class ComparisonSetResource extends BaseResource {
     @Override
     protected void doInit() throws ResourceException {
         super.doInit();
-        Long id = Long.parseLong( (String)getRequest().getAttributes().get("id"));
-        this.set = this.comparionSetDao.find(id);
-        validateModel(this.set);
+        Long setId = getIdFromAttributes("id");
+        if ( setId == null ) {
+            return;
+        }
+        this.set = this.comparionSetDao.find(setId);
+        if ( validateModel(this.set) == false ) {
+            return;
+        }
         
         String lastSeg  = getRequest().getResourceRef().getLastSegment().toUpperCase();
         if (  lastSeg.equals("ADD")) {

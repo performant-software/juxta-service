@@ -46,12 +46,8 @@ public class CollatorResource extends BaseResource {
         super.doInit();
 
         // make sure set exists and is in workspace
-        String idStr = (String) getRequest().getAttributes().get("id");
-        Long id = null;
-        try {
-            id = Long.parseLong(idStr);
-        } catch ( NumberFormatException e ) {
-            setStatus(Status.CLIENT_ERROR_BAD_REQUEST, "Invalid set id");
+        Long id = getIdFromAttributes("id");
+        if ( id == null ) {
             return;
         }
         this.set = this.setDao.find(id);
