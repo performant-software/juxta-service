@@ -1,8 +1,13 @@
 package org.juxtasoftware.util;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.apache.commons.lang.time.DateUtils;
 import org.juxtasoftware.util.BackgroundTaskStatus.Status;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,6 +16,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.Scope;
 import org.springframework.core.task.TaskExecutor;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 /**
@@ -40,12 +46,14 @@ public class TaskManager {
      */
     public void submit( BackgroundTask newTask ) {
         LOG.info("Task "+newTask.getName()+" submitted to manager");
-        BackgroundTask task = this.taskMap.get(newTask);
+        BackgroundTask task = this.taskMap.get(newTask.getName());
         boolean createNewTask = false;
         if ( task == null ) {
+           LOG.info("Task "+newTask.getName()+" does not exist. Create");
            createNewTask = true;
         } else {
             if ( isDone(task) ) {
+                LOG.info("Task "+newTask.getName()+" exists, but is done");
                 this.taskMap.remove( task.getName() );
                 createNewTask = true;
             } else {
@@ -54,6 +62,7 @@ public class TaskManager {
         }
         
         if ( createNewTask ) {
+            LOG.info("Create NEW task "+newTask.getName());
             this.taskMap.put( newTask.getName(), newTask );
             // exec collate requests in thread pool that only allows a 
             // small number of concurrent tasks
@@ -65,6 +74,29 @@ public class TaskManager {
                 this.taskExecutor.execute(newTask);
             }
         }
+    }
+    
+    @Scheduled(fixedRate=30000)
+    public void manageQueue() {
+        // every 30 secs, check for completed tasks that are more than 
+        // 30 minutes old. remove them.
+        List<String> killList = new ArrayList<String>();
+        for ( Entry<String, BackgroundTask> entry  : this.taskMap.entrySet() ) {
+            BackgroundTask task = entry.getValue();
+            if ( isDone(task) ) {
+                Date endPlus30 = DateUtils.addMinutes(task.getEndTime(), 1);
+                Date now = new Date();
+                if ( endPlus30.before( now) ) {
+                    LOG.info("Expiring completed task "+entry.getKey());
+                    killList.add(entry.getKey());
+                }
+            }
+        }
+        
+        for ( String key : killList ) {
+            this.taskMap.remove(key);
+        }
+        killList.clear();
     }
     
     private boolean isDone( final BackgroundTask task ) {
