@@ -148,6 +148,11 @@ public class XsltResource extends BaseResource  {
     public Representation createXslt( final String jsonData ) {
         Gson gson = new Gson();
         JuxtaXslt xslt = gson.fromJson(jsonData, JuxtaXslt.class);
+        xslt.setWorkspaceId(this.workspace.getId());
+        if ( xslt.getName() == null || xslt.getXslt() == null ) {
+            setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
+            return toTextRepresentation("missing required data in json payload");
+        }
         Long id = this.xsltDao.create(xslt);
         return toTextRepresentation( id.toString() );
     }
@@ -231,8 +236,10 @@ public class XsltResource extends BaseResource  {
             if ( validateModel(xslt) != false ) {
                 try {
                     this.xsltDao.delete(xslt);
+                    return;
                 } catch ( Exception e ) {
                     setStatus(Status.CLIENT_ERROR_BAD_REQUEST, "cannot to delete xslt that is in use");
+                    return;
                 }
             } 
         }
