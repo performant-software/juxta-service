@@ -143,7 +143,7 @@ public class AnnotationsResource extends BaseResource {
 
     private List<JuxtaAnnotation> getAnnotations() {
         // build the constraints for the request; range, text and qname filter
-        AnnotationConstraint constraint = new AnnotationConstraint( this.witness );
+        AnnotationConstraint constraint = new AnnotationConstraint( this.set.getId(), this.witness );
         constraint.setIncludeText( this.includeText );
         constraint.addRange( this.range );
         constraint.setFilter( this.filter );

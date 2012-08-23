@@ -105,7 +105,7 @@ public class ComparisonSetCollator extends DiffCollator {
         private CollatorConfigAdapter(CollatorConfig config) {
             this.config = config;
             this.tokenComparator = new SimpleTokenComparator();
-            this.tokenSource = new RepositoryTokenSource(this, annotationDao, filters.getTokensFilter() );
+            this.tokenSource = new RepositoryTokenSource(this, comparisonSet.getId(), annotationDao, filters.getTokensFilter() );
         }
 
         @Override

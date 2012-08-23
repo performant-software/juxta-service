@@ -18,12 +18,15 @@ public class AnnotationConstraint {
     private QNameFilter filter = null;
     private boolean includeText = false;
     private final Long textId;
+    private final Long setId;
     
-    public AnnotationConstraint( final Text text ) {
+    public AnnotationConstraint( final Long setId, final Text text ) {
         this.textId = ((RelationalText)text).getId();
+        this.setId = setId;
     }
-    public AnnotationConstraint( final Witness witness) {
+    public AnnotationConstraint( final Long setId, final Witness witness) {
         this.textId = new Long(((RelationalText)witness.getText()).getId());
+        this.setId = setId;
     }
     public final Long getTextId() {
         return textId;

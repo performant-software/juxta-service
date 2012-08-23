@@ -276,7 +276,7 @@ public class HeatmapView  {
                 baseLen = this.setDao.getTokenzedLength(set, w);
                 if ( baseLen == 0 ) {
                     LOG.warn("Missing tokenized length of witness "+w.getId()+". Re-calculating");
-                    AnnotationConstraint constraint = new AnnotationConstraint( w);
+                    AnnotationConstraint constraint = new AnnotationConstraint( set.getId(), w);
                     constraint.setIncludeText( false );
                     constraint.setFilter( this.filters.getTokensFilter() );
                     for (JuxtaAnnotation token : this.annotationDao.list( constraint ) ) {

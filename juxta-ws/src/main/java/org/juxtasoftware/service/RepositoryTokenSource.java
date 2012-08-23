@@ -24,23 +24,26 @@ public class RepositoryTokenSource implements TokenSource {
     private final TokenizerConfiguration config;
     private final JuxtaAnnotationDao annotationDao;
     private final QNameFilter tokenFilter;
+    private final Long setId;
 
-    public RepositoryTokenSource(TokenizerConfiguration config, JuxtaAnnotationDao annoDao, QNameFilter tokenFilter) {
+    public RepositoryTokenSource( TokenizerConfiguration config, Long setId, JuxtaAnnotationDao annoDao, QNameFilter tokenFilter) {
         this.config = config;
         this.annotationDao = annoDao;
         this.tokenFilter = tokenFilter;
+        this.setId = setId;
     }
 
     @Override
     public List<Token> tokensOf(Text text, Set<Range> ranges) throws IOException {        
         List<Token> tokens = new ArrayList<Token>();
-        AnnotationConstraint constraint = new AnnotationConstraint(text);
+        AnnotationConstraint constraint = new AnnotationConstraint(this.setId, text);
         constraint.setFilter( this.tokenFilter );
         for (Range r : ranges ) {
             constraint.addRange(r);
         }
         constraint.setIncludeText(true);
-        for ( JuxtaAnnotation anno : this.annotationDao.list(constraint) ) {
+        List<JuxtaAnnotation> fuck = this.annotationDao.list(constraint) ;
+        for ( JuxtaAnnotation anno : fuck ) {
             String tokenText = anno.getContent();
             
             if ( this.config.getHyphenationFilter().equals(HyphenationFilter.FILTER_ALL)  ) {
