@@ -44,7 +44,7 @@ import freemarker.template.Configuration;
  */
 public class BaseResource extends ServerResource {
 
-    private static final String FTL_ROOT = "clap://class/templates/";
+    private static final String FTL_ROOT = "clap://class/templates/ftl/";
     private static final Configuration FTL_CONFIG; 
     protected static final Logger LOG = LoggerFactory.getLogger( "JuxtWsResource" );
     
@@ -55,7 +55,7 @@ public class BaseResource extends ServerResource {
     
     static {
         FTL_CONFIG = new Configuration();
-        FTL_CONFIG.setClassForTemplateLoading(JuxtaWS.class, "/templates");
+        FTL_CONFIG.setClassForTemplateLoading(JuxtaWS.class, "/templates/ftl");
         FTL_CONFIG.setNumberFormat("computer");
     }
     
