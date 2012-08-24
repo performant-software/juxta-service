@@ -6,8 +6,6 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -416,29 +414,6 @@ public class HeatmapView  {
             return new ArrayList<Change>();
         }
         
-        Collections.sort(this.alignments, new Comparator<Alignment>() {
-            @Override
-            public int compare(Alignment a, Alignment b) {
-                // NOTE: There is a bug in interedition Range. It will
-                // order range [0,1] before [0,0] when sorting ascending.
-                // So.. do NOT use its compareTo. Roll own.
-                Range r1 = a.getWitnessAnnotation(base.getId()).getRange();
-                Range r2 = b.getWitnessAnnotation(base.getId()).getRange();
-                if ( r1.getStart() < r2.getStart() ) {
-                    return -1;
-                } else if ( r1.getStart() > r2.getStart() ) {
-                    return 1;
-                } else {
-                    if ( r1.getEnd() < r2.getEnd() ) {
-                        return -1;
-                    } else if ( r1.getEnd() > r2.getEnd() ) {
-                        return 1;
-                    } 
-                }
-                return 0;
-            }
-        });
-        
         // generate a change list based on the sorted differences
         long changeIdx = 0;
         Map<Range, Change> changeMap = new HashMap<Range, Change>();
@@ -447,6 +422,7 @@ public class HeatmapView  {
         while ( alignItr.hasNext() ) {
             Alignment align = alignItr.next();
             alignItr.remove();
+            System.err.println(align.getAnnotations().get(0).getRange()+" "+align.getAnnotations().get(1).getRange());
             
             // the heatmap is from the perspective of the BASE
             // text, so only care about annotations that refer to it

@@ -13,6 +13,8 @@ public class AlignmentConstraint {
     private Range range = null;
     private QNameFilter filter = null;
     private Set<Long> witnessIdFilter = new HashSet<Long>();
+    private int from = -1;
+    private int batchSize = -1;
     
     public AlignmentConstraint( final ComparisonSet set, final Long baseWitnessId ) {
         this.setId = set.getId();
@@ -24,6 +26,19 @@ public class AlignmentConstraint {
         this.setId = set.getId();
         this.baseId = null;
         this.isBaseless = true;
+    }
+    public boolean isResultsRangeSet() {
+        return ( this.from != -1 && this.batchSize != -1);
+    }
+    public void setResultsRange( int from, int batchSize) {
+        this.from = from;
+        this.batchSize = batchSize;
+    }
+    public int getFrom() {
+        return this.from;
+    }
+    public int getBatchSize() {
+        return this.batchSize;
     }
     public boolean isBaseless() {
         return this.isBaseless;

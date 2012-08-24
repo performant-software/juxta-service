@@ -91,6 +91,11 @@ public class AlignmentDaoImpl implements AlignmentDao, InitializingBean  {
             }
             sql.append(")");
         }
+        sql.append(" order by max_start, min_start asc");
+        
+        if ( constraint.isResultsRangeSet() ) {
+            sql.append(" limit ").append(constraint.getFrom()).append(",").append(constraint.getBatchSize());
+        }
        
         // get the list of alignments that involve the base witness
         AlignmentsMapper mapper = new AlignmentsMapper( constraint );
@@ -147,7 +152,9 @@ public class AlignmentDaoImpl implements AlignmentDao, InitializingBean  {
         sb.append(" w1.id as w1_id, a1.id as a1_id, a1.range_start as a1_start, a1.range_end as a1_end, ");
         sb.append(" a1_qn.id as a1_qn_id, a1_qn.namespace as a1_namespace, a1_qn.local_name as a1_local_name, ");
         sb.append(" w2.id as w2_id, a2.id as a2_id, a2.range_start as a2_start, a2.range_end as a2_end, ");
-        sb.append(" a2_qn.id as a2_qn_id, a2_qn.namespace as a2_namespace, a2_qn.local_name as a2_local_name ");
+        sb.append(" a2_qn.id as a2_qn_id, a2_qn.namespace as a2_namespace, a2_qn.local_name as a2_local_name, ");
+        sb.append(" LEAST(a1.range_start, a2.range_start) as min_start, ");
+        sb.append(" GREATEST(a1.range_start, a2.range_start) as max_start ");
         sb.append(" from ").append(TABLE_NAME).append(" as a "); 
         sb.append(" inner join text_qname as aqn on a.qname_id=aqn.id ");
         
