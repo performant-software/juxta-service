@@ -35,6 +35,10 @@ public class AnnotationConstraint {
         return ranges;
     }
     
+    public Long getSetId() {
+        return this.setId;
+    }
+    
     /**
      * Get annotations over a limited range of a witness
      * @param range

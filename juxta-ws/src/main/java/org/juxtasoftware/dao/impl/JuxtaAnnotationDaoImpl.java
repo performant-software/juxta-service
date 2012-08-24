@@ -118,10 +118,9 @@ public class JuxtaAnnotationDaoImpl implements JuxtaAnnotationDao, InitializingB
 
     @Override
     public List<JuxtaAnnotation> list( final AnnotationConstraint constraint) {
-        
         StringBuilder sql = new StringBuilder( getSql() );
         sql.append(" where");
-        sql.append(" t.id = ?");
+        sql.append(" t.id = ? and a.set_id = ?");
         List<JuxtaAnnotation> annotations = null;
         
         if ( constraint.getFilter() != null ) {
@@ -152,16 +151,17 @@ public class JuxtaAnnotationDaoImpl implements JuxtaAnnotationDao, InitializingB
 
             annotations = this.jdbcTemplate.query(sql.toString(), 
                 new AnnotationMapper(), 
-                constraint.getTextId() );
+                constraint.getTextId(), constraint.getSetId() );
         } else {
 
             sql.append(" order by a.range_start asc");
             
             annotations = this.jdbcTemplate.query(sql.toString(), 
                 new AnnotationMapper(), 
-                constraint.getTextId() );
+                constraint.getTextId(), constraint.getSetId() );
         }
         
+        // pull token content for all from the witness text
         if ( constraint.isIncludeText() ) {
             readTokenContent( constraint.getTextId(), annotations );
         }
