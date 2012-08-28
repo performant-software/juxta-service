@@ -177,54 +177,59 @@ public class Exporter extends BaseResource {
             
             if ( currApp != null && pos == currApp.getBaseRange().getStart() ) {
                 
-                // any wit ids that are NOT present in the app data are the
-                // same as the base text. be sure to add them to the rdg below
-                List<Long> sameAsBase = new ArrayList<Long>();
-                for ( Witness w : witnesses ) {
-                    if ( currApp.getWitnessData().containsKey(w.getId()) == false ) {
-                        sameAsBase.add(w.getId());
-                    }
-                }
-                
-                // write the app and rdg tags
-                ow.write("<app>\n");
-                final String tag = generateAppTag(sameAsBase);
-                ow.write(tag);
-                ow.write(data);
-                pos++;
-   
-                // write out all of the text from the base witness within the rdg tag
-                while ( pos < currApp.getBaseRange().getEnd() ) {
-                    data = witReader.read();
-                    if ( data == -1 ) {
-                        throw new IOException("invalid aligment: past end of document");
-                    } else {
-                        if ( data == '\n') {
-                            ow.write("<lb/>");
-                        } else {
-                            ow.write((char)data);
-                        }
+                boolean firstTime = true;
+                while ( true ) {
+                    
+                    // write the initial APP, RDG tags
+                    ow.write("<app>\n");
+                    ow.write( generateRdgTag(witnesses, currApp) );
+                    
+                    // only on the initial pass do we need to write the previously read data now
+                    if ( firstTime ) {
+                        ow.write(data);
                         pos++;
+                        firstTime = false;
                     }
-                }
-                
-                // end the rdg tag 
-                ow.write("</rdg>\n");
-                
-                // write witnesses
-                for ( Entry<Long, Range> entry : currApp.getWitnessData().entrySet()) {
-                    final String rdg = String.format("<rdg wit=\"#wit-%d\">", entry.getKey());
-                    ow.write(rdg);
-                    ow.write( getWitnessFragment(entry.getKey(), entry.getValue() ) );
+                    
+                    // write out all of the text from the base witness within the rdg tag
+                    while ( pos < currApp.getBaseRange().getEnd() ) {
+                        data = witReader.read();
+                        if ( data == -1 ) {
+                            throw new IOException("invalid aligment: past end of document");
+                        } else {
+                            if ( data == '\n') {
+                                ow.write("<lb/>");
+                            } else {
+                                ow.write((char)data);
+                            }
+                            pos++;
+                        }
+                    }
+                    
+                    // end the rdg tag 
                     ow.write("</rdg>\n");
-                }
-                ow.write("</app>\n");
-                ow.write(data);
-                
-                // move on to the next annotation
-                currApp = null;
-                if ( itr.hasNext() ) {
-                    currApp = itr.next();
+                    
+                    // write witnesses
+                    for ( Entry<Long, Range> entry : currApp.getWitnessData().entrySet()) {
+                        final String rdg = String.format("<rdg wit=\"#wit-%d\">", entry.getKey());
+                        ow.write(rdg);
+                        ow.write( getWitnessFragment(entry.getKey(), entry.getValue() ) );
+                        ow.write("</rdg>\n");
+                    }
+                    ow.write("</app>\n");
+                    // TODO investigate.. the last rev had this here, but it seems really wrong.
+                    /// ow.write(data); /// is this an error!!!??
+                    
+                    // move on to the next annotation
+                    currApp = null;
+                    if ( itr.hasNext() ) {
+                        currApp = itr.next();
+                        if ( currApp.getBaseRange().getStart() > pos ) {
+                            break;
+                        }
+                    } else {
+                        break;
+                    }
                 }
                 
             } else {
@@ -240,7 +245,17 @@ public class Exporter extends BaseResource {
         return out;
     }
     
-    private String generateAppTag(List<Long> ids) {
+    private String generateRdgTag(Set<Witness> witnesses, AppData currApp) {
+        
+        // any wit ids that are NOT present in the app data are the
+        // same as the base text. be sure to add them to the rdg below
+        List<Long> ids = new ArrayList<Long>();
+        for ( Witness w : witnesses ) {
+            if ( currApp.getWitnessData().containsKey(w.getId()) == false ) {
+                ids.add(w.getId());
+            }
+        }
+        
         StringBuilder sb = new StringBuilder();
         sb.append("<rdg wit=\"");
         int cnt=0;
