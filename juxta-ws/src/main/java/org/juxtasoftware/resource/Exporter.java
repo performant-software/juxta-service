@@ -200,7 +200,11 @@ public class Exporter extends BaseResource {
                         if ( data == -1 ) {
                             throw new IOException("invalid aligment: past end of document");
                         } else {
-                            ow.write((char)data);
+                            if ( data == '\n') {
+                                ow.write("<lb/>");
+                            } else {
+                                ow.write((char)data);
+                            }
                             pos++;
                         }
                     }
@@ -265,7 +269,11 @@ public class Exporter extends BaseResource {
                 return buff.toString();
             }
             if ( pos >= range.getStart() && pos < realEnd) {
-                buff.append((char)data);
+                if ( data == '\n') {
+                    buff.append("<lb/>");
+                } else {
+                    buff.append((char)data);
+                }
                 if ( pos == realEnd ) {
                     return buff.toString();
                 }
@@ -286,16 +294,6 @@ public class Exporter extends BaseResource {
             // pre-existing data for that range
             AlignedAnnotation baseAnno = align.getWitnessAnnotation(this.base.getId());
             Range baseRange = baseAnno.getRange();
-            
-            // During collation, gaps are inserted immedately at the end of the 
-            // token preceeding the gap. To ensure proper non-token spacing/punctuation
-            // makes it into the output, bump the start to the beggining of the NEXT token.
-            // With this change, the non-token data after the gap makes in into the stream
-            // before the APP tag.
-            if ( baseRange.length() == 0 ) {
-                long next = this.annotationDao.findNextTokenStart( ((RelationalText)this.base.getText()).getId(), baseRange.getEnd());
-                baseRange = new Range(next,next);
-            }
             AppData appData = changeMap.get(baseRange);
             if ( appData == null ) {
                 appData= new AppData( this.base.getId(), baseRange, align.getGroup() );
@@ -306,7 +304,16 @@ public class Exporter extends BaseResource {
             // add witness data to the app info
             for ( AlignedAnnotation a : align.getAnnotations()) {
                 if ( a.getWitnessId().equals( base.getId()) == false ) {
-                    appData.addWitness(a.getWitnessId(), a.getRange());
+                    Range r = a.getRange();
+                    if ( r.length() == 0 ) {
+                        long n = this.annotationDao.findNextTokenStart( a.getWitnessId(), r.getEnd());
+                        r  = new Range(r.getStart(), n);
+                    } else {
+                        long p = this.annotationDao.findPriorTokenEnd( a.getWitnessId(), r.getStart() );
+                        long n = this.annotationDao.findNextTokenStart( a.getWitnessId(), r.getEnd());
+                        r = new Range(p,n);
+                    }
+                    appData.addWitness(a.getWitnessId(), r);
                     break;
                 }
             }
@@ -317,6 +324,17 @@ public class Exporter extends BaseResource {
         AppData prior = null;
         while ( appItr.hasNext() ) {
             AppData curr = appItr.next();
+            
+            // extend ranges so spacing is correct in ps output
+            if ( curr.getBaseRange().length() > 0 ) {
+                long p = this.annotationDao.findPriorTokenEnd( curr.getBaseId(), curr.getBaseRange().getStart() );
+                long n = this.annotationDao.findNextTokenStart( curr.getBaseId(), curr.getBaseRange().getEnd());
+                curr.baseRange = new Range(p,n);
+            } else {
+                long n = this.annotationDao.findNextTokenStart( curr.getBaseId(), curr.getBaseRange().getEnd());
+                curr.baseRange = new Range(curr.getBaseRange().getStart(), n);
+            }
+            
             if (prior != null) {
                 if ( prior.canMerge( curr )) {
                     prior.merge(curr);
