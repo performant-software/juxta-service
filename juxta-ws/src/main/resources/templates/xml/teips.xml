@@ -10,6 +10,9 @@
                 </respStmt>
             </titleStmt>
         </fileDesc>
+        <encodingDesc>
+            <variantEncoding location="internal" method="parallel-segmentation"/>
+        </encodingDesc>
     </teiHeader>
     
     <text>
