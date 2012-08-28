@@ -47,7 +47,6 @@ public class JuxtaTagExtractor extends DefaultHandler  {
     private boolean normalizeSpace;
     private PsWitnessInfo psWitnessInfo;
     private StringBuilder psWitnessContent;
-    //private long otherCnt = 0;
     
     /**
      * For parallel segmentated sources, set the witness information that will
@@ -130,7 +129,7 @@ public class JuxtaTagExtractor extends DefaultHandler  {
             this.exclusionContext.push(qName);
             return;
         }
-        
+                
         // cache the exclusion state of this tag. Kinda expensive and used multiple times
         final boolean isExcluded = this.xslt.isExcluded(qName, this.tagOccurences.get(qName));
         
@@ -257,7 +256,7 @@ public class JuxtaTagExtractor extends DefaultHandler  {
             this.isExcluding = !this.exclusionContext.empty();
             return;
         }
-        
+                
         // If there is a default namespace, the qName will not have it prepended here.
         // Do it now because all of the exclusion/linefeed data in the XSLT must have it.
         if ( this.xslt.getDefaultNamespace() != null && this.xslt.getDefaultNamespace().length() > 0) {
@@ -319,43 +318,36 @@ public class JuxtaTagExtractor extends DefaultHandler  {
         if ( this.isExcluding == false ) {
             String txt = new String(ch, start, length);
 
-            if ( this.normalizeSpace == false ) {
-                // remove last newline and trailing space (right trim)
-                txt = txt.replaceAll("[\\n]\\s*$", "");
-                
-                // remove first newline and traiing whitespace.
-                // this will leave any leading whitespace before the 1st newline
-                txt = txt.replaceAll("[\\n]\\s*", "");
-                //this.otherCnt += txt.length();
-                //System.err.println("["+txt+"]"+txt.length()+" - "+this.otherCnt);
-            } else {
-                // Do not care about linefeeds for this. Strip them FIRST.
-                // If anything is left, there is more to do...
-                txt = txt.replace("\n", "");
-                if ( txt.length() > 0) {
-                    // see if the raw content has leading or trailing spaces
-                    String leading = "";
-                    if ( Character.isWhitespace(txt.charAt(0))) {
-                        leading = " ";
-                    }
-                    String trailing = "";
-                    if ( Character.isWhitespace(txt.charAt(txt.length()-1))) {
-                        trailing = " ";
-                    }
-                        
-                    // Do the equivalent of an XSLT 1.0 normalize space: trim
-                    // all leading and trailing whitespace and all whitespace
-                    // runs are cut to one space. If anything remains, append
-                    // the leading and/or trailing space saved from above
-                    txt = txt.trim().replaceAll("\\s+", " ");
-                    if ( txt.length() > 0) {
-                        txt = leading+txt+trailing;
-                        //this.otherCnt += txt.length();
-                        //System.err.println("["+txt+"] - "+this.otherCnt+" vs pos: "+(this.currPos+txt.length()) );
-                    }
+            // remove last newline and trailing space (right trim formatting space)
+            txt = txt.replaceAll("[\\n]\\s*$", "");
+            
+            // remove first newline and traiing whitespace.
+            // this will leave any leading whitespace before the 1st newline (left trim formatting spaces)
+            txt = txt.replaceAll("[\\n]\\s*", "");
+            
+            // Now throw away all linefeeds. don't care about them anymore
+            txt = txt.replaceAll("\\n+", "");
+            
+            // if normalizing and anything left...
+            if ( this.normalizeSpace && txt.length() > 1  ) {    
+                // see if the raw content has leading or trailing spaces
+                String leading = "";
+                if ( Character.isWhitespace(txt.charAt(0))) {
+                    leading = " ";
                 }
+                String trailing = "";
+                if ( Character.isWhitespace(txt.charAt(txt.length()-1))) {
+                    trailing = " ";
+                }
+                
+                // Do the equivalent of an XSLT 1.0 normalize space: trim
+                // all leading and trailing whitespace and all whitespace
+                // runs are cut to one space. If anything remains, append
+                // the leading and/or trailing space saved from above
+                txt = txt.trim().replaceAll("\\s+", " ");
+                txt = leading+txt+trailing;
             }
-
+            
             if ( this.currNote != null ) {
                 this.currNoteContent.append(txt);
             } else {
