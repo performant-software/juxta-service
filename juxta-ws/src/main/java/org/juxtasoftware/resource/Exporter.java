@@ -38,7 +38,6 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
 import eu.interedition.text.Range;
-import eu.interedition.text.rdbms.RelationalText;
 
 /**
  * Resource used to export sets in various formats. 
@@ -171,42 +170,32 @@ public class Exporter extends BaseResource {
                 break;
             }
             
+            // new lines in base turn into TEI linebreaks
             if ( data == '\n' ) {
-                ow.write("</p>\n<p>");
+                ow.write("<lb/>");
             }
             
             if ( currApp != null && pos == currApp.getBaseRange().getStart() ) {
                 
-                // flag if this is a GAP or not. Important to get spacing right:
-                // when this is a GAP, the data contains the token character
-                // following the gap. It must not get written until after the <APP> tag
-                // This also means that the witnesses must read the extra whitespace folliwng
-                // their content and add it to the <rdg> tags or the content runs together.
-                boolean isBaseGap = currApp.getBaseRange().length() == 0;
-                     
                 // write the app and lem tags followed by the just-read character
                 ow.write("<app>\n");
                 final String tag = String.format("<lem wit=\"#wit-%d\">", currApp.getBaseId());
                 ow.write(tag);
-                if ( isBaseGap == false ) {
-                    ow.write(data);
-                }
+                ow.write(data);
                 pos++;
    
                 // write out all of the text from the base witness within the lem tag
-                if ( isBaseGap == false ) {
-                    while ( pos < currApp.getBaseRange().getEnd() ) {
-                        data = witReader.read();
-                        if ( data == -1 ) {
-                            throw new IOException("invalid aligment: past end of document");
+                while ( pos < currApp.getBaseRange().getEnd() ) {
+                    data = witReader.read();
+                    if ( data == -1 ) {
+                        throw new IOException("invalid aligment: past end of document");
+                    } else {
+                        if ( data == '\n') {
+                            ow.write("<lb/>");
                         } else {
-                            if ( data == '\n') {
-                                ow.write("<lb/>");
-                            } else {
-                                ow.write((char)data);
-                            }
-                            pos++;
+                            ow.write((char)data);
                         }
+                        pos++;
                     }
                 }
                 
@@ -217,13 +206,11 @@ public class Exporter extends BaseResource {
                 for ( Entry<Long, Range> entry : currApp.getWitnessData().entrySet()) {
                     final String rdg = String.format("<rdg wit=\"#wit-%d\">", entry.getKey());
                     ow.write(rdg);
-                    ow.write( getWitnessFragment(entry.getKey(), entry.getValue(), isBaseGap) );
+                    ow.write( getWitnessFragment(entry.getKey(), entry.getValue() ) );
                     ow.write("</rdg>\n");
                 }
                 ow.write("</app>\n");
-                if ( isBaseGap ) {
-                    ow.write(data);
-                }
+                ow.write(data);
                 
                 // move on to the next annotation
                 currApp = null;
@@ -254,12 +241,8 @@ public class Exporter extends BaseResource {
      * @return
      * @throws IOException
      */
-    private String getWitnessFragment(Long witId, Range range, boolean isAddedContent) throws IOException {
+    private String getWitnessFragment(Long witId, Range range ) throws IOException {
         Witness w = this.witnessDao.find(witId);
-        long realEnd = range.getEnd();
-        if (isAddedContent ) {
-            realEnd = this.annotationDao.findNextTokenStart(((RelationalText)w.getText()).getId(), range.getEnd());
-        }
         Reader r = this.witnessDao.getContentStream(w);
         StringBuilder buff = new StringBuilder();
         long pos= 0;
@@ -268,13 +251,13 @@ public class Exporter extends BaseResource {
             if ( data == -1 ) {
                 return buff.toString();
             }
-            if ( pos >= range.getStart() && pos < realEnd) {
+            if ( pos >= range.getStart() && pos < range.getEnd()) {
                 if ( data == '\n') {
                     buff.append("<lb/>");
                 } else {
                     buff.append((char)data);
                 }
-                if ( pos == realEnd ) {
+                if ( pos == range.getEnd() ) {
                     return buff.toString();
                 }
             }
