@@ -127,8 +127,8 @@ public class Exporter extends BaseResource {
 
     private File generateApparatus(Set<Witness> witnesses) throws IOException {
         // Algo: stream text from the pase witness until a diff is found
-        // at that point, inject an <app>. Each non-base witness content will be
-        // added in <rdg> tags. The base version in a <lem> tag.
+        // at that point, inject an <app>. Each witness content will be
+        // added in <rdg> tags.
         // TODO this choice needs to be documented somewhere
         // TODO also note that the final output may not strictly adhere to TEI PS
         // output if things like ignore caps / punctuation are set. ie it could
@@ -177,14 +177,23 @@ public class Exporter extends BaseResource {
             
             if ( currApp != null && pos == currApp.getBaseRange().getStart() ) {
                 
-                // write the app and lem tags followed by the just-read character
+                // any wit ids that are NOT present in the app data are the
+                // same as the base text. be sure to add them to the rdg below
+                List<Long> sameAsBase = new ArrayList<Long>();
+                for ( Witness w : witnesses ) {
+                    if ( currApp.getWitnessData().containsKey(w.getId()) == false ) {
+                        sameAsBase.add(w.getId());
+                    }
+                }
+                
+                // write the app and rdg tags
                 ow.write("<app>\n");
-                final String tag = String.format("<lem wit=\"#wit-%d\">", currApp.getBaseId());
+                final String tag = generateAppTag(sameAsBase);
                 ow.write(tag);
                 ow.write(data);
                 pos++;
    
-                // write out all of the text from the base witness within the lem tag
+                // write out all of the text from the base witness within the rdg tag
                 while ( pos < currApp.getBaseRange().getEnd() ) {
                     data = witReader.read();
                     if ( data == -1 ) {
@@ -199,8 +208,8 @@ public class Exporter extends BaseResource {
                     }
                 }
                 
-                // end the lem tag 
-                ow.write("</lem>\n");
+                // end the rdg tag 
+                ow.write("</rdg>\n");
                 
                 // write witnesses
                 for ( Entry<Long, Range> entry : currApp.getWitnessData().entrySet()) {
@@ -231,6 +240,21 @@ public class Exporter extends BaseResource {
         return out;
     }
     
+    private String generateAppTag(List<Long> ids) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("<rdg wit=\"");
+        int cnt=0;
+        for (Long id : ids) {
+            if ( cnt > 0 ) {
+                sb.append(" ");
+            }
+            sb.append("#wit-").append(id);
+            cnt++;
+        }
+        sb.append("\">");
+        return sb.toString();
+    }
+
     /**
      * Extract the text fragment for a witness. NOTE: the isAddedContent flag is necessary
      * to ensure that the proper trailing non-token text gets addded to the <rdg> tag. Without it
@@ -374,7 +398,17 @@ public class Exporter extends BaseResource {
             return this.witnessRanges;
         }
         public boolean canMerge( AppData other) {
-            return this.groupId == other.groupId && this.baseId.equals(other.getBaseId());
+            return this.groupId == other.groupId && 
+                   this.baseId.equals(other.getBaseId()) && 
+                   hasMatchingWitnesses(other);
+        }
+        private boolean hasMatchingWitnesses(AppData other) {
+            for ( Long witId : this.witnessRanges.keySet() ) {
+                if ( other.witnessRanges.containsKey(witId) == false ) {
+                    return false;
+                }
+            }
+            return true;
         }
         public void merge(AppData other) {
             this.baseRange = new Range( 
