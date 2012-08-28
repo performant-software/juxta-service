@@ -49,7 +49,6 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
 import eu.interedition.text.Range;
-import eu.interedition.text.rdbms.RelationalText;
 
 @Service
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
@@ -468,7 +467,6 @@ public class HeatmapView  {
         // and merge adjacent, same intensity changes into one
         List<Change> deleteList = new ArrayList<Change>();
         Change prior = null;
-        Long baseTextId = ((RelationalText) base.getText()).getId();
         for (Iterator<Change> itr = changes.iterator(); itr.hasNext();) {
             Change change = itr.next();
             if (prior != null) {
@@ -478,7 +476,7 @@ public class HeatmapView  {
                     if (prior.getRange().getStart() == 0) {
                         prior.adjustRange(start, start + 1);
                     } else {
-                        long newStart = this.annotationDao.findNextTokenStart(baseTextId, start);
+                        long newStart = this.annotationDao.findNextTokenStart(base.getId(), start);
                         prior.adjustRange(newStart, newStart + 1);
                     }
                     
@@ -504,7 +502,7 @@ public class HeatmapView  {
             } else {
                 if (change.getRange().length() == 0) {
                     long start = change.getRange().getStart();
-                    long newStart = this.annotationDao.findNextTokenStart(baseTextId, start);
+                    long newStart = this.annotationDao.findNextTokenStart(base.getId(), start);
                     change.adjustRange(newStart, newStart + 1);
                 }
             }
@@ -516,7 +514,7 @@ public class HeatmapView  {
         if ( prior.getRange().length() == 0 ) {
             long start = prior.getRange().getStart();
             if ( prior.getRange().getStart() < base.getText().getLength()-1 ) {
-                long newStart = this.annotationDao.findNextTokenStart(baseTextId, start);
+                long newStart = this.annotationDao.findNextTokenStart(base.getId(), start);
                 prior.adjustRange(newStart, newStart + 1);
             } else {
                 if ( start > 0) {

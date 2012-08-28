@@ -47,10 +47,12 @@ public interface JuxtaAnnotationDao  {
     
     /**
      * Given a textID and a starting position, find the start of the NEXT token
-     * @param textId
+     * @param witnessId
      * @param fromPos
      * @return
      */
-    long findNextTokenStart( final long textId, final long fromPos);
+    long findNextTokenStart( final Long witnessId, final long fromPos);
+    
+    long findPriorTokenEnd( final Long witnessId, final long fromPos);
     
 }

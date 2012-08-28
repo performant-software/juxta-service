@@ -90,12 +90,24 @@ public class JuxtaAnnotationDaoImpl implements JuxtaAnnotationDao, InitializingB
     }
 
     @Override
-    public long findNextTokenStart(final long textId, final long fromPos) {
+    public long findNextTokenStart(final Long witnessId, final long fromPos) {
         final String sql = 
             "select range_start from juxta_annotation" +
-            " where text_id=? and range_start > ?  order by range_start asc limit 1";
+            " where witness_id=? and range_start > ?  order by range_start asc limit 1";
         try {
-            return this.jdbcTemplate.queryForLong(sql, textId, fromPos);
+            return this.jdbcTemplate.queryForLong(sql, witnessId, fromPos);
+        } catch (Exception e) {
+            return fromPos;
+        }
+    }
+    
+    @Override
+    public long findPriorTokenEnd(final Long witnessId, final long fromPos) {
+        final String sql = 
+            "select range_end from juxta_annotation" +
+            " where witness_id=? and range_end < ? order by range_end desc limit 1";
+        try {
+            return this.jdbcTemplate.queryForLong(sql, witnessId, fromPos);
         } catch (Exception e) {
             return fromPos;
         }
