@@ -164,6 +164,7 @@ public class Exporter extends BaseResource {
         }
         
         long pos = 0;
+        int lastDataWritten = -1;
         while ( true ) {
             int data = witReader.read();
             if ( data == -1 ) {
@@ -177,22 +178,18 @@ public class Exporter extends BaseResource {
             
             if ( currApp != null && pos == currApp.getBaseRange().getStart() ) {
                 
-                boolean firstTime = true;
                 while ( true ) {
                     
                     // write the initial APP, RDG tags
                     ow.write("<app>\n");
                     ow.write( generateRdgTag(witnesses, currApp) );
                     
-                    // only on the initial pass do we need to write the previously read data now
-                    if ( firstTime ) {
-                        ow.write(data);
-                        pos++;
-                        firstTime = false;
-                    }
-                    
-                    // write out all of the text from the base witness within the rdg tag
-                    while ( pos < currApp.getBaseRange().getEnd() ) {
+                    // write the character that triggered this first
+                    ow.write((char)data);   
+                    pos++;
+
+                    // write the rest of the rdg content
+                    while ( pos < currApp.getBaseRange().getEnd() ) {                       
                         data = witReader.read();
                         if ( data == -1 ) {
                             throw new IOException("invalid aligment: past end of document");
@@ -208,17 +205,18 @@ public class Exporter extends BaseResource {
                     
                     // end the rdg tag 
                     ow.write("</rdg>\n");
-                    
+ 
                     // write witnesses
                     for ( Entry<Long, Range> entry : currApp.getWitnessData().entrySet()) {
                         final String rdg = String.format("<rdg wit=\"#wit-%d\">", entry.getKey());
                         ow.write(rdg);
+                        if ( lastDataWritten != -1 && Character.isWhitespace(lastDataWritten) == false ) {
+                            ow.write(" ");
+                        }
                         ow.write( getWitnessFragment(entry.getKey(), entry.getValue() ) );
                         ow.write("</rdg>\n");
                     }
                     ow.write("</app>\n");
-                    // TODO investigate.. the last rev had this here, but it seems really wrong.
-                    /// ow.write(data); /// is this an error!!!??
                     
                     // move on to the next annotation
                     currApp = null;
@@ -235,6 +233,7 @@ public class Exporter extends BaseResource {
             } else {
                 ow.write(data);
                 pos++;
+                lastDataWritten = data;
             }
         }
         
@@ -327,14 +326,8 @@ public class Exporter extends BaseResource {
             for ( AlignedAnnotation a : align.getAnnotations()) {
                 if ( a.getWitnessId().equals( base.getId()) == false ) {
                     Range r = a.getRange();
-                    if ( r.length() == 0 ) {
-                        long n = this.annotationDao.findNextTokenStart( a.getWitnessId(), r.getEnd());
-                        r  = new Range(r.getStart(), n);
-                    } else {
-                        long p = this.annotationDao.findPriorTokenEnd( a.getWitnessId(), r.getStart() );
-                        long n = this.annotationDao.findNextTokenStart( a.getWitnessId(), r.getEnd());
-                        r = new Range(p,n);
-                    }
+                    long n = this.annotationDao.findNextTokenStart( a.getWitnessId(), r.getEnd());
+                    r = new Range(r.getStart(),n);
                     appData.addWitness(a.getWitnessId(), r);
                     break;
                 }
@@ -348,14 +341,8 @@ public class Exporter extends BaseResource {
             AppData curr = appItr.next();
             
             // extend ranges so spacing is correct in ps output
-            if ( curr.getBaseRange().length() > 0 ) {
-                long p = this.annotationDao.findPriorTokenEnd( curr.getBaseId(), curr.getBaseRange().getStart() );
-                long n = this.annotationDao.findNextTokenStart( curr.getBaseId(), curr.getBaseRange().getEnd());
-                curr.baseRange = new Range(p,n);
-            } else {
-                long n = this.annotationDao.findNextTokenStart( curr.getBaseId(), curr.getBaseRange().getEnd());
-                curr.baseRange = new Range(curr.getBaseRange().getStart(), n);
-            }
+            long n = this.annotationDao.findNextTokenStart( curr.getBaseId(), curr.getBaseRange().getEnd());
+            curr.baseRange = new Range(curr.getBaseRange().getStart(), n);
             
             if (prior != null) {
                 if ( prior.canMerge( curr )) {
