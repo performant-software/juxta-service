@@ -11,7 +11,7 @@ public class CollatorConfig {
     private HyphenationFilter hyphenationFilter = HyphenationFilter.INCLUDE_ALL;
 
     public CollatorConfig() {
-        this(true,true,true);
+        this(true,false,false);
     }
 
     public CollatorConfig(boolean filterWhitespace, boolean filterPunctuation, boolean filterCase) {
