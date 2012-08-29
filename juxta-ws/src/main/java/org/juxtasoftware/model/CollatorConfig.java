@@ -6,8 +6,8 @@ public class CollatorConfig {
     
     private Long id;
     private boolean filterWhitespace = true;
-    private boolean filterPunctuation = true;
-    private boolean filterCase = true;
+    private boolean filterPunctuation = false;
+    private boolean filterCase = false;
     private HyphenationFilter hyphenationFilter = HyphenationFilter.INCLUDE_ALL;
 
     public CollatorConfig() {
