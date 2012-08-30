@@ -133,7 +133,7 @@ public class Exporter extends BaseResource {
             ExportTask task = new ExportTask(taskId);
             this.taskManager.submit(task);
         } 
-        return toJsonRepresentation( "{\"status\": \"EXPORTING\", \"taskId\": \""+taskId+"\"}" );
+        return toTextRepresentation("EXPORTING "+taskId );
     }
         
     private void doTeiPsExport() throws IOException {
