@@ -19,7 +19,6 @@ import java.util.Set;
 import org.apache.commons.io.IOUtils;
 import org.juxtasoftware.dao.AlignmentDao;
 import org.juxtasoftware.dao.ComparisonSetDao;
-import org.juxtasoftware.dao.JuxtaAnnotationDao;
 import org.juxtasoftware.dao.WitnessDao;
 import org.juxtasoftware.model.Alignment;
 import org.juxtasoftware.model.Alignment.AlignedAnnotation;
@@ -28,7 +27,11 @@ import org.juxtasoftware.model.ComparisonSet;
 import org.juxtasoftware.model.QNameFilter;
 import org.juxtasoftware.model.Witness;
 import org.juxtasoftware.util.QNameFilters;
+import org.restlet.data.Encoding;
+import org.restlet.data.MediaType;
 import org.restlet.data.Status;
+import org.restlet.engine.application.EncodeRepresentation;
+import org.restlet.representation.FileRepresentation;
 import org.restlet.representation.Representation;
 import org.restlet.resource.Get;
 import org.restlet.resource.ResourceException;
@@ -52,7 +55,6 @@ public class Exporter extends BaseResource {
     @Autowired private WitnessDao witnessDao;
     @Autowired private QNameFilters qnameFilters;
     @Autowired private AlignmentDao alignmentDao;
-    @Autowired private JuxtaAnnotationDao annotationDao;
     private ComparisonSet set;
     private Witness base;
 
@@ -100,39 +102,51 @@ public class Exporter extends BaseResource {
     @Get("xml")
     public Representation exportSet() {
         try {
+            // get the TEI PS template and sub in the name
             String template = IOUtils.toString(ClassLoader.getSystemResourceAsStream("templates/xml/teips.xml"));
             template = template.replace("$TITLE", "XX-"+this.set.getName());
             
+            // add listWit
             Set<Witness> witnesses = this.setDao.getWitnesses(this.set);
-            
             final String listWit = generateListWitContent(witnesses);
             template = template.replace("$LISTWIT", listWit);
-            
+             
+            // generate the main body: text interwoven with app tags
             File appFile = generateApparatus(witnesses);
-            FileInputStream fis= new FileInputStream(appFile);
-            String hack = IOUtils.toString(fis);
-            System.err.println( hack );
-            IOUtils.closeQuietly(fis);
+            
+            // assemble everything in a temp file
+            FileInputStream fis = new FileInputStream(appFile);
+            File out = File.createTempFile("psfinal", "dat");
+            out.deleteOnExit();
+            FileOutputStream fos = new FileOutputStream(out); 
+            OutputStream bout = new BufferedOutputStream(fos);
+            OutputStreamWriter ow = new OutputStreamWriter(bout, "UTF-8");
+            
+            int pos = template.indexOf("$BODY");
+            ow.write(template.substring(0, pos));
+            IOUtils.copy(fis, ow);
+            ow.write(template.substring(pos+5));
+            
+            IOUtils.closeQuietly(ow);
             appFile.delete();
             
-            template = template.replace("$BODY", hack);
-            
-            return toTextRepresentation(template);
+            FileRepresentation rep = new FileRepresentation( out, MediaType.TEXT_XML);
+            rep.setAutoDeleting(true);
+            if ( isZipSupported() ) {
+                return new EncodeRepresentation(Encoding.GZIP, rep);
+            } else {
+                return rep;
+            }
         } catch (IOException e) {
             setStatus(Status.SERVER_ERROR_INTERNAL);
             return toTextRepresentation("Unable to export comparison set");
         }
-        
     }
 
     private File generateApparatus(Set<Witness> witnesses) throws IOException {
         // Algo: stream text from the pase witness until a diff is found
         // at that point, inject an <app>. Each witness content will be
         // added in <rdg> tags.
-        // TODO this choice needs to be documented somewhere
-        // TODO also note that the final output may not strictly adhere to TEI PS
-        // output if things like ignore caps / punctuation are set. ie it could
-        // show 'cat.' as the same as 'CAT!'. This should be documented somewhere.
         
         // setup readers/writers for the data
         File out = File.createTempFile("ps_app", "dat");
@@ -143,17 +157,11 @@ public class Exporter extends BaseResource {
         Reader witReader = this.witnessDao.getContentStream(this.base);
         ow.write("<p>");
         
-        // get a batch of alignments to work with... when these are used up
-        // another batch will be retrieved
-        //final int alignBatchSize = 1000;
-        //int alignsFrom = 0;
+        // get a batch of alignments to work with.
         QNameFilter changesFilter = this.qnameFilters.getDifferencesFilter();
         AlignmentConstraint constraint = new AlignmentConstraint(set, this.base.getId());
         constraint.setFilter(changesFilter);
-        //constraint.setResultsRange(alignsFrom, alignBatchSize);
-        List<Alignment> alignments = this.alignmentDao.list(constraint);
-        //alignsFrom = alignBatchSize;
-        
+        List<Alignment> alignments = this.alignmentDao.list(constraint);        
         List<AppData> appData = generateAppData(alignments);
         Iterator<AppData> itr = appData.iterator();
         
@@ -332,10 +340,7 @@ public class Exporter extends BaseResource {
             // add witness data to the app info
             for ( AlignedAnnotation a : align.getAnnotations()) {
                 if ( a.getWitnessId().equals( base.getId()) == false ) {
-                    Range r = a.getRange();
-//                    long n = this.annotationDao.findNextTokenStart( a.getWitnessId(), r.getEnd());
-//                    r = new Range(r.getStart(),n);
-                    appData.addWitness(a.getWitnessId(), r);
+                    appData.addWitness(a.getWitnessId(), a.getRange());
                     break;
                 }
             }
@@ -345,12 +350,7 @@ public class Exporter extends BaseResource {
         Iterator<AppData> appItr = data.iterator();
         AppData prior = null;
         while ( appItr.hasNext() ) {
-            AppData curr = appItr.next();
-            
-            // extend ranges so spacing is correct in ps output
-//            long n = this.annotationDao.findNextTokenStart( curr.getBaseId(), curr.getBaseRange().getEnd());
-//            curr.baseRange = new Range(curr.getBaseRange().getStart(), n);
-            
+            AppData curr = appItr.next();            
             if (prior != null) {
                 if ( prior.canMerge( curr )) {
                     prior.merge(curr);
