@@ -111,7 +111,12 @@ public class Exporter extends BaseResource {
     
     @Get
     public Representation exportSet() {
-        // FIRST, see if the cached version is available:
+        // is set able to be exported?
+        if ( this.set.getStatus().equals(ComparisonSet.Status.COLLATED) == false ) {
+            setStatus(Status.CLIENT_ERROR_PRECONDITION_FAILED);
+            return toTextRepresentation("Cannot export set that is not collated");
+        }
+        
         if ( this.cacheDao.exportExists(this.set.getId(), this.base.getId())) {
             Representation rep = new ReaderRepresentation( 
                 this.cacheDao.getExport(this.set.getId(), this.base.getId()), 
