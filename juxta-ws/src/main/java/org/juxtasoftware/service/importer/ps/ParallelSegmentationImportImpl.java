@@ -241,7 +241,7 @@ public class ParallelSegmentationImportImpl implements ImportService<Source> {
             setStatusMsg("Parse WitnessID "+info.getGroupId()+" - '"+info.getDescription()+"' from source");
             JuxtaTagExtractor extractor = new JuxtaTagExtractor();
             extractor.setPsTargetWitness(info);
-            extractor.extract(this.sourceDao.getContentReader(teiSource), jxXslt, true );
+            extractor.extract(this.sourceDao.getContentReader(teiSource), jxXslt );
             Text witnessTxt = this.textRepository.create( new StringReader(extractor.getPsWitnessContent()));
             Witness witness = createWitness( ws, teiSource, jxXslt, witnessTxt, info );
             witnesses.add(witness);
