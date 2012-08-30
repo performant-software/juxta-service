@@ -351,9 +351,9 @@ public class JuxtaTagExtractor extends DefaultHandler  {
             txt = leading+txt+trailing;
         }
         
-        if ( txt.length() > 0 ) {
-            System.err.println("["+txt+"]");
-        }
+//        if ( txt.length() > 0 ) {
+//            System.err.println("["+txt+"]");
+//        }
         
         if ( this.currNote != null ) {
             this.currNoteContent.append(txt);

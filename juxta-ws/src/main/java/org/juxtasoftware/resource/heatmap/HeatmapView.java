@@ -421,7 +421,6 @@ public class HeatmapView  {
         while ( alignItr.hasNext() ) {
             Alignment align = alignItr.next();
             alignItr.remove();
-            System.err.println(align.getAnnotations().get(0).getRange()+" "+align.getAnnotations().get(1).getRange());
             
             // the heatmap is from the perspective of the BASE
             // text, so only care about annotations that refer to it
