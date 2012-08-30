@@ -161,9 +161,11 @@ public class Tokenizer {
                 if ( frag.equals(Range.NULL) || (offset >= frag.getStart() && offset < frag.getEnd()) ) {
                     
                     // track start of whitespace run if whitespace is not ignored
-                    if (this.filterWhitespace == false && Character.isWhitespace(read) && start == -1) {
-                        start = offset;
+                    if (this.filterWhitespace == false && Character.isWhitespace(read) ) {
                         whitespaceRun = true;
+                        if ( start == -1) {
+                            start = offset;
+                        }
                     } else if (isTokenChar(read)) {
                         // end whitespace runs on non whitespace chars. Create
                         // a token containing the spaces

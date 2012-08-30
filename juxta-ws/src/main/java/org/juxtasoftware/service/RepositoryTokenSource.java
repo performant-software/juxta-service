@@ -42,8 +42,8 @@ public class RepositoryTokenSource implements TokenSource {
             constraint.addRange(r);
         }
         constraint.setIncludeText(true);
-        List<JuxtaAnnotation> fuck = this.annotationDao.list(constraint) ;
-        for ( JuxtaAnnotation anno : fuck ) {
+        List<JuxtaAnnotation> annos = this.annotationDao.list(constraint) ;
+        for ( JuxtaAnnotation anno : annos ) {
             String tokenText = anno.getContent();
             
             if ( this.config.getHyphenationFilter().equals(HyphenationFilter.FILTER_ALL)  ) {
