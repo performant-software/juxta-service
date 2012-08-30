@@ -99,7 +99,7 @@ CREATE TABLE IF NOT EXISTS juxta_collation_cache (
     id BIGINT NOT NULL AUTO_INCREMENT,
     set_id BIGINT NOT NULL,
     witness_list VARCHAR(255) NOT NULL,
-    data_type enum('HEATMAP', "SIDEBYSIDE", "HISTOGRAM", "CONDENSED_HEATMAP", "CRITICAL_APPARATUS") not null,
+    data_type enum('HEATMAP', "SIDEBYSIDE", "HISTOGRAM", "CONDENSED_HEATMAP", "CRITICAL_APPARATUS", "EXPORT") not null,
     data LONGTEXT,
     PRIMARY KEY (id),
     UNIQUE (set_id, witness_list, data_type),

@@ -18,6 +18,10 @@ public interface CacheDao {
     Reader getCriticalApparatus( final Long setId, final Long baseId );
     void cacheCriticalApparatus( final Long setId, final Long baseId, Reader data);
     
+    boolean exportExists(  final Long setId, final Long baseId  );
+    Reader getExport( final Long setId, final Long baseId );
+    void cacheExport( final Long setId, final Long baseId, Reader data);
+    
     boolean histogramExists(  final Long setId, final Long baseId  );
     Reader getHistogram( final Long setId, final Long baseId );
     void cacheHistogram( final Long setId, final Long baseId, Reader data);

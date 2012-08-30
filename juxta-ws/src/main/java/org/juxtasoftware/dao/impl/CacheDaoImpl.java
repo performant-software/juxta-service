@@ -82,6 +82,43 @@ public class CacheDaoImpl implements CacheDao {
     }
     
     @Override
+    public boolean exportExists(  final Long setId, final Long baseId  ) {
+        final String sql = "select count(*) as cnt from "
+            +TABLE+" where set_id=? and witness_list=? and data_type=?";
+        long cnt = jdbcTemplate.queryForLong(sql, setId, baseId.toString(), "EXPORT");
+        return cnt > 0;
+    }
+    
+    @Override
+    public Reader getExport( final Long setId, final Long baseId ) {
+        final String sql = "select data from "+TABLE+" where set_id=? and witness_list=? and data_type=?";
+        return DataAccessUtils.uniqueResult(
+            this.jdbcTemplate.query(sql, new RowMapper<Reader>(){
+
+                @Override
+                public Reader mapRow(ResultSet rs, int rowNum) throws SQLException {
+                    return rs.getCharacterStream("data");
+                }
+                
+            }, setId, baseId.toString(), "EXPORT") );
+    }
+    
+    @Override
+    public void cacheExport( final Long setId, final Long baseId, final Reader data) {
+        final String sql = "insert into " + TABLE+ " (set_id, witness_list, data_type, data) values (?,?,?,?)";
+        this.jdbcTemplate.update(sql, new PreparedStatementSetter() {
+
+            @Override
+            public void setValues(PreparedStatement ps) throws SQLException {
+                ps.setLong(1, setId);
+                ps.setString(2, baseId.toString());
+                ps.setString(3, "EXPORT");
+                ps.setCharacterStream(4, data);
+            }
+        });  
+    }
+    
+    @Override
     public boolean criticalApparatusExists(  final Long setId, final Long baseId  ) {
         final String sql = "select count(*) as cnt from "
             +TABLE+" where set_id=? and witness_list=? and data_type=?";

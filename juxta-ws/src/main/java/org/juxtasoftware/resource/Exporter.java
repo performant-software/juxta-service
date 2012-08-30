@@ -4,11 +4,13 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -18,6 +20,7 @@ import java.util.Set;
 
 import org.apache.commons.io.IOUtils;
 import org.juxtasoftware.dao.AlignmentDao;
+import org.juxtasoftware.dao.CacheDao;
 import org.juxtasoftware.dao.ComparisonSetDao;
 import org.juxtasoftware.dao.WitnessDao;
 import org.juxtasoftware.model.Alignment;
@@ -26,12 +29,16 @@ import org.juxtasoftware.model.AlignmentConstraint;
 import org.juxtasoftware.model.ComparisonSet;
 import org.juxtasoftware.model.QNameFilter;
 import org.juxtasoftware.model.Witness;
+import org.juxtasoftware.util.BackgroundTask;
+import org.juxtasoftware.util.BackgroundTaskCanceledException;
+import org.juxtasoftware.util.BackgroundTaskStatus;
 import org.juxtasoftware.util.QNameFilters;
+import org.juxtasoftware.util.TaskManager;
 import org.restlet.data.Encoding;
 import org.restlet.data.MediaType;
 import org.restlet.data.Status;
 import org.restlet.engine.application.EncodeRepresentation;
-import org.restlet.representation.FileRepresentation;
+import org.restlet.representation.ReaderRepresentation;
 import org.restlet.representation.Representation;
 import org.restlet.resource.Get;
 import org.restlet.resource.ResourceException;
@@ -55,6 +62,9 @@ public class Exporter extends BaseResource {
     @Autowired private WitnessDao witnessDao;
     @Autowired private QNameFilters qnameFilters;
     @Autowired private AlignmentDao alignmentDao;
+    @Autowired private CacheDao cacheDao;
+    @Autowired private TaskManager taskManager;
+    
     private ComparisonSet set;
     private Witness base;
 
@@ -99,48 +109,69 @@ public class Exporter extends BaseResource {
         }
     }
     
-    @Get("xml")
+    @Get
     public Representation exportSet() {
-        try {
-            // get the TEI PS template and sub in the name
-            String template = IOUtils.toString(ClassLoader.getSystemResourceAsStream("templates/xml/teips.xml"));
-            template = template.replace("$TITLE", "XX-"+this.set.getName());
-            
-            // add listWit
-            Set<Witness> witnesses = this.setDao.getWitnesses(this.set);
-            final String listWit = generateListWitContent(witnesses);
-            template = template.replace("$LISTWIT", listWit);
-             
-            // generate the main body: text interwoven with app tags
-            File appFile = generateApparatus(witnesses);
-            
-            // assemble everything in a temp file
-            FileInputStream fis = new FileInputStream(appFile);
-            File out = File.createTempFile("psfinal", "dat");
-            out.deleteOnExit();
-            FileOutputStream fos = new FileOutputStream(out); 
-            OutputStream bout = new BufferedOutputStream(fos);
-            OutputStreamWriter ow = new OutputStreamWriter(bout, "UTF-8");
-            
-            int pos = template.indexOf("$BODY");
-            ow.write(template.substring(0, pos));
-            IOUtils.copy(fis, ow);
-            ow.write(template.substring(pos+5));
-            
-            IOUtils.closeQuietly(ow);
-            appFile.delete();
-            
-            FileRepresentation rep = new FileRepresentation( out, MediaType.TEXT_XML);
-            rep.setAutoDeleting(true);
+        // FIRST, see if the cached version is available:
+        if ( this.cacheDao.exportExists(this.set.getId(), this.base.getId())) {
+            Representation rep = new ReaderRepresentation( 
+                this.cacheDao.getExport(this.set.getId(), this.base.getId()), 
+                MediaType.TEXT_XML);
             if ( isZipSupported() ) {
                 return new EncodeRepresentation(Encoding.GZIP, rep);
             } else {
                 return rep;
             }
-        } catch (IOException e) {
-            setStatus(Status.SERVER_ERROR_INTERNAL);
-            return toTextRepresentation("Unable to export comparison set");
         }
+        
+        final String taskId =  generateTaskId(set.getId(), base.getId() );
+        if ( this.taskManager.exists(taskId) == false ) {
+            ExportTask task = new ExportTask(taskId);
+            this.taskManager.submit(task);
+        } 
+        return toJsonRepresentation( "{\"status\": \"EXPORTING\", \"taskId\": \""+taskId+"\"}" );
+    }
+        
+    private void doTeiPsExport() throws IOException {
+        // get the TEI PS template and sub in the name
+        String template = IOUtils.toString(ClassLoader.getSystemResourceAsStream("templates/xml/teips.xml"));
+        template = template.replace("$TITLE", "XX-"+this.set.getName());
+        
+        // add listWit
+        Set<Witness> witnesses = this.setDao.getWitnesses(this.set);
+        final String listWit = generateListWitContent(witnesses);
+        template = template.replace("$LISTWIT", listWit);
+         
+        // generate the main body: text interwoven with app tags
+        File appFile = generateApparatus(witnesses);
+        
+        // assemble everything in a temp file
+        FileInputStream fis = new FileInputStream(appFile);
+        File out = File.createTempFile("psfinal", "dat");
+        out.deleteOnExit();
+        FileOutputStream fos = new FileOutputStream(out); 
+        OutputStream bout = new BufferedOutputStream(fos);
+        OutputStreamWriter ow = new OutputStreamWriter(bout, "UTF-8");
+        
+        int pos = template.indexOf("$BODY");
+        ow.write(template.substring(0, pos));
+        IOUtils.copy(fis, ow);
+        ow.write(template.substring(pos+5));
+        
+        IOUtils.closeQuietly(ow);
+        appFile.delete();
+        
+        FileReader r = new FileReader(out);
+        this.cacheDao.cacheExport(this.set.getId(), this.base.getId(), r);
+        IOUtils.closeQuietly(r);
+        out.delete();
+    }
+    
+    private String generateTaskId( final Long setId, final Long baseId) {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + setId.hashCode();
+        result = prime * result + baseId.hashCode();
+        return "export-"+result;
     }
 
     private File generateApparatus(Set<Witness> witnesses) throws IOException {
@@ -442,6 +473,80 @@ public class Exporter extends BaseResource {
         }
         public Range getBaseRange() {
             return this.baseRange;
+        }
+    }
+    
+    /**
+     * Task to asynchronously render the visualization
+     */
+    private class ExportTask implements BackgroundTask {
+        private final String name;
+        private BackgroundTaskStatus status;
+        private Date startDate;
+        private Date endDate;
+        
+        public ExportTask(final String name) {
+            this.name =  name;
+            this.status = new BackgroundTaskStatus( this.name );
+            this.startDate = new Date();
+        }
+        
+        @Override
+        public Type getType() {
+            return BackgroundTask.Type.VISUALIZE;
+        }
+        
+        @Override
+        public void run() {
+            try {
+                LOG.info("Begin task "+this.name);
+                this.status.begin();
+                Exporter.this.doTeiPsExport();
+                LOG.info("Task "+this.name+" COMPLETE");
+                this.endDate = new Date();   
+                this.status.finish();
+            } catch (IOException e) {
+                LOG.error(this.name+" task failed", e.toString());
+                this.status.fail(e.toString());
+                this.endDate = new Date();
+            } catch ( BackgroundTaskCanceledException e) {
+                LOG.info( this.name+" task was canceled");
+                this.endDate = new Date();
+            } catch (Exception e) {
+                LOG.error(this.name+" task failed", e);
+                this.status.fail(e.toString());
+                this.endDate = new Date();       
+            }
+        }
+        
+        @Override
+        public void cancel() {
+            this.status.cancel();
+        }
+
+        @Override
+        public BackgroundTaskStatus.Status getStatus() {
+            return this.status.getStatus();
+        }
+
+        @Override
+        public String getName() {
+            return this.name;
+        }
+        
+        @Override
+        public Date getEndTime() {
+            return this.endDate;
+        }
+        
+        @Override
+        public Date getStartTime() {
+            return this.startDate;
+        }
+        
+        @Override
+        public String getMessage() {
+            return this.status.getNote();
         }
     }
 }
