@@ -178,15 +178,22 @@ public class Exporter extends BaseResource {
             
             if ( currApp != null && pos == currApp.getBaseRange().getStart() ) {
                 
+                boolean firstPass = true;
                 while ( true ) {
                     
                     // write the initial APP, RDG tags
-                    ow.write("<app>\n");
-                    ow.write( generateRdgTag(witnesses, currApp) );
+                    ow.write("\n<app>\n");
+                    ow.write( "   "+generateRdgTag(witnesses, currApp) );
                     
                     // write the character that triggered this first
-                    ow.write((char)data);   
-                    pos++;
+                    // Note that this only applies on the first time thru this
+                    // loop. Additional entries will not have data pre-seeded
+                    // with the initial rdg character.
+                    if ( firstPass == true ) {
+                        ow.write((char)data);   
+                        pos++;
+                        firstPass = false;
+                    }
 
                     // write the rest of the rdg content
                     while ( pos < currApp.getBaseRange().getEnd() ) {                       
@@ -208,7 +215,7 @@ public class Exporter extends BaseResource {
  
                     // write witnesses
                     for ( Entry<Long, Range> entry : currApp.getWitnessData().entrySet()) {
-                        final String rdg = String.format("<rdg wit=\"#wit-%d\">", entry.getKey());
+                        final String rdg = String.format("   <rdg wit=\"#wit-%d\">", entry.getKey());
                         ow.write(rdg);
                         if ( lastDataWritten != -1 && Character.isWhitespace(lastDataWritten) == false ) {
                             ow.write(" ");
@@ -216,7 +223,7 @@ public class Exporter extends BaseResource {
                         ow.write( getWitnessFragment(entry.getKey(), entry.getValue() ) );
                         ow.write("</rdg>\n");
                     }
-                    ow.write("</app>\n");
+                    ow.write("</app>");
                     
                     // move on to the next annotation
                     currApp = null;
@@ -326,8 +333,8 @@ public class Exporter extends BaseResource {
             for ( AlignedAnnotation a : align.getAnnotations()) {
                 if ( a.getWitnessId().equals( base.getId()) == false ) {
                     Range r = a.getRange();
-                    long n = this.annotationDao.findNextTokenStart( a.getWitnessId(), r.getEnd());
-                    r = new Range(r.getStart(),n);
+//                    long n = this.annotationDao.findNextTokenStart( a.getWitnessId(), r.getEnd());
+//                    r = new Range(r.getStart(),n);
                     appData.addWitness(a.getWitnessId(), r);
                     break;
                 }
@@ -341,8 +348,8 @@ public class Exporter extends BaseResource {
             AppData curr = appItr.next();
             
             // extend ranges so spacing is correct in ps output
-            long n = this.annotationDao.findNextTokenStart( curr.getBaseId(), curr.getBaseRange().getEnd());
-            curr.baseRange = new Range(curr.getBaseRange().getStart(), n);
+//            long n = this.annotationDao.findNextTokenStart( curr.getBaseId(), curr.getBaseRange().getEnd());
+//            curr.baseRange = new Range(curr.getBaseRange().getStart(), n);
             
             if (prior != null) {
                 if ( prior.canMerge( curr )) {
