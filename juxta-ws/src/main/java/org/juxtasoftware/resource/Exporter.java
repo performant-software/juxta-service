@@ -491,13 +491,11 @@ public class Exporter extends BaseResource {
                    hasMatchingWitnesses(other);
         }
         private boolean hasMatchingWitnesses(AppData other) {
+            if (this.witnessRanges.size() != other.witnessRanges.size() ) {
+                return false;
+            }
             for ( Long witId : this.witnessRanges.keySet() ) {
                 if ( other.witnessRanges.containsKey(witId) == false ) {
-                    return false;
-                }
-            }
-            for ( Long witId : other.witnessRanges.keySet() ) {
-                if ( this.witnessRanges.containsKey(witId) == false ) {
                     return false;
                 }
             }
