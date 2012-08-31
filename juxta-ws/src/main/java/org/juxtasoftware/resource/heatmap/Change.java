@@ -51,6 +51,9 @@ public final class Change implements Comparable<Change> {
     }
 
     public boolean hasMatchingWitnesses(Change other) {
+        if (this.details.size() != other.details.size() ) {
+            return false;
+        }
         for ( Detail detail : this.details ) {
             Long thisWitnessId = detail.witness.getId();
             boolean found = false;
