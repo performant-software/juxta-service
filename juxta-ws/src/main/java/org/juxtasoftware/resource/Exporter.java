@@ -19,6 +19,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.StringEscapeUtils;
 import org.juxtasoftware.dao.AlignmentDao;
 import org.juxtasoftware.dao.CacheDao;
 import org.juxtasoftware.dao.ComparisonSetDao;
@@ -208,7 +209,7 @@ public class Exporter extends BaseResource {
         }
         
         long pos = 0;
-        int lastDataWritten = -1;
+        boolean appJustClosed = false;
         while ( true ) {
             int data = witReader.read();
             if ( data == -1 ) {
@@ -233,10 +234,11 @@ public class Exporter extends BaseResource {
                     // Note that this only applies on the first time thru this
                     // loop. Additional entries will not have data pre-seeded
                     // with the initial rdg character.
+                    StringBuilder baseRdg = new StringBuilder();
                     if ( firstPass == true ) {
-                        ow.write((char)data);   
-                        pos++;
                         firstPass = false;
+                        baseRdg.append((char)data);   
+                        pos++;
                     }
 
                     // write the rest of the rdg content
@@ -246,28 +248,29 @@ public class Exporter extends BaseResource {
                             throw new IOException("invalid aligment: past end of document");
                         } else {
                             if ( data == '\n') {
-                                ow.write("<lb/>");
+                                baseRdg.append("|*LB*|");
                             } else {
-                                ow.write((char)data);
+                                baseRdg.append((char)data);
                             }
                             pos++;
                         }
                     }
                     
                     // end the rdg tag 
+                    ow.write( StringEscapeUtils.escapeXml(baseRdg.toString()).replaceAll("\\|\\*LB\\*\\|", "<lb/>"));
                     ow.write("</rdg>\n");
  
                     // write witnesses
                     for ( Entry<Long, Range> entry : currApp.getWitnessData().entrySet()) {
                         final String rdg = String.format("   <rdg wit=\"#wit-%d\">", entry.getKey());
                         ow.write(rdg);
-                        if ( lastDataWritten != -1 && Character.isWhitespace(lastDataWritten) == false ) {
-                            ow.write(" ");
-                        }
+                        
                         ow.write( getWitnessFragment(entry.getKey(), entry.getValue() ) );
+
                         ow.write("</rdg>\n");
                     }
-                    ow.write("</app>");
+                    ow.write("</app> ");
+                    appJustClosed = true;
                     
                     // move on to the next annotation
                     currApp = null;
@@ -280,11 +283,14 @@ public class Exporter extends BaseResource {
                         break;
                     }
                 }
-                
             } else {
-                ow.write(data);
-                pos++;
-                lastDataWritten = data;
+                if ( appJustClosed && Character.isWhitespace(data)) {
+                    pos++;
+                } else {
+                    ow.write(data);
+                    pos++;
+                }
+                appJustClosed = false;
             }
         }
         
@@ -342,15 +348,16 @@ public class Exporter extends BaseResource {
             }
             if ( pos >= range.getStart() && pos < range.getEnd()) {
                 if ( data == '\n') {
-                    buff.append("<lb/>");
+                    buff.append("|*LB*|");
                 } else {
                     buff.append((char)data);
                 }
-                if ( pos == range.getEnd() ) {
-                    return buff.toString();
-                }
             }
             pos++;
+            
+            if ( pos == range.getEnd() ) {
+                return StringEscapeUtils.escapeXml(buff.toString()).replaceAll("\\|\\*LB\\*\\|", "<lb/>");
+            }
         }
     }
 
@@ -374,9 +381,10 @@ public class Exporter extends BaseResource {
             }
             
             // add witness data to the app info
-            for ( AlignedAnnotation a : align.getAnnotations()) {
-                if ( a.getWitnessId().equals( base.getId()) == false ) {
-                    appData.addWitness(a.getWitnessId(), a.getRange());
+            for (AlignedAnnotation a : align.getAnnotations()) {
+                if (a.getWitnessId().equals(base.getId()) == false) {
+                    Range r = a.getRange();
+                    appData.addWitness(a.getWitnessId(), r);
                     break;
                 }
             }
