@@ -39,6 +39,7 @@ import org.restlet.data.Encoding;
 import org.restlet.data.MediaType;
 import org.restlet.data.Status;
 import org.restlet.engine.application.EncodeRepresentation;
+import org.restlet.representation.FileRepresentation;
 import org.restlet.representation.ReaderRepresentation;
 import org.restlet.representation.Representation;
 import org.restlet.resource.Get;
@@ -66,6 +67,7 @@ public class Exporter extends BaseResource {
     @Autowired private CacheDao cacheDao;
     @Autowired private TaskManager taskManager;
     
+    private boolean asynchronous;
     private ComparisonSet set;
     private Witness base;
 
@@ -108,37 +110,62 @@ public class Exporter extends BaseResource {
         } else {
             setStatus(Status.CLIENT_ERROR_BAD_REQUEST, "Missing required base parameter");
         }
+        
+        this.asynchronous = (getQuery().getValuesMap().containsKey("sync") == false);
     }
     
     @Get
-    public Representation exportSet() {
-        // is set able to be exported?
-        if ( this.set.getStatus().equals(ComparisonSet.Status.COLLATED) == false ) {
-            setStatus(Status.CLIENT_ERROR_PRECONDITION_FAILED);
-            return toTextRepresentation("Cannot export set that is not collated");
-        }
-        
-        if ( this.cacheDao.exportExists(this.set.getId(), this.base.getId())) {
-            Representation rep = new ReaderRepresentation( 
-                this.cacheDao.getExport(this.set.getId(), this.base.getId()), 
-                MediaType.TEXT_XML);
-            if ( isZipSupported() ) {
-                return new EncodeRepresentation(Encoding.GZIP, rep);
-            } else {
-                return rep;
+    public Representation exportSet() throws IOException {
+        if ( this.asynchronous ) {
+            // is set able to be exported?
+            if ( this.set.getStatus().equals(ComparisonSet.Status.COLLATED) == false ) {
+                setStatus(Status.CLIENT_ERROR_PRECONDITION_FAILED);
+                return toTextRepresentation("Cannot export set that is not collated");
             }
+            
+            if ( this.cacheDao.exportExists(this.set.getId(), this.base.getId())) {
+                Representation rep = new ReaderRepresentation( 
+                    this.cacheDao.getExport(this.set.getId(), this.base.getId()), 
+                    MediaType.TEXT_XML);
+                if ( isZipSupported() ) {
+                    return new EncodeRepresentation(Encoding.GZIP, rep);
+                } else {
+                    return rep;
+                }
+            }
+            
+            final String taskId =  generateTaskId(set.getId(), base.getId() );
+            if ( this.taskManager.exists(taskId) == false ) {
+                ExportTask task = new ExportTask(taskId);
+                this.taskManager.submit(task);
+            } 
+            return toTextRepresentation("EXPORTING "+taskId );
+        } else {
+            return syncExport();
         }
-        
-        final String taskId =  generateTaskId(set.getId(), base.getId() );
-        if ( this.taskManager.exists(taskId) == false ) {
-            ExportTask task = new ExportTask(taskId);
-            this.taskManager.submit(task);
-        } 
-        return toTextRepresentation("EXPORTING "+taskId );
+    }
+    
+    private Representation syncExport() throws IOException {
+        File out = doExport();
+        FileRepresentation rep = new FileRepresentation( out, MediaType.TEXT_XML);
+        rep.setAutoDeleting(true);
+        if ( isZipSupported() ) {
+            return new EncodeRepresentation(Encoding.GZIP, rep);
+        } else {
+            return rep;
+        }
     }
         
-    private void doTeiPsExport() throws IOException {
-        // get the TEI PS template and sub in the name
+    private void asyncEport() throws IOException {
+        File out = doExport();
+        FileReader r = new FileReader( out );
+        this.cacheDao.cacheExport(this.set.getId(), this.base.getId(), r);
+        IOUtils.closeQuietly(r);
+        out.delete();
+    }
+    
+    private File doExport() throws IOException {
+     // get the TEI PS template and sub in the name
         String template = IOUtils.toString(ClassLoader.getSystemResourceAsStream("templates/xml/teips.xml"));
         template = template.replace("$TITLE", "XX-"+this.set.getName());
         
@@ -165,11 +192,7 @@ public class Exporter extends BaseResource {
         
         IOUtils.closeQuietly(ow);
         appFile.delete();
-        
-        FileReader r = new FileReader(out);
-        this.cacheDao.cacheExport(this.set.getId(), this.base.getId(), r);
-        IOUtils.closeQuietly(r);
-        out.delete();
+        return out;
     }
     
     private String generateTaskId( final Long setId, final Long baseId) {
@@ -210,6 +233,7 @@ public class Exporter extends BaseResource {
         
         long pos = 0;
         boolean appJustClosed = false;
+        int lastWritten = -1;
         while ( true ) {
             int data = witReader.read();
             if ( data == -1 ) {
@@ -227,7 +251,13 @@ public class Exporter extends BaseResource {
                 while ( true ) {
                     
                     // write the initial APP, RDG tags
-                    ow.write("\n<app>\n");
+                    // NOTE: Always ensure that there is a space before the App tag
+                    // this will prevent words from running together
+                    if ( appJustClosed == false && lastWritten != -1 && Character.isWhitespace(lastWritten) == false ) {
+                        ow.write(" \n<app>\n");
+                    } else {
+                        ow.write("\n<app>\n");
+                    }
                     ow.write( "   "+generateRdgTag(witnesses, currApp) );
                     
                     // write the character that triggered this first
@@ -269,7 +299,11 @@ public class Exporter extends BaseResource {
 
                         ow.write("</rdg>\n");
                     }
-                    ow.write("</app> ");
+                    
+                    // NOTE: Added space after the APP tag to be sure words cannot run together
+                    // Also flag that this is the end of an app tag so we ca properly
+                    // detect wether ot not to write the next character
+                    ow.write("</app> ");    
                     appJustClosed = true;
                     
                     // move on to the next annotation
@@ -288,6 +322,7 @@ public class Exporter extends BaseResource {
                     pos++;
                 } else {
                     ow.write(data);
+                    lastWritten = data;
                     pos++;
                 }
                 appJustClosed = false;
@@ -461,6 +496,11 @@ public class Exporter extends BaseResource {
                     return false;
                 }
             }
+            for ( Long witId : other.witnessRanges.keySet() ) {
+                if ( this.witnessRanges.containsKey(witId) == false ) {
+                    return false;
+                }
+            }
             return true;
         }
         public void merge(AppData other) {
@@ -514,7 +554,7 @@ public class Exporter extends BaseResource {
             try {
                 LOG.info("Begin task "+this.name);
                 this.status.begin();
-                Exporter.this.doTeiPsExport();
+                Exporter.this.asyncEport();
                 LOG.info("Task "+this.name+" COMPLETE");
                 this.endDate = new Date();   
                 this.status.finish();
