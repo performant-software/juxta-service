@@ -167,7 +167,7 @@ public class Exporter extends BaseResource {
     private File doExport() throws IOException {
      // get the TEI PS template and sub in the name
         String template = IOUtils.toString(ClassLoader.getSystemResourceAsStream("templates/xml/teips.xml"));
-        template = template.replace("$TITLE", "XX-"+this.set.getName());
+        template = template.replace("$TITLE", this.set.getName());
         
         // add listWit
         Set<Witness> witnesses = this.setDao.getWitnesses(this.set);
@@ -452,7 +452,7 @@ public class Exporter extends BaseResource {
                 listWit.append("\n                    ");
             }
             String frag = IOUtils.toString(ClassLoader.getSystemResourceAsStream("templates/xml/listwit_frag.xml"));
-            frag = frag.replace("$NAME", "XX-"+w.getName());
+            frag = frag.replace("$NAME", w.getName());
             frag = frag.replace("$ID", "wit-"+w.getId().toString());
             listWit.append(frag);
         }
