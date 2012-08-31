@@ -90,7 +90,17 @@ public class SideBySideView implements FileDirectiveListener  {
         if ( docsList.length == 2) {
             try {
                 witnessIds[0] = Long.parseLong(docsList[0]);
-                witnessIds[1] = Long.parseLong(docsList[1]);
+                if ( docsList[1].equals("*") ) {
+                    Set<Witness> witnesses = this.setDao.getWitnesses(set);
+                    for ( Witness w : witnesses ) {
+                        if ( w.getId().equals(witnessIds[0]) == false ) {
+                            witnessIds[1] = w.getId();
+                            break;
+                        }
+                    }
+                } else {
+                    witnessIds[1] = Long.parseLong(docsList[1]);
+                }
             } catch ( NumberFormatException e) {
                 parent.getResponse().setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
                 return parent.toTextRepresentation("Invalid witness id");
