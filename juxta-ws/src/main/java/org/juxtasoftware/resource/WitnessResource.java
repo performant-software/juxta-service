@@ -104,6 +104,20 @@ public class WitnessResource extends BaseResource {
             obj.addProperty("sourceId", this.witness.getSourceId());
             obj.addProperty("xsltId", this.witness.getXsltId());
             obj.addProperty("content", reader.toString());
+            if ( this.witness.getUpdated() != null && this.witness.getUpdated().after(this.witness.getCreated() ) ) {
+                obj.addProperty("xmlTemplate", "Custom");
+            } else {
+                final JuxtaXslt xslt = this.xsltDao.find(this.witness.getXsltId());
+                if ( xslt.getXslt().contains("tei:")) {
+                    obj.addProperty("xmlTemplate", "TEI Default");
+                } else if (  xslt.getXslt().contains("ramheader")) {
+                    obj.addProperty("xmlTemplate", "RAM Default");
+                } else if (  xslt.getXslt().contains("m_e")) {
+                    obj.addProperty("xmlTemplate", "Juxta Default");
+                } else {
+                    obj.addProperty("xmlTemplate", "XML Default");
+                }
+            }
             Gson gson = new Gson();
             return toTextRepresentation(gson.toJson(obj));
         } catch (IOException e) {
