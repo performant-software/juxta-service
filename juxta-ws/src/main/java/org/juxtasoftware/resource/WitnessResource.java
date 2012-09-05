@@ -107,15 +107,17 @@ public class WitnessResource extends BaseResource {
             if ( this.witness.getUpdated() != null && this.witness.getUpdated().after(this.witness.getCreated() ) ) {
                 obj.addProperty("xmlTemplate", "Custom");
             } else {
-                final JuxtaXslt xslt = this.xsltDao.find(this.witness.getXsltId());
-                if ( xslt.getXslt().contains("tei:")) {
-                    obj.addProperty("xmlTemplate", "TEI Default");
-                } else if (  xslt.getXslt().contains("ramheader")) {
-                    obj.addProperty("xmlTemplate", "RAM Default");
-                } else if (  xslt.getXslt().contains("m_e")) {
-                    obj.addProperty("xmlTemplate", "Juxta Default");
-                } else {
-                    obj.addProperty("xmlTemplate", "XML Default");
+                if ( this.witness.getXsltId() != null ) {
+                    final JuxtaXslt xslt = this.xsltDao.find(this.witness.getXsltId());
+                    if ( xslt.getXslt().contains("tei:")) {
+                        obj.addProperty("xmlTemplate", "TEI Default");
+                    } else if (  xslt.getXslt().contains("ramheader")) {
+                        obj.addProperty("xmlTemplate", "RAM Default");
+                    } else if (  xslt.getXslt().contains("m_e")) {
+                        obj.addProperty("xmlTemplate", "Juxta Default");
+                    } else {
+                        obj.addProperty("xmlTemplate", "XML Default");
+                    }
                 }
             }
             Gson gson = new Gson();
