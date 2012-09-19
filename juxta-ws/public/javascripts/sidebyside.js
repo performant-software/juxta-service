@@ -86,7 +86,7 @@ $(function() {
 
          // draw the line if its not too far away
          if (Math.abs(leftPos - rightPos) < height * 0.5) {
-            pathStr = "M0," + leftPos + "L" + width + "," + rightPos;
+            pathStr = "M0," + (leftPos+3) + "L" + width + "," + (rightPos+3);
             line = connectionPaper.path(pathStr);
             if (conn.lit) {
                line.attr(litConnAttribs);
@@ -856,17 +856,28 @@ $(function() {
    // Let the world know that the side-by-side code is now loaded and can be initialized
    $("body").trigger('sidebyside-loaded');
 
+   var rtime = null;
+   var resizing = false;
+   var delta = 750;
+   var doneResizing = function() {
+      if (new Date() - rtime < delta) {
+         setTimeout(doneResizing, delta);
+      } else {
+         resizing = false;
+         
+         $(".canvas-div").show();
+         initDocumentHeight();
+         initCanvas();
+         renderConnections();
+      }
+   };
+   
    $(window).resize(function() {
-      if ($("#right-witness-text").exists()) {
-         if ($("#side-by-side").data("isResizing") === false) {
-            $("#side-by-side").data("isResizing", true);
-            setTimeout(function() {
-               initDocumentHeight();
-               initCanvas();
-               renderConnections();
-               $("#side-by-side").data("isResizing", false);
-            }, 100);
-         }
+      rtime = new Date();
+      if (resizing === false) {
+         resizing = true;
+         $(".canvas-div").hide();
+         setTimeout(doneResizing, delta);
       }
    });
 

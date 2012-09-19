@@ -3,22 +3,26 @@
  */
 
 /* div containing the loc/unlock button */
-img.scroll-mode-img {
-    position: absolute;
+#scroll-mode {
+   float: left;
+   width: 5.5%;
+   text-align: center;
+}
+#scroll-mode-img {
     border: 1px solid #BBB;
     padding: 2px 8px 3px 8px;
     background: #EEE;
     border-radius: 3px;
     color: #000000;
 }
-.scroll-mode-img:hover {
+#scroll-mode-img:hover {
     -moz-box-shadow: 2px 2px 2px #999;
     -webkit-box-shadow: 2px 2px 2px #999;
     box-shadow: 1px 1px 1px #999;
     text-decoration: none;
     background: #FFF;
 }
-.scroll-mode-img:active {
+#scroll-mode-img:active {
     background: #ccc;
     -moz-box-shadow: 0 0 0 #000;
     -webkit-box-shadow: 0 0 0 #000;
@@ -43,15 +47,13 @@ div.canvas-div {
 }
 
 /* div containing the left witness for comparison */ 
-div.left-witness {
-    font: 15px "Helvetica Neue", Helvetica, Arial, sans-serif;
+.sbs-witness {
     font-weight: 300;
     line-height: 1.4;
     border-radius: 5px 5px 0 0;
     -mox-border-radius: 5px 5px 0 0;
     -webkit-border-radius: 5px 5px 0 0;
     width: 47%; 
-    float: left;
     border: 1px solid #cccccc;  
     overflow: hidden;
     background-color: #ffffff;
@@ -59,24 +61,14 @@ div.left-witness {
     padding:0;
     position: relative;
 }
-
-/* div containing the right witness for comparison */ 
-div.right-witness {
-    font: 15px "Helvetica Neue", Helvetica, Arial, sans-serif;
-    font-weight: 300;
-    line-height: 1.4;
-    border-radius: 5px 5px 0 0;
-    -mox-border-radius: 5px 5px 0 0;
-    -webkit-border-radius: 5px 5px 0 0;
-    width: 47%; 
-    float: right;
-    border: 1px solid #cccccc;  
-    background-color: #ffffff;
-    margin:0;
-    padding:0;
-    position: relative;
+#left-witness {
+    float: left;
 }
 
+/* div containing the right witness for comparison */ 
+#right-witness {
+    float: right;
+}
 
 /* Div containing actual witness text */
 div.witness-text {

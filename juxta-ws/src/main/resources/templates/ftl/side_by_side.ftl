@@ -5,7 +5,7 @@
     <#assign witnessCount = witnesses?size>
     <span id="witness-count" style="display: none">${witnessCount}</span>
        
-    <div id="left-witness" class="left-witness">
+    <div id="left-witness" class="sbs-witness">
         <div class="header">
             <div class="sbs-title" title="${witnessDetails[0].name}">${witnessDetails[0].name}</div>
             <a id="change-left" class="juxta-button sbs-button">Change</a>
@@ -17,12 +17,15 @@
         </div>
     </div>
     
-    <img id="scroll-mode-img" class="scroll-mode-img" src="${baseUrl}/images/lock.gif"/>
+    <div id="scroll-mode">
+        <img id="scroll-mode-img" src="${baseUrl}/images/lock.gif"/>
+    </div>
+    
     <div id="left-gutter-div" class="canvas-div"></div>
     <div id="connections-div" class="canvas-div"></div> 
     <div id="right-gutter-div" class="canvas-div"></div>
     
-    <div id="right-witness" class="right-witness">
+    <div id="right-witness" class="sbs-witness">
         <div class="header">
             <div class="sbs-title" title="${witnessDetails[1].name}">${witnessDetails[1].name}</div>
             <a id="change-right" class="juxta-button sbs-button">Change</a>
