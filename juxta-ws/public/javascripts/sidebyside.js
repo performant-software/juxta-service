@@ -231,7 +231,7 @@ $(function() {
       var connections = [];
 
       // grab some info needed to calculate positions of brackets
-      var hdrHeight = $(".header").outerHeight();
+      var hdrHeight = $(".header").outerHeight(true);
       var defaultHeight = parseInt($('.witness-text').css('line-height'), 10) - 3;
 
       // first do transpositions so they are under the alignments
@@ -301,7 +301,7 @@ $(function() {
       });
 
       $("#side-by-side").data("connections", connections);
-      renderConnections();
+      //renderConnections();
    };
 
    /**
@@ -312,7 +312,7 @@ $(function() {
       // figure out the gap between the text areas
       var top = $("#left-witness").position().top;
       var height = $("#left-witness").height();
-      var left = $("#left-witness").position().left + $("#left-witness").outerWidth();
+      var left = $("#left-witness").position().left + $("#left-witness").outerWidth(true);
       var width = $("#right-witness").position().left - left;
 
       var imgLeft = left + (width - 32) / 2;
@@ -322,7 +322,7 @@ $(function() {
       });
 
       // get height headers
-      var hdrHeight = $(".header").outerHeight();
+      var hdrHeight = $(".header").outerHeight(true);
       top += hdrHeight;
       height -= hdrHeight;
 
@@ -344,7 +344,7 @@ $(function() {
       $("#connections-div").height(height);
 
       // position the right gutter
-      left += $("#connections-div").outerWidth();
+      left += $("#connections-div").outerWidth(true);
       $("#right-gutter-div").css({
          "top" : top + "px",
          "left" : left + "px"
@@ -369,11 +369,11 @@ $(function() {
       if ($("#embedded").text() === "false") {
          $(".content-scroller").css("overflow-y", "hidden");
          maxH = $(".content-scroller").height();
-         extraH = $(".header").outerHeight();
+         extraH = $(".header").outerHeight(true);
          newH = maxH - extraH;
       } else {
          var parent = $("#juxta-ws-content").parent();
-         extraH = $(".header").outerHeight();
+         extraH = $(".header").outerHeight(true);
          parent.css("overflow-y", "hidden");
          newH = parent.height() - extraH;
       }
@@ -501,7 +501,7 @@ $(function() {
          $("#right-witness-text").scrollTop(leftTop);
       } else {
          var maxLeftHeight = $("#left-witness-text")[0].scrollHeight;
-         var leftDivHeight = $("#left-witness-text").outerHeight();
+         var leftDivHeight = $("#left-witness-text").outerHeight(true);
 
          // pick a suitable midpoint in the left text to sync to.
          // if this new jump position is near the start or end, pick
@@ -542,7 +542,7 @@ $(function() {
       } else {
          var scrollDelta = rightTop - lastRight;
          var maxRightHeight = $("#right-witness-text")[0].scrollHeight;
-         var rightDivHeight = $("#right-witness-text").outerHeight();
+         var rightDivHeight = $("#right-witness-text").outerHeight(true);
 
          // grab coordinates of the connection and offset them by the
          // current scroll pos. This puts them relative to the visible
@@ -630,8 +630,8 @@ $(function() {
       });
 
       var btn = $("#" + sourceButtonId);
-      var top = btn.offset().top + btn.outerHeight() + 5;
-      var left = btn.offset().left + btn.outerWidth() - $('.witnesses-popup').outerWidth();
+      var top = btn.offset().top + btn.outerHeight(true) + 5;
+      var left = btn.offset().left + btn.outerWidth(true) - $('.witnesses-popup').outerWidth(true);
       $('.witnesses-popup').css({
          "top" : top + "px",
          "left" : left + "px"
@@ -801,9 +801,9 @@ $(function() {
       $("#left-witness-text").data("action", "none");
       $("#right-witness-text").data("action", "none");
 
-      var rightHeight = $("#right-witness").outerHeight();
+      var rightHeight = $("#right-witness").outerHeight(true);
       $("#right-witness").data("fullHeight", rightHeight);
-      var leftHeight = $("#left-witness").outerHeight();
+      var leftHeight = $("#left-witness").outerHeight(true);
       $("#left-witness").data("fullHeight", leftHeight);
       $("#side-by-side").data("connections", []);
       $("#side-by-side").data("maxWitnessHeight", Math.max(rightHeight, leftHeight));
@@ -817,6 +817,7 @@ $(function() {
       // init height, scrollbars and raphael canvas objects
       initDocumentHeight();
       initCanvas();
+      renderConnections();
 
       // Setup click handling that allows diffs to auto-align when clicked
       $(".witness-text").on("click", ".diff", function(event) {
@@ -858,7 +859,7 @@ $(function() {
 
    var rtime = null;
    var resizing = false;
-   var delta = 750;
+   var delta = 500;
    var doneResizing = function() {
       if (new Date() - rtime < delta) {
          setTimeout(doneResizing, delta);
@@ -876,6 +877,9 @@ $(function() {
       rtime = new Date();
       if (resizing === false) {
          resizing = true;
+         $("#left-gutter-div").data("paper").clear();
+         $("#connections-div").data("paper").clear();
+         $("#right-gutter-div").data("paper").clear();
          $(".canvas-div").hide();
          setTimeout(doneResizing, delta);
       }
