@@ -10,6 +10,8 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -397,6 +399,30 @@ public class Exporter extends BaseResource {
     }
 
     private List<AppData> generateAppData( List<Alignment> alignments ) {
+        
+        Collections.sort(alignments, new Comparator<Alignment>() {
+            @Override
+            public int compare(Alignment a, Alignment b) {
+                // NOTE: There is a bug in interedition Range. It will
+                // order range [0,1] before [0,0] when sorting ascending.
+                // So.. do NOT use its compareTo. Roll own.
+                Range r1 = a.getWitnessAnnotation(base.getId()).getRange();
+                Range r2 = b.getWitnessAnnotation(base.getId()).getRange();
+                if ( r1.getStart() < r2.getStart() ) {
+                    return -1;
+                } else if ( r1.getStart() > r2.getStart() ) {
+                    return 1;
+                } else {
+                    if ( r1.getEnd() < r2.getEnd() ) {
+                        return -1;
+                    } else if ( r1.getEnd() > r2.getEnd() ) {
+                        return 1;
+                    } 
+                }
+                return 0;
+            }
+        });
+        
         List<AppData> data = new ArrayList<Exporter.AppData>();
         Map<Range, AppData> changeMap = new HashMap<Range, AppData>();
         Iterator<Alignment> itr = alignments.iterator();

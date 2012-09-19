@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -412,6 +414,29 @@ public class HeatmapView  {
         if ( this.alignments.size() == 0) {
             return new ArrayList<Change>();
         }
+        
+        Collections.sort(this.alignments, new Comparator<Alignment>() {
+            @Override
+            public int compare(Alignment a, Alignment b) {
+                // NOTE: There is a bug in interedition Range. It will
+                // order range [0,1] before [0,0] when sorting ascending.
+                // So.. do NOT use its compareTo. Roll own.
+                Range r1 = a.getWitnessAnnotation(base.getId()).getRange();
+                Range r2 = b.getWitnessAnnotation(base.getId()).getRange();
+                if ( r1.getStart() < r2.getStart() ) {
+                    return -1;
+                } else if ( r1.getStart() > r2.getStart() ) {
+                    return 1;
+                } else {
+                    if ( r1.getEnd() < r2.getEnd() ) {
+                        return -1;
+                    } else if ( r1.getEnd() > r2.getEnd() ) {
+                        return 1;
+                    } 
+                }
+                return 0;
+            }
+        });
         
         // generate a change list based on the sorted differences
         long changeIdx = 0;
