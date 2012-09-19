@@ -30,28 +30,29 @@ $(function() {
       var width = $("#connections-div").width();
       var height = $("#connections-div").height();
       var connAttribs = {
-         stroke : '#050',
-         'stroke-width' : 0.5,
-         'stroke-dasharray' : '- '
+         stroke : '#060',
+         'stroke-width' : 1,
+         'stroke-linejoin' : 'round'
       };
       var faded1 = {
-         stroke : '#8a8',
+         stroke : '#060',
          'stroke-width' : 0.5,
-         'stroke-dasharray' : '- '
+         'stroke-linejoin' : 'round'
       };
       var faded2 = {
-         stroke : '#beb',
-         'stroke-width' : 0.5,
-         'stroke-dasharray' : '- '
+         stroke : '#060',
+         'stroke-width' : 0.25,
+         'stroke-linejoin' : 'round'
       };
       var moveLink = {
          stroke : '#f00',
-         'stroke-width' : 0.5,
-         'stroke-dasharray' : '- '
+         'stroke-width' : 1,
+         'stroke-linejoin' : 'round'
       };
       var litConnAttribs = {
-         stroke : '#4ECE4E',
-         'stroke-width' : 2
+         stroke : '#4d4',
+         'stroke-width' : 2.5,
+         'stroke-linejoin' : 'round'
       };
 
       // run thru each connection and draw a line from left to right
@@ -239,8 +240,8 @@ $(function() {
       // start from the RIGHT; grab all of the text children
       // and find those that are of class 'diff'
       var bracketAttribs = {
-         stroke : '#181',
-         'stroke-width' : 0.5,
+         stroke : '#060',
+         'stroke-width' : 1,
          'stroke-linejoin' : 'round'
       };
       $("#right-witness-text").find(".diff").each(function(index) {
@@ -255,7 +256,7 @@ $(function() {
          var rightId = $(this).attr("id");
 
          // draw the bracket
-         var pathStr = "M6," + rightDiffTop + "L1," + rightDiffTop + "L1," + rightDiffBottom + "L6," + rightDiffBottom;
+         var pathStr = "M6," + (rightDiffTop+2) + "L1," + (rightDiffTop+2) + "L1," + (rightDiffBottom+4) + "L6," + (rightDiffBottom+4);
          var bracket = rightGutterPaper.path(pathStr);
          bracket.attr(bracketAttribs);
 
@@ -271,7 +272,7 @@ $(function() {
             var leftId = $("#" + connectToId).attr("id");
 
             // draw the bracket
-            pathStr = "M0," + leftDiffTop + "L5," + leftDiffTop + "L5," + leftDiffBottom + "L0," + leftDiffBottom;
+            pathStr = "M0," + (leftDiffTop+2) + "L5," + (leftDiffTop+2) + "L5," + (leftDiffBottom+4) + "L0," + (leftDiffBottom+4);
             bracket = leftGutterPaper.path(pathStr);
             bracket.attr(bracketAttribs);
 
