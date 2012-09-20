@@ -65,7 +65,9 @@ public class RepositoryTokenSource implements TokenSource {
             if ( this.config.isFilterCase()) {
                 tokenText = tokenText.toLowerCase();
             }
-            
+            if ( this.config.getHyphenationFilter().equals(HyphenationFilter.FILTER_ALL)) {
+                tokenText = tokenText.replaceAll("-", "");
+            }
             tokens.add(new SimpleToken(anno, tokenText));
         }
         return tokens;
