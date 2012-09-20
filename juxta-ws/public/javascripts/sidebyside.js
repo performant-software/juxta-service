@@ -800,6 +800,9 @@ $(function() {
       $("#juxta-ws-content").css("overflow", "hide");
       $("#left-witness-text").data("action", "none");
       $("#right-witness-text").data("action", "none");
+      $("#left-gutter-div").data("paper",null);
+      $("#connections-div").data("paper",null);
+      $("#right-gutter-div").data("paper",null);
 
       var rightHeight = $("#right-witness").outerHeight(true);
       $("#right-witness").data("fullHeight", rightHeight);
@@ -877,9 +880,11 @@ $(function() {
       rtime = new Date();
       if (resizing === false) {
          resizing = true;
-         $("#left-gutter-div").data("paper").clear();
-         $("#connections-div").data("paper").clear();
-         $("#right-gutter-div").data("paper").clear();
+         if ( $("#left-gutter-div").data("paper") != null ) {
+            $("#left-gutter-div").data("paper").clear();
+            $("#connections-div").data("paper").clear();
+            $("#right-gutter-div").data("paper").clear();
+         }
          $(".canvas-div").hide();
          setTimeout(doneResizing, delta);
       }
