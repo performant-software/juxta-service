@@ -309,6 +309,9 @@ $(function() {
     * match available area. Positions them appropriately
     */
    var initCanvas = function() {
+      if ( $("#left-witness").exists() === false ) {
+         return;
+      }
       // figure out the gap between the text areas
       var top = $("#left-witness").position().top;
       var height = $("#left-witness").height();
