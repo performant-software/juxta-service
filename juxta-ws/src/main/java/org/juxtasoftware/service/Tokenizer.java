@@ -35,6 +35,8 @@ import eu.interedition.text.TextRepository;
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
 public class Tokenizer {
     private static final Logger LOG = LoggerFactory.getLogger(Tokenizer.class);
+    private enum HyphenState {NONE, FOUND_HYPHEN, LINEBREAK_HYPHEN, IN_HYPHENATED_PART};
+    private enum RunType {NONE, TOKEN, NON_TOKEN, WHITESPACE};
 
     @Autowired private Integer tokenizationBatchSize;
     @Autowired private JuxtaAnnotationDao annotationDao;
@@ -94,13 +96,9 @@ public class Tokenizer {
         private List<JuxtaAnnotation> tokens = Lists.newArrayListWithExpectedSize(tokenizationBatchSize);
         private final Witness witness;
         private final HyphenationFilter hyphenFilter;
-        private final boolean filterWhitespace;
-        private final boolean filterPunctuation;
         private long tokenizedLength;
         
         public TokenizingConsumer(CollatorConfig cfg, Witness w) {
-            this.filterPunctuation = cfg.isFilterPunctuation();
-            this.filterWhitespace = cfg.isFilterWhitespace();
             this.hyphenFilter = cfg.getHyphenationFilter();
             this.witness = w;
         }
@@ -109,45 +107,23 @@ public class Tokenizer {
             return this.tokenizedLength;
         }
         
-        private boolean isPunctuation( int c ) {
-            return ( Character.isWhitespace(c) == false &&
-                     Character.isLetter(c) == false &&
-                     Character.isDigit(c) == false );
-        }
-        
         private boolean isTokenChar(int c) {
-            if ( Character.isWhitespace(c) ) {
-                return false;
-            }
-            
-            // this is always good.
-            if (Character.isLetter(c) || Character.isDigit(c)) {
+            if (Character.isLetter(c) || Character.isDigit(c) || c == '-') {
                 return true;
             }
-            
-            // non-letter / digit.. it is either punctuation or hyphens.
-            // first do special handling for hyphens based in the hyphen filter setting
-            // becaue it overrides the default punctuation filtered behavior.
-            if ( c == '-' ) {
-                return true;
-            }
-            
-            // at this point the char is punctuation. it is considered a token char
-            // if punctuation is not filtered
-            return !this.filterPunctuation;
+            return false;
         }
         
         public void read(Reader tokenText, long contentLength) throws IOException {
             
             int offset = 0;
             int start = -1;
-            boolean isLinebreakWord = false;
-            boolean inHyphenatedPart = false;
-            boolean foundHyphen = false; 
-            boolean whitespaceRun = false;
+            HyphenState hyphenState = HyphenState.NONE;
+            RunType runType = RunType.NONE;
             final boolean filterLinebreak = 
                 (this.hyphenFilter.equals(HyphenationFilter.FILTER_LINEBREAK) || 
                  this.hyphenFilter.equals(HyphenationFilter.FILTER_ALL) );
+            
 
             do {
                 final int read = tokenText.read();
@@ -162,89 +138,77 @@ public class Tokenizer {
                 Range frag = this.witness.getFragment();
                 if ( frag.equals(Range.NULL) || (offset >= frag.getStart() && offset < frag.getEnd()) ) {
                     
-                    // track start of whitespace run if whitespace is not ignored
-                    if (this.filterWhitespace == false && Character.isWhitespace(read) ) {
-                        whitespaceRun = true;
-                        if ( start == -1) {
-                            start = offset;
-                        }
-                    } else if (isTokenChar(read)) {
-                        // end whitespace runs on non whitespace chars. Create
-                        // a token containing the spaces
-                        if (whitespaceRun) {
-                            createToken( start, offset);
+                    // Token char (alphanumeric or hyphen)?
+                    if ( isTokenChar(read)) {
+                        // create a token with prior run of non-token characters
+                        if ( runType.equals(RunType.NON_TOKEN) ) {
+                            createToken(start, offset);
                             start = -1;
-                            whitespaceRun = false;
                         }
                         
-                        // start a new token
-                        if (start == -1) {
+                        runType = RunType.TOKEN;
+                        if (start == -1 ) {
                             start = offset;
                         }
                         
-                        // flag if hyphen has been found. Only care about this if we are
-                        // filtering out hyphens that signify a line break. This will be determined
-                        // when the next whitespace chars are read
+                        // Special case handling for linebreak hyphen filtering
                         if ( filterLinebreak ) {
-                            if ( isLinebreakWord ) {
-                                inHyphenatedPart = true;
+                            // If we have found a hyphen before (and possibly identified this as a linebreak),
+                            // the text text encountered is the continuation of the hyphenated word.
+                            if ( hyphenState.equals(HyphenState.FOUND_HYPHEN) || hyphenState.equals(HyphenState.LINEBREAK_HYPHEN) ) {
+                                hyphenState = HyphenState.IN_HYPHENATED_PART;
                             }
                             else if ( read == '-' && filterLinebreak ) {
-                                foundHyphen = true;
-                                inHyphenatedPart = false;
+                                hyphenState = HyphenState.FOUND_HYPHEN;
                             }
                         }
                     } else {
-                        // special linebreak filter behavior when a hyphen has been found!
-                        // don't create tokens on whitespace: just look for linefeed. token
-                        // will get created aboove
-                        if ( filterLinebreak && (inHyphenatedPart || foundHyphen)  ) {
-                            if ( inHyphenatedPart ) {
-                                createToken( start, offset );
-                                start = -1;
-                                inHyphenatedPart = false;
-                                foundHyphen = false;
-                                isLinebreakWord = false;
-                            } else {
-                                if (  read == 13 || read == 10 ) {
-                                    isLinebreakWord = true;
-                                }
-                            }
-                            offset++;
-                            continue;
-                        }
                         
-                        // Either whitespace or punctuation found. Normally, this would end a
-                        // token. Behavior is different if whitespace is not being ignored!
-                        if ( this.filterWhitespace == false ) {
-                            // Simple case: punctuation - end and create a new token.
-                            // Harder case: whitespace - if we are in the midst of a 
-                            // whitespace run DONT create a token, just keep accumulating the whitespace
-                            if (start != -1 && (isPunctuation(read) || whitespaceRun == false )) {
+                        if ( filterLinebreak ) {
+                            if ( hyphenState.equals( HyphenState.IN_HYPHENATED_PART) ) {
                                 createToken( start, offset );
                                 start = -1;
-                                inHyphenatedPart = false;
-                                foundHyphen = false;
-                                isLinebreakWord = false;
-                                
-                                // if whitespace ended the token, start a new token with the 
-                                // whitespace. This ensures that all whitespace is included in the collation
+                                runType = RunType.NONE;
+                                hyphenState = HyphenState.NONE;
+                            } else if ( hyphenState.equals(HyphenState.FOUND_HYPHEN) ) {
+                                // Special case for text that is a candidate for being a linebreak 
+                                // hyphenated word. We have a hyphen. Do nothing but wait if more whitespace
+                                // is encountered. If the whitespace is a linefeed, flag
+                                // this as a line break. In either case, do no more processing.
                                 if ( Character.isWhitespace(read) ) {
-                                    start = offset;
-                                    whitespaceRun = true;
+                                    if (  read == 13 || read == 10 ) {
+                                        hyphenState = HyphenState.LINEBREAK_HYPHEN;
+                                    }
+                                    offset++;
+                                    continue;
                                 }
                             }
-                            offset++;
-                            continue;
+                        }
+
+                        // if this non-token char breaks up a prior token
+                        // run, create a new token with it
+                        if ( runType.equals(RunType.TOKEN) ) {
+                            createToken( start, offset);
+                            start = -1;
+                            runType = RunType.NONE;
+                            hyphenState = HyphenState.NONE;
                         } 
                         
-                        // simple case, filtering whitespace, no hyphens. just create!
-                        if ( start != -1 ) {
-                            createToken( start, offset );
-                            start = -1;
-                            inHyphenatedPart = false;
-                            foundHyphen = false;
-                            isLinebreakWord = false;
+                        // Start or continue a run of non-token characters?
+                        if ( Character.isWhitespace(read) == false ) {
+                            runType = RunType.NON_TOKEN;
+                            if (start == -1 ) {
+                                start = offset;
+                            }
+                        } else {
+                            // This is whitespace. See if we need to end a non-token run.
+                            // other than that, do not track the whitespace
+                            if ( runType.equals(RunType.NON_TOKEN) ) {
+                                createToken(start, offset);
+                                runType = RunType.NONE;
+                                hyphenState = HyphenState.NONE;
+                                start = -1;
+                            }
                         }
                     }
                 }

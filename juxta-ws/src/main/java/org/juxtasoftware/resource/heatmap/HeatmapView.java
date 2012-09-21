@@ -537,9 +537,13 @@ public class HeatmapView  {
         // see if the LAST change has 0 length and make it visible if this is the case
         if ( prior.getRange().length() == 0 ) {
             long start = prior.getRange().getStart();
-            if ( prior.getRange().getStart() < base.getText().getLength()-1 ) {
+            if ( prior.getRange().getStart() < base.getText().getLength() ) {
                 long newStart = this.annotationDao.findNextTokenStart(base.getId(), start);
-                prior.adjustRange(newStart, newStart + 1);
+                if ( newStart == start ) {
+                    prior.adjustRange(start, start+1);
+                } else {
+                    prior.adjustRange(newStart, newStart + 1);
+                }
             } else {
                 if ( start > 0) {
                     prior.adjustRange(start-1, start);

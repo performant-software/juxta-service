@@ -34,7 +34,8 @@ import eu.interedition.text.util.Annotations;
 public class DiffCollator {
     protected static final Name GAP_NAME = new SimpleName(URI.create("http://juxtasoftware.org/ns"), "gap");
 
-    protected static final Logger LOG = LoggerFactory.getLogger(DiffCollator.class);    
+    protected static final Logger LOG = LoggerFactory.getLogger(DiffCollator.class);   
+    protected boolean transpositionCollation; 
 
     public void collate(DiffCollatorConfiguration config, Comparand base, Comparand witness) throws IOException {
 
@@ -45,14 +46,16 @@ public class DiffCollator {
         // the filtered result
         final Set<Set<Annotation>> transpositions = config.getTranspositionSource().transpositionsIn(comparison);
         for (Comparison filtered : comparison.filter(transpositions)) {
-            LOG.trace("Collating " + filtered);
+            LOG.info("Collating " + filtered);
+            this.transpositionCollation = false;
             collate(config, filtered);
         }
 
         // Now take each of the transpositions and perform a
         // mini-collation on it
         for (Set<Annotation> transposition : transpositions) {
-            LOG.trace("Collating transposition " + Iterables.toString(transposition));
+            LOG.info("Collating transposition " + Iterables.toString(transposition));
+            this.transpositionCollation = true;
             collate(config, new Comparison(base, witness, transposition));
         }
 
@@ -137,7 +140,10 @@ public class DiffCollator {
 
     private Annotation createGap(Text comparandText, int currIndex, List<Token> tokens) throws IOException {
         if ( currIndex == 0 ) {
-            return  new GapAnnotation(comparandText, 0);
+            if ( this.transpositionCollation == false ) {
+                return  new GapAnnotation(comparandText, 0);
+            }
+            return  gap( tokens.get(0).getAnnotation() );
         } else {
             return gap( tokens.get(currIndex-1).getAnnotation() );
         }
