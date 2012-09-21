@@ -9,7 +9,7 @@
     
     <artifactId>juxta-diff</artifactId>
     <packaging>jar</packaging>
-    <version>1.6.5-RC3</version>
+    <version>1.7-RC1</version>
     <name>Juxta :: Diff</name>
 
     <!-- project property settings -->
