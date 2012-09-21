@@ -20,6 +20,9 @@ $(function() {
    };
 
    var renderConnections = function() {
+      if ( $("#connections-div").exists() === false ) {
+         return;
+      }
       // wipe out the old lines
       var connectionPaper = $("#connections-div").data("paper");
       connectionPaper.clear();
