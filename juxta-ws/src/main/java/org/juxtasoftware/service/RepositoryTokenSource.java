@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import org.juxtasoftware.dao.JuxtaAnnotationDao;
 import org.juxtasoftware.diff.Token;
@@ -25,6 +26,9 @@ public class RepositoryTokenSource implements TokenSource {
     private final JuxtaAnnotationDao annotationDao;
     private final QNameFilter tokenFilter;
     private final Long setId;
+    
+    // anything thats not alnum or hyphen is consdered punctuation here
+    private static final Pattern PUNCTUATION = Pattern.compile("[^a-zA-Z0-9\\-]");
 
     public RepositoryTokenSource( TokenizerConfiguration config, Long setId, JuxtaAnnotationDao annoDao, QNameFilter tokenFilter) {
         this.config = config;
@@ -68,7 +72,16 @@ public class RepositoryTokenSource implements TokenSource {
             if ( this.config.getHyphenationFilter().equals(HyphenationFilter.FILTER_ALL)) {
                 tokenText = tokenText.replaceAll("-", "");
             }
-            tokens.add(new SimpleToken(anno, tokenText));
+            if ( this.config.isFilterPunctuation() ) {
+                tokenText = PUNCTUATION.matcher(tokenText).replaceAll("");
+            }
+            if ( this.config.isFilterWhitespace() ) {
+                tokenText = tokenText.trim().replaceAll("\\s+", " ");
+            }
+            
+            if ( tokenText.length() > 0 ) {
+                tokens.add(new SimpleToken(anno, tokenText));
+            }
         }
         return tokens;
     }
