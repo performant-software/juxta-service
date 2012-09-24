@@ -2,12 +2,13 @@ package org.juxtasoftware.resource;
 
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.output.FileWriterWithEncoding;
@@ -37,6 +38,8 @@ import org.restlet.resource.ResourceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+
+import eu.interedition.text.Range;
 
 /**
  * Resource used to GET a json object containing histogram
@@ -132,50 +135,75 @@ public class HistogramResource extends BaseResource {
         return toJsonRepresentation( "{\"status\": \"RENDERING\", \"taskId\": \""+taskId+"\"}" );
     }
     
-    private String generateTaskId( final Long setId, final Long baseId) {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + setId.hashCode();
-        result = prime * result + baseId.hashCode();
-        return "histogram-"+result;
-    }
+    private void render() throws IOException {
 
-    private void render() throws IOException, FileNotFoundException {
-        // Algorithm: 
-        // The histogram is an array of integers sized to match 
-        // the length of the base document.
-        // Get all diffs for the selected set.
-        // Walk thru each, and get the base diff start and end position.
-        // For each position in range from start to end, add 1 to 
-        // the corresponding position in the histogram array.
-        // start of by getting the base witness and the cout of all 
-        // witnesses in this comparison set
-        Set<Witness> witnesses = this.setDao.getWitnesses(this.set);
-        int maxValue = witnesses.size();
-
-        // Get all of the differences and apply the above algorithm
+        // Get all of the differences and sort them
         QNameFilter changesFilter = this.filters.getDifferencesFilter();
         AlignmentConstraint constraints = new AlignmentConstraint(this.set, this.baseWitness.getId());
         constraints.setFilter(changesFilter);
-        LOG.info("Create histogram buffer size " + (int)this.baseWitness.getText().getLength());
-        byte[] histogram = createHistogram( (int)this.baseWitness.getText().getLength() );
-        LOG.info( Runtime.getRuntime().freeMemory()+" bytes free after histogram buffer");
         List<Alignment> diffs =  this.alignmentDao.list(constraints);
-        LOG.info( Runtime.getRuntime().freeMemory()+" bytes free after alignment retrieval");
-        for (Alignment diff :  diffs ) {
+        Collections.sort(diffs, new Comparator<Alignment>() {
+            @Override
+            public int compare(Alignment a, Alignment b) {
+                Range r1 = a.getWitnessAnnotation(baseWitness.getId()).getRange();
+                Range r2 = b.getWitnessAnnotation(baseWitness.getId()).getRange();
+                if ( r1.getStart() < r2.getStart() ) {
+                    return -1;
+                } else if ( r1.getStart() > r2.getStart() ) {
+                    return 1;
+                } else {
+                    if ( r1.getEnd() < r2.getEnd() ) {
+                        return -1;
+                    } else if ( r1.getEnd() > r2.getEnd() ) {
+                        return 1;
+                    } 
+                }
+                return 0;
+            }
+        });
+        
+        // run thru the base document length in 1% chunks
+        byte[] histogram = createHistogram( );
+        double baseLen = this.baseWitness.getText().getLength();
+        long firstCharInRange = 0;
+        for ( int percent=1; percent<=100; percent++) {
+            long lastCharInRange = Math.round( baseLen*(percent*0.01) );
+            Range docRange = new Range(firstCharInRange, lastCharInRange);
+            Iterator<Alignment> diffItr = diffs.iterator();
+            while ( diffItr.hasNext() ) {
+                Alignment diff = diffItr.next();
+                AlignedAnnotation anno = diff.getWitnessAnnotation(this.baseWitness.getId());
+                Range baseRange = anno.getRange();
+                
+                // throw away styff that was added relative to base. This keeps
+                // histogram mirroring the heatmap. 
+                // TODO revist this: possibly add categories of diff and color code the bars
+                if ( baseRange.length() == 0 && diff.getEditDistance() == -1 ) {
+                    continue;
+                }
+
+                // don't use interediton range checks: they break down for 0-length ranges
+                if ( docRange.getStart() <= baseRange.getEnd() && baseRange.getStart() <= docRange.getEnd() ) {
+                    histogram[percent-1]++;
+                    diffItr.remove();                    
+                } else {
+                    break;
+                }
+            }
             
-            // get the base witness annotation
-            AlignedAnnotation anno = diff.getWitnessAnnotation(this.baseWitness.getId());
-            
-            // mark of its range in the histogram
-            int start = (int)anno.getRange().getStart();
-            int end = (int)anno.getRange().getEnd();
-            for (int i=start; i<end; i++) {
-                histogram[i]++;
+            firstCharInRange = lastCharInRange;
+            if ( diffs.size() == 0 ) {
+                break;
+            }
+        }        
+
+        
+        int maxVal = -1;
+        for ( int i=0; i<100; i++ ){
+            if (histogram[i] > maxVal ) {
+                maxVal = histogram[i];
             }
         }
-        diffs.clear();
-        diffs = null;
 
         // scale to max value and dump to temp file
         File hist = File.createTempFile("histo", "data");
@@ -189,7 +217,7 @@ public class HistogramResource extends BaseResource {
                     bw.write(",");
                 }
                 firstWrite = false;
-                double scaled = (double)histogram[i]/(double)maxValue;
+                double scaled = (double)histogram[i]/(double)maxVal;
                 if ( scaled > 1.0 ) {
                     scaled = 1.0;
                 }
@@ -203,6 +231,11 @@ public class HistogramResource extends BaseResource {
             IOUtils.closeQuietly(bw);
         }
         
+//        Reader r = new FileReader(hist);
+//        String foo = IOUtils.toString(r);
+//        System.err.println(foo);
+//        return toJsonRepresentation( foo );
+        
         // cache the results and kill temp file
         FileReader r = new FileReader(hist);
         this.cacheDao.cacheHistogram(this.set.getId(), this.baseWitness.getId(), r);
@@ -210,14 +243,22 @@ public class HistogramResource extends BaseResource {
         hist.delete();
     }
     
+    private String generateTaskId( final Long setId, final Long baseId) {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + setId.hashCode();
+        result = prime * result + baseId.hashCode();
+        return "histogram-"+result;
+    }
+    
     /**
      * create and init histogram array with all zeros
      * @param size
      * @return
      */
-    private byte[] createHistogram( long size ) {
-        byte[] out = new byte[(int)size];
-        for ( int i=0; i<size; i++) {
+    private byte[] createHistogram() {
+        byte[] out = new byte[100];
+        for ( int i=0; i<100; i++) {
             out[i] = 0;
         }
         return out;
