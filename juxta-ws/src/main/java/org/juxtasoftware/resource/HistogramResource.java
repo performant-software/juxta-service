@@ -163,7 +163,7 @@ public class HistogramResource extends BaseResource {
         });
         
         // run thru the base document length in 1% chunks
-        byte[] histogram = createHistogram( );
+        int[] histogram = createHistogram( );
         double baseLen = this.baseWitness.getText().getLength();
         long firstCharInRange = 0;
         for ( int percent=1; percent<=100; percent++) {
@@ -256,8 +256,8 @@ public class HistogramResource extends BaseResource {
      * @param size
      * @return
      */
-    private byte[] createHistogram() {
-        byte[] out = new byte[100];
+    private int[] createHistogram() {
+        int[] out = new int[100];
         for ( int i=0; i<100; i++) {
             out[i] = 0;
         }
