@@ -76,6 +76,7 @@ public final class EncodingUtils {
         BufferedReader r = new BufferedReader( isr );
         File out = File.createTempFile("fix", "dat");
         FileOutputStream fos = new FileOutputStream(out);
+        OutputStreamWriter osw = new OutputStreamWriter(fos, "UTF-8");
         boolean pastHeader = false;
         while (true) {
             String line = r.readLine();
@@ -87,13 +88,13 @@ public final class EncodingUtils {
                     line = line.substring(0,pos)+line.substring(end+2);
                 }
                 line += "\n";
-                fos.write(line.getBytes());
+                osw.write(line);
             } else {
                 break;
             }
         }
         IOUtils.closeQuietly( r );
-        IOUtils.closeQuietly(fos);
+        IOUtils.closeQuietly(osw);
         IOUtils.copy(new FileInputStream(out), new FileOutputStream(tmpSrc));
         out.delete();
     }
