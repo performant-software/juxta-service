@@ -217,11 +217,15 @@ public class HistogramResource extends BaseResource {
                     bw.write(",");
                 }
                 firstWrite = false;
-                double scaled = (double)histogram[i]/(double)maxVal;
-                if ( scaled > 1.0 ) {
-                    scaled = 1.0;
+                if ( maxVal > 0 ) {
+                    double scaled = (double)histogram[i]/(double)maxVal;
+                    if ( scaled > 1.0 ) {
+                        scaled = 1.0;
+                    }
+                    bw.write(String.format("%1.2f",  scaled));
+                } else {
+                    bw.write( String.format("%1.2f", (double)histogram[i] ));
                 }
-                bw.write(String.format("%1.2f",  scaled));
             }
             bw.write("] }");
         } catch (IOException e) {
