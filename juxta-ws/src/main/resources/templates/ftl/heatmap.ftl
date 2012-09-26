@@ -15,7 +15,7 @@
         <div class="header">Witness List</div>
         <#list witnesses as witness>
             <#if witness.id == baseId>
-                <div class="base set-file" title="${witness.name}">${witness.name}</div>
+                <div class="base set-file" title="${witness.name}">${witness.name}<span id="base-tag">[base]</span></div>
             <#else>
                 <div class="set-witnesss set-file">
                     <div id="witness-${witness.id}" class="witness" title="${witness.name}">${witness.name}</div>

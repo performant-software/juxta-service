@@ -75,6 +75,14 @@ div.base {
     text-overflow: ellipsis;
     cursor: default;
 }
+#base-tag{
+   float: right;
+   margin-right: 3px;
+   margin-bottom: 2px;
+   font-size: 0.8em;
+   margin-top: 1px;
+}
+
 
 /* Div for headmap, notes and margin boxes */
 /* This version is when the full UI is used */
