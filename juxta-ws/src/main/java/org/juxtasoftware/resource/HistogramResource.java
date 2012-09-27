@@ -164,6 +164,7 @@ public class HistogramResource extends BaseResource {
         
         // run thru the base document length in 1% chunks
         int[] histogram = createHistogram( );
+        boolean[] addTracker = createAddTracker();
         double baseLen = this.baseWitness.getText().getLength();
         long firstCharInRange = 0;
         for ( int percent=1; percent<=100; percent++) {
@@ -175,16 +176,16 @@ public class HistogramResource extends BaseResource {
                 AlignedAnnotation anno = diff.getWitnessAnnotation(this.baseWitness.getId());
                 Range baseRange = anno.getRange();
                 
-                // throw away styff that was added relative to base. This keeps
-                // histogram mirroring the heatmap. 
-                // TODO revist this: possibly add categories of diff and color code the bars
-                if ( baseRange.length() == 0 && diff.getEditDistance() == -1 ) {
-                    continue;
-                }
-
                 // don't use interediton range checks: they break down for 0-length ranges
                 if ( docRange.getStart() <= baseRange.getEnd() && baseRange.getStart() <= docRange.getEnd() ) {
-                    histogram[percent-1]++;
+                    
+                    // track adds separately from other change
+                    if ( baseRange.length() == 0 && diff.getEditDistance() == -1 ) {
+                        addTracker[percent-1] = true;
+                    } else {
+                        histogram[percent-1]++;
+                    }
+                    
                     diffItr.remove();                    
                 } else {
                     break;
@@ -218,13 +219,21 @@ public class HistogramResource extends BaseResource {
                 }
                 firstWrite = false;
                 if ( maxVal > 0 ) {
-                    double scaled = (double)histogram[i]/(double)maxVal;
+                    double val = (double)histogram[i];
+                    double scaled = val/(double)maxVal;
+                    if ( addTracker[i] ) {
+                        scaled += 0.025;
+                    }
                     if ( scaled > 1.0 ) {
                         scaled = 1.0;
                     }
                     bw.write(String.format("%1.2f",  scaled));
                 } else {
-                    bw.write( String.format("%1.2f", (double)histogram[i] ));
+                    if ( addTracker[i] ) {
+                        bw.write( "0.025");
+                    } else {
+                        bw.write( "0.00");
+                    }
                 }
             }
             bw.write("] }");
@@ -264,6 +273,13 @@ public class HistogramResource extends BaseResource {
         int[] out = new int[100];
         for ( int i=0; i<100; i++) {
             out[i] = 0;
+        }
+        return out;
+    }
+    private boolean[] createAddTracker() {
+        boolean[] out = new boolean[100];
+        for ( int i=0; i<100; i++) {
+            out[i] = false;
         }
         return out;
     }

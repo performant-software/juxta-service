@@ -134,7 +134,7 @@ public class Alignment {
 
     @Override
     public String toString() {
-        return "Alignment [id=" + id + "]";
+        return "Alignment [id=" + id + "] " + this.name + " "+ this.annotations;
     }
     
     /**
