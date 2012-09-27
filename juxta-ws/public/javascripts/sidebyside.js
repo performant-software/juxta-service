@@ -247,64 +247,87 @@ $(function() {
          'stroke-width' : 1,
          'stroke-linejoin' : 'round'
       };
-      $("#right-witness-text").find(".diff").each(function(index) {
-
-         // calculate the extents of the braket for the left witness diff
-         var rightDiffTop = $(this).position().top - hdrHeight + $("#right-witness-text").scrollTop();
-         var rightDiffHeight = $(this).height();
-         if (rightDiffHeight === 0) {
-            rightDiffHeight = defaultHeight;
+      
+      var diffs = [];
+      $("#right-witness-text").find(".diff").each( function() {
+         diffs.push( this );   
+      });
+      var idx = 0;
+      var chunkSize = 2500;
+      var lastIdx = diffs.length - 1;
+      var thisChunk = 0;
+      var done = false;
+      
+      var tid = setInterval(function() {
+         thisChunk = chunkSize;
+         if (idx + thisChunk > lastIdx) {
+            thisChunk = lastIdx - idx;
+            clearInterval(tid);
+            done = true;
          }
-         var rightDiffBottom = rightDiffTop + rightDiffHeight;
-         var rightId = $(this).attr("id");
-
-         // draw the bracket
-         var pathStr = "M6," + (rightDiffTop+2) + "L1," + (rightDiffTop+2) + "L1," + (rightDiffBottom+4) + "L6," + (rightDiffBottom+4);
-         var bracket = rightGutterPaper.path(pathStr);
-         bracket.attr(bracketAttribs);
-
-         // Get the LEFT witness diff
-         var connectToId = "diff-" + $(this).attr("juxta:connect-to");
-         if ($("#" + connectToId).exists()) {
-            var leftDiffTop = $("#" + connectToId).position().top - hdrHeight + $("#left-witness-text").scrollTop();
-            var leftDiffHeight = $("#" + connectToId).height();
-            if (leftDiffHeight === 0) {
-               leftDiffHeight = defaultHeight;
+         
+         diffs.slice(idx, (idx + thisChunk)).forEach(function(diff) {
+   
+            // calculate the extents of the braket for the left witness diff
+            var rightDiffTop = $(diff).position().top - hdrHeight + $("#right-witness-text").scrollTop();
+            var rightDiffHeight = $(diff).height();
+            if (rightDiffHeight === 0) {
+               rightDiffHeight = defaultHeight;
             }
-            var leftDiffBottom = leftDiffTop + leftDiffHeight;
-            var leftId = $("#" + connectToId).attr("id");
-
+            var rightDiffBottom = rightDiffTop + rightDiffHeight;
+            var rightId = $(diff).attr("id");
+   
             // draw the bracket
-            pathStr = "M0," + (leftDiffTop+2) + "L5," + (leftDiffTop+2) + "L5," + (leftDiffBottom+4) + "L0," + (leftDiffBottom+4);
-            bracket = leftGutterPaper.path(pathStr);
+            var pathStr = "M6," + (rightDiffTop+2) + "L1," + (rightDiffTop+2) + "L1," + (rightDiffBottom+4) + "L6," + (rightDiffBottom+4);
+            var bracket = rightGutterPaper.path(pathStr);
             bracket.attr(bracketAttribs);
-
-            // store the midpoint of the left/right bracket
-            // heights as a connection point
-            var connection = {};
-            connection.left = leftDiffTop + leftDiffHeight / 2;
-            connection.leftId = leftId;
-            connection.right = rightDiffTop + rightDiffHeight / 2;
-            connection.rightId = rightId;
-            connection.lit = false;
-            connection.type = "diff";
-            connections.push(connection);
-         }
-      });
-
-      // sort connections in ascending order by right pos
-      connections.sort(function(a, b) {
-         if (a.right < b.right) {
-            return -1;
-         }
-         if (a.right > b.right) {
-            return 1;
-         }
-         return 0;
-      });
-
-      $("#side-by-side").data("connections", connections);
-      //renderConnections();
+   
+            // Get the LEFT witness diff
+            var connectToId = "diff-" + $(diff).attr("juxta:connect-to");
+            if ($("#" + connectToId).exists()) {
+               var leftDiffTop = $("#" + connectToId).position().top - hdrHeight + $("#left-witness-text").scrollTop();
+               var leftDiffHeight = $("#" + connectToId).height();
+               if (leftDiffHeight === 0) {
+                  leftDiffHeight = defaultHeight;
+               }
+               var leftDiffBottom = leftDiffTop + leftDiffHeight;
+               var leftId = $("#" + connectToId).attr("id");
+   
+               // draw the bracket
+               pathStr = "M0," + (leftDiffTop+2) + "L5," + (leftDiffTop+2) + "L5," + (leftDiffBottom+4) + "L0," + (leftDiffBottom+4);
+               bracket = leftGutterPaper.path(pathStr);
+               bracket.attr(bracketAttribs);
+   
+               // store the midpoint of the left/right bracket
+               // heights as a connection point
+               var connection = {};
+               connection.left = leftDiffTop + leftDiffHeight / 2;
+               connection.leftId = leftId;
+               connection.right = rightDiffTop + rightDiffHeight / 2;
+               connection.rightId = rightId;
+               connection.lit = false;
+               connection.type = "diff";
+               connections.push(connection);
+            }
+            idx += 1;
+         }); 
+         
+         if ( done === true ) {
+            // sort connections in ascending order by right pos
+            connections.sort(function(a, b) {
+               if (a.right < b.right) {
+                  return -1;
+               }
+               if (a.right > b.right) {
+                  return 1;
+               }
+               return 0;
+            });
+      
+            $("#side-by-side").data("connections", connections);
+            renderConnections();
+         }  
+      }, 10);
    };
 
    /**
@@ -420,9 +443,12 @@ $(function() {
          }
       }
 
-      initDocumentHeight();
-      initCanvas();
-      renderConnections();
+      setTimeout( function() {
+         initDocumentHeight();
+         initCanvas();
+         //renderConnections();
+      },100);
+      
    };
 
    var alignOnDiff = function(diffEle) {
@@ -826,7 +852,7 @@ $(function() {
       // init height, scrollbars and raphael canvas objects
       initDocumentHeight();
       initCanvas();
-      renderConnections();
+      //renderConnections();
 
       // Setup click handling that allows diffs to auto-align when clicked
       $(".witness-text").on("click", ".diff", function(event) {
@@ -878,7 +904,7 @@ $(function() {
          $(".canvas-div").show();
          initDocumentHeight();
          initCanvas();
-         renderConnections();
+         //renderConnections();
       }
    };
    
