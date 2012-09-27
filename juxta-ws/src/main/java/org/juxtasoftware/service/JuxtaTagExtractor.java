@@ -114,6 +114,8 @@ public class JuxtaTagExtractor extends DefaultHandler  {
     
     @Override
     public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
+        // each time a new element starts, be sure to process the content of the prior
+        handleContent();
         
         // If there is a default namespace, the qName will not have it prepended here.
         // Do it now because all of the exclusion/linefeed data in the XSLT must have it.
@@ -140,7 +142,7 @@ public class JuxtaTagExtractor extends DefaultHandler  {
             if ( matchesTargetWitness( attributes ) == false ) {
                 this.isExcluding = true;
                 this.exclusionContext.push(qName);
-            }
+            } 
         } else if ( isRevision(qName) ) {
             this.revisionExtractStack.push( new ExtractRevision(isExcluded, this.currPos) );
         } else if ( isNote(qName) ) {
