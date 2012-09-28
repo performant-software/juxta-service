@@ -236,6 +236,11 @@ $(function() {
       // grab some info needed to calculate positions of brackets
       var hdrHeight = $(".header").outerHeight(true);
       var defaultHeight = parseInt($('.witness-text').css('line-height'), 10) - 3;
+      var rightScrollTop = $("#right-witness-text").scrollTop();
+      var leftScrollTop = $("#left-witness-text").scrollTop();
+      
+      $("body").trigger('wait-requested', ["Calculating differences..."]);
+      $('#wait-popup').show();
 
       // first do transpositions so they are under the alignments
       renderTranspositionsGutter(hdrHeight, defaultHeight);
@@ -253,7 +258,7 @@ $(function() {
          diffs.push( this );   
       });
       var idx = 0;
-      var chunkSize = 2500;
+      var chunkSize = 1000;
       var lastIdx = diffs.length - 1;
       var thisChunk = 0;
       var done = false;
@@ -269,7 +274,7 @@ $(function() {
          diffs.slice(idx, (idx + thisChunk)).forEach(function(diff) {
    
             // calculate the extents of the braket for the left witness diff
-            var rightDiffTop = $(diff).position().top - hdrHeight + $("#right-witness-text").scrollTop();
+            var rightDiffTop = $(diff).position().top - hdrHeight + rightScrollTop;
             var rightDiffHeight = $(diff).height();
             if (rightDiffHeight === 0) {
                rightDiffHeight = defaultHeight;
@@ -285,7 +290,7 @@ $(function() {
             // Get the LEFT witness diff
             var connectToId = "diff-" + $(diff).attr("juxta:connect-to");
             if ($("#" + connectToId).exists()) {
-               var leftDiffTop = $("#" + connectToId).position().top - hdrHeight + $("#left-witness-text").scrollTop();
+               var leftDiffTop = $("#" + connectToId).position().top - hdrHeight + leftScrollTop;
                var leftDiffHeight = $("#" + connectToId).height();
                if (leftDiffHeight === 0) {
                   leftDiffHeight = defaultHeight;
@@ -326,6 +331,8 @@ $(function() {
       
             $("#side-by-side").data("connections", connections);
             renderConnections();
+            $('#wait-popup').hide();
+            $("body").trigger('wait-completed');
          }  
       }, 10);
    };

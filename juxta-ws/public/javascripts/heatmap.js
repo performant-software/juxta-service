@@ -240,7 +240,7 @@ $(function() {
       }
 
       // FIRST turn on some dimming and a wait cursor
-      $("#heatmap-text").trigger('diff-requested');
+      $("body").trigger('wait-requested');
       $('#wait-popup').show();
 
       // hide ALL boxes. this to cover case when 1st click shows 4 and 2nd shows 1
@@ -304,12 +304,12 @@ $(function() {
             }
 
             $('#wait-popup').hide();
-            $("#heatmap-text").trigger('diff-request-complete');
+            $("body").trigger('wait-completed');
          },
          error : function(jqXHR, textStatus, errorThrown) {
             alert("Unable to determine differences.\n     " + jqXHR.responseText);
             $('#wait-popup').hide();
-            $("#heatmap-text").trigger('diff-request-complete');
+            $("body").trigger('wait-completed');
          },
          xhrFields : {
             withCredentials : true
