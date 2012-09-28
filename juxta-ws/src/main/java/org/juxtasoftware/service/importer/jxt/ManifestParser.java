@@ -63,7 +63,7 @@ public class ManifestParser extends DefaultHandler  {
             if ( version == null ) {
                 LOG.error("Missing version information");
                 throw new SAXException("Missing Version!");
-            } else if ( version.indexOf("1.6") == -1) {
+            } else if ( version.indexOf("1.6") == -1 && version.indexOf("1.7") == -1) {
                 LOG.error("Unsupported manifest version: " + version );
                 throw new SAXException("Unsupported Version!");
             }
