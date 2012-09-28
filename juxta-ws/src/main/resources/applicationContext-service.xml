@@ -74,6 +74,6 @@
        
     <!-- Juxta WS version property -->
     <bean id="version" class="java.lang.String" factory-method="valueOf">
-        <constructor-arg value="1.7-RC8"/>
+        <constructor-arg value="1.7-BETA"/>
     </bean>
 </beans>
