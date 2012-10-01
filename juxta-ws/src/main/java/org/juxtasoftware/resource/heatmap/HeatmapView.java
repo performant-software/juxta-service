@@ -5,6 +5,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
+import java.lang.management.ManagementFactory;
+import java.lang.management.MemoryMXBean;
+import java.lang.management.MemoryUsage;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -72,6 +75,7 @@ public class HeatmapView  {
     private int minimumEditDistance = 0;
     
     protected static final Logger LOG = LoggerFactory.getLogger( "HEATMAP" );
+    private static final int MEGABYTE = (1024*1024);
 
     /**
      * Delete all cached heatmap data for the specified set
@@ -142,63 +146,73 @@ public class HeatmapView  {
         }
         
         // Calculate the change index for the witnesses ( not necessary in condensed view: no witness list)
-        List<SetWitness> witnesses; 
-        if ( condensed == false ){
-            witnesses = calculateChangeIndex( set, setWitnesses, baseWitnessId );
-        } else {
-            // grab the alignments
-            QNameFilter changesFilter = this.filters.getDifferencesFilter();
-            AlignmentConstraint constraints = new AlignmentConstraint(set, baseWitnessId);
-            constraints.setFilter(changesFilter);
-            this.alignments = this.alignmentDao.list(constraints);
-            
-            // just 0 out all change indexes for condensed views
-            witnesses = new ArrayList<HeatmapView.SetWitness>();
-            for (Witness w: setWitnesses ) {
-                witnesses.add( new SetWitness(w, true, 0.0f) );
+        try {
+            List<SetWitness> witnesses; 
+            if ( condensed == false ){
+                witnesses = calculateChangeIndex( set, setWitnesses, baseWitnessId );
+            } else {
+                // grab the alignments
+                QNameFilter changesFilter = this.filters.getDifferencesFilter();
+                AlignmentConstraint constraints = new AlignmentConstraint(set, baseWitnessId);
+                constraints.setFilter(changesFilter);
+                this.alignments = this.alignmentDao.list(constraints);
+                
+                // just 0 out all change indexes for condensed views
+                witnesses = new ArrayList<HeatmapView.SetWitness>();
+                for (Witness w: setWitnesses ) {
+                    witnesses.add( new SetWitness(w, true, 0.0f) );
+                }
             }
+
+            // Asynchronously render heatmap main body (map, notes and margin boxes)
+            // Grab it from cache if possible. 
+            if ( this.cacheDao.heatmapExists(set.getId(), base.getId(), condensed) == false) {
+                final String taskId =  generateTaskId(set.getId(), base.getId(), condensed);
+                if ( this.taskManager.exists(taskId) == false ) {
+                    HeatmapTask task = new HeatmapTask(taskId, set, base, witnesses, condensed);
+                    this.taskManager.submit(task);
+                } 
+                return this.parent.toHtmlRepresentation( new StringReader("RENDERING "+taskId));
+            }
+                          
+            // init FTL data map
+            Map<String, Object> map = new HashMap<String, Object>();
+            map.put("hasNotes", false);
+            map.put("hasBreaks", false);
+            
+            // Last, wrap the body with ui (title, comparison set details)
+            map.put("condensed", condensed );
+            map.put("hasNotes", this.noteDao.hasNotes( base.getId() ) );
+            map.put("hasBreaks", this.pbDao.hasBreaks( base.getId() ) );
+            map.put("hasRevisions", this.witnessDao.hasRevisions(base) );
+            map.put("setId", set.getId());
+            map.put("baseId", base.getId());
+            map.put("baseName", base.getName() );
+            map.put("witnessCount", witnesses.size() );
+            map.put("witnesses", witnesses );
+            map.put("heatmapStreamer", this.heatmapDirective);
+            map.put("page", "set");
+            map.put("title", "Juxta Heatmap View: "+set.getName());
+            
+            // fill in the hidden spans with sements of urls so the
+            // javascript can piece together fill URLs for all of
+            // its ajax requests. This also becomes an extnsion point
+            // for systems that embed heatmap views in the main ui. They
+            // just provide alternate values for these 3 elemements
+            map.put("ajaxBaseUrl", parent.getRequest().getHostRef().toString()+"/juxta/"+parent.getWorkspace()+"/set/");
+            map.put("viewHeatmapSegment", "/view?mode=heatmap");
+            map.put("fragmentSegment", "/diff/fragment");
+            
+            return this.parent.toHtmlRepresentation("heatmap.ftl", map);
+        } catch ( OutOfMemoryError e ) {
+            if ( this.alignments != null ) {
+                this.alignments.clear();
+            };
+            return this.parent.toTextRepresentation(
+                "The server has insufficent resources to generate this visualization." +
+                "\nTry again later. If this fails, try breaking large witnesses up into smaller segments.");
         }
         
-        // Asynchronously render heatmap main body (map, notes and margin boxes)
-        // Grab it from cache if possible. 
-        if ( this.cacheDao.heatmapExists(set.getId(), base.getId(), condensed) == false) {
-            final String taskId =  generateTaskId(set.getId(), base.getId(), condensed);
-            if ( this.taskManager.exists(taskId) == false ) {
-                HeatmapTask task = new HeatmapTask(taskId, set, base, witnesses, condensed);
-                this.taskManager.submit(task);
-            } 
-            return this.parent.toHtmlRepresentation( new StringReader("RENDERING "+taskId));
-        }
-                      
-        // init FTL data map
-        Map<String, Object> map = new HashMap<String, Object>();
-        map.put("hasNotes", false);
-        map.put("hasBreaks", false);
-        
-        // Last, wrap the body with ui (title, comparison set details)
-        map.put("condensed", condensed );
-        map.put("hasNotes", this.noteDao.hasNotes( base.getId() ) );
-        map.put("hasBreaks", this.pbDao.hasBreaks( base.getId() ) );
-        map.put("hasRevisions", this.witnessDao.hasRevisions(base) );
-        map.put("setId", set.getId());
-        map.put("baseId", base.getId());
-        map.put("baseName", base.getName() );
-        map.put("witnessCount", witnesses.size() );
-        map.put("witnesses", witnesses );
-        map.put("heatmapStreamer", this.heatmapDirective);
-        map.put("page", "set");
-        map.put("title", "Juxta Heatmap View: "+set.getName());
-        
-        // fill in the hidden spans with sements of urls so the
-        // javascript can piece together fill URLs for all of
-        // its ajax requests. This also becomes an extnsion point
-        // for systems that embed heatmap views in the main ui. They
-        // just provide alternate values for these 3 elemements
-        map.put("ajaxBaseUrl", parent.getRequest().getHostRef().toString()+"/juxta/"+parent.getWorkspace()+"/set/");
-        map.put("viewHeatmapSegment", "/view?mode=heatmap");
-        map.put("fragmentSegment", "/diff/fragment");
-        
-        return this.parent.toHtmlRepresentation("heatmap.ftl", map);
     }
     
     private String generateTaskId( final Long setId, final Long baseId, final Boolean condensed) {
@@ -224,8 +238,12 @@ public class HeatmapView  {
         Runtime.getRuntime().runFinalization();
         final long estimatedByteUsage = count*Alignment.AVG_SIZE_BYTES;
         LOG.info("["+ estimatedByteUsage+"] ESTIMATED USAGE");
-        LOG.info("["+ Runtime.getRuntime().freeMemory()+"] ESTIMATED FREE");
-        return (estimatedByteUsage > Runtime.getRuntime().freeMemory());
+        MemoryMXBean memoryBean = ManagementFactory.getMemoryMXBean();
+        MemoryUsage usage = memoryBean.getHeapMemoryUsage();
+        long freeMem = usage.getMax() -usage.getUsed();
+        LOG.info("["+ freeMem  +"] ESTIMATED FREE");
+        final long memoryPad = MEGABYTE*5; // 5M memory pad
+        return ( (estimatedByteUsage+memoryPad) > freeMem );
     }
 
     private List<SetWitness> calculateChangeIndex( final ComparisonSet set, final List<Witness> witnesses, final Long baseWitnessId ) {

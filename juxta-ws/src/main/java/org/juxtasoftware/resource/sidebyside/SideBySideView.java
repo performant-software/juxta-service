@@ -5,6 +5,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
+import java.lang.management.ManagementFactory;
+import java.lang.management.MemoryMXBean;
+import java.lang.management.MemoryUsage;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -66,6 +69,7 @@ public class SideBySideView implements FileDirectiveListener  {
     @Autowired private TaskManager taskManager;
     
     protected static final Logger LOG = LoggerFactory.getLogger( "SideBySideView" );
+    private static final int MEGABYTE = (1024*1024);
     
     private BaseResource parent;
     private List<WitnessInfo> witnessDetails = new ArrayList<SideBySideView.WitnessInfo>(2);
@@ -211,14 +215,18 @@ public class SideBySideView implements FileDirectiveListener  {
         constraints.setFilter(changesFilter);
         
         // Get the number of annotations that will be returned and do a rough calcuation
-        // to see if generating this visuzlization will exhaust available memory - with a 5M pad
+        // to see if generating this visuzlization will exhaust available memory
         final Long count = this.alignmentDao.count(constraints);
-        final long estimatedByteUsage = count*Alignment.AVG_SIZE_BYTES;
         Runtime.getRuntime().gc();
         Runtime.getRuntime().runFinalization();
-        LOG.info("SBS ["+ estimatedByteUsage+"] ESTIMATED USAGE");
-        LOG.info("SBS ["+ Runtime.getRuntime().freeMemory()+"] ESTIMATED FREE");
-        return (estimatedByteUsage > Runtime.getRuntime().freeMemory());
+        final long estimatedByteUsage = count*Alignment.AVG_SIZE_BYTES;
+        LOG.info("["+ estimatedByteUsage+"] ESTIMATED USAGE");
+        MemoryMXBean memoryBean = ManagementFactory.getMemoryMXBean();
+        MemoryUsage usage = memoryBean.getHeapMemoryUsage();
+        long freeMem = usage.getMax() -usage.getUsed();
+        LOG.info("["+ freeMem  +"] ESTIMATED FREE");
+        final long memoryPad = MEGABYTE*5; // 5M memory pad
+        return ( (estimatedByteUsage+memoryPad) > freeMem );
     }
 
     @Override
