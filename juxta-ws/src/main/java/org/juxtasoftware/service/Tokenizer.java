@@ -224,6 +224,9 @@ public class Tokenizer {
         private void createToken(int start, int end) {
             this.tokenizedLength += (end - start);
             this.tokens.add(  new JuxtaAnnotation(set.getId(), this.witness, tokenQName, new Range(start, end)) );
+            if ((this.tokens.size() % tokenizationBatchSize ) == 0) {
+                write();
+            }
         }
 
         private void write() {
