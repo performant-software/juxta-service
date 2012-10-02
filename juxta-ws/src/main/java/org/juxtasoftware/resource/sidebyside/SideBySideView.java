@@ -67,7 +67,8 @@ public class SideBySideView implements FileDirectiveListener  {
     @Autowired private CacheDao cacheDao;
     @Autowired private ApplicationContext context;
     @Autowired private TaskManager taskManager;
-    
+    @Autowired private Integer averageAlignmentSize;
+
     protected static final Logger LOG = LoggerFactory.getLogger( "SideBySideView" );
     private static final int MEGABYTE = (1024*1024);
     
@@ -219,7 +220,7 @@ public class SideBySideView implements FileDirectiveListener  {
         final Long count = this.alignmentDao.count(constraints);
         Runtime.getRuntime().gc();
         Runtime.getRuntime().runFinalization();
-        final long estimatedByteUsage = count*Alignment.AVG_SIZE_BYTES;
+        final long estimatedByteUsage = count*this.averageAlignmentSize;
         LOG.info("["+ estimatedByteUsage+"] ESTIMATED USAGE");
         MemoryMXBean memoryBean = ManagementFactory.getMemoryMXBean();
         MemoryUsage usage = memoryBean.getHeapMemoryUsage();

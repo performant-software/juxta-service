@@ -55,6 +55,7 @@ public class HistogramResource extends BaseResource {
     @Autowired private CacheDao cacheDao;
     @Autowired private WitnessDao witnessDao;
     @Autowired private TaskManager taskManager;
+    @Autowired private Integer averageAlignmentSize;
     
     private ComparisonSet set;
     private Witness baseWitness;
@@ -116,7 +117,7 @@ public class HistogramResource extends BaseResource {
         // Get the number of annotations that will be returned and do a rough calcuation
         // to see if generating this histogram will exhaust available memory - with a 5M pad
         final Long count = this.alignmentDao.count(constraints);
-        final long estimatedByteUsage = count*Alignment.AVG_SIZE_BYTES + this.baseWitness.getText().getLength();
+        final long estimatedByteUsage = count*this.averageAlignmentSize + this.baseWitness.getText().getLength();
         Runtime.getRuntime().gc();
         Runtime.getRuntime().runFinalization();
         LOG.info("HISTOGRAM ["+ estimatedByteUsage+"] ESTIMATED USAGE");

@@ -60,7 +60,8 @@ public class Tokenizer {
     public void tokenize(ComparisonSet comparisonSet, CollatorConfig config, BackgroundTaskStatus taskStatus) throws IOException {
         final Set<Witness> witnesses = comparisonSetDao.getWitnesses(comparisonSet);
         final BackgroundTaskSegment ts = taskStatus.add(1, new BackgroundTaskSegment(witnesses.size()));
-              
+          
+        LOG.info("Token batchs size: " + this.tokenizationBatchSize );
         taskStatus.setNote("Clearing old tokens");
         LOG.info("Cleanup collation data ");
         this.set = comparisonSet;
@@ -232,7 +233,6 @@ public class Tokenizer {
         private void write() {
             LOG.info("Writing "+this.tokens.size()+" token annotations");
             int cnt = Tokenizer.this.annotationDao.create(this.tokens);
-            LOG.info("DONE Writing "+cnt+" token annotations");
             if ( cnt != this.tokens.size() ) {
                 LOG.error("Not all tokens writtens: "+cnt+" of "+this.tokens.size());
             }

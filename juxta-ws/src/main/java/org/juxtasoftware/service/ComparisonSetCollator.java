@@ -249,6 +249,7 @@ public class ComparisonSetCollator extends DiffCollator {
         
         @Override
         public void save() throws IOException {
+            LOG.info("Writing " + this.differences.size() +" differences");
             Map<Range, JuxtaAnnotation>  baseGaps = new HashMap<Range, JuxtaAnnotation>();
             Map<Range, JuxtaAnnotation>  witGaps = new HashMap<Range, JuxtaAnnotation>();
             List<Alignment> alignments = new ArrayList<Alignment>(this.differences.size());

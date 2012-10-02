@@ -1,6 +1,9 @@
 package org.juxtasoftware.dao.impl;
 
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
+import java.lang.management.MemoryMXBean;
+import java.lang.management.MemoryUsage;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -16,6 +19,8 @@ import org.juxtasoftware.model.ComparisonSet;
 import org.juxtasoftware.model.Witness;
 import org.juxtasoftware.util.FragmentFormatter;
 import org.juxtasoftware.util.RangedTextReader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -40,6 +45,7 @@ public class AlignmentDaoImpl implements AlignmentDao, InitializingBean  {
     private static final int DEL_FRAG_SIZE = 45;
     
     private SimpleJdbcInsert jdbcInsert;
+    protected static final Logger LOG = LoggerFactory.getLogger( "AlignmentDAO" );
 
     @Override
     public void afterPropertiesSet() throws Exception {
@@ -77,6 +83,12 @@ public class AlignmentDaoImpl implements AlignmentDao, InitializingBean  {
     
     @Override
     public List<Alignment> list(final AlignmentConstraint constraint ) {
+        MemoryMXBean memoryBean = ManagementFactory.getMemoryMXBean();
+        memoryBean.gc();
+        MemoryUsage usage = memoryBean.getHeapMemoryUsage();
+        long freeMem = usage.getMax() -usage.getUsed();
+        LOG.info("["+ freeMem  +"] FREE MEMORY");
+        
         StringBuilder sql = alignmentAnnotationsQuery();
         sql.append(" where a.set_id = ").append(constraint.getSetId());
         if ( constraint.getFilter() != null ) {
@@ -100,7 +112,16 @@ public class AlignmentDaoImpl implements AlignmentDao, InitializingBean  {
         // get the list of alignments that involve the base witness
         AlignmentsMapper mapper = new AlignmentsMapper( constraint );
         this.jdbcTemplate.query(sql.toString(), mapper );
-        return mapper.getAlignments();    
+        List<Alignment> a = mapper.getAlignments();   
+        
+        usage = memoryBean.getHeapMemoryUsage();
+        long freeMem2 = usage.getMax() -usage.getUsed();
+        if ( a.size() > 0 ) {
+            LOG.info("["+ freeMem2  +"] FREE AFTER ALIGN LISTED. ALIGN COUNT: "+a.size());
+            double avg = (freeMem - freeMem2) / a.size();
+            LOG.info("AVERAGE ALIGNMENT SIZE: "+avg);
+        }
+        return a;   
     }
     
     @Override

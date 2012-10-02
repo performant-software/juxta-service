@@ -69,6 +69,7 @@ public class HeatmapView  {
     @Autowired private HeatmapStreamDirective heatmapDirective;
     @Autowired private ApplicationContext context;
     @Autowired private TaskManager taskManager;
+    @Autowired private Integer averageAlignmentSize;
     
     private List<Alignment> alignments;
     private BaseResource parent;
@@ -236,7 +237,7 @@ public class HeatmapView  {
         final Long count = this.alignmentDao.count(constraints);
         Runtime.getRuntime().gc();
         Runtime.getRuntime().runFinalization();
-        final long estimatedByteUsage = count*Alignment.AVG_SIZE_BYTES;
+        final long estimatedByteUsage = count*this.averageAlignmentSize;
         LOG.info("["+ estimatedByteUsage+"] ESTIMATED USAGE");
         MemoryMXBean memoryBean = ManagementFactory.getMemoryMXBean();
         MemoryUsage usage = memoryBean.getHeapMemoryUsage();
