@@ -95,7 +95,7 @@ public final class NamespaceExtractor {
                     break;
                 } else {
                     if ( line.contains("http://www.tei-") || line.contains("tei2.dtd") || 
-                         line.contains("teiCorpus") || line.contains("DOCTYPE TEI")) {
+                         line.contains("teiCorpus") || line.contains("DOCTYPE TEI") || line.contains("<TEI")) {
                         type = XmlType.TEI;
                         break;
                     } else if ( line.contains("ram.xsd")) {
