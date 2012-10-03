@@ -64,6 +64,7 @@ public class CacheDaoImpl implements CacheDao {
 
     @Override
     public void cacheHeatmap(final Long setId, final Long baseId, final Reader data, final boolean condensed ) {
+        deleteHeatmap(setId);
         final String sql = "insert into " + TABLE+ " (set_id, witness_list, data_type, data) values (?,?,?,?)";
         this.jdbcTemplate.update(sql, new PreparedStatementSetter() {
 
@@ -201,6 +202,7 @@ public class CacheDaoImpl implements CacheDao {
 
     @Override
     public void cacheSideBySide(final Long setId, final Long witness1, final Long witness2, final Reader data) {
+        deleteSideBySide(setId);
         final String sql = "insert into " + TABLE+ " (set_id, witness_list, data_type, data) values (?,?,?,?)";
         this.jdbcTemplate.update(sql, new PreparedStatementSetter() {
 
