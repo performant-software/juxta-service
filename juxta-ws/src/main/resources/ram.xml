@@ -2,90 +2,16 @@
 <templates>
     <template guid="ram" isDefault="false" name="ram" rootTagName="ram">
         <tag action="EXCLUDE" name="add" newLine="false"/>
-        <tag action="INCLUDE" name="author" newLine="false"/>
-        <tag action="INCLUDE" name="authorization" newLine="false"/>
         <tag action="EXCLUDE" name="back" newLine="false"/>
-        <tag action="INCLUDE" name="bibl" newLine="false"/>
-        <tag action="INCLUDE" name="bibliosig" newLine="false"/>
-        <tag action="INCLUDE" name="binding" newLine="false"/>
-        <tag action="INCLUDE" name="body" newLine="false"/>
-        <tag action="INCLUDE" name="byline" newLine="false"/>
-        <tag action="INCLUDE" name="cit" newLine="false"/>
-        <tag action="INCLUDE" name="citnstruct" newLine="false"/>
-        <tag action="INCLUDE" name="city" newLine="false"/>
         <tag action="INCLUDE" name="closer" newLine="true"/>
-        <tag action="INCLUDE" name="collation" newLine="false"/>
-        <tag action="INCLUDE" name="commentaries" newLine="false"/>
-        <tag action="INCLUDE" name="cover" newLine="false"/>
-        <tag action="INCLUDE" name="date" newLine="false"/>
-        <tag action="INCLUDE" name="div0" newLine="false"/>
-        <tag action="INCLUDE" name="div1" newLine="false"/>
-        <tag action="INCLUDE" name="div2" newLine="false"/>
-        <tag action="INCLUDE" name="div3" newLine="false"/>
         <tag action="INCLUDE" name="divheader" newLine="true"/>
-        <tag action="INCLUDE" name="docauthor" newLine="false"/>
-        <tag action="INCLUDE" name="docdate" newLine="false"/>
-        <tag action="INCLUDE" name="docimprint" newLine="false"/>
-        <tag action="INCLUDE" name="doctitle" newLine="false"/>
-        <tag action="INCLUDE" name="edition" newLine="false"/>
-        <tag action="INCLUDE" name="editionstmt" newLine="false"/>
-        <tag action="INCLUDE" name="encodingdesc" newLine="false"/>
-        <tag action="INCLUDE" name="endpapers" newLine="false"/>
         <tag action="INCLUDE" name="epage" newLine="true"/>
-        <tag action="INCLUDE" name="epigraph" newLine="false"/>
-        <tag action="INCLUDE" name="extent" newLine="false"/>
-        <tag action="INCLUDE" name="filedesc" newLine="false"/>
-        <tag action="INCLUDE" name="font" newLine="false"/>
-        <tag action="INCLUDE" name="foreign" newLine="false"/>
         <tag action="EXCLUDE" name="front" newLine="false"/>
-        <tag action="INCLUDE" name="head" newLine="false"/>
-        <tag action="INCLUDE" name="hi" newLine="false"/>
-        <tag action="INCLUDE" name="imprint" newLine="false"/>
-        <tag action="INCLUDE" name="issue" newLine="false"/>
-        <tag action="INCLUDE" name="item" newLine="false"/>
         <tag action="INCLUDE" name="l" newLine="true"/>
         <tag action="INCLUDE" name="lb" newLine="true"/>
-        <tag action="INCLUDE" name="length" newLine="false"/>
         <tag action="INCLUDE" name="lg" newLine="true"/>
-        <tag action="INCLUDE" name="list" newLine="false"/>
-        <tag action="INCLUDE" name="location" newLine="false"/>
-        <tag action="INCLUDE" name="margin" newLine="false"/>
-        <tag action="INCLUDE" name="note" newLine="false"/>
-        <tag action="INCLUDE" name="notesstmt" newLine="false"/>
-        <tag action="INCLUDE" name="number" newLine="false"/>
-        <tag action="INCLUDE" name="ornlb" newLine="false"/>
         <tag action="INCLUDE" name="p" newLine="true"/>
-        <tag action="INCLUDE" name="page" newLine="false"/>
-        <tag action="INCLUDE" name="pageheader" newLine="false"/>
-        <tag action="INCLUDE" name="pagelines" newLine="false"/>
-        <tag action="INCLUDE" name="pagenote" newLine="false"/>
-        <tag action="INCLUDE" name="pages" newLine="false"/>
-        <tag action="INCLUDE" name="pagination" newLine="false"/>
-        <tag action="INCLUDE" name="paper" newLine="false"/>
-        <tag action="INCLUDE" name="physicaldesc" newLine="false"/>
-        <tag action="INCLUDE" name="point" newLine="false"/>
-        <tag action="INCLUDE" name="prepub" newLine="false"/>
-        <tag action="INCLUDE" name="printer" newLine="false"/>
-        <tag action="INCLUDE" name="profiledesc" newLine="false"/>
-        <tag action="INCLUDE" name="provenance" newLine="false"/>
-        <tag action="INCLUDE" name="publisher" newLine="false"/>
-        <tag action="INCLUDE" name="quote" newLine="false"/>
-        <tag action="INCLUDE" name="ram" newLine="false"/>
         <tag action="EXCLUDE" name="ramheader" newLine="false"/>
-        <tag action="INCLUDE" name="recnum" newLine="false"/>
-        <tag action="INCLUDE" name="ref" newLine="false"/>
-        <tag action="INCLUDE" name="revisiondesc" newLine="false"/>
-        <tag action="INCLUDE" name="section" newLine="false"/>
-        <tag action="INCLUDE" name="size" newLine="false"/>
-        <tag action="INCLUDE" name="sourcedesc" newLine="false"/>
-        <tag action="INCLUDE" name="text" newLine="false"/>
         <tag action="INCLUDE" name="title" newLine="true"/>
-        <tag action="INCLUDE" name="titlepage" newLine="false"/>
-        <tag action="INCLUDE" name="titlepart" newLine="false"/>
-        <tag action="INCLUDE" name="titlestmt" newLine="false"/>
-        <tag action="INCLUDE" name="typeface" newLine="false"/>
-        <tag action="INCLUDE" name="typography" newLine="false"/>
-        <tag action="INCLUDE" name="watermark" newLine="false"/>
-        <tag action="INCLUDE" name="xref" newLine="false"/>
     </template>
 </templates>
