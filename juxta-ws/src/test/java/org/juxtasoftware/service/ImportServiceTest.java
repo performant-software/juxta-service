@@ -12,7 +12,6 @@ import org.juxtasoftware.dao.WorkspaceDao;
 import org.juxtasoftware.model.ComparisonSet;
 import org.juxtasoftware.model.Source;
 import org.juxtasoftware.model.Workspace;
-import org.juxtasoftware.service.importer.XmlTemplateParser;
 import org.juxtasoftware.service.importer.jxt.JxtImportServiceImpl;
 import org.juxtasoftware.service.importer.ps.ParallelSegmentationImportImpl;
 import org.juxtasoftware.util.BackgroundTaskStatus;
@@ -29,30 +28,19 @@ public class ImportServiceTest extends AbstractTest {
     @Autowired private ParallelSegmentationImportImpl psImportService;
     @Autowired private ComparisonSetDao setDao;
     @Autowired private WorkspaceDao workspaceDao;
-    @Autowired private XmlTemplateParser parser;
     @Autowired private SourceDao sourceDao;
    
 
     @Before
     public void setup() throws Exception {
-        // TODO
-//        Workspace ws = this.workspaceDao.getPublic();
-//        if ( ws == null ) {
-//            ws = new Workspace();
-//            ws.setName("public");
-//            ws.setDescription("Default public workspace");
-//            Long id = this.workspaceDao.create(ws);
-//            ws.setId( id );
-//        }
-//        
-//        if ( templateDao.exists(ws, Constants.PARALLEL_SEGMENTATION_TEMPLATE) == false ) {
-//            InputStream is = ClassLoader.getSystemResourceAsStream("tei-template.xml");
-//            parser.parse(is);
-//            Template template = parser.getTemplates().get(0);
-//            template.setWorkspaceId( ws.getId() );
-//            template.setDefault(false);
-//            templateDao.create(template );
-//        }
+        Workspace ws = this.workspaceDao.getPublic();
+        if ( ws == null ) {
+            ws = new Workspace();
+            ws.setName("public");
+            ws.setDescription("Default public workspace");
+            Long id = this.workspaceDao.create(ws);
+            ws.setId( id );
+        }
     }
 
     
