@@ -13,10 +13,14 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermFreqVector;
+import org.apache.lucene.index.TermVectorMapper;
+import org.apache.lucene.index.TermVectorOffsetInfo;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
@@ -68,6 +72,7 @@ public class Indexer {
             indexWriter.deleteAll();
             indexWriter.commit();
             
+            
             // Index the text_contents one document at a time
             Statement stmt = conn.createStatement();
             int start = 0;
@@ -78,8 +83,10 @@ public class Indexer {
                 if (rs.next()) {
                     Document doc = new Document();
                     doc.add(new Field("id", rs.getString("id"), Field.Store.YES, Field.Index.NOT_ANALYZED));
-                    doc.add(new Field("content", rs.getString("content"), Field.Store.NO, 
-                        Field.Index.ANALYZED, Field.TermVector.YES));  
+                    Field f = new Field("content", rs.getString("content"), Field.Store.NO, 
+                        Field.Index.ANALYZED, Field.TermVector.YES);
+                    f.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
+                    doc.add( f );  
                     indexWriter.addDocument(doc);
                     start++;
                     //lastId = rs.getString("id");
@@ -95,7 +102,7 @@ public class Indexer {
 //            // testing: search for something that is not there
 //            // verify it is not found. Update existing doc with
 //            // content to match then search again. versif hit
-//            searchTest(directory, analyzer);
+            searchTest(directory, analyzer);
 //            updateTest(directory, analyzer, lastId);
 //            searchTest(directory, analyzer);
 
@@ -156,8 +163,25 @@ public class Indexer {
         IndexReader ireader = IndexReader.open(directory);
         IndexSearcher isearcher = new IndexSearcher(ireader);
         QueryParser parser = new QueryParser(Version.LUCENE_36, "content", analyzer);
-        Query query = parser.parse("LIZARD");
+        Query query = parser.parse("pistol");
         ScoreDoc[] hits = isearcher.search(query, null, 1000).scoreDocs;
+        //TermFreqVector f = ireader.getTermFreqVector(hits[0].doc, "content");
+        
+        TermVectorMapper tvm = new TermVectorMapper() {
+            
+            @Override
+            public void setExpectations(String arg0, int arg1, boolean arg2, boolean arg3) {
+                // TODO Auto-generated method stub
+                
+            }
+            
+            @Override
+            public void map(String arg0, int arg1, TermVectorOffsetInfo[] arg2, int[] arg3) {
+                // TODO Auto-generated method stub
+                
+            }
+        };
+        ireader.getTermFreqVector(hits[0].doc, "content", tvm);
         System.out.println("Search Hits length: "+ hits.length);
     }
 }

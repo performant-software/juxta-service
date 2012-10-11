@@ -63,12 +63,8 @@ public class Searcher extends BaseResource {
                 
                 for ( int tid = 0; tid<terms.length; tid++) {
                     int termidx = tfvector.indexOf(terms[tid].getTerm());  
-                    int[] termposx = tpvector.getTermPositions(termidx);  
                     TermVectorOffsetInfo[] tvoffsetinfo = tpvector.getOffsets(termidx);  
-    
-                    for (int j=0;j<termposx.length;j++) {  
-                        System.out.println("termpos : "+termposx[j]);  
-                    }  
+   
                     for (int j=0;j<tvoffsetinfo.length;j++) {  
                         int offsetStart = tvoffsetinfo[j].getStartOffset();  
                         int offsetEnd = tvoffsetinfo[j].getEndOffset();  
