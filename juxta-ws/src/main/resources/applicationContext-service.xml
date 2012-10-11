@@ -60,12 +60,11 @@
             </bean>
         </constructor-arg>
     </bean>
+    <bean id="indexReader" class="org.apache.lucene.index.IndexReader"  factory-method="open">
+        <constructor-arg ref="luceneDirectory"/>
+    </bean>
     <bean id="indexSearcher" class="org.apache.lucene.search.IndexSearcher" depends-on="indexWriter">
-        <constructor-arg>
-             <bean id="indexReader" class="org.apache.lucene.index.IndexReader"  factory-method="open">
-                 <constructor-arg ref="luceneDirectory"/>
-             </bean>
-        </constructor-arg>
+        <constructor-arg ref="indexReader"/>
     </bean>
     <bean id="queryParser" class="org.apache.lucene.queryParser.QueryParser">
         <constructor-arg ref="luceneVersion"/>
