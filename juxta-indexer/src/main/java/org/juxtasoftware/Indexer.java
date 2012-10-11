@@ -71,7 +71,7 @@ public class Indexer {
             // Index the text_contents one document at a time
             Statement stmt = conn.createStatement();
             int start = 0;
-            String lastId = "";
+            //String lastId = "";
             while ( true ) {
                 String sql = "select id, content from text_content limit "+start+",1";
                 ResultSet rs = stmt.executeQuery(sql);
@@ -81,7 +81,7 @@ public class Indexer {
                     doc.add(new Field("content", rs.getString("content"), Field.Store.YES, Field.Index.ANALYZED));  
                     indexWriter.addDocument(doc);
                     start++;
-                    lastId = rs.getString("id");
+                    //lastId = rs.getString("id");
                 } else{
                     break;
                 }
