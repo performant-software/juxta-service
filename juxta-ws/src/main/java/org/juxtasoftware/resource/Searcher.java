@@ -2,7 +2,6 @@ package org.juxtasoftware.resource;
 
 import java.io.IOException;
 
-import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.TermFreqVector;
 import org.apache.lucene.index.TermPositionVector;
@@ -12,6 +11,8 @@ import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.highlight.QueryTermExtractor;
+import org.apache.lucene.search.highlight.WeightedTerm;
 import org.restlet.data.Status;
 import org.restlet.representation.Representation;
 import org.restlet.resource.Get;
@@ -51,32 +52,30 @@ public class Searcher extends BaseResource {
     public Representation search() {
         try {
             Query query = this.queryParser.parse(this.searchTerm);
-            ScoreDoc[] hits = this.searcher.search(query, 100).scoreDocs;
+            ScoreDoc[] hits = this.searcher.search(query, 20).scoreDocs;
             
-//            for(int i=0;i<hits.length;++i) {  
-//
-//                int docId = hits[i].doc;  
-//                TermFreqVector tfvector = this.indexReader.getTermFreqVector(docId, "content");  
-//                TermPositionVector tpvector = (TermPositionVector)tfvector;  
-//                // this part works only if there is one term in the query string,  
-//                // otherwise you will have to iterate this section over the query terms.  
-//                int termidx = tfvector.indexOf(querystr);  
-//                int[] termposx = tpvector.getTermPositions(termidx);  
-//                TermVectorOffsetInfo[] tvoffsetinfo = tpvector.getOffsets(termidx);  
-//
-//                for (int j=0;j<termposx.length;j++) {  
-//                    System.out.println("termpos : "+termposx[j]);  
-//                }  
-//                for (int j=0;j<tvoffsetinfo.length;j++) {  
-//                    int offsetStart = tvoffsetinfo[j].getStartOffset();  
-//                    int offsetEnd = tvoffsetinfo[j].getEndOffset();  
-//                    System.out.println("offsets : "+offsetStart+" "+offsetEnd);  
-//                }  
-//
-//                // print some info about where the hit was found...  
-//                Document d = searcher.doc(docId);  
-//                System.out.println((i + 1) + ". " + d.get("path"));  
-//            }  
+            WeightedTerm[] terms = QueryTermExtractor.getTerms(query);
+            for(int i=0;i<hits.length;++i) {  
+
+                int docId = hits[i].doc;  
+                TermFreqVector tfvector = this.indexReader.getTermFreqVector(docId, "content");  
+                TermPositionVector tpvector = (TermPositionVector)tfvector;  
+                
+                for ( int tid = 0; tid<terms.length; tid++) {
+                    int termidx = tfvector.indexOf(terms[tid].getTerm());  
+                    int[] termposx = tpvector.getTermPositions(termidx);  
+                    TermVectorOffsetInfo[] tvoffsetinfo = tpvector.getOffsets(termidx);  
+    
+                    for (int j=0;j<termposx.length;j++) {  
+                        System.out.println("termpos : "+termposx[j]);  
+                    }  
+                    for (int j=0;j<tvoffsetinfo.length;j++) {  
+                        int offsetStart = tvoffsetinfo[j].getStartOffset();  
+                        int offsetEnd = tvoffsetinfo[j].getEndOffset();  
+                        System.out.println("offsets : "+offsetStart+" "+offsetEnd);  
+                    }  
+                } 
+            }  
             
             
             return toTextRepresentation("Got "+hits.length+" matches");
