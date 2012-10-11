@@ -17,6 +17,7 @@ import org.juxtasoftware.model.ResourceInfo;
 import org.juxtasoftware.model.Source;
 import org.juxtasoftware.model.Usage;
 import org.juxtasoftware.model.Workspace;
+import org.juxtasoftware.util.LuceneHelper;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.support.DataAccessUtils;
@@ -38,8 +39,9 @@ import eu.interedition.text.xml.XML;
 @Repository
 public class SourceDaoImpl implements SourceDao, InitializingBean {
 
-    @Autowired TextRepository textRepository;
+    @Autowired private TextRepository textRepository;
     @Autowired private JdbcTemplate jdbcTemplate;
+    @Autowired private LuceneHelper lucene;
     
     private SimpleJdbcInsert insert;
     private static final String TABLE_NAME = "juxta_source";
@@ -65,7 +67,14 @@ public class SourceDaoImpl implements SourceDao, InitializingBean {
         ps.addValue("content_id", ((RelationalText) txtContent).getId());
         ps.addValue("workspace_id", ws.getId());
         ps.addValue("created", new Date());
-        return (Long)this.insert.executeAndReturnKey( ps );
+        Long srcId = (Long)this.insert.executeAndReturnKey( ps );
+        
+        // add the new source to the lucene index
+        Long textId = ((RelationalText)txtContent).getId();
+        Reader r = getContentReader( textId );
+        this.lucene.addDocument(textId, r);
+        
+        return srcId;
     }
     
     @Override
@@ -107,17 +116,25 @@ public class SourceDaoImpl implements SourceDao, InitializingBean {
         
         // delete the old content!
         this.jdbcTemplate.update("delete from text_content where id=?", oldContentID);
+        
+        // Update the index: remove the old and add the updted src as new
+        this.lucene.deleteDocument(oldContentID);
+        this.lucene.addDocument(contentId, getContentReader(contentId) );
     }
 
     @Override
     public Reader getContentReader( final Source src ) {
+        return getContentReader( ((RelationalText)src.getText()).getId() );
+    }
+    private Reader getContentReader( final Long textId ) {
         final String sql = "select content from text_content where id=?";
         return DataAccessUtils.uniqueResult( this.jdbcTemplate.query(sql, new RowMapper<Reader>(){
             @Override
             public Reader mapRow(ResultSet rs, int rowNum) throws SQLException {
                 return rs.getCharacterStream("content");
-            }}, ((RelationalText)src.getText()).getId() ) );
+            }}, textId ));
     }
+    
     
     @Override
     public String getRootElement(Source src) {
