@@ -78,7 +78,7 @@ public class Indexer {
                 if (rs.next()) {
                     Document doc = new Document();
                     doc.add(new Field("id", rs.getString("id"), Field.Store.YES, Field.Index.NOT_ANALYZED));
-                    doc.add(new Field("content", rs.getString("content"), Field.Store.YES, Field.Index.ANALYZED));  
+                    doc.add(new Field("content", rs.getString("content"), Field.Store.NO, Field.Index.ANALYZED));  
                     indexWriter.addDocument(doc);
                     start++;
                     //lastId = rs.getString("id");
@@ -135,7 +135,7 @@ public class Indexer {
             indexWriter.deleteDocuments(t);
             Document doc = new Document();
             doc.add(new Field("id", id, Field.Store.YES, Field.Index.NOT_ANALYZED));
-            doc.add(new Field("content", "LIZARD", Field.Store.YES, Field.Index.ANALYZED));  
+            doc.add(new Field("content", "LIZARD", Field.Store.NO, Field.Index.ANALYZED));  
             indexWriter.addDocument(doc);
             indexWriter.commit();
         }catch (Exception e) {
