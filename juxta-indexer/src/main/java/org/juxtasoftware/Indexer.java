@@ -19,6 +19,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermFreqVector;
+import org.apache.lucene.index.TermPositionVector;
 import org.apache.lucene.index.TermVectorMapper;
 import org.apache.lucene.index.TermVectorOffsetInfo;
 import org.apache.lucene.queryParser.ParseException;
@@ -84,7 +85,7 @@ public class Indexer {
                     Document doc = new Document();
                     doc.add(new Field("id", rs.getString("id"), Field.Store.YES, Field.Index.NOT_ANALYZED));
                     Field f = new Field("content", rs.getString("content"), Field.Store.NO, 
-                        Field.Index.ANALYZED, Field.TermVector.YES);
+                        Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS);
                     f.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
                     doc.add( f );  
                     indexWriter.addDocument(doc);
@@ -165,8 +166,8 @@ public class Indexer {
         QueryParser parser = new QueryParser(Version.LUCENE_36, "content", analyzer);
         Query query = parser.parse("pistol");
         ScoreDoc[] hits = isearcher.search(query, null, 1000).scoreDocs;
-        //TermFreqVector f = ireader.getTermFreqVector(hits[0].doc, "content");
-        
+        TermFreqVector f = ireader.getTermFreqVector(hits[0].doc, "content");
+        TermPositionVector tpvector = (TermPositionVector)f;  
         TermVectorMapper tvm = new TermVectorMapper() {
             
             @Override
