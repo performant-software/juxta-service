@@ -4,3 +4,4 @@ juxta-ws/target
 juxta-ws-test/target
 juxta-indexer/lucene-index
 juxta-indexer/target
+juxta-ws/lucene-index
