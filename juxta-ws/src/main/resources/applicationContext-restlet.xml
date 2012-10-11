@@ -59,6 +59,10 @@
     <!-- info resource -->
     <bean name="/juxta/{type}/{id}/info" class="org.juxtasoftware.resource.InfoResource" scope="prototype" autowire="byName" />
     
+    <!-- Searching -->
+    <bean name="/juxta/{workspace}/search" class="org.juxtasoftware.resource.Searcher" scope="prototype" autowire="byName" />
+    <bean name="/juxta/search" class="org.juxtasoftware.resource.Searcher" scope="prototype" autowire="byName" />
+    
     <!-- task resources -->
     <bean name="/juxta/{workspace}/task/{id}/status" class="org.juxtasoftware.resource.TaskResource" scope="prototype" autowire="byName" />
     <bean name="/juxta/{workspace}/task/{id}/cancel" class="org.juxtasoftware.resource.TaskResource" scope="prototype" autowire="byName" />
