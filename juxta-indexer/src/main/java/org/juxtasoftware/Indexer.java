@@ -78,7 +78,8 @@ public class Indexer {
                 if (rs.next()) {
                     Document doc = new Document();
                     doc.add(new Field("id", rs.getString("id"), Field.Store.YES, Field.Index.NOT_ANALYZED));
-                    doc.add(new Field("content", rs.getString("content"), Field.Store.NO, Field.Index.ANALYZED));  
+                    doc.add(new Field("content", rs.getString("content"), Field.Store.NO, 
+                        Field.Index.ANALYZED, Field.TermVector.YES));  
                     indexWriter.addDocument(doc);
                     start++;
                     //lastId = rs.getString("id");
