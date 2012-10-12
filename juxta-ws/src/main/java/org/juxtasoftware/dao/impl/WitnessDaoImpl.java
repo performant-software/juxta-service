@@ -74,9 +74,10 @@ public class WitnessDaoImpl implements WitnessDao, InitializingBean {
         Long id =  insert.executeAndReturnKey(toInsertData(w)).longValue();
 
         // add the new witness to the lucene index
+        String ws = getWorkspaceName(w.getWorkspaceId());
         Long textId = ((RelationalText)w.getText()).getId();
         Reader r = getContentStream(w);
-        this.lucene.addDocument("witness", id, textId, r);
+        this.lucene.addDocument("witness", ws, id, textId, r);
 
         return id;
     }
@@ -113,8 +114,14 @@ public class WitnessDaoImpl implements WitnessDao, InitializingBean {
         witness.setText(newContent);
         
         // Update the index: remove the old and add the updted src as new
+        String ws = getWorkspaceName(witness.getWorkspaceId());
         this.lucene.deleteDocument( oldTxtId );
-        this.lucene.addDocument("witness", witness.getId(), newTxtId, getContentStream(witness) );
+        this.lucene.addDocument("witness", ws, witness.getId(), newTxtId, getContentStream(witness) );
+    }
+    
+    private String getWorkspaceName(Long id) {
+        String sql = "select name from juxta_workspace where id=?";
+        return this.jdbcTemplate.queryForObject(sql, String.class, id);
     }
     
     @Override

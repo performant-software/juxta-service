@@ -72,9 +72,14 @@ public class SourceDaoImpl implements SourceDao, InitializingBean {
         // add the new source to the lucene index
         Long textId = ((RelationalText)txtContent).getId();
         Reader r = getContentReader( textId );
-        this.lucene.addDocument("source", srcId, textId, r);
+        this.lucene.addDocument("source", ws.getName(), srcId, textId, r);
         
         return srcId;
+    }
+    
+    private String getWorkspaceName(Long id) {
+        String sql = "select name from juxta_workspace where id=?";
+        return this.jdbcTemplate.queryForObject(sql, String.class, id);
     }
     
     @Override
@@ -118,8 +123,9 @@ public class SourceDaoImpl implements SourceDao, InitializingBean {
         this.jdbcTemplate.update("delete from text_content where id=?", oldContentID);
         
         // Update the index: remove the old and add the updted src as new
+        String ws = getWorkspaceName(src.getWorkspaceId());
         this.lucene.deleteDocument(oldContentID);
-        this.lucene.addDocument("source", src.getId(), contentId, getContentReader(contentId) );
+        this.lucene.addDocument("source", ws, src.getId(), contentId, getContentReader(contentId) );
     }
 
     @Override
