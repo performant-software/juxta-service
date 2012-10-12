@@ -41,17 +41,18 @@
     
     <!-- set up lucene -->
     <util:constant id="luceneVersion" static-field="org.apache.lucene.util.Version.LUCENE_36"/>
-    <bean id="luceneAnalyzer" class="org.apache.lucene.analysis.standard.StandardAnalyzer">
+    <bean id="luceneAnalyzer" class="org.apache.lucene.analysis.standard.StandardAnalyzer" >
         <constructor-arg ref="luceneVersion"/>
     </bean>
-    <bean id="luceneDirectory" class="org.apache.lucene.store.FSDirectory" factory-method="open">
+    <bean id="luceneDirectory" class="org.apache.lucene.store.NIOFSDirectory" factory-method="open">
         <constructor-arg>
-            <bean class="java.io.File">
+            <bean class="java.io.File"  scope="prototype">
                 <constructor-arg value="${juxta.lucene.indexDir}" />
             </bean>
         </constructor-arg>
+
     </bean>
-    <bean id="indexWriter" class="org.apache.lucene.index.IndexWriter">
+    <bean id="indexWriter" class="org.apache.lucene.index.IndexWriter" >
         <constructor-arg ref="luceneDirectory" />
         <constructor-arg>
             <bean class="org.apache.lucene.index.IndexWriterConfig">
@@ -60,10 +61,10 @@
             </bean>
         </constructor-arg>
     </bean>
-    <bean id="indexReader" class="org.apache.lucene.index.IndexReader"  factory-method="open">
+    <bean id="indexReader" class="org.apache.lucene.index.IndexReader"  factory-method="open" scope="prototype">
         <constructor-arg ref="luceneDirectory"/>
     </bean>
-    <bean id="indexSearcher" class="org.apache.lucene.search.IndexSearcher" depends-on="indexWriter">
+    <bean id="indexSearcher" class="org.apache.lucene.search.IndexSearcher" depends-on="indexWriter" scope="prototype">
         <constructor-arg ref="indexReader"/>
     </bean>
     <bean id="hitsPerPage" class="java.lang.Integer" factory-method="valueOf">
