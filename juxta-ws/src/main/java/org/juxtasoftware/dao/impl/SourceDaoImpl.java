@@ -72,7 +72,7 @@ public class SourceDaoImpl implements SourceDao, InitializingBean {
         // add the new source to the lucene index
         Long textId = ((RelationalText)txtContent).getId();
         Reader r = getContentReader( textId );
-        this.lucene.addDocument(textId, r);
+        this.lucene.addDocument("source", srcId, textId, r);
         
         return srcId;
     }
@@ -119,7 +119,7 @@ public class SourceDaoImpl implements SourceDao, InitializingBean {
         
         // Update the index: remove the old and add the updted src as new
         this.lucene.deleteDocument(oldContentID);
-        this.lucene.addDocument(contentId, getContentReader(contentId) );
+        this.lucene.addDocument("source", src.getId(), contentId, getContentReader(contentId) );
     }
 
     @Override
