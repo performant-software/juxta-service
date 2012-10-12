@@ -302,11 +302,7 @@ public class ParallelSegmentationImportImpl implements ImportService<Source> {
             Long id = this.witnessDao.create(witness);
             witness.setId( id );
         } else {
-            Text oldTxt = witness.getText();
             this.witnessDao.updateContent(witness, witnessTxt);
-            
-            // now it is safe to kill the original text text
-            this.textRepository.delete( oldTxt );
         }
 
         return witness;

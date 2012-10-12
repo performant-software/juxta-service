@@ -101,9 +101,6 @@ public class SourceTransformer {
         if ( xslt != null ) {
             extractSpecialTags(srcDoc, this.witnessDao.find(origWit.getId()), xslt );
         }
-        
-        // now it is safe to kill the original text text
-        this.textRepository.delete( origWit.getText() );
     }
     
     /**

@@ -1,5 +1,6 @@
 package org.juxtasoftware.dao;
 
+import java.io.IOException;
 import java.io.Reader;
 import java.util.List;
 import java.util.Set;
@@ -23,7 +24,7 @@ public interface WitnessDao  {
      * @param w
      * @return
      */
-    Long create(final Witness w);
+    Long create(final Witness w) throws IOException;
     
     /**
      * Get brief info on this witness: name and dates
@@ -53,7 +54,7 @@ public interface WitnessDao  {
      * @param witnes
      * @param newContent
      */
-    void updateContent(final Witness witnes, final Text newContent );
+    void updateContent(final Witness witnes, final Text newContent )  throws IOException;
     
     /**
      * Find all of the witnesses associated with the set

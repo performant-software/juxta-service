@@ -2,6 +2,7 @@ package org.juxtasoftware.dao.impl;
 
 import static eu.interedition.text.rdbms.RelationalTextRepository.selectTextFrom;
 
+import java.io.IOException;
 import java.io.Reader;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -12,6 +13,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.lucene.index.CorruptIndexException;
 import org.juxtasoftware.dao.ComparisonSetDao;
 import org.juxtasoftware.dao.WitnessDao;
 import org.juxtasoftware.model.ComparisonSet;
@@ -21,6 +23,7 @@ import org.juxtasoftware.model.RevisionInfo;
 import org.juxtasoftware.model.Usage;
 import org.juxtasoftware.model.Witness;
 import org.juxtasoftware.model.Workspace;
+import org.juxtasoftware.util.LuceneHelper;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -55,6 +58,7 @@ public class WitnessDaoImpl implements WitnessDao, InitializingBean {
     @Autowired TextRepository textRepository;
     @Autowired @Qualifier("executor") private TaskExecutor taskExecutor;
     @Autowired private JdbcTemplate jdbcTemplate;
+    @Autowired private LuceneHelper lucene;
     
     public WitnessDaoImpl() {
         this.tableName = "juxta_witness";
@@ -66,8 +70,15 @@ public class WitnessDaoImpl implements WitnessDao, InitializingBean {
     }
 
     @Override
-    public Long create(Witness w) {
-        return insert.executeAndReturnKey(toInsertData(w)).longValue();
+    public Long create(Witness w) throws CorruptIndexException, IOException {
+        Long id =  insert.executeAndReturnKey(toInsertData(w)).longValue();
+
+        // add the new witness to the lucene index
+        Long textId = ((RelationalText)w.getText()).getId();
+        Reader r = getContentStream(w);
+        this.lucene.addDocument("witness", id, textId, r);
+
+        return id;
     }
     
     @Override
@@ -90,12 +101,20 @@ public class WitnessDaoImpl implements WitnessDao, InitializingBean {
     }
     
     @Override
-    public void updateContent(final Witness witness, final Text newContent) {
+    public void updateContent( Witness witness, final Text newContent) throws CorruptIndexException, IOException {
+              
+        Text oldTxt = witness.getText();
+        Long oldTxtId = ((RelationalText)witness.getText()).getId() ;
+        Long newTxtId = ((RelationalText)newContent).getId() ;
         String sql = "update "+this.tableName+" set text_id=?, updated=? where id=?";
-        this.jdbcTemplate.update(sql, 
-            ((RelationalText)newContent).getId(),
-            new Date(),
-            witness.getId() );
+        this.jdbcTemplate.update(sql, newTxtId,  new Date(), witness.getId() );
+        this.textRepository.delete( oldTxt );
+        
+        witness.setText(newContent);
+        
+        // Update the index: remove the old and add the updted src as new
+        this.lucene.deleteDocument( oldTxtId );
+        this.lucene.addDocument("witness", witness.getId(), newTxtId, getContentStream(witness) );
     }
     
     @Override
