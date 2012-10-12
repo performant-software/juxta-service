@@ -15,15 +15,18 @@ import org.springframework.stereotype.Component;
 public class LuceneHelper {
     @Autowired private IndexWriter indexWriter;
     
-    public void addDocument( final Long id, final Reader reader ) throws CorruptIndexException, IOException {
+    public void addDocument( final String docType, final Long docId, final Long textId, final Reader reader ) throws CorruptIndexException, IOException {
         Document doc = new Document();
-        doc.add(new Field("id", id.toString(), Field.Store.YES, Field.Index.NOT_ANALYZED));
-        doc.add(new Field("content", reader));
+        doc.add(new Field("id", textId.toString(), Field.Store.YES, Field.Index.NOT_ANALYZED));
+        doc.add(new Field("type", docType, Field.Store.YES, Field.Index.NOT_ANALYZED));
+        doc.add(new Field("itemId", docId.toString(), Field.Store.YES, Field.Index.NOT_ANALYZED));
+        Field f = new Field("content", reader, Field.TermVector.WITH_POSITIONS_OFFSETS);
+        doc.add( f );
         this.indexWriter.addDocument(doc);
         this.indexWriter.commit();
     }
     
-    public void deleteDocument( final Long id ) throws CorruptIndexException, IOException {
+    public void deleteDocument( final Long id ) throws CorruptIndexException, IOException {  
         Term term = new Term("id", id.toString());
         this.indexWriter.deleteDocuments(term);
         this.indexWriter.commit();
