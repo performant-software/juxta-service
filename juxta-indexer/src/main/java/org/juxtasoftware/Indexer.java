@@ -13,20 +13,8 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermFreqVector;
-import org.apache.lucene.index.TermPositionVector;
-import org.apache.lucene.index.TermVectorMapper;
-import org.apache.lucene.index.TermVectorOffsetInfo;
-import org.apache.lucene.queryParser.ParseException;
-import org.apache.lucene.queryParser.QueryParser;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Version;
@@ -73,46 +61,24 @@ public class Indexer {
             indexWriter.deleteAll();
             indexWriter.commit();
             
+            System.out.println("Indexing SOURCES...");
+            int srcCnt = indexDocuments("source", indexWriter, conn);
+            System.out.println("\nIndexing WITNESSES...");
+            int witCnt = indexDocuments("witness", indexWriter, conn);
             
-            // Index the text_contents one document at a time
-            Statement stmt = conn.createStatement();
-            int start = 0;
-            //String lastId = "";
-            while ( true ) {
-                String sql = "select id, content from text_content limit "+start+",1";
-                ResultSet rs = stmt.executeQuery(sql);
-                if (rs.next()) {
-                    Document doc = new Document();
-                    doc.add(new Field("id", rs.getString("id"), Field.Store.YES, Field.Index.NOT_ANALYZED));
-                    Field f = new Field("content", rs.getString("content"), Field.Store.NO, 
-                        Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS);
-                    f.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
-                    doc.add( f );  
-                    indexWriter.addDocument(doc);
-                    start++;
-                    //lastId = rs.getString("id");
-                } else{
-                    break;
-                }
-            }
-            stmt.close();
-            System.out.println("Number of documents indexed: "+indexWriter.numDocs());
-            indexWriter.commit();
-            indexWriter.close();
-            
-//            // testing: search for something that is not there
-//            // verify it is not found. Update existing doc with
-//            // content to match then search again. versif hit
-            searchTest(directory, analyzer);
-//            updateTest(directory, analyzer, lastId);
-//            searchTest(directory, analyzer);
+            System.out.println("\n=============================");
+            System.out.println("  FINISHED");
+            System.out.println("=============================");
+            System.out.println("  Sources indexed : "+srcCnt );
+            System.out.println("Witnesses indexed : "+witCnt );
+            System.out.println(" TOTAL index size : "+indexWriter.numDocs() );
+            indexWriter.close();      
 
         } catch (Exception e) {
             e.printStackTrace();
             System.exit(0);
         } finally {
             // cleanup
-            System.out.println("Finished; cleaning up.");
             if ( indexWriter != null ) {
                 try {
                     indexWriter.close();
@@ -131,58 +97,38 @@ public class Indexer {
                
     }
     
-    public static void updateTest(Directory directory, Analyzer analyzer, String id ) {
-        System.out.println("TEST: replacing content of "+id);
-        IndexWriter indexWriter = null;
-        try {
-            // create a new writer for delete
-            IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_36, analyzer);
-            indexWriter = new IndexWriter(directory,config);
-            
-            // delete item 17
-            Term t = new Term("id", id);
-            indexWriter.deleteDocuments(t);
-            Document doc = new Document();
-            doc.add(new Field("id", id, Field.Store.YES, Field.Index.NOT_ANALYZED));
-            doc.add(new Field("content", "LIZARD", Field.Store.NO, Field.Index.ANALYZED));  
-            indexWriter.addDocument(doc);
-            indexWriter.commit();
-        }catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            if ( indexWriter != null ) {
-                try {
-                    indexWriter.close();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                } 
-            }
+    public static int indexDocuments( final String type, IndexWriter indexWriter, Connection conn ) throws SQLException, CorruptIndexException, IOException {
+        final int startDocs = indexWriter.numDocs();
+        String txtIdCol = "content_id";
+        String sql = "select id, name, content_id from juxta_source";
+        if ( type == "witness" ) {
+            sql = "select id, name, text_id from juxta_witness";
+            txtIdCol = "text_id";
         }
-    }
-    
-    public static void searchTest(Directory directory, Analyzer analyzer ) throws CorruptIndexException, IOException, ParseException {
-        IndexReader ireader = IndexReader.open(directory);
-        IndexSearcher isearcher = new IndexSearcher(ireader);
-        QueryParser parser = new QueryParser(Version.LUCENE_36, "content", analyzer);
-        Query query = parser.parse("pistol");
-        ScoreDoc[] hits = isearcher.search(query, null, 1000).scoreDocs;
-        TermFreqVector f = ireader.getTermFreqVector(hits[0].doc, "content");
-        TermPositionVector tpvector = (TermPositionVector)f;  
-        TermVectorMapper tvm = new TermVectorMapper() {
-            
-            @Override
-            public void setExpectations(String arg0, int arg1, boolean arg2, boolean arg3) {
-                // TODO Auto-generated method stub
-                
-            }
-            
-            @Override
-            public void map(String arg0, int arg1, TermVectorOffsetInfo[] arg2, int[] arg3) {
-                // TODO Auto-generated method stub
-                
-            }
-        };
-        ireader.getTermFreqVector(hits[0].doc, "content", tvm);
-        System.out.println("Search Hits length: "+ hits.length);
+        Statement stmt = conn.createStatement();
+        Statement stmt2 = conn.createStatement();
+        ResultSet rs = stmt.executeQuery(sql);
+        while ( rs.next() ) {
+            final Long textId = rs.getLong(txtIdCol);
+            final Long libraryItemId = rs.getLong("id");
+            final String name = rs.getString("name");
+            System.out.println("    indexing "+name);
+            String sql2 = "select id, content from text_content where id="+textId;
+            ResultSet rs2 = stmt2.executeQuery(sql2);
+            if (rs2.next()) {
+                Document doc = new Document();
+                doc.add(new Field("id", rs2.getString("id"), Field.Store.YES, Field.Index.NOT_ANALYZED));
+                doc.add(new Field("type", type, Field.Store.YES, Field.Index.NOT_ANALYZED));
+                doc.add(new Field("itemId", libraryItemId.toString(), Field.Store.YES, Field.Index.NOT_ANALYZED));
+                Field f = new Field("content", rs2.getString("content"), Field.Store.NO, 
+                    Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS);
+                doc.add( f );  
+                indexWriter.addDocument(doc);
+            } 
+        }
+        stmt2.close();
+        stmt.close();
+        indexWriter.commit();
+        return (indexWriter.numDocs()-startDocs);
     }
 }
