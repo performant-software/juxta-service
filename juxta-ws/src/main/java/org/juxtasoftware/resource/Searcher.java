@@ -16,9 +16,12 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermFreqVector;
 import org.apache.lucene.index.TermPositionVector;
 import org.apache.lucene.index.TermVectorOffsetInfo;
+import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.search.highlight.QueryTermExtractor;
 import org.apache.lucene.search.highlight.WeightedTerm;
@@ -69,11 +72,15 @@ public class Searcher extends BaseResource {
             Map<String, List<TermVectorOffsetInfo> > witnessHits = new HashMap<String, List<TermVectorOffsetInfo> >();
             
             // build a phrase quuery to match exact phrase entered
-            PhraseQuery query = new PhraseQuery();
+            TermQuery wsQuery = new TermQuery( new Term("workspace", this.workspace.getName()) );
+            PhraseQuery phraseQ = new PhraseQuery();
             String[] words = this.searchString.split(" ");
             for (String word : words) {
-                query.add(new Term("content", word));
+                phraseQ.add(new Term("content", word));
             }
+            BooleanQuery query = new BooleanQuery();
+            query.add(wsQuery, Occur.MUST);
+            query.add(phraseQ, Occur.MUST);
             
             // pick the top hits
             TopScoreDocCollector collector = TopScoreDocCollector.create(this.hitsPerPage, true);

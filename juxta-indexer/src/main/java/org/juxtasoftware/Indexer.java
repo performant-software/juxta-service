@@ -100,10 +100,14 @@ public class Indexer {
     public static int indexDocuments( final String type, IndexWriter indexWriter, Connection conn ) throws SQLException, CorruptIndexException, IOException {
         final int startDocs = indexWriter.numDocs();
         String txtIdCol = "content_id";
-        String sql = "select id, name, content_id from juxta_source";
+        String sql = "";
         if ( type == "witness" ) {
-            sql = "select id, name, text_id from juxta_witness";
+            sql = "select juxta_witness.id, juxta_witness.name, text_id, ws.name from juxta_witness " +
+            	  " inner join juxta_workspace as ws on ws.id = workspace_id";
             txtIdCol = "text_id";
+        } else {
+            sql = "select juxta_source.id, juxta_source.name, content_id, ws.name from juxta_source " +
+                  " inner join juxta_workspace as ws on ws.id = workspace_id";
         }
         Statement stmt = conn.createStatement();
         Statement stmt2 = conn.createStatement();
@@ -112,12 +116,14 @@ public class Indexer {
             final Long textId = rs.getLong(txtIdCol);
             final Long libraryItemId = rs.getLong("id");
             final String name = rs.getString("name");
-            System.out.println("    indexing "+name);
+            final String ws = rs.getString("ws.name");
+            System.out.println("    indexing "+ws+":"+name);
             String sql2 = "select id, content from text_content where id="+textId;
             ResultSet rs2 = stmt2.executeQuery(sql2);
             if (rs2.next()) {
                 Document doc = new Document();
                 doc.add(new Field("id", rs2.getString("id"), Field.Store.YES, Field.Index.NOT_ANALYZED));
+                doc.add(new Field("workspace", ws, Field.Store.YES, Field.Index.NOT_ANALYZED));
                 doc.add(new Field("type", type, Field.Store.YES, Field.Index.NOT_ANALYZED));
                 doc.add(new Field("itemId", libraryItemId.toString(), Field.Store.YES, Field.Index.NOT_ANALYZED));
                 Field f = new Field("content", rs2.getString("content"), Field.Store.NO, 
