@@ -1,6 +1,7 @@
 package org.juxtasoftware.resource;
 
 import java.io.IOException;
+import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -25,6 +26,10 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.search.highlight.QueryTermExtractor;
 import org.apache.lucene.search.highlight.WeightedTerm;
+import org.juxtasoftware.dao.SourceDao;
+import org.juxtasoftware.dao.WitnessDao;
+import org.juxtasoftware.model.Source;
+import org.juxtasoftware.model.Witness;
 import org.restlet.data.Status;
 import org.restlet.representation.Representation;
 import org.restlet.resource.Get;
@@ -52,6 +57,8 @@ public class Searcher extends BaseResource {
     @Autowired private IndexSearcher searcher;
     @Autowired private IndexReader indexReader;
     @Autowired private Integer hitsPerPage;
+    @Autowired private SourceDao sourceDao;
+    @Autowired private WitnessDao witnessDao;
 
 
     @Override
@@ -68,8 +75,8 @@ public class Searcher extends BaseResource {
     @Get("json")
     public Representation search() {
         try {
-            Map<String, List<TermVectorOffsetInfo> > sourceHits = new HashMap<String, List<TermVectorOffsetInfo> >();
-            Map<String, List<TermVectorOffsetInfo> > witnessHits = new HashMap<String, List<TermVectorOffsetInfo> >();
+            Map<HitInfo, List<HitDetail> > sourceHits = new HashMap<HitInfo, List<HitDetail> >();
+            Map<HitInfo, List<HitDetail> > witnessHits = new HashMap<HitInfo, List<HitDetail> >();
             
             // build a phrase quuery to match exact phrase entered
             TermQuery wsQuery = new TermQuery( new Term("workspace", this.workspace.getName()) );
@@ -102,27 +109,31 @@ public class Searcher extends BaseResource {
    
                     for (int j=0;j<tvoffsetinfo.length;j++) {   
                         String itemId = doc.get("itemId");
+                        String name = doc.get("name");
                         if ( doc.get("type").equals("source")) {
-                            addHit(sourceHits, itemId, tvoffsetinfo[j]);
+                            addHit(sourceHits, itemId, name, tvoffsetinfo[j]);
                         } else {
-                            addHit(witnessHits, itemId, tvoffsetinfo[j]);   
+                            addHit(witnessHits, itemId, name, tvoffsetinfo[j]);   
                         }
 
                     }  
                 } 
             }  
             
+            
             System.out.println("Merge sources");
             mergeHits(sourceHits);
+            getSourceFragments(sourceHits);
             System.out.println("Merge witnesses");
             mergeHits(witnessHits);
+            getWitnessFragments(witnessHits);
             
             JsonObject json = new JsonObject();
             Gson gson = new Gson();
-            JsonArray srcs = hitsToJson( sourceHits, gson );
-            JsonArray wits = hitsToJson( witnessHits, gson );
-            json.add("sourceHits", srcs);
-            json.add("witnessHits", wits);
+            JsonArray jsonSrcs = hitsToJson( sourceHits, gson );
+            JsonArray jsonWits = hitsToJson( witnessHits, gson );
+            json.add("sourceHits", jsonSrcs);
+            json.add("witnessHits", jsonWits);
             return toTextRepresentation( json.toString() );
         } catch (IOException e) {
             setStatus(Status.SERVER_ERROR_INTERNAL);
@@ -135,13 +146,79 @@ public class Searcher extends BaseResource {
         }
     }
 
-    private void mergeHits(Map<String, List<TermVectorOffsetInfo>> hits ) {
-        for (  Entry<String, List<TermVectorOffsetInfo>> ent : hits.entrySet()  ) {
-            List<TermVectorOffsetInfo> ranges = ent.getValue();
+    private void getSourceFragments(Map<HitInfo, List<HitDetail>> hits) {
+        final int fragChars = 10;
+        for (  Entry<HitInfo, List<HitDetail>> ent : hits.entrySet()  ) {
+            List<HitDetail> ranges = ent.getValue();
             
-            Collections.sort(ranges, new Comparator<TermVectorOffsetInfo>() {
+            Long srcId = Long.parseLong(ent.getKey().id);
+            Source src = this.sourceDao.find(this.workspace.getId(), srcId); 
+            
+            for ( Iterator<HitDetail> itr = ranges.iterator(); itr.hasNext();) {
+                Reader srcReader = this.sourceDao.getContentReader(src);
+                HitDetail detail = itr.next();
+                int start = detail.getStartOffset()-fragChars;
+                start = Math.max(0, start);
+                int end =  detail.getEndOffset()+fragChars;
+                end = Math.min(end, (int)src.getText().getLength());
+                char[] buf = new char[end-start];
+                try {
+                    srcReader.skip(start);
+                    srcReader.read(buf, 0, buf.length);
+                    detail.fragment = new String( buf ).trim();
+                    if ( start > 0 ) {
+                        detail.fragment = "..."+detail.fragment;
+                    }
+                    if ( end < src.getText().getLength() ) {
+                        detail.fragment += "...";
+                    }
+                } catch (IOException e) {
+                    LOG.error("Unable to get fragment for "+src+" range: "+start+", "+end);
+                }
+            }
+        }
+    }
+    
+    private void getWitnessFragments(Map<HitInfo, List<HitDetail>> hits) {
+        final int fragChars = 20;
+        for (  Entry<HitInfo, List<HitDetail>> ent : hits.entrySet()  ) {
+            List<HitDetail> ranges = ent.getValue();
+            
+            Long witId = Long.parseLong(ent.getKey().id);
+            Witness wit = this.witnessDao.find(witId);
+            
+            for ( Iterator<HitDetail> itr = ranges.iterator(); itr.hasNext();) {
+                Reader rdr = this.witnessDao.getContentStream(wit);
+                HitDetail detail = itr.next();
+                int start = detail.getStartOffset()-fragChars;
+                start = Math.max(0, start);
+                int end =  detail.getEndOffset()+fragChars;
+                end = Math.min(end, (int)wit.getText().getLength());
+                char[] buf = new char[end-start];
+                try {
+                    rdr.skip(start);
+                    rdr.read(buf, 0, buf.length);
+                    detail.fragment = new String( buf ).trim();
+                    if ( start > 0 ) {
+                        detail.fragment = "..."+detail.fragment;
+                    }
+                    if ( end < wit.getText().getLength() ) {
+                        detail.fragment += "...";
+                    }
+                } catch (IOException e) {
+                    LOG.error("Unable to get fragment for "+wit+" range: "+start+", "+end);
+                }
+            }
+        }
+    }
+
+    private void mergeHits(Map<HitInfo, List<HitDetail>> hits ) {
+        for (  Entry<HitInfo, List<HitDetail>> ent : hits.entrySet()  ) {
+            List<HitDetail> ranges = ent.getValue();
+            
+            Collections.sort(ranges, new Comparator<HitDetail>() {
                 @Override
-                public int compare(TermVectorOffsetInfo a, TermVectorOffsetInfo b) {
+                public int compare(HitDetail a, HitDetail b) {
                     if ( a.getStartOffset() < b.getStartOffset() ) {
                         return -1;
                     } else if ( a.getStartOffset() > b.getStartOffset() ) {
@@ -159,7 +236,7 @@ public class Searcher extends BaseResource {
             
             // merge adjacent into a single range
             TermVectorOffsetInfo lastRange = null;
-            for ( Iterator<TermVectorOffsetInfo> itr = ranges.iterator(); itr.hasNext();) {
+            for ( Iterator<HitDetail> itr = ranges.iterator(); itr.hasNext();) {
                 TermVectorOffsetInfo currRange = itr.next();
                 if ( lastRange != null ) {
                     if ( lastRange.getEndOffset()+1 == currRange.getStartOffset() ) {
@@ -172,7 +249,7 @@ public class Searcher extends BaseResource {
             }
             
             // toss anything thats not the same len as the search str
-            for ( Iterator<TermVectorOffsetInfo> itr = ranges.iterator(); itr.hasNext();) {
+            for ( Iterator<HitDetail> itr = ranges.iterator(); itr.hasNext();) {
                 TermVectorOffsetInfo currRange = itr.next();
                 int len = currRange.getEndOffset() - currRange.getStartOffset();
                 if ( len != this.searchString.length() ) {
@@ -182,22 +259,77 @@ public class Searcher extends BaseResource {
         }
     }
 
-    private JsonArray hitsToJson(Map<String, List<TermVectorOffsetInfo>> hits, Gson gson) {
+    private JsonArray hitsToJson(Map<HitInfo, List<HitDetail>> hits, Gson gson) {
         JsonArray jsonArray = new JsonArray();
-        for (Entry<String, List<TermVectorOffsetInfo>> ent : hits.entrySet() ) {
-            String id = ent.getKey();
+        for (Entry<HitInfo, List<HitDetail>> ent : hits.entrySet() ) {
+            HitInfo info = ent.getKey();
             JsonObject obj = new JsonObject();
-            obj.addProperty("id", id);
+            obj.addProperty("id", info.id);
+            obj.addProperty("name", info.name);
             obj.add("hits", gson.toJsonTree(ent.getValue() ));
             jsonArray.add(obj);
         }
         return jsonArray;
     }
 
-    private void addHit(Map<String, List<TermVectorOffsetInfo>> hitMap, String itemId, TermVectorOffsetInfo range) {
-        if ( hitMap.containsKey(itemId) == false) {
-            hitMap.put(itemId, new ArrayList<TermVectorOffsetInfo>() );
+    private void addHit(Map<HitInfo, List<HitDetail>> hitMap, String itemId, String name, TermVectorOffsetInfo range) {
+        HitInfo hit = new HitInfo(itemId, name);
+        if ( hitMap.containsKey(hit) == false) {
+            hitMap.put(hit, new ArrayList<HitDetail>() );
         }
-        hitMap.get(itemId).add(range);
+        hitMap.get(hit).add( new HitDetail(range) );
+    }
+    
+    @SuppressWarnings("serial")
+    private static class HitDetail extends TermVectorOffsetInfo {
+        public String fragment;
+        public HitDetail ( TermVectorOffsetInfo inf ) {
+            super();
+            this.setEndOffset(inf.getEndOffset());
+            this.setStartOffset(inf.getStartOffset());
+            this.fragment = "";
+        }
+    }
+    
+    private static class HitInfo {
+        public final String name;
+        public final String id;
+        public HitInfo( String id, String name) {
+            this.id = id;
+            this.name = name;
+        }
+        @Override
+        public String toString() {
+            return "HitInfo ["+this.id+" "+this.name+"]";
+        }
+        @Override
+        public int hashCode() {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + ((id == null) ? 0 : id.hashCode());
+            result = prime * result + ((name == null) ? 0 : name.hashCode());
+            return result;
+        }
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj)
+                return true;
+            if (obj == null)
+                return false;
+            if (getClass() != obj.getClass())
+                return false;
+            HitInfo other = (HitInfo) obj;
+            if (id == null) {
+                if (other.id != null)
+                    return false;
+            } else if (!id.equals(other.id))
+                return false;
+            if (name == null) {
+                if (other.name != null)
+                    return false;
+            } else if (!name.equals(other.name))
+                return false;
+            return true;
+        }
     }
 }

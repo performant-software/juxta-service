@@ -77,7 +77,7 @@ public class WitnessDaoImpl implements WitnessDao, InitializingBean {
         String ws = getWorkspaceName(w.getWorkspaceId());
         Long textId = ((RelationalText)w.getText()).getId();
         Reader r = getContentStream(w);
-        this.lucene.addDocument("witness", ws, id, textId, r);
+        this.lucene.addDocument("witness", ws, id, w.getName(), textId, r);
 
         return id;
     }
@@ -116,7 +116,7 @@ public class WitnessDaoImpl implements WitnessDao, InitializingBean {
         // Update the index: remove the old and add the updted src as new
         String ws = getWorkspaceName(witness.getWorkspaceId());
         this.lucene.deleteDocument( oldTxtId );
-        this.lucene.addDocument("witness", ws, witness.getId(), newTxtId, getContentStream(witness) );
+        this.lucene.addDocument("witness", ws, witness.getId(), witness.getName(), newTxtId, getContentStream(witness) );
     }
     
     private String getWorkspaceName(Long id) {

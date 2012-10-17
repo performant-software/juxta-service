@@ -126,6 +126,7 @@ public class Indexer {
                 doc.add(new Field("workspace", ws, Field.Store.YES, Field.Index.NOT_ANALYZED));
                 doc.add(new Field("type", type, Field.Store.YES, Field.Index.NOT_ANALYZED));
                 doc.add(new Field("itemId", libraryItemId.toString(), Field.Store.YES, Field.Index.NOT_ANALYZED));
+                doc.add(new Field("name", name, Field.Store.YES, Field.Index.NOT_ANALYZED));
                 Field f = new Field("content", rs2.getString("content"), Field.Store.NO, 
                     Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS);
                 doc.add( f );  
