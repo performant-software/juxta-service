@@ -75,8 +75,8 @@ public class Searcher extends BaseResource {
     @Get("json")
     public Representation search() {
         try {
-            Map<HitInfo, List<HitDetail> > sourceHits = new HashMap<HitInfo, List<HitDetail> >();
-            Map<HitInfo, List<HitDetail> > witnessHits = new HashMap<HitInfo, List<HitDetail> >();
+            Map<HitItem, List<HitDetail> > sourceHits = new HashMap<HitItem, List<HitDetail> >();
+            Map<HitItem, List<HitDetail> > witnessHits = new HashMap<HitItem, List<HitDetail> >();
             
             // build a phrase quuery to match exact phrase entered
             TermQuery wsQuery = new TermQuery( new Term("workspace", this.workspace.getName()) );
@@ -120,7 +120,6 @@ public class Searcher extends BaseResource {
                 } 
             }  
             
-            
             System.out.println("Merge sources");
             mergeHits(sourceHits);
             getSourceFragments(sourceHits);
@@ -132,8 +131,8 @@ public class Searcher extends BaseResource {
             Gson gson = new Gson();
             JsonArray jsonSrcs = hitsToJson( sourceHits, gson );
             JsonArray jsonWits = hitsToJson( witnessHits, gson );
-            json.add("sourceHits", jsonSrcs);
-            json.add("witnessHits", jsonWits);
+            json.add("sources", jsonSrcs);
+            json.add("witnesses", jsonWits);
             return toTextRepresentation( json.toString() );
         } catch (IOException e) {
             setStatus(Status.SERVER_ERROR_INTERNAL);
@@ -146,9 +145,9 @@ public class Searcher extends BaseResource {
         }
     }
 
-    private void getSourceFragments(Map<HitInfo, List<HitDetail>> hits) {
+    private void getSourceFragments(Map<HitItem, List<HitDetail>> hits) {
         final int fragChars = 10;
-        for (  Entry<HitInfo, List<HitDetail>> ent : hits.entrySet()  ) {
+        for (  Entry<HitItem, List<HitDetail>> ent : hits.entrySet()  ) {
             List<HitDetail> ranges = ent.getValue();
             
             Long srcId = Long.parseLong(ent.getKey().id);
@@ -157,6 +156,8 @@ public class Searcher extends BaseResource {
             for ( Iterator<HitDetail> itr = ranges.iterator(); itr.hasNext();) {
                 Reader srcReader = this.sourceDao.getContentReader(src);
                 HitDetail detail = itr.next();
+                float p = (float)detail.getStartOffset() / (float)src.getText().getLength();
+                detail.percent = Math.round( p * 100.0f);
                 int start = detail.getStartOffset()-fragChars;
                 start = Math.max(0, start);
                 int end =  detail.getEndOffset()+fragChars;
@@ -179,9 +180,9 @@ public class Searcher extends BaseResource {
         }
     }
     
-    private void getWitnessFragments(Map<HitInfo, List<HitDetail>> hits) {
-        final int fragChars = 20;
-        for (  Entry<HitInfo, List<HitDetail>> ent : hits.entrySet()  ) {
+    private void getWitnessFragments(Map<HitItem, List<HitDetail>> hits) {
+        final int fragChars = 25;
+        for (  Entry<HitItem, List<HitDetail>> ent : hits.entrySet()  ) {
             List<HitDetail> ranges = ent.getValue();
             
             Long witId = Long.parseLong(ent.getKey().id);
@@ -190,6 +191,8 @@ public class Searcher extends BaseResource {
             for ( Iterator<HitDetail> itr = ranges.iterator(); itr.hasNext();) {
                 Reader rdr = this.witnessDao.getContentStream(wit);
                 HitDetail detail = itr.next();
+                float p = (float)detail.getStartOffset() / (float)wit.getText().getLength();
+                detail.percent = Math.round( p * 100.0f);
                 int start = detail.getStartOffset()-fragChars;
                 start = Math.max(0, start);
                 int end =  detail.getEndOffset()+fragChars;
@@ -212,8 +215,8 @@ public class Searcher extends BaseResource {
         }
     }
 
-    private void mergeHits(Map<HitInfo, List<HitDetail>> hits ) {
-        for (  Entry<HitInfo, List<HitDetail>> ent : hits.entrySet()  ) {
+    private void mergeHits(Map<HitItem, List<HitDetail>> hits ) {
+        for (  Entry<HitItem, List<HitDetail>> ent : hits.entrySet()  ) {
             List<HitDetail> ranges = ent.getValue();
             
             Collections.sort(ranges, new Comparator<HitDetail>() {
@@ -259,21 +262,30 @@ public class Searcher extends BaseResource {
         }
     }
 
-    private JsonArray hitsToJson(Map<HitInfo, List<HitDetail>> hits, Gson gson) {
+    private JsonArray hitsToJson(Map<HitItem, List<HitDetail>> hits, Gson gson) {
         JsonArray jsonArray = new JsonArray();
-        for (Entry<HitInfo, List<HitDetail>> ent : hits.entrySet() ) {
-            HitInfo info = ent.getKey();
+        for (Entry<HitItem, List<HitDetail>> ent : hits.entrySet() ) {
+            HitItem info = ent.getKey();
             JsonObject obj = new JsonObject();
             obj.addProperty("id", info.id);
             obj.addProperty("name", info.name);
-            obj.add("hits", gson.toJsonTree(ent.getValue() ));
+            JsonArray jsonHits = new JsonArray();
+            for (HitDetail detail : ent.getValue() ) {
+                JsonObject ob = new JsonObject();
+                ob.addProperty("start", Integer.toString(detail.getStartOffset()));
+                ob.addProperty("end", Integer.toString(detail.getEndOffset()));
+                ob.addProperty("percent", detail.percent);
+                ob.addProperty("fragment", detail.fragment);
+                jsonHits.add(ob);
+            }
+            obj.add("hits", jsonHits);
             jsonArray.add(obj);
         }
         return jsonArray;
     }
 
-    private void addHit(Map<HitInfo, List<HitDetail>> hitMap, String itemId, String name, TermVectorOffsetInfo range) {
-        HitInfo hit = new HitInfo(itemId, name);
+    private void addHit(Map<HitItem, List<HitDetail>> hitMap, String itemId, String name, TermVectorOffsetInfo range) {
+        HitItem hit = new HitItem(itemId, name);
         if ( hitMap.containsKey(hit) == false) {
             hitMap.put(hit, new ArrayList<HitDetail>() );
         }
@@ -283,18 +295,20 @@ public class Searcher extends BaseResource {
     @SuppressWarnings("serial")
     private static class HitDetail extends TermVectorOffsetInfo {
         public String fragment;
+        public int percent;
         public HitDetail ( TermVectorOffsetInfo inf ) {
             super();
             this.setEndOffset(inf.getEndOffset());
             this.setStartOffset(inf.getStartOffset());
             this.fragment = "";
+            this.percent = 0;
         }
     }
     
-    private static class HitInfo {
+    private static class HitItem {
         public final String name;
         public final String id;
-        public HitInfo( String id, String name) {
+        public HitItem( String id, String name) {
             this.id = id;
             this.name = name;
         }
@@ -318,7 +332,7 @@ public class Searcher extends BaseResource {
                 return false;
             if (getClass() != obj.getClass())
                 return false;
-            HitInfo other = (HitInfo) obj;
+            HitItem other = (HitItem) obj;
             if (id == null) {
                 if (other.id != null)
                     return false;
