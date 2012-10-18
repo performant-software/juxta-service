@@ -59,7 +59,7 @@ public class Searcher extends BaseResource {
     @Autowired private Integer hitsPerPage;
     @Autowired private SourceDao sourceDao;
     @Autowired private WitnessDao witnessDao;
-
+    @Autowired private Integer fragSize;
 
     @Override
     protected void doInit() throws ResourceException {
@@ -92,11 +92,10 @@ public class Searcher extends BaseResource {
             // pick the top hits
             TopScoreDocCollector collector = TopScoreDocCollector.create(this.hitsPerPage, true);
             this.searcher.search(query, collector);
-            ScoreDoc[] hits = collector.topDocs().scoreDocs;
+            ScoreDoc[] hits = collector.topDocs(0, this.hitsPerPage).scoreDocs;
             WeightedTerm[] terms = QueryTermExtractor.getTerms(query);
             
             for(int i=0;i<hits.length;++i) {  
-
                 int docId = hits[i].doc;  
                 Document doc = this.searcher.doc(docId);
                                 
@@ -115,7 +114,6 @@ public class Searcher extends BaseResource {
                         } else {
                             addHit(witnessHits, itemId, name, tvoffsetinfo[j]);   
                         }
-
                     }  
                 } 
             }  
@@ -146,7 +144,6 @@ public class Searcher extends BaseResource {
     }
 
     private void getSourceFragments(Map<HitItem, List<HitDetail>> hits) {
-        final int fragChars = 10;
         for (  Entry<HitItem, List<HitDetail>> ent : hits.entrySet()  ) {
             List<HitDetail> ranges = ent.getValue();
             
@@ -158,9 +155,9 @@ public class Searcher extends BaseResource {
                 HitDetail detail = itr.next();
                 float p = (float)detail.getStartOffset() / (float)src.getText().getLength();
                 detail.percent = Math.round( p * 100.0f);
-                int start = detail.getStartOffset()-fragChars;
+                int start = detail.getStartOffset()-this.fragSize;
                 start = Math.max(0, start);
-                int end =  detail.getEndOffset()+fragChars;
+                int end =  detail.getEndOffset()+this.fragSize;
                 end = Math.min(end, (int)src.getText().getLength());
                 char[] buf = new char[end-start];
                 try {
@@ -181,7 +178,6 @@ public class Searcher extends BaseResource {
     }
     
     private void getWitnessFragments(Map<HitItem, List<HitDetail>> hits) {
-        final int fragChars = 25;
         for (  Entry<HitItem, List<HitDetail>> ent : hits.entrySet()  ) {
             List<HitDetail> ranges = ent.getValue();
             
@@ -193,9 +189,9 @@ public class Searcher extends BaseResource {
                 HitDetail detail = itr.next();
                 float p = (float)detail.getStartOffset() / (float)wit.getText().getLength();
                 detail.percent = Math.round( p * 100.0f);
-                int start = detail.getStartOffset()-fragChars;
+                int start = detail.getStartOffset()-this.fragSize;
                 start = Math.max(0, start);
-                int end =  detail.getEndOffset()+fragChars;
+                int end =  detail.getEndOffset()+this.fragSize;
                 end = Math.min(end, (int)wit.getText().getLength());
                 char[] buf = new char[end-start];
                 try {
@@ -284,12 +280,13 @@ public class Searcher extends BaseResource {
         return jsonArray;
     }
 
-    private void addHit(Map<HitItem, List<HitDetail>> hitMap, String itemId, String name, TermVectorOffsetInfo range) {
+    private int addHit(Map<HitItem, List<HitDetail>> hitMap, String itemId, String name, TermVectorOffsetInfo range) {
         HitItem hit = new HitItem(itemId, name);
         if ( hitMap.containsKey(hit) == false) {
             hitMap.put(hit, new ArrayList<HitDetail>() );
         }
         hitMap.get(hit).add( new HitDetail(range) );
+        return hitMap.get(hit).size();
     }
     
     @SuppressWarnings("serial")

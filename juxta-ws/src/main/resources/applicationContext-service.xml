@@ -70,6 +70,9 @@
     <bean id="hitsPerPage" class="java.lang.Integer" factory-method="valueOf">
         <constructor-arg value="${juxta.lucene.hitsPerPage}" />
     </bean>
+    <bean id="fragSize" class="java.lang.Integer" factory-method="valueOf">
+        <constructor-arg value="${juxta.lucene.fragSize}" />
+    </bean>
 
     <!-- enabled @Scheduled -->
     <task:annotation-driven />
