@@ -3,6 +3,7 @@ package org.juxtasoftware.resource;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -60,6 +61,7 @@ public class Searcher extends BaseResource {
     @Autowired private SourceDao sourceDao;
     @Autowired private WitnessDao witnessDao;
     @Autowired private Integer fragSize;
+    @Autowired private Integer searchSlop;
 
     @Override
     protected void doInit() throws ResourceException {
@@ -80,7 +82,10 @@ public class Searcher extends BaseResource {
             
             // build a phrase quuery to match exact phrase entered
             TermQuery wsQuery = new TermQuery( new Term("workspace", this.workspace.getName()) );
+            TermQuery srcQuery = new TermQuery( new Term("type", "source") );
+            TermQuery witQuery = new TermQuery( new Term("type", "witness") );
             PhraseQuery phraseQ = new PhraseQuery();
+            phraseQ.setSlop(this.searchSlop);
             String[] words = this.searchString.split(" ");
             for (String word : words) {
                 phraseQ.add(new Term("content", word));
@@ -88,18 +93,31 @@ public class Searcher extends BaseResource {
             BooleanQuery query = new BooleanQuery();
             query.add(wsQuery, Occur.MUST);
             query.add(phraseQ, Occur.MUST);
+            query.add(srcQuery, Occur.MUST);
             
-            // pick the top hits
+            // do 2 searches, one in source one in witness. this makes sure
+            // that they are treated equally wrt the top docs score; ie the top
+            // x docs in both source and witness are returned
+            // pick the top hits in sources
             TopScoreDocCollector collector = TopScoreDocCollector.create(this.hitsPerPage, true);
             this.searcher.search(query, collector);
-            ScoreDoc[] hits = collector.topDocs(0, this.hitsPerPage).scoreDocs;
-            WeightedTerm[] terms = QueryTermExtractor.getTerms(query);
+            ScoreDoc[] scoreDocs = collector.topDocs(0, this.hitsPerPage).scoreDocs;
+            List<ScoreDoc> hits = new ArrayList<ScoreDoc>(Arrays.asList(scoreDocs));
             
-            for(int i=0;i<hits.length;++i) {  
-                int docId = hits[i].doc;  
-                Document doc = this.searcher.doc(docId);
-                                
-                TermFreqVector tfvector = this.indexReader.getTermFreqVector(docId, "content");  
+            // now witnesses
+            collector = TopScoreDocCollector.create(this.hitsPerPage, true);
+            query = new BooleanQuery();
+            query.add(wsQuery, Occur.MUST);
+            query.add(phraseQ, Occur.MUST);
+            query.add(witQuery, Occur.MUST);
+            this.searcher.search(query, collector);
+            scoreDocs = collector.topDocs(0, this.hitsPerPage).scoreDocs;
+            hits.addAll(Arrays.asList(scoreDocs));
+            
+            WeightedTerm[] terms = QueryTermExtractor.getTerms(phraseQ);
+            for(ScoreDoc scoreDoc : hits) {  
+                Document doc = this.searcher.doc(scoreDoc.doc);           
+                TermFreqVector tfvector = this.indexReader.getTermFreqVector(scoreDoc.doc, "content");  
                 TermPositionVector tpvector = (TermPositionVector)tfvector;  
                 
                 for ( int tid = 0; tid<terms.length; tid++) {

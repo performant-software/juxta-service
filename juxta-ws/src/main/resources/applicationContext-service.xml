@@ -73,6 +73,9 @@
     <bean id="fragSize" class="java.lang.Integer" factory-method="valueOf">
         <constructor-arg value="${juxta.lucene.fragSize}" />
     </bean>
+    <bean id="searchSlop" class="java.lang.Integer" factory-method="valueOf">
+        <constructor-arg value="${juxta.lucene.searchSlop}" />
+    </bean>
 
     <!-- enabled @Scheduled -->
     <task:annotation-driven />
