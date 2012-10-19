@@ -83,6 +83,8 @@ public class Searcher extends BaseResource {
             Map<HitItem, List<HitDetail> > sourceHits = new HashMap<HitItem, List<HitDetail> >();
             Map<HitItem, List<HitDetail> > witnessHits = new HashMap<HitItem, List<HitDetail> >();
             
+            LOG.info("Search for '"+this.searchString+"'");
+            
             // build a phrase quuery to match exact phrase entered
             TermQuery wsQuery = new TermQuery( new Term("workspace", this.workspace.getName()) );
             TermQuery srcQuery = new TermQuery( new Term("type", "source") );
@@ -112,6 +114,7 @@ public class Searcher extends BaseResource {
             this.searcher.search(query, collector);
             scoreDocs = collector.topDocs(0, this.hitsPerPage).scoreDocs;
             hits.addAll(Arrays.asList(scoreDocs));
+            LOG.info("Search for '"+this.searchString+"' yields "+hits.size()+" raw hits");
             
             WeightedTerm[] terms = QueryTermExtractor.getTerms(phraseQ);
             for(ScoreDoc scoreDoc : hits) {  
@@ -135,12 +138,11 @@ public class Searcher extends BaseResource {
                 } 
             }  
             
-            System.out.println("Merge sources");
             mergeHits(sourceHits);
             getSourceFragments(sourceHits);
-            System.out.println("Merge witnesses");
             mergeHits(witnessHits);
             getWitnessFragments(witnessHits);
+            LOG.info("Search for '"+this.searchString+"' end result: "+sourceHits.size()+" source hits, "+witnessHits.size()+" witness hits");
             
             JsonObject json = new JsonObject();
             Gson gson = new Gson();
@@ -272,7 +274,7 @@ public class Searcher extends BaseResource {
             for ( Iterator<HitDetail> itr = ranges.iterator(); itr.hasNext();) {
                 TermVectorOffsetInfo currRange = itr.next();
                 int len = currRange.getEndOffset() - currRange.getStartOffset();
-                if ( len != this.searchString.length() ) {
+                if ( len < this.searchString.length() ) {
                     itr.remove();
                 }
             }
