@@ -18,10 +18,12 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermFreqVector;
 import org.apache.lucene.index.TermPositionVector;
 import org.apache.lucene.index.TermVectorOffsetInfo;
+import org.apache.lucene.queryParser.ParseException;
+import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.PhraseQuery;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopScoreDocCollector;
@@ -61,7 +63,8 @@ public class Searcher extends BaseResource {
     @Autowired private SourceDao sourceDao;
     @Autowired private WitnessDao witnessDao;
     @Autowired private Integer fragSize;
-    @Autowired private Integer searchSlop;
+    @Autowired private Integer phraseSlop;
+    @Autowired private QueryParser queryParser;
 
     @Override
     protected void doInit() throws ResourceException {
@@ -84,12 +87,8 @@ public class Searcher extends BaseResource {
             TermQuery wsQuery = new TermQuery( new Term("workspace", this.workspace.getName()) );
             TermQuery srcQuery = new TermQuery( new Term("type", "source") );
             TermQuery witQuery = new TermQuery( new Term("type", "witness") );
-            PhraseQuery phraseQ = new PhraseQuery();
-            phraseQ.setSlop(this.searchSlop);
-            String[] words = this.searchString.split(" ");
-            for (String word : words) {
-                phraseQ.add(new Term("content", word));
-            }
+            Query phraseQ = this.queryParser.parse("\""+this.searchString.trim()+"\"");
+            
             BooleanQuery query = new BooleanQuery();
             query.add(wsQuery, Occur.MUST);
             query.add(phraseQ, Occur.MUST);
@@ -154,6 +153,10 @@ public class Searcher extends BaseResource {
             setStatus(Status.SERVER_ERROR_INTERNAL);
             LOG.error("Search failed", e);
             return toTextRepresentation("Search Failed");
+        } catch (ParseException e) {
+            setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
+            LOG.error("Invalid search query specified");
+            return toTextRepresentation("Invalid search query specified");
         } finally {
             try {
                 this.searcher.close();
@@ -256,7 +259,7 @@ public class Searcher extends BaseResource {
             for ( Iterator<HitDetail> itr = ranges.iterator(); itr.hasNext();) {
                 TermVectorOffsetInfo currRange = itr.next();
                 if ( lastRange != null ) {
-                    if ( lastRange.getEndOffset()+1 == currRange.getStartOffset() ) {
+                    if ( lastRange.getEndOffset()+this.phraseSlop >= currRange.getStartOffset() ) {
                         lastRange.setEndOffset( currRange.getEndOffset() );
                         itr.remove();
                         continue;
@@ -272,6 +275,13 @@ public class Searcher extends BaseResource {
                 if ( len != this.searchString.length() ) {
                     itr.remove();
                 }
+            }
+        }
+        
+        for ( Iterator<Entry<HitItem, List<HitDetail>>> itr = hits.entrySet().iterator(); itr.hasNext();) {
+            Entry<HitItem, List<HitDetail>> ent = itr.next();
+            if ( ent.getValue().size() == 0) {
+                itr.remove();
             }
         }
     }

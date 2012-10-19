@@ -67,14 +67,19 @@
     <bean id="indexSearcher" class="org.apache.lucene.search.IndexSearcher" depends-on="indexWriter" scope="prototype">
         <constructor-arg ref="indexReader"/>
     </bean>
+    <bean id="queryParser" class="org.apache.lucene.queryParser.QueryParser" scope="prototype">
+        <constructor-arg ref="luceneVersion"/>
+        <constructor-arg value="content" />
+        <constructor-arg ref="luceneAnalyzer"/>
+    </bean>
     <bean id="hitsPerPage" class="java.lang.Integer" factory-method="valueOf">
         <constructor-arg value="${juxta.lucene.hitsPerPage}" />
     </bean>
     <bean id="fragSize" class="java.lang.Integer" factory-method="valueOf">
         <constructor-arg value="${juxta.lucene.fragSize}" />
     </bean>
-    <bean id="searchSlop" class="java.lang.Integer" factory-method="valueOf">
-        <constructor-arg value="${juxta.lucene.searchSlop}" />
+    <bean id="phraseSlop" class="java.lang.Integer" factory-method="valueOf">
+        <constructor-arg value="${juxta.lucene.phraseSlop}" />
     </bean>
 
     <!-- enabled @Scheduled -->
