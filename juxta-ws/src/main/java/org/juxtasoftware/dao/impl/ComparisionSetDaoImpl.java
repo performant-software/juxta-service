@@ -18,6 +18,8 @@ import org.juxtasoftware.model.Usage;
 import org.juxtasoftware.model.Witness;
 import org.juxtasoftware.model.Workspace;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.dao.support.DataAccessUtils;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -33,6 +35,7 @@ public class ComparisionSetDaoImpl extends JuxtaDaoImpl<ComparisonSet> implement
 
     @Autowired private WitnessDao witnessDao;
     @Autowired private CacheDaoImpl cacheDao;
+    @Autowired @Qualifier("executor") private TaskExecutor taskExecutor;
     
     private SimpleJdbcInsert memberInsert;
     protected SimpleJdbcInsert configInsert;
@@ -180,12 +183,19 @@ public class ComparisionSetDaoImpl extends JuxtaDaoImpl<ComparisonSet> implement
     }
     
     @Override
-    public void deleteWitness(ComparisonSet set, Witness witness) {
-        // ALL collation data must be purged first, then remove witnesss
-        clearCollationData(set);
+    public void deleteWitness(final ComparisonSet set, final Witness witness) {
+        // delete witness and update time. These happen quickly.
+        // Clearing of collation data can be LONG. put it in a worker
         final String sql = "delete from "+SET_MEMBER_TABLE+" where set_id=? and witness_id=?";
         this.jt.update(sql, set.getId(), witness.getId() );
         updateLastUpdatedTime( set );
+        
+        this.taskExecutor.execute(new Runnable() {
+            @Override
+            public void run() {
+                clearCollationData(set); 
+            }
+        });
     }
     
     @Override
@@ -226,8 +236,13 @@ public class ComparisionSetDaoImpl extends JuxtaDaoImpl<ComparisonSet> implement
     }
 
     @Override
-    public void delete(ComparisonSet obj) {
-        this.jt.update("delete from " + this.tableName + " where id = ?", obj.getId());
+    public void delete(final ComparisonSet set) {
+        this.taskExecutor.execute(new Runnable() {
+            @Override
+            public void run() {
+                jt.update("delete from " + tableName + " where id = ?", set.getId());
+            }
+        });
     }
 
     @Override
