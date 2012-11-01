@@ -43,6 +43,9 @@
     
     <!-- The status service for displaying customized error pages-->
     <bean id="statusService" class="org.juxtasoftware.JuxtaStatusService"/>
+    
+    <!-- Metrics resource -->
+    <bean name="/juxta/metrics" class="org.juxtasoftware.resource.MetricsResource" scope="prototype" autowire="byName" />
         
     <!-- This defines all of the RESTful mappings for the juxtaWS -->
     <bean id="juxtaRouter" class="org.restlet.ext.spring.SpringBeanRouter"/>
