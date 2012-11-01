@@ -3,14 +3,14 @@ package org.juxtasoftware.model;
 public class Metrics {
     private Long id;
     private String workspace;
-    private int numSources;
-    private int minSourceSize;
-    private int maxSourceSize;
-    private int meanSourceSize;
-    private int totalSourcesSize;
-    private int totalSecsCollating;
-    private int numCollationsStarted;
-    private int numCollationsFinished;
+    private int numSources = 0;
+    private int minSourceSize = 0;
+    private int maxSourceSize = 0;
+    private int meanSourceSize = 0;
+    private int totalSourcesSize = 0;
+    private int totalSecsCollating = 0;
+    private int numCollationsStarted = 0;
+    private int numCollationsFinished = 0;
     
     public Long getId() {
         return id;

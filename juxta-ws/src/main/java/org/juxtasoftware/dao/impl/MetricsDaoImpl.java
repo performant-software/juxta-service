@@ -6,11 +6,14 @@ import java.util.List;
 
 import org.juxtasoftware.dao.MetricsDao;
 import org.juxtasoftware.model.Metrics;
+import org.juxtasoftware.model.Workspace;
 import org.springframework.dao.support.DataAccessUtils;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
+import org.springframework.stereotype.Repository;
 
+@Repository
 public class MetricsDaoImpl extends JuxtaDaoImpl<Metrics> implements MetricsDao {
 
     protected MetricsDaoImpl() {
@@ -20,6 +23,12 @@ public class MetricsDaoImpl extends JuxtaDaoImpl<Metrics> implements MetricsDao 
     public void delete(Metrics obj) {
         final String sql = "delete from " + this.tableName + " where id=?";
         this.jt.update(sql, obj.getId());
+    }
+    
+    @Override
+    public Metrics get( final Workspace ws ) {
+        return DataAccessUtils.uniqueResult(
+            this.jt.query( getSql()+" where workspace=?", new MetricsMapper(), ws.getName()));
     }
 
     @Override
@@ -34,8 +43,8 @@ public class MetricsDaoImpl extends JuxtaDaoImpl<Metrics> implements MetricsDao 
     }
     
     private String getSql() {
-        return "select id,name,num_sources, max_src_size_k, min_src_size_k," +
-        		"mean_src_size_k, total_src_size_k, secs_collating, started_collations, finished_collations";
+        return "select *" +
+        		" from juxta_metrics";
     }
 
     @Override
@@ -59,7 +68,7 @@ public class MetricsDaoImpl extends JuxtaDaoImpl<Metrics> implements MetricsDao 
         public Metrics mapRow(ResultSet rs, int rowNum) throws SQLException {
             Metrics m = new Metrics();
             m.setId( rs.getLong("id"));
-            m.setWorkspace( rs.getString("name"));
+            m.setWorkspace( rs.getString("workspace"));
             m.setNumSources( rs.getInt("num_sources"));
             m.setMaxSourceSize(rs.getInt("max_src_size_k"));
             m.setMinSourceSize(rs.getInt("min_src_size_k"));

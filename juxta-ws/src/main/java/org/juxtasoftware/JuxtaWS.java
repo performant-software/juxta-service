@@ -5,6 +5,7 @@ import java.util.logging.LogManager;
 import java.util.logging.Logger;
 
 import org.apache.log4j.PropertyConfigurator;
+import org.juxtasoftware.util.MetricsInitializer;
 import org.juxtasoftware.util.QNameFilters;
 import org.restlet.Component;
 import org.slf4j.LoggerFactory;
@@ -30,7 +31,8 @@ public class JuxtaWS {
         component.start();
         
         // init all common filters and public workspace
-        ((QNameFilters)context.getBean(QNameFilters.class)).initialize();        
+        ((QNameFilters)context.getBean(QNameFilters.class)).initialize();   
+        ((MetricsInitializer)context.getBean(MetricsInitializer.class)).init();  
         LoggerFactory.getLogger("").info("Juxta Web service started");
     }
 
