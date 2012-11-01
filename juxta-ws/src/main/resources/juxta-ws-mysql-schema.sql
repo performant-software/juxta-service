@@ -180,6 +180,20 @@ CREATE TABLE IF NOT EXISTS juxta_alignment (
     FOREIGN KEY (annotation_a_id) REFERENCES juxta_annotation (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+CREATE TABLE IF NOT EXISTS juxta_metrics (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    workspace VARCHAR(255) NOT NULL,
+    num_sources INT not null default 0,
+    max_src_size_k INT not null default 0,
+    min_src_size_k INT not null default 0,
+    mean_src_size_k INT not null default 0,
+    total_src_size_k INT not null default 0,
+    secs_collating BIGINT not null default 0,
+    started_collations INT not null default 0,
+    finished_collations INT not null default 0,
+    PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
 DROP TABLE text_annotation_link_data;
 DROP TABLE text_annotation_link_target;
 DROP TABLE text_annotation_link;
