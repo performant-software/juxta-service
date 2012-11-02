@@ -12,6 +12,7 @@ import org.juxtasoftware.service.ComparisonSetCollator;
 import org.juxtasoftware.util.BackgroundTask;
 import org.juxtasoftware.util.BackgroundTaskCanceledException;
 import org.juxtasoftware.util.BackgroundTaskStatus;
+import org.juxtasoftware.util.MetricsHelper;
 import org.juxtasoftware.util.TaskManager;
 import org.restlet.data.Status;
 import org.restlet.representation.Representation;
@@ -36,6 +37,7 @@ public class CollatorResource extends BaseResource {
     @Autowired private ComparisonSetDao setDao;
     @Autowired private ComparisonSetCollator collator;
     @Autowired private TaskManager taskManager;
+    @Autowired private MetricsHelper metrics;
 
     private Action action;
     private ComparisonSet set;
@@ -156,6 +158,7 @@ public class CollatorResource extends BaseResource {
                 this.status.begin();
                 CollatorResource.this.collator.collate(set, this.config, this.status);
                 LOG.info("collation task " + this.name + " COMPLETE");
+                metrics.collationFinished(workspace,set);
                 this.endDate = new Date();
                 set.setStatus(ComparisonSet.Status.COLLATED);
                 setDao.update(set);

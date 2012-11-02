@@ -8,7 +8,7 @@ public class Metrics {
     private int maxSourceSize = 0;
     private int meanSourceSize = 0;
     private int totalSourcesSize = 0;
-    private int totalSecsCollating = 0;
+    private long totalTimeCollating = 0;
     private int numCollationsStarted = 0;
     private int numCollationsFinished = 0;
     
@@ -54,11 +54,11 @@ public class Metrics {
     public void setTotalSourcesSize(int totalSourcesSize) {
         this.totalSourcesSize = totalSourcesSize;
     }
-    public int getTotalSecsCollating() {
-        return totalSecsCollating;
+    public long getTotalTimeCollating() {
+        return totalTimeCollating;
     }
-    public void setTotalSecsCollating(int totalSecsCollating) {
-        this.totalSecsCollating = totalSecsCollating;
+    public void setTotalTimeCollating(long totalSecsCollating) {
+        this.totalTimeCollating = totalSecsCollating;
     }
     public int getNumCollationsStarted() {
         return numCollationsStarted;

@@ -27,6 +27,7 @@ import org.apache.commons.io.IOUtils;
 import org.juxtasoftware.dao.SourceDao;
 import org.juxtasoftware.model.Source;
 import org.juxtasoftware.util.EncodingUtils;
+import org.juxtasoftware.util.MetricsHelper;
 import org.restlet.data.MediaType;
 import org.restlet.data.Status;
 import org.restlet.ext.fileupload.RestletFileUpload;
@@ -54,6 +55,7 @@ import com.google.gson.JsonSerializer;
 public class SourcesResource extends BaseResource {
     @Autowired private SourceDao sourceDao;
     @Autowired private Long maxSourceSize;
+    @Autowired private MetricsHelper metrics;
 
     /**
      * Get Json representation of all available sources
@@ -255,6 +257,9 @@ public class SourcesResource extends BaseResource {
         Long id = this.sourceDao.create(this.workspace, name, isXml, isr);
         IOUtils.closeQuietly(isr);
         srcFile.delete();
+        
+        this.metrics.sourceAdded(this.workspace, this.sourceDao.find(this.workspace.getId(), id));
+        
         return id;
     }
 

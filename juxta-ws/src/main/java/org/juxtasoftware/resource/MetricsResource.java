@@ -1,6 +1,9 @@
 package org.juxtasoftware.resource;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.juxtasoftware.dao.MetricsDao;
 import org.juxtasoftware.model.Metrics;
@@ -19,6 +22,23 @@ import com.google.gson.Gson;
 public class MetricsResource extends BaseResource  {
     
     @Autowired private MetricsDao metricsDao;
+    
+    @Get("html")
+    public Representation htmlReport() {
+        Map<String,Object> map = new HashMap<String,Object>();
+        List<Metrics> metrics;
+        if ( this.workspace.getName().equalsIgnoreCase("public")) {
+            metrics=  this.metricsDao.list();
+        } else {
+            metrics = new ArrayList<Metrics>();
+            metrics.add( this.metricsDao.get(this.workspace));
+        }
+        
+        map.put("metrics",metrics);
+        map.put("page", "metrics");
+        map.put("title", "Juxta Metrics");
+        return toHtmlRepresentation("metrics.ftl",map,false);
+    }
     
     @Get("json")
     public Representation jsonReport() {
@@ -59,7 +79,7 @@ public class MetricsResource extends BaseResource  {
         sb.append(m.getMaxSourceSize()).append(",");
         sb.append(m.getMeanSourceSize()).append(",");
         sb.append(m.getTotalSourcesSize()).append(",");
-        sb.append(m.getTotalSecsCollating()).append(",");
+        sb.append(m.getTotalTimeCollating()).append(",");
         sb.append(m.getNumCollationsStarted()).append(",");
         sb.append(m.getNumCollationsFinished());
         return sb;

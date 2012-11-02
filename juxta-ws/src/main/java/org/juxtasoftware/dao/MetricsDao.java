@@ -8,4 +8,5 @@ import org.juxtasoftware.model.Workspace;
 public interface MetricsDao extends JuxtaDao<Metrics> {
     List<Metrics> list();
     Metrics get( final Workspace ws );
+    void update( final Metrics m );
 }

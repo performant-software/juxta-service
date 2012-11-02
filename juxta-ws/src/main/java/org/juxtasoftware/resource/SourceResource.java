@@ -27,6 +27,7 @@ import org.juxtasoftware.service.importer.ps.ParallelSegmentationImportImpl;
 import org.juxtasoftware.util.BackgroundTask;
 import org.juxtasoftware.util.BackgroundTaskCanceledException;
 import org.juxtasoftware.util.BackgroundTaskStatus;
+import org.juxtasoftware.util.MetricsHelper;
 import org.juxtasoftware.util.RangedTextReader;
 import org.juxtasoftware.util.TaskManager;
 import org.restlet.data.MediaType;
@@ -59,6 +60,7 @@ public class SourceResource extends BaseResource  {
     @Autowired private SourceTransformer transformer;
     @Autowired private TaskManager taskManager;
     @Autowired private ApplicationContext context;
+    @Autowired private MetricsHelper metrics;
     
     private Range range = null;
     private Source source;
@@ -317,6 +319,7 @@ public class SourceResource extends BaseResource  {
 
         // LASTLY, delete the source itself
         this.sourceDao.delete(this.source);        
+        this.metrics.sourceRemoved(this.workspace, this.source);
         
         Gson gson = new Gson();
         return toJsonRepresentation( gson.toJson(usage));
