@@ -64,7 +64,7 @@ public class ComparisonSetCollator extends DiffCollator {
     private Set<Witness> witnessList;
     private ComparisonSet comparisonSet;
     
-    private static final Logger LOG = LoggerFactory.getLogger( ComparisonSetCollator.class.getName());
+    private static final Logger LOG = LoggerFactory.getLogger( Constants.WS_LOGGER_NAME );
 
     public void collate(ComparisonSet comparisonSet, CollatorConfig config, BackgroundTaskStatus taskStatus) throws IOException {
         

@@ -8,6 +8,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.lang.time.DateUtils;
+import org.juxtasoftware.Constants;
 import org.juxtasoftware.util.BackgroundTaskStatus.Status;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +35,7 @@ public class TaskManager {
     @Autowired @Qualifier("collate-executor") private TaskExecutor collateExecutor;
     private ConcurrentHashMap<String, BackgroundTask> taskMap = new ConcurrentHashMap<String, BackgroundTask>(50);
     private final SimpleDateFormat dateFormater = new SimpleDateFormat("MM/dd H:mm:ss:SSS");
-    private static final Logger LOG = LoggerFactory.getLogger( TaskManager.class.getName());
+    private static final Logger LOG = LoggerFactory.getLogger( Constants.WS_LOGGER_NAME );
   
     
     /**

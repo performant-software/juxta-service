@@ -3,6 +3,7 @@ package org.juxtasoftware.resource;
 import java.io.Reader;
 import java.util.Map;
 
+import org.juxtasoftware.Constants;
 import org.juxtasoftware.JuxtaWS;
 import org.juxtasoftware.JuxtaWsApplication;
 import org.juxtasoftware.dao.WorkspaceDao;
@@ -46,7 +47,7 @@ public class BaseResource extends ServerResource {
 
     private static final String FTL_ROOT = "clap://class/templates/ftl/";
     private static final Configuration FTL_CONFIG; 
-    protected static final Logger LOG = LoggerFactory.getLogger( "JuxtWsResource" );
+    protected static final Logger LOG = LoggerFactory.getLogger( Constants.WS_LOGGER_NAME );
     
     private boolean zipSupported = false;
     protected boolean embedded = false;

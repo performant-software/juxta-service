@@ -10,6 +10,7 @@ import java.util.Set;
 
 import javax.xml.parsers.ParserConfigurationException;
 
+import org.juxtasoftware.Constants;
 import org.juxtasoftware.dao.ComparisonSetDao;
 import org.juxtasoftware.dao.JuxtaXsltDao;
 import org.juxtasoftware.dao.NoteDao;
@@ -81,7 +82,7 @@ public class ParallelSegmentationImportImpl implements ImportService<Source> {
     private boolean isReImport = false;
     private Long originalXsltId = null;
     
-    private static final Logger LOG = LoggerFactory.getLogger( ImportService.class.getName());
+    private static final Logger LOG = LoggerFactory.getLogger( Constants.WS_LOGGER_NAME );
     
     public ParallelSegmentationImportImpl() {  
     }

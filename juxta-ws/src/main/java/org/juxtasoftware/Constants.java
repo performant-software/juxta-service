@@ -29,4 +29,6 @@ public interface Constants {
     final Name LOCATION_MARKER_NUM_ATTR = new SimpleName((URI) null, "n");
     
     final String PARALLEL_SEGMENTATION_TEMPLATE = "TEI-parallel-segmentation";
+    final String WS_LOGGER_NAME = "juxtaWS";
+    final String METRICS_LOGGER_NAME = "metrics";
 }

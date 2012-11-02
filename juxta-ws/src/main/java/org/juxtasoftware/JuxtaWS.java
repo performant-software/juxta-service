@@ -33,7 +33,7 @@ public class JuxtaWS {
         // init all common filters and public workspace
         ((QNameFilters)context.getBean(QNameFilters.class)).initialize();   
         ((MetricsHelper)context.getBean(MetricsHelper.class)).init();  
-        LoggerFactory.getLogger("").info("Juxta Web service started");
+        LoggerFactory.getLogger(Constants.WS_LOGGER_NAME).info("Juxta Web service started");
     }
 
     private static void initApplicationContext() {

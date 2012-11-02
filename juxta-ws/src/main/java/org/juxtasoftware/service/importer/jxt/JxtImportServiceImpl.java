@@ -102,7 +102,7 @@ public class JxtImportServiceImpl implements ImportService<InputStream> {
     private ComparisonSet set;
     private BackgroundTaskStatus taskStatus;
     private BackgroundTaskSegment taskSegment;
-    protected static final Logger LOG = LoggerFactory.getLogger( "JxtImportService" );
+    protected static final Logger LOG = LoggerFactory.getLogger( Constants.WS_LOGGER_NAME );
     
 
     /**

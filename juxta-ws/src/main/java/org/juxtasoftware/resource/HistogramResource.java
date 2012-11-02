@@ -12,6 +12,7 @@ import java.util.List;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.output.FileWriterWithEncoding;
+import org.juxtasoftware.Constants;
 import org.juxtasoftware.dao.AlignmentDao;
 import org.juxtasoftware.dao.CacheDao;
 import org.juxtasoftware.dao.ComparisonSetDao;
@@ -60,7 +61,7 @@ public class HistogramResource extends BaseResource {
     private ComparisonSet set;
     private Witness baseWitness;
     
-    protected static final Logger LOG = LoggerFactory.getLogger( "JuxtWsResource" );
+    protected static final Logger LOG = LoggerFactory.getLogger( Constants.WS_LOGGER_NAME );
     
     @Override
     protected void doInit() throws ResourceException {

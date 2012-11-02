@@ -75,7 +75,7 @@ public class HeatmapView  {
     private BaseResource parent;
     private int minimumEditDistance = 0;
     
-    protected static final Logger LOG = LoggerFactory.getLogger( "HEATMAP" );
+    protected static final Logger LOG = LoggerFactory.getLogger( Constants.WS_LOGGER_NAME );
     private static final int MEGABYTE = (1024*1024);
 
     /**

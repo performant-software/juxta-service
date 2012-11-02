@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import org.juxtasoftware.Constants;
 import org.juxtasoftware.dao.AlignmentDao;
 import org.juxtasoftware.dao.WitnessDao;
 import org.juxtasoftware.model.Alignment;
@@ -45,7 +46,7 @@ public class AlignmentDaoImpl implements AlignmentDao, InitializingBean  {
     private static final int DEL_FRAG_SIZE = 45;
     
     private SimpleJdbcInsert jdbcInsert;
-    protected static final Logger LOG = LoggerFactory.getLogger( "AlignmentDAO" );
+    protected static final Logger LOG = LoggerFactory.getLogger( Constants.WS_LOGGER_NAME );
 
     @Override
     public void afterPropertiesSet() throws Exception {

@@ -14,6 +14,7 @@ import java.io.Reader;
 import java.io.Writer;
 
 import org.apache.commons.io.IOUtils;
+import org.juxtasoftware.Constants;
 import org.mozilla.intl.chardet.nsDetector;
 import org.mozilla.intl.chardet.nsICharsetDetectionObserver;
 import org.mozilla.universalchardet.UniversalDetector;
@@ -22,7 +23,7 @@ import org.slf4j.LoggerFactory;
 
 public final class EncodingUtils {
 
-    private static final Logger LOG = LoggerFactory.getLogger( "EncodingUtils" );
+    private static final Logger LOG = LoggerFactory.getLogger( Constants.WS_LOGGER_NAME );
     
     /**
      * Normalize the content to UTF-8 and strip any tags that say otherwise

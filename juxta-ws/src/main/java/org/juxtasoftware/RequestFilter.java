@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
 public class RequestFilter extends Filter {    
     private List<String> allowAccessList;
     
-    private static final Logger LOG = LoggerFactory.getLogger("Request");
+    private static final Logger LOG = LoggerFactory.getLogger(Constants.WS_LOGGER_NAME);
     
     public void setAccessList( final String accessList ) {
         String[] origins = accessList.split(",");

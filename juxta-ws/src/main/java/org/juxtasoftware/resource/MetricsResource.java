@@ -7,6 +7,7 @@ import java.util.Map;
 
 import org.juxtasoftware.dao.MetricsDao;
 import org.juxtasoftware.model.Metrics;
+import org.juxtasoftware.util.MetricsHelper;
 import org.restlet.representation.Representation;
 import org.restlet.resource.Get;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,20 +23,20 @@ import com.google.gson.Gson;
 public class MetricsResource extends BaseResource  {
     
     @Autowired private MetricsDao metricsDao;
+    @Autowired private MetricsHelper metrics;
     
     @Get("html")
     public Representation htmlReport() {
         Map<String,Object> map = new HashMap<String,Object>();
-        List<Metrics> metrics;
+        List<Metrics> metricsList;
         if ( this.workspace.getName().equalsIgnoreCase("public")) {
-            metrics=  this.metricsDao.list();
+            metricsList =  this.metricsDao.list();
         } else {
-            metrics = new ArrayList<Metrics>();
-            metrics.add( this.metricsDao.get(this.workspace));
+            metricsList = new ArrayList<Metrics>();
+            metricsList.add( this.metricsDao.get(this.workspace));
         }
         
-        map.put("metrics",metrics);
-        map.put("page", "metrics");
+        map.put("metrics",metricsList);
         map.put("title", "Juxta Metrics");
         return toHtmlRepresentation("metrics.ftl",map,false);
     }
@@ -45,8 +46,7 @@ public class MetricsResource extends BaseResource  {
         Gson gson = new Gson();
         String out;
         if ( this.workspace.getName().equalsIgnoreCase("public")) {
-            List<Metrics> metrics = this.metricsDao.list();
-            out = gson.toJson(metrics);
+            out = gson.toJson( this.metricsDao.list() );
         } else {
             Metrics m = this.metricsDao.get(this.workspace);
             out = gson.toJson(m);
@@ -58,31 +58,18 @@ public class MetricsResource extends BaseResource  {
     public Representation csvReport() {
         if ( this.workspace.getName().equalsIgnoreCase("public") == false) {
             Metrics m = this.metricsDao.get(this.workspace);
-            return toTextRepresentation( toCsv(m).toString() ); 
-            
+            return toTextRepresentation( this.metrics.toCsv(m).toString() );  
         } 
         StringBuilder out = new StringBuilder();
         for ( Metrics m : this.metricsDao.list() ) {
             if ( out.length() > 0 ) {
                 out.append("\n");
             }
-            out.append( toCsv(m) );
+            out.append( this.metrics.toCsv(m) );
         }
         return toTextRepresentation(out.toString());
     }
     
-    private StringBuilder toCsv( Metrics m ) {
-        StringBuilder sb = new StringBuilder();
-        sb.append(m.getWorkspace()).append(",");
-        sb.append(m.getNumSources()).append(",");
-        sb.append(m.getMinSourceSize()).append(",");
-        sb.append(m.getMaxSourceSize()).append(",");
-        sb.append(m.getMeanSourceSize()).append(",");
-        sb.append(m.getTotalSourcesSize()).append(",");
-        sb.append(m.getTotalTimeCollating()).append(",");
-        sb.append(m.getNumCollationsStarted()).append(",");
-        sb.append(m.getNumCollationsFinished());
-        return sb;
-    }
+   
 
 }

@@ -69,7 +69,7 @@ public class SideBySideView implements FileDirectiveListener  {
     @Autowired private TaskManager taskManager;
     @Autowired private Integer averageAlignmentSize;
 
-    protected static final Logger LOG = LoggerFactory.getLogger( "SideBySideView" );
+    protected static final Logger LOG = LoggerFactory.getLogger( Constants.WS_LOGGER_NAME );
     private static final int MEGABYTE = (1024*1024);
     
     private BaseResource parent;
