@@ -1,9 +1,12 @@
 package org.juxtasoftware.util;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.juxtasoftware.Constants;
 import org.juxtasoftware.dao.MetricsDao;
 import org.juxtasoftware.dao.SourceDao;
 import org.juxtasoftware.dao.WorkspaceDao;
@@ -11,9 +14,12 @@ import org.juxtasoftware.model.ComparisonSet;
 import org.juxtasoftware.model.Metrics;
 import org.juxtasoftware.model.Source;
 import org.juxtasoftware.model.Workspace;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.Scope;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 /**
@@ -30,6 +36,36 @@ public class MetricsHelper {
     @Autowired private MetricsDao metricsDao;
     @Autowired private SourceDao srcDao;
     private Map<ComparisonSet, Long> collationStartTimes = new HashMap<ComparisonSet, Long>();
+    private static final Logger LOG = LoggerFactory.getLogger( Constants.METRICS_LOGGER_NAME );
+    
+    @Scheduled(cron="0 0 12 * * *")
+    public void logMetrics() {
+        for ( Metrics m : this.metricsDao.list() ) {
+            LOG.info( this.toCsv(m, true) );
+        }
+    }
+    
+    public String toCsv( Metrics m ) {
+        return this.toCsv(m,false);
+    }
+    public String toCsv( Metrics m, boolean dateStamp ) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(m.getWorkspace()).append(",");
+        sb.append(m.getNumSources()).append(",");
+        sb.append(m.getMinSourceSize()).append(",");
+        sb.append(m.getMaxSourceSize()).append(",");
+        sb.append(m.getMeanSourceSize()).append(",");
+        sb.append(m.getTotalSourcesSize()).append(",");
+        sb.append(m.getTotalTimeCollating()).append(",");
+        sb.append(m.getNumCollationsStarted()).append(",");
+        sb.append(m.getNumCollationsFinished());
+        if ( dateStamp ) {
+            sb.append(",");
+            sb.append( new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format( new Date()));
+        }
+        return sb.toString();
+    }
+    
     
     public void init() {
         // start by getting all known workspaces
@@ -43,6 +79,7 @@ public class MetricsHelper {
                 this.metricsDao.create( m );
             }
         }
+        logMetrics();
     }
     
     public void sourceAdded(final Workspace ws, final Source src) {
