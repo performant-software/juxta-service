@@ -16,6 +16,9 @@ public class JuxtaWS {
     public static ClassPathXmlApplicationContext context;
 
     public static void main(String[] args) throws Exception {
+        
+        // be sure to use the saxon parser
+        System.setProperty("javax.xml.transform.TransformerFactory", "net.sf.saxon.TransformerFactoryImpl");
 
         // initialize application context
         initApplicationContext();

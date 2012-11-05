@@ -150,11 +150,7 @@ public class SourceTransformer {
         return id;
     }
 
-    private Text doTransform(Source srcDoc, JuxtaXslt xslt) throws IOException, TransformerException, FileNotFoundException, SAXException {
-        
-        // be sure to use the saxon parser
-        System.setProperty("javax.xml.transform.TransformerFactory", "net.sf.saxon.TransformerFactoryImpl");
-        
+    private Text doTransform(Source srcDoc, JuxtaXslt xslt) throws IOException, TransformerException, FileNotFoundException, SAXException {        
         // setup source, xslt and result
         File outFile = File.createTempFile("xform"+srcDoc.getId(), "xml");
         outFile.deleteOnExit();

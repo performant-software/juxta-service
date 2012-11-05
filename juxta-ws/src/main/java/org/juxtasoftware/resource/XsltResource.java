@@ -1,10 +1,20 @@
 package org.juxtasoftware.resource;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.sax.SAXSource;
+import javax.xml.transform.stream.StreamResult;
+import javax.xml.transform.stream.StreamSource;
 
 import org.juxtasoftware.dao.ComparisonSetDao;
 import org.juxtasoftware.dao.JuxtaXsltDao;
@@ -18,7 +28,10 @@ import org.juxtasoftware.model.Witness;
 import org.juxtasoftware.service.SourceTransformer;
 import org.juxtasoftware.service.importer.JuxtaXsltFactory;
 import org.juxtasoftware.service.importer.ps.ParallelSegmentationImportImpl;
+import org.juxtasoftware.util.RangedTextReader;
+import org.restlet.data.MediaType;
 import org.restlet.data.Status;
+import org.restlet.representation.FileRepresentation;
 import org.restlet.representation.Representation;
 import org.restlet.resource.Delete;
 import org.restlet.resource.Get;
@@ -30,10 +43,17 @@ import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
+import org.xml.sax.EntityResolver;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+import org.xml.sax.XMLReader;
+import org.xml.sax.helpers.XMLReaderFactory;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+
+import eu.interedition.text.Text;
 
 /**
  * REsource to get/update XSLT for a witness.
@@ -55,6 +75,7 @@ public class XsltResource extends BaseResource  {
     private Long xsltId = null;
     private Long witnessId = null;
     private boolean templateRequest = false;
+    private boolean previewRequest = false;
     
     @Override
     protected void doInit() throws ResourceException {
@@ -65,6 +86,7 @@ public class XsltResource extends BaseResource  {
         if ( getRequest().getAttributes().containsKey("xsltId")) {
             this.xsltId = Long.parseLong( (String)getRequest().getAttributes().get("xsltId"));
         }
+        this.previewRequest =  getQuery().getValuesMap().containsKey("preview");
         
         String lastSeg  = getRequest().getResourceRef().getLastSegment();
         this.templateRequest = ( lastSeg.equalsIgnoreCase("template"));
@@ -148,14 +170,80 @@ public class XsltResource extends BaseResource  {
     public Representation createXslt( final String jsonData ) {
         Gson gson = new Gson();
         JuxtaXslt xslt = gson.fromJson(jsonData, JuxtaXslt.class);
+        if ( this.previewRequest ) {
+            return previewWitness(xslt);
+        }
+        
         xslt.setWorkspaceId(this.workspace.getId());
         if ( xslt.getName() == null || xslt.getXslt() == null ) {
             setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
             return toTextRepresentation("missing required data in json payload");
         }
+
         Long id = this.xsltDao.create(xslt);
         return toTextRepresentation( id.toString() );
     }
+    
+    private Representation previewWitness(JuxtaXslt xslt) {
+        Witness w = this.witnessDao.find(this.witnessId);
+        Source src = this.sourceDao.find(this.workspace.getId(), w.getSourceId());
+        if (src.getText().getType().equals(Text.Type.XML)) {
+            try {
+                final File out = doTransform(src, xslt);
+                Representation rep = new FileRepresentation(out, MediaType.TEXT_PLAIN) {
+                    public void release() {
+                        out.delete();
+                    }
+                 };
+                return rep;
+            } catch (Exception e) {
+                LOG.error("Unable to preview XML witness", e);
+                setStatus(Status.SERVER_ERROR_INTERNAL);
+                return toTextRepresentation("Unable to preview witness at this time");
+            }
+        } else {
+            final RangedTextReader reader = new RangedTextReader();
+            try {
+                reader.read( this.sourceDao.getContentReader(src) );
+                return toTextRepresentation(reader.toString());
+            } catch (IOException e) {
+                LOG.error("Unable to preview TXT witness", e);
+                setStatus(Status.SERVER_ERROR_INTERNAL);
+                return toTextRepresentation("Unable to preview witness at this time");
+            }
+        }
+    }
+
+    private File doTransform(Source srcDoc, JuxtaXslt xslt) throws IOException, TransformerException, FileNotFoundException, SAXException {        
+        // setup source, xslt and result
+        File outFile = File.createTempFile("xform"+srcDoc.getId(), "xml");
+        outFile.deleteOnExit();
+        
+        XMLReader reader = XMLReaderFactory.createXMLReader();
+        reader.setEntityResolver(new EntityResolver() {
+            @Override
+            public InputSource resolveEntity(String publicId, String systemId) throws SAXException, IOException {
+                if (systemId.endsWith(".dtd") || systemId.endsWith(".ent")) {
+                    StringReader stringInput = new StringReader(" ");
+                    return new InputSource(stringInput);
+                }
+                else {
+                    return null; // use default behavior
+                }
+            }
+        });
+        SAXSource xmlSource = new SAXSource(reader, new InputSource( this.sourceDao.getContentReader(srcDoc) ));
+        javax.xml.transform.Source xsltSource =  new StreamSource( new StringReader(xslt.getXslt()) );
+        javax.xml.transform.Result result = new StreamResult( outFile );
+        TransformerFactory factory = TransformerFactory.newInstance(  );
+        Transformer transformer = factory.newTransformer(xsltSource);  
+        transformer.setOutputProperty(OutputKeys.INDENT, "no");
+        transformer.setOutputProperty(OutputKeys.ENCODING, "utf-8");
+        transformer.setOutputProperty(OutputKeys.MEDIA_TYPE, "text");
+        transformer.transform(xmlSource, result);
+        return outFile;
+    }
+    
     
     @Put("json")
     public Representation updateXslt( final String json ) {
