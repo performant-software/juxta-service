@@ -2,9 +2,8 @@ package org.juxtasoftware.util;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.juxtasoftware.Constants;
 import org.juxtasoftware.dao.MetricsDao;
@@ -35,8 +34,9 @@ public class MetricsHelper {
     @Autowired private WorkspaceDao workspaceDao;
     @Autowired private MetricsDao metricsDao;
     @Autowired private SourceDao srcDao;
-    private Map<ComparisonSet, Long> collationStartTimes = new HashMap<ComparisonSet, Long>();
+    private ConcurrentHashMap<Long, Long> collationStartTimes = new ConcurrentHashMap<Long, Long>();
     private static final Logger LOG = LoggerFactory.getLogger( Constants.METRICS_LOGGER_NAME );
+    private static final Logger DEBUG_LOG = LoggerFactory.getLogger( Constants.WS_LOGGER_NAME );
     
     @Scheduled(cron="0 0 12 * * *")
     public void logMetrics() {
@@ -137,14 +137,22 @@ public class MetricsHelper {
         Metrics m = this.metricsDao.get(ws);
         m.setNumCollationsStarted( m.getNumCollationsStarted()+1 );
         this.metricsDao.update(m);
-        this.collationStartTimes.put(set, System.currentTimeMillis());
+        this.collationStartTimes.put(set.getId(), System.currentTimeMillis());
+        DEBUG_LOG.info("Mark collation start of "+set);
+        DEBUG_LOG.info("Timestamp "+this.collationStartTimes.get(set.getId()));
+        DEBUG_LOG.info("MAP "+set);
     }
     
     public void collationFinished( final Workspace ws, final ComparisonSet set  ) {
         Metrics m = this.metricsDao.get(ws);
         m.setNumCollationsFinished( m.getNumCollationsFinished()+1 );
         
-        Long startTime = this.collationStartTimes.remove(set);
+        Long startTime = this.collationStartTimes.get(set.getId());
+        DEBUG_LOG.info("MAP "+set);
+        DEBUG_LOG.info("Mark collation END of "+set);
+        DEBUG_LOG.info("Timestamp "+this.collationStartTimes.get(set.getId()));
+        this.collationStartTimes.remove(set.getId());
+        
         long deltaMs = System.currentTimeMillis() - startTime;
         m.setTotalTimeCollating( m.getTotalTimeCollating()+deltaMs );
         
