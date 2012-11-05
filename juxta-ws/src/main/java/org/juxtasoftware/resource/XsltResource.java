@@ -1,8 +1,11 @@
 package org.juxtasoftware.resource;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.io.StringReader;
 import java.util.HashMap;
 import java.util.List;
@@ -16,6 +19,7 @@ import javax.xml.transform.sax.SAXSource;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 
+import org.apache.commons.io.IOUtils;
 import org.juxtasoftware.dao.ComparisonSetDao;
 import org.juxtasoftware.dao.JuxtaXsltDao;
 import org.juxtasoftware.dao.SourceDao;
@@ -29,9 +33,7 @@ import org.juxtasoftware.service.SourceTransformer;
 import org.juxtasoftware.service.importer.JuxtaXsltFactory;
 import org.juxtasoftware.service.importer.ps.ParallelSegmentationImportImpl;
 import org.juxtasoftware.util.RangedTextReader;
-import org.restlet.data.MediaType;
 import org.restlet.data.Status;
-import org.restlet.representation.FileRepresentation;
 import org.restlet.representation.Representation;
 import org.restlet.resource.Delete;
 import org.restlet.resource.Get;
@@ -190,12 +192,11 @@ public class XsltResource extends BaseResource  {
         if (src.getText().getType().equals(Text.Type.XML)) {
             try {
                 final File out = doTransform(src, xslt);
-                Representation rep = new FileRepresentation(out, MediaType.TEXT_PLAIN) {
-                    public void release() {
-                        out.delete();
-                    }
-                 };
-                return rep;
+                FileInputStream fis = new FileInputStream(out);
+                Representation r = toJsonRepresentation(IOUtils.toString(fis));
+                IOUtils.closeQuietly(fis);
+                out.delete();
+                return r;
             } catch (Exception e) {
                 LOG.error("Unable to preview XML witness", e);
                 setStatus(Status.SERVER_ERROR_INTERNAL);
@@ -234,7 +235,7 @@ public class XsltResource extends BaseResource  {
         });
         SAXSource xmlSource = new SAXSource(reader, new InputSource( this.sourceDao.getContentReader(srcDoc) ));
         javax.xml.transform.Source xsltSource =  new StreamSource( new StringReader(xslt.getXslt()) );
-        javax.xml.transform.Result result = new StreamResult( outFile );
+        javax.xml.transform.Result result = new StreamResult( new OutputStreamWriter(new FileOutputStream(outFile), "UTF-8"));
         TransformerFactory factory = TransformerFactory.newInstance(  );
         Transformer transformer = factory.newTransformer(xsltSource);  
         transformer.setOutputProperty(OutputKeys.INDENT, "no");

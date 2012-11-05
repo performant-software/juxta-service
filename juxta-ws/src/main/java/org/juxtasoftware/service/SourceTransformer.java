@@ -3,8 +3,10 @@ package org.juxtasoftware.service;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.StringReader;
 
@@ -174,7 +176,7 @@ public class SourceTransformer {
         
         //javax.xml.transform.Source xmlSource = new StreamSource( this.sourceDao.getContentReader(srcDoc) );
         javax.xml.transform.Source xsltSource =  new StreamSource( new StringReader(xslt.getXslt()) );
-        javax.xml.transform.Result result = new StreamResult( outFile );
+        javax.xml.transform.Result result = new StreamResult( new OutputStreamWriter(new FileOutputStream(outFile), "UTF-8"));
  
         // create an instance of TransformerFactory and do the transform
         TransformerFactory factory = TransformerFactory.newInstance(  );
