@@ -330,7 +330,7 @@ public class JuxtaTagExtractor extends DefaultHandler  {
         txt = txt.replaceAll("[\\n]\\s*$", "");
         
         // remove first newline and traiing whitespace (left trim formatting spaces)
-        txt = txt.replaceAll("[\\n]\\s*", "");
+        txt = txt.replaceAll("^[\\n]\\s*", "");
         
         // Now throw away any other
         txt = txt.replaceAll("\\n+", "");
