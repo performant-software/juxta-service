@@ -2,6 +2,7 @@ package org.juxtasoftware.model;
 
 import java.util.Date;
 
+import org.json.simple.JSONObject;
 import org.juxtasoftware.diff.Comparand;
 
 import com.google.common.base.Objects;
@@ -35,6 +36,9 @@ public class Witness extends WorkspaceMember implements Comparand {
     
     public String getName() {
         return name;
+    }
+    public String getJsonName() {
+        return JSONObject.escape(this.name);
     }
 
     public void setName(String name) {

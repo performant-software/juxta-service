@@ -34,7 +34,7 @@ import eu.interedition.text.TextRepository;
 @Service
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
 public class Tokenizer {
-    private static final Logger LOG = LoggerFactory.getLogger(Tokenizer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Constants.WS_LOGGER_NAME);
     private enum HyphenState {NONE, FOUND_HYPHEN, LINEBREAK_HYPHEN, IN_HYPHENATED_PART};
     private enum RunType {NONE, TOKEN, NON_TOKEN, WHITESPACE};
 
@@ -71,7 +71,7 @@ public class Tokenizer {
         
         taskStatus.setNote("Tokenizing " + comparisonSet);
         for (Witness witness : witnesses) {
-            taskStatus.setNote("Tokenizing '" + witness.getName() + "'");
+            taskStatus.setNote("Tokenizing '" + witness.getJsonName() + "'");
             LOG.info("Tokenizing " + witness.getName());
             long totalTokenLen = tokenize(config, witness);
             comparisonSetDao.setTokenzedLength(comparisonSet, witness, totalTokenLen);

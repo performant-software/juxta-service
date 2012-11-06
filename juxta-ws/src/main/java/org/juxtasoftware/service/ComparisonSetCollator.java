@@ -85,7 +85,7 @@ public class ComparisonSetCollator extends DiffCollator {
             baseIt.remove();
 
             for (Witness witness : witnesses) {
-                taskStatus.setNote(base + " vs. " + witness);
+                taskStatus.setNote(base.getJsonName() + " vs. " + witness.getJsonName());
                 LOG.info("Collating: " + base + " vs. " + witness);
 
                 collate(configAdapter, base, witness);

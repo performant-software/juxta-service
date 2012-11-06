@@ -42,6 +42,10 @@ public class TaskResource extends BaseResource {
         }
         
         String json = this.taskManager.getStatus( this.taskId );
+        if (json.contains("COMPLETE")) {
+            System.err.println("dun");
+        }
+        System.err.println(json);
         return toJsonRepresentation(json); 
     }
     
