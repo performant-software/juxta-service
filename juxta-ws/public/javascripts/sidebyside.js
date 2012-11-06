@@ -662,9 +662,12 @@ $(function() {
          $("#side").text("right");
       }
 
+      $(".witness-option").removeClass("sbs-wit-hover");
+      $(".witness-option").removeClass("sbs-wit-selected");
       $(".witness-option").each(function(index) {
-         if ($(this).attr("id") === witnessId) {
-            $(this).attr("selected", "selected");
+         var id = $(this).attr("id").substring("sel-sbs-wit-".length);
+         if ( id === witnessId) {
+             $(".witness-option").addClass("sbs-wit-selected");
          }
       });
 
@@ -893,6 +896,18 @@ $(function() {
       });
       $("#sbs-cancel-button").on("click", function() { 
          cancelWitnessChange(); 
+      });
+      $(".witness-option").on("mouseenter", function() {
+         if ( $(this).hasClass("sbs-wit-hover") === false && $(this).hasClass("sbs-wit-selected") === false) {
+            $(this).addClass("sbs-wit-hover");    
+         }
+      });
+      $(".witness-option").on("mouseleave", function() {
+         $(this).removeClass("sbs-wit-hover");     
+      });
+      $(".witness-option").on("click", function() {
+         $(".witness-option").removeClass("sbs-wit-selected");
+         $(this).addClass("sbs-wit-selected");    
       });
    };
    

@@ -44,12 +44,16 @@
 <!-- popup for selecting a new witness -->
 <div class="witnesses-popup">
     <span id="side" style="display: none"></span>
-    <div class="header">Select Witness</div>
-    <select id="witness-select" class="witness-select" size="${witnessCount}">
+    <div class="header">Select E Witness</div>
+    <table id="witness-select" class="witness-select" size="${witnessCount}">
         <#list witnesses as witness> 
-            <option id="${witness.id}" class="witness-option">${witness.name}</option>
+            <tr class="wit-sel">
+               <td class="wit-sel">
+                  <p class="witness-option" id="sel-sbs-wit-${witness.id}">${witness.name}</p>
+               </td>
+            </tr>
         </#list>
-    </select>
+    </table>
     <div class="popup-buttons">
         <a id="sbs-ok-button" class="juxta-button sbs-button">OK</a>
         <a id="sbs-cancel-button" class="juxta-button sbs-button">Cancel</a>

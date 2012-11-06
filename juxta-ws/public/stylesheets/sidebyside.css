@@ -108,11 +108,10 @@ span.move  {
 .witnesses-popup {
     display: none;
     position: fixed;
-    width:200px;
+    width:350px;
     height: auto;
     text-align:center;
     z-index: 1000;
-    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     font-size: 0.9em;
     font-weight: 300;
     background-color: #eee;
@@ -125,13 +124,35 @@ span.move  {
     border-radius: 5px;
     padding: 0px 0px 5px 0px;
 }
-.witness-select {
-    width: 95%;
+table.witness-select {
+    width: 97%;
     height: auto;
-    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-    -mox-border-radius: 2px;
-    -webkit-border-radius: 2px;
-    border-radius: 2px;
+    margin: 5px auto;
+    background-color: white;
+    border: 0;
+    outline: 1px solid #999;
+}
+
+.wit-sel {
+   border: 0;
+   font-size: 0.9em;
+   padding: 2px 5px;
+}
+
+p.witness-option {
+   padding: 0;
+   border: 0;
+   text-overflow: ellipsis;
+   overflow: hidden;
+   white-space: nowrap;
+   width: 330px;
+}
+
+.sbs-wit-hover {
+   background-color: #DAEEDA;
+}
+.sbs-wit-selected {
+    background-color: #6ECE6E;
 }
 .popup-buttons {
     margin: 5px;
