@@ -30,7 +30,7 @@ public final class EncodingUtils {
      * @return A file containing the UTF-8 contents
      * @throws IOException 
      */
-    public static File fixEncoding( InputStream source, boolean isXml ) throws IOException {
+    public static File fixEncoding( InputStream source ) throws IOException {
         File tmpSrc = File.createTempFile("src", "dat");
         FileOutputStream fos =  new FileOutputStream(tmpSrc);
         IOUtils.copyLarge(source, fos);
@@ -38,9 +38,7 @@ public final class EncodingUtils {
  
         String encoding = EncodingUtils.detectEncoding(tmpSrc);
         if ( encoding.equalsIgnoreCase("UTF-8") ) {
-            if ( isXml ) {
-                EncodingUtils.stripXmlDeclaration(tmpSrc);
-            }
+            EncodingUtils.finalFixes(tmpSrc);
             return tmpSrc;
         }
         
@@ -63,15 +61,12 @@ public final class EncodingUtils {
         IOUtils.closeQuietly(out);
         tmpSrc.delete();
         
-        // lastly, strip the xml declaration. It will be added on
-        // when the content is validated and added to the repo
-        if ( isXml ) {
-            EncodingUtils.stripXmlDeclaration(utf8Out);
-        }
+        // lastly, strip the xml declaration and repair ^M linefeeds.
+        EncodingUtils.finalFixes(utf8Out);
         return utf8Out;
     }
     
-    private static void stripXmlDeclaration(File tmpSrc) throws IOException {
+    private static void finalFixes(File tmpSrc) throws IOException {
         FileInputStream fis = new FileInputStream(tmpSrc);
         InputStreamReader isr = new InputStreamReader(fis, "UTF-8");
         BufferedReader r = new BufferedReader( isr );

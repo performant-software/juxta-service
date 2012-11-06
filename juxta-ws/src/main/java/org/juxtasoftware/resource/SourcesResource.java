@@ -241,10 +241,10 @@ public class SourcesResource extends BaseResource {
         }
         
         if ( contentType.equalsIgnoreCase("txt")) {
-            File fixed = EncodingUtils.fixEncoding( new ByteArrayInputStream(data.getBytes()), false );
+            File fixed = EncodingUtils.fixEncoding( new ByteArrayInputStream(data.getBytes()) );
             return writeSourceData(fixed, name, false);
         } else if ( contentType.equalsIgnoreCase("xml")) {
-            File fixed = EncodingUtils.fixEncoding( new ByteArrayInputStream(data.getBytes()), true );
+            File fixed = EncodingUtils.fixEncoding( new ByteArrayInputStream(data.getBytes()) );
             return writeSourceData(fixed, name, true);
         } else {
             throw new Exception("Invalid content type specified: "+contentType);
@@ -272,7 +272,7 @@ public class SourcesResource extends BaseResource {
                 throw new IOException(result + " code returned for URL: " + url);
             }
             boolean isXml =  contentType.equalsIgnoreCase("xml");
-            File fixed = EncodingUtils.fixEncoding( get.getResponseBodyAsStream(), isXml );
+            File fixed = EncodingUtils.fixEncoding( get.getResponseBodyAsStream() );
             
             if ( this.maxSourceSize > 0 && fixed.length() > this.maxSourceSize ) {
                 String err = "Source size is "+fixed.length()/1024+
@@ -303,14 +303,14 @@ public class SourcesResource extends BaseResource {
     private Long createSource(final String sourceName, final MediaType contentType, InputStream srcInputStream) throws IOException, XMLStreamException, FileSizeLimitExceededException {
         if ( MediaType.TEXT_XML.isCompatible( contentType ) ) {
             LOG.info("Accepting XML source document");
-            File fixed = EncodingUtils.fixEncoding(srcInputStream, true);
+            File fixed = EncodingUtils.fixEncoding(srcInputStream);
             if ( this.maxSourceSize > 0 && fixed.length() > this.maxSourceSize ) {
                 throw new FileSizeLimitExceededException(sourceName+" too big",fixed.length(), this.maxSourceSize );
             }
             return writeSourceData(fixed, sourceName, true);
         } else if ( MediaType.TEXT_PLAIN.isCompatible( contentType ) || MediaType.TEXT_HTML.isCompatible( contentType ) ) {
             LOG.info("Accepting plain text source document");
-            File fixed = EncodingUtils.fixEncoding(srcInputStream, false);
+            File fixed = EncodingUtils.fixEncoding(srcInputStream);
             if ( this.maxSourceSize > 0 && fixed.length() > this.maxSourceSize ) {
                 throw new FileSizeLimitExceededException(sourceName+" too big",fixed.length(), this.maxSourceSize );
             }
