@@ -6,6 +6,7 @@ import java.util.Map;
 
 import org.juxtasoftware.dao.WorkspaceDao;
 import org.juxtasoftware.model.Workspace;
+import org.juxtasoftware.util.MetricsHelper;
 import org.restlet.data.Status;
 import org.restlet.representation.Representation;
 import org.restlet.resource.Get;
@@ -31,6 +32,7 @@ import com.google.gson.JsonParser;
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
 public class WorkspacesResource extends BaseResource {
     @Autowired private WorkspaceDao workspaceDao;
+    @Autowired private MetricsHelper metrics;
     
     @Override
     protected void doInit() throws ResourceException {
@@ -86,6 +88,8 @@ public class WorkspacesResource extends BaseResource {
         }
         
         Long id = this.workspaceDao.create(ws);
+        ws.setId(id);
+        this.metrics.workspaceAdded(ws);
         return toTextRepresentation(id.toString() );
     }
 }

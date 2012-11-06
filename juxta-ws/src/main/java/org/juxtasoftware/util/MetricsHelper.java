@@ -82,80 +82,111 @@ public class MetricsHelper {
         logMetrics();
     }
     
-    public void sourceAdded(final Workspace ws, final Source src) {
-        Metrics m = this.metricsDao.get(ws);
-        m.setNumSources( m.getNumSources()+1 );
-        int size = (int)src.getText().getLength();
-        m.setTotalSourcesSize( m.getTotalSourcesSize()+size);
-        if ( size < m.getMinSourceSize() ) {
-            m.setMinSourceSize(size);
-        } 
-        if ( size > m.getMaxSourceSize() ) {
-            m.setMaxSourceSize(size);
+    public void workspaceAdded( final Workspace ws ) {
+        try {
+            DEBUG_LOG.info("Created new user workspace "+ws.getName());
+            Metrics m = new Metrics();
+            m.setWorkspace(ws.getName());
+            this.metricsDao.create(m);
+        } catch (Exception e) {
+            DEBUG_LOG.error("Unable to create metrics entry for " + ws, e);
         }
-        int oldMean = m.getMeanSourceSize();
-        m.setMeanSourceSize( (oldMean+size)/2 );
-        this.metricsDao.update( m );
+    }
+    
+    public void sourceAdded(final Workspace ws, final Source src) {
+        try {
+            Metrics m = this.metricsDao.get(ws);
+            m.setNumSources( m.getNumSources()+1 );
+            int size = (int)src.getText().getLength();
+            m.setTotalSourcesSize( m.getTotalSourcesSize()+size);
+            if ( size < m.getMinSourceSize() ||  m.getMinSourceSize() == 0) {
+                m.setMinSourceSize(size);
+            } 
+            if ( size > m.getMaxSourceSize() ) {
+                m.setMaxSourceSize(size);
+            }
+            int oldMean = m.getMeanSourceSize();
+            m.setMeanSourceSize( (oldMean+size)/2 );
+            this.metricsDao.update( m );
+        } catch (Exception e) {
+            DEBUG_LOG.error("Metrics error tracking add "+src, e);
+        }
     }
     
     private void updateSourceMetrics( final Workspace ws, Metrics m) {
-        List<Source> srcs = this.srcDao.list(ws);
-        m.setNumSources(srcs.size());
-        if ( srcs.size() > 0 ) {
-            int minSize = Integer.MAX_VALUE;
-            int maxSize = -1;
-            int total = 0;
-            for (Source s : srcs) {
-                int size = (int)s.getText().getLength();
-                total += size;
-                if (size > maxSize) {
-                    maxSize = size;
+        try {
+            List<Source> srcs = this.srcDao.list(ws);
+            m.setNumSources(srcs.size());
+            if ( srcs.size() > 0 ) {
+                int minSize = Integer.MAX_VALUE;
+                int maxSize = -1;
+                int total = 0;
+                for (Source s : srcs) {
+                    int size = (int)s.getText().getLength();
+                    total += size;
+                    if (size > maxSize) {
+                        maxSize = size;
+                    }
+                    if (size < minSize) {
+                        minSize = size;
+                    }
                 }
-                if (size < minSize) {
-                    minSize = size;
-                }
+                m.setMaxSourceSize(maxSize);
+                m.setMinSourceSize(minSize);
+                m.setMeanSourceSize(total / srcs.size() );
+                m.setTotalSourcesSize(total);
+            } else {
+                m.setMaxSourceSize(0);
+                m.setMinSourceSize(0);
+                m.setMeanSourceSize(0);
+                m.setTotalSourcesSize(0);
             }
-            m.setMaxSourceSize(maxSize);
-            m.setMinSourceSize(minSize);
-            m.setMeanSourceSize(total / srcs.size() );
-            m.setTotalSourcesSize(total);
-        } else {
-            m.setMaxSourceSize(0);
-            m.setMinSourceSize(0);
-            m.setMeanSourceSize(0);
-            m.setTotalSourcesSize(0);
+        } catch ( Exception e) {
+            DEBUG_LOG.error("Metrics error updating sources", e);
         }
     }
     
     public void sourceRemoved(final Workspace ws, final Source src) {
-        Metrics m = this.metricsDao.get(ws);
-        updateSourceMetrics(ws, m); 
-        this.metricsDao.update( m );
+        try {
+            Metrics m = this.metricsDao.get(ws);
+            updateSourceMetrics(ws, m); 
+            this.metricsDao.update( m );
+        } catch ( Exception e ) {
+            DEBUG_LOG.error("Metrics error tracking "+src+" removal", e);
+        }
     }
     
     public void collationStarted( final Workspace ws, final ComparisonSet set ) {
-        Metrics m = this.metricsDao.get(ws);
-        m.setNumCollationsStarted( m.getNumCollationsStarted()+1 );
-        this.metricsDao.update(m);
-        this.collationStartTimes.put(set.getId(), System.currentTimeMillis());
-        DEBUG_LOG.info("Mark collation start of "+set);
-        DEBUG_LOG.info("Timestamp "+this.collationStartTimes.get(set.getId()));
-        DEBUG_LOG.info("MAP "+set);
+        try {
+            Metrics m = this.metricsDao.get(ws);
+            m.setNumCollationsStarted( m.getNumCollationsStarted()+1 );
+            this.metricsDao.update(m);
+            this.collationStartTimes.put(set.getId(), System.currentTimeMillis());
+            DEBUG_LOG.info("Mark collation start of "+set);
+            DEBUG_LOG.info("Timestamp "+this.collationStartTimes.get(set.getId()));
+            DEBUG_LOG.info("MAP "+set);
+        } catch ( Exception e ) {
+            DEBUG_LOG.error("Metrics error tracking "+set+" collation start", e);
+        }
     }
     
     public void collationFinished( final Workspace ws, final ComparisonSet set  ) {
-        Metrics m = this.metricsDao.get(ws);
-        m.setNumCollationsFinished( m.getNumCollationsFinished()+1 );
-        
-        Long startTime = this.collationStartTimes.get(set.getId());
-        DEBUG_LOG.info("MAP "+set);
-        DEBUG_LOG.info("Mark collation END of "+set);
-        DEBUG_LOG.info("Timestamp "+this.collationStartTimes.get(set.getId()));
-        this.collationStartTimes.remove(set.getId());
-        
-        long deltaMs = System.currentTimeMillis() - startTime;
-        m.setTotalTimeCollating( m.getTotalTimeCollating()+deltaMs );
-        
-        this.metricsDao.update(m);
+        try {
+            Metrics m = this.metricsDao.get(ws);
+            m.setNumCollationsFinished( m.getNumCollationsFinished()+1 );
+            
+            Long startTime = this.collationStartTimes.get(set.getId());
+            DEBUG_LOG.info("MAP "+set);
+            DEBUG_LOG.info("Mark collation END of "+set);
+            DEBUG_LOG.info("Timestamp "+this.collationStartTimes.get(set.getId()));
+            this.collationStartTimes.remove(set.getId());
+            
+            long deltaMs = System.currentTimeMillis() - startTime;
+            m.setTotalTimeCollating( m.getTotalTimeCollating()+deltaMs );
+            
+            this.metricsDao.update(m);
+        } catch ( Exception e ) {
+            DEBUG_LOG.error("Metrics error tracking "+set+" collation end", e);
+        }
     }
 }
