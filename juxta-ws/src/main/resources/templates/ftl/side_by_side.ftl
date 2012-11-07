@@ -49,7 +49,7 @@
         <#list witnesses as witness> 
             <tr class="wit-sel">
                <td class="wit-sel">
-                  <p class="witness-option" id="sel-sbs-wit-${witness.id}">${witness.name}</p>
+                  <p class="witness-option" id="sel-sbs-wit-${witness.id}" title="${witness.name}">${witness.name}</p>
                </td>
             </tr>
         </#list>

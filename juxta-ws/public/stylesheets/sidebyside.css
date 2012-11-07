@@ -125,12 +125,11 @@ span.move  {
     padding: 0px 0px 5px 0px;
 }
 table.witness-select {
-    width: 97%;
-    height: auto;
-    margin: 5px auto;
+    margin: 8px auto 5px auto;
     background-color: white;
     border: 0;
     outline: 1px inset #ccc;
+    text-align:left;
 }
 
 .wit-sel {
@@ -146,7 +145,7 @@ p.witness-option {
    text-overflow: ellipsis;
    overflow: hidden;
    white-space: nowrap;
-   width: 328px;
+   width: 320px;
 }
 
 .sbs-wit-hover {
