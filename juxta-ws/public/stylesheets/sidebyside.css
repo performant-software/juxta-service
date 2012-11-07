@@ -130,29 +130,32 @@ table.witness-select {
     margin: 5px auto;
     background-color: white;
     border: 0;
-    outline: 1px solid #999;
+    outline: 1px inset #ccc;
 }
 
 .wit-sel {
    border: 0;
    font-size: 0.9em;
-   padding: 2px 5px;
+   padding: 0;
 }
 
 p.witness-option {
-   padding: 0;
+   padding: 2px 5px;
    border: 0;
+   margin: 2px;
    text-overflow: ellipsis;
    overflow: hidden;
    white-space: nowrap;
-   width: 330px;
+   width: 328px;
 }
 
 .sbs-wit-hover {
    background-color: #DAEEDA;
+   outline: 1px solid #060;
 }
 .sbs-wit-selected {
     background-color: #6ECE6E;
+    outline: 1px solid #060;
 }
 .popup-buttons {
     margin: 5px;

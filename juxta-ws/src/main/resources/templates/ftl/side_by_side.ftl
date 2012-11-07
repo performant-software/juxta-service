@@ -44,7 +44,7 @@
 <!-- popup for selecting a new witness -->
 <div class="witnesses-popup">
     <span id="side" style="display: none"></span>
-    <div class="header">Select E Witness</div>
+    <div class="header">Select Witness</div>
     <table id="witness-select" class="witness-select" size="${witnessCount}">
         <#list witnesses as witness> 
             <tr class="wit-sel">

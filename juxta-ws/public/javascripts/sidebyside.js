@@ -667,7 +667,7 @@ $(function() {
       $(".witness-option").each(function(index) {
          var id = $(this).attr("id").substring("sel-sbs-wit-".length);
          if ( id === witnessId) {
-             $(".witness-option").addClass("sbs-wit-selected");
+             $(this).addClass("sbs-wit-selected");
          }
       });
 
@@ -690,8 +690,8 @@ $(function() {
       // find the selected ID from the list
       var selectedId = "";
       $(".witness-option").each(function(index) {
-         if ($(this).attr("selected") === "selected") {
-            selectedId = $(this).attr("id");
+         if ($(this).hasClass("sbs-wit-selected") ) {
+            selectedId = $(this).attr("id").substring("sel-sbs-wit-".length);
          }
       });
       $('.witnesses-popup').hide();
