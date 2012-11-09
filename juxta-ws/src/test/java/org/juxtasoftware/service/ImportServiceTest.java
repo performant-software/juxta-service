@@ -93,7 +93,7 @@ public class ImportServiceTest extends AbstractTest {
             BackgroundTaskStatus s= new BackgroundTaskStatus( "test1");
             is = getClass().getResourceAsStream("/autumn.xml");
             String data = IOUtils.toString(is);
-            Long srcId = this.sourceDao.create(ws, "tei-ps-unit-test-autumn", true, new StringReader(data));
+            Long srcId = this.sourceDao.create(ws, "tei-ps-unit-test-autumn", Source.Type.XML, new StringReader(data));
             Source teiSrc = this.sourceDao.find(ws.getId(), srcId);
             
             psImportService.doImport(set, teiSrc, s );

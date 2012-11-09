@@ -36,6 +36,7 @@ import org.juxtasoftware.model.ComparisonSet;
 import org.juxtasoftware.model.JuxtaAnnotation;
 import org.juxtasoftware.model.JuxtaXslt;
 import org.juxtasoftware.model.Source;
+import org.juxtasoftware.model.Source.Type;
 import org.juxtasoftware.model.Witness;
 import org.juxtasoftware.model.Workspace;
 import org.juxtasoftware.service.ComparisonSetCollator;
@@ -300,17 +301,20 @@ public class JxtImportServiceImpl implements ImportService<InputStream> {
             if ( extPos > -1 ) {
                 ext = srcName.substring(extPos);
             }
-            boolean isXml = ext.equalsIgnoreCase(".xml");
+            Source.Type contentType = Source.Type.TXT;
+            if ( ext.equalsIgnoreCase(".xml") ) {
+                contentType = Source.Type.XML;
+            }
 
             // create the juxta source
-            Source source = createSource(srcInfo, isXml);     
+            Source source = createSource(srcInfo, contentType);     
                   
             // if the source was associated with a parse template,
             // create it and use it to transform to a witness
             this.taskStatus.setNote("Transform raw "+srcName+" into witness");
             Long witnessId = null;
             JuxtaXslt xslt = null;
-            if ( isXml ) {
+            if ( contentType.equals(Source.Type.XML) ) {
                 // extract namespace info
                 Set<NamespaceInfo> namespaces = NamespaceExtractor.extract( this.sourceDao.getContentReader(source) ); 
                 NamespaceInfo namespace = NamespaceInfo.createBlankNamespace();
@@ -360,7 +364,7 @@ public class JxtImportServiceImpl implements ImportService<InputStream> {
         this.xsltDao.update(xslt.getId(), new StringReader(xslt.getXslt()));
     }
     
-    private Source createSource(SourceInfo srcInfo, boolean isXml) throws FileNotFoundException, IOException, XMLStreamException {
+    private Source createSource(SourceInfo srcInfo, Type contentType) throws FileNotFoundException, IOException, XMLStreamException {
         
         String name = srcInfo.getTitle();
         if ( this.sourceDao.exists(this.ws, name)) {
@@ -369,7 +373,7 @@ public class JxtImportServiceImpl implements ImportService<InputStream> {
         }
         FileInputStream fis = new FileInputStream(srcInfo.getSrcFile());
         InputStreamReader isr = new InputStreamReader(fis, "UTF-8");
-        Long srcId = this.sourceDao.create(this.ws, name, isXml, isr);
+        Long srcId = this.sourceDao.create(this.ws, name, contentType, isr);
         IOUtils.closeQuietly(isr);
         return this.sourceDao.find(this.ws.getId(), srcId);
     }

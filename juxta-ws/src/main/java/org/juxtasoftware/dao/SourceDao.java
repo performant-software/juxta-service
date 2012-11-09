@@ -17,12 +17,13 @@ public interface SourceDao  {
      * and content reader
      * @param ws Workspace in which to add the source
      * @param name Name for the new source
+     * @param type The source content type
      * @param contentReader Content reader
      * @return The ID of the newly created source
      * @throws XMLStreamException 
      * @throws IOException 
      */
-    Long create(final Workspace ws, final String name, final Boolean isXml, Reader contentReader) throws IOException, XMLStreamException;
+    Long create(final Workspace ws, final String name, final Source.Type type, Reader contentReader) throws IOException, XMLStreamException;
     
     /**
      * Get brief info on this source: name and dates

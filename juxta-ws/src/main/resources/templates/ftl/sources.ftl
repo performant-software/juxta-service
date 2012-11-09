@@ -7,7 +7,7 @@
         <tr>
             <td><a href="${baseUrl}/${workspace}/source/${doc.id}">${doc.id}</a></td>
             <td><a href="${baseUrl}/${workspace}/source/${doc.id}">${doc.name}</a></td>
-            <td>${doc.text.type}</td>
+            <td>${doc.type}</td>
         </tr>
     </#list>
 </table>

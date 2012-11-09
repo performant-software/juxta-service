@@ -60,15 +60,15 @@ public class ComparisonSetCollatorTest extends AbstractTest {
         final String w2Contents = "Quick red fox got rabies and died.";
         final String w3Contents = "The quick blue fox lives.";
 
-        final Long srcId1 = this.sourceDao.create(pub, "w1.src", false, new StringReader(w1Contents));
+        final Long srcId1 = this.sourceDao.create(pub, "w1.src", Source.Type.TXT, new StringReader(w1Contents));
         final Source src1 = this.sourceDao.find(pub.getId(), srcId1);
         final Range w1Range = new Range(0, (int) src1.getText().getLength());
         
-        final Long srcId2 = this.sourceDao.create(pub, "w2.src", false, new StringReader(w2Contents));
+        final Long srcId2 = this.sourceDao.create(pub, "w2.src", Source.Type.TXT, new StringReader(w2Contents));
         final Source src2 = this.sourceDao.find(pub.getId(), srcId2);
         final Range w2Range = new Range(0, (int) src2.getText().getLength());
         
-        final Long srcId3 = this.sourceDao.create(pub, "w3.src", false, new StringReader(w3Contents));
+        final Long srcId3 = this.sourceDao.create(pub, "w3.src", Source.Type.TXT, new StringReader(w3Contents));
         final Source src3 = this.sourceDao.find(pub.getId(), srcId3);
         final Range w3Range = new Range(0, (int) src3.getText().getLength());
 

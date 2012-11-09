@@ -53,11 +53,11 @@ public class SourceDaoImpl implements SourceDao, InitializingBean {
     }
     
     @Override
-    public Long create(final Workspace ws, final String name, final Boolean isXml, Reader contentReader)
+    public Long create(final Workspace ws, final String name, final Source.Type type, Reader contentReader)
         throws IOException, XMLStreamException {
 
         Text txtContent = null;
-        if (isXml) {
+        if ( type.equals(Source.Type.XML)) {
             txtContent = this.textRepository.create(XML_INPUT_FACTORY.createXMLStreamReader(contentReader));
         } else {
             txtContent = this.textRepository.create(contentReader);
@@ -65,6 +65,7 @@ public class SourceDaoImpl implements SourceDao, InitializingBean {
         final MapSqlParameterSource ps = new MapSqlParameterSource();
         ps.addValue("name", name);
         ps.addValue("content_id", ((RelationalText) txtContent).getId());
+        ps.addValue("content_type", type.toString());
         ps.addValue("workspace_id", ws.getId());
         ps.addValue("created", new Date());
         Long srcId = (Long)this.insert.executeAndReturnKey( ps );
@@ -144,7 +145,7 @@ public class SourceDaoImpl implements SourceDao, InitializingBean {
     
     @Override
     public String getRootElement(Source src) {
-        if ( src.getText().getType().equals(Text.Type.XML) == false ) {
+        if ( src.getType().equals(Source.Type.XML) == false ) {
             return null;
         }
         
@@ -203,7 +204,6 @@ public class SourceDaoImpl implements SourceDao, InitializingBean {
     
     @Override
     public void delete(Source obj) {
-        
         this.jdbcTemplate.update("delete from "+TABLE_NAME+" where id=?", obj.getId());
         this.textRepository.delete(obj.getText());
     }
@@ -300,13 +300,14 @@ public class SourceDaoImpl implements SourceDao, InitializingBean {
     }
 
     public static String selectSourceFrom(String tableName) {
-        return SQL.select(tableName, "id", "name", "workspace_id", "created");
+        return SQL.select(tableName, "id", "name", "content_type", "workspace_id", "created");
     }
 
     public static Source mapSourceFrom(ResultSet rs, String prefix, Text text) throws SQLException {
         final Source source = new Source();
         source.setId(rs.getLong(prefix + "_id"));
         source.setName(rs.getString(prefix + "_name"));
+        source.setType(rs.getString(prefix + "_content_type"));
         source.setWorkspaceId( rs.getLong(prefix+"_workspace_id"));
         source.setCreated( rs.getTimestamp(prefix+"_created"));
         source.setText(text);

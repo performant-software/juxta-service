@@ -142,7 +142,7 @@ public class SourceResource extends BaseResource  {
         JsonObject obj = new JsonObject();
         obj.addProperty("id", this.source.getId());
         obj.addProperty("name", this.source.getName());
-        obj.addProperty("type", this.source.getText().getType().toString());
+        obj.addProperty("type", this.source.getType().toString());
         obj.addProperty("content", reader.toString());
         Gson gson = new Gson();
         return toTextRepresentation(gson.toJson(obj));

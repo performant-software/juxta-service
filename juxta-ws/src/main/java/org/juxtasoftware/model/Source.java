@@ -6,9 +6,11 @@ import eu.interedition.text.Text;
 
 public class Source extends WorkspaceMember {
 
+    public enum Type {TXT, XML, HTML, WIKI};
     private String name;
     private Text text;
     private Date created;
+    private Source.Type type;
       
     public final String getName() {
         return name;
@@ -16,6 +18,17 @@ public class Source extends WorkspaceMember {
 
     public final void setName(String name) {
         this.name = name;
+    }
+    
+    public final Type getType() {
+        return type;
+    }
+
+    public final void setType(String type) {
+        this.type = Source.Type.valueOf(type);
+    }
+    public final void setType(Source.Type type) {
+        this.type = type;
     }
 
     public Text getText() {
@@ -49,6 +62,6 @@ public class Source extends WorkspaceMember {
 
     @Override
     public String toString() {
-        return "Source [id=" + id + ", name=" + name + "]";
+        return "Source [id=" + id + ", type="+type+", name=" + name + "]";
     }
 }

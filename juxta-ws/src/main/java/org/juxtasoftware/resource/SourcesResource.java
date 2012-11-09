@@ -27,6 +27,7 @@ import org.apache.commons.io.IOUtils;
 import org.juxtasoftware.dao.SourceDao;
 import org.juxtasoftware.model.Source;
 import org.juxtasoftware.util.EncodingUtils;
+import org.juxtasoftware.util.HtmlUtils;
 import org.juxtasoftware.util.MetricsHelper;
 import org.restlet.data.MediaType;
 import org.restlet.data.Status;
@@ -174,7 +175,8 @@ public class SourcesResource extends BaseResource {
         List<Long> idList = new ArrayList<Long>();
         try {
             // create the source
-            idList.add(createSource(sourceName, MediaType.valueOf(contentType), srcInputStream));
+            Long id = createSource(sourceName, MediaType.valueOf(contentType.toUpperCase()), srcInputStream);
+            idList.add( id );
         } catch ( FileSizeLimitExceededException e ) {
             setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
             final String out = "Source size is "+e.getActualSize()/1024+
@@ -215,12 +217,16 @@ public class SourcesResource extends BaseResource {
                 throw new Exception("Missing information: data");
             }
             String type = jsonObj.get("type").getAsString();
-            String contentType = jsonObj.get("contentType").getAsString();
+            Source.Type contentType = Source.Type.valueOf( jsonObj.get("contentType").getAsString().toUpperCase() );
             String name = jsonObj.get("name").getAsString();
             String data = jsonObj.get("data").getAsString();
             
             if ( this.sourceDao.exists(this.workspace, name) ) {
                 throw new Exception("Source \""+name+"\" already exists");
+            }
+            
+            if ( contentType == null ) {
+                throw new Exception("Unsupported content type");
             }
             
             if ( type.equalsIgnoreCase("url")) {
@@ -232,29 +238,24 @@ public class SourcesResource extends BaseResource {
         return ids;  
     }
     
-    private Long createSourceFromRawData(final String name, final String data, final String contentType) throws Exception {
+    private Long createSourceFromRawData(final String name, final String data, final Source.Type contentType) throws Exception {
         if ( this.maxSourceSize > 0 && data.length() > this.maxSourceSize ) {
             String err = "Source size is "+data.length()/1024+
                 "K.\nThis exceeds the Juxta size limit of "+this.maxSourceSize/1024+"K.\n\n"+
                 "Try breaking the source into smaller segments and re-submitting.";
             throw new Exception(err);
         }
-        
-        if ( contentType.equalsIgnoreCase("txt")) {
-            File fixed = EncodingUtils.fixEncoding( new ByteArrayInputStream(data.getBytes()) );
-            return writeSourceData(fixed, name, false);
-        } else if ( contentType.equalsIgnoreCase("xml")) {
-            File fixed = EncodingUtils.fixEncoding( new ByteArrayInputStream(data.getBytes()) );
-            return writeSourceData(fixed, name, true);
-        } else {
-            throw new Exception("Invalid content type specified: "+contentType);
+        File fixed = EncodingUtils.fixEncoding( new ByteArrayInputStream(data.getBytes()) );        
+        if ( contentType.equals(Source.Type.HTML) ) {
+            HtmlUtils.strip(fixed);
         }
+        return writeSourceData(fixed, name, contentType);
     }
     
-    private Long writeSourceData( File srcFile, final String name, final boolean isXml )  throws IOException, XMLStreamException {
+    private Long writeSourceData( File srcFile, final String name, final Source.Type type )  throws IOException, XMLStreamException {
         FileInputStream fis = new FileInputStream(srcFile);
         InputStreamReader isr = new InputStreamReader(fis, "UTF-8");
-        Long id = this.sourceDao.create(this.workspace, name, isXml, isr);
+        Long id = this.sourceDao.create(this.workspace, name, type, isr);
         IOUtils.closeQuietly(isr);
         srcFile.delete();
         
@@ -263,7 +264,7 @@ public class SourcesResource extends BaseResource {
         return id;
     }
 
-    private Long scrapeExternalUrl(final String name, final String url, final String contentType) throws Exception {
+    private Long scrapeExternalUrl(final String name, final String url, final Source.Type contentType) throws Exception {
         HttpClient httpClient = newHttpClient();
         GetMethod get = new GetMethod(url);
         try {
@@ -271,8 +272,11 @@ public class SourcesResource extends BaseResource {
             if (result != 200) {
                 throw new IOException(result + " code returned for URL: " + url);
             }
-            boolean isXml =  contentType.equalsIgnoreCase("xml");
+            
             File fixed = EncodingUtils.fixEncoding( get.getResponseBodyAsStream() );
+            if ( contentType.equals(Source.Type.HTML)) {
+                HtmlUtils.strip(fixed);
+            }
             
             if ( this.maxSourceSize > 0 && fixed.length() > this.maxSourceSize ) {
                 String err = "Source size is "+fixed.length()/1024+
@@ -280,7 +284,7 @@ public class SourcesResource extends BaseResource {
                     "Try breaking the source into smaller segments and re-submitting.";
                 throw new Exception(err);
             }
-            return writeSourceData(fixed, name, isXml);
+            return writeSourceData(fixed, name, contentType);
         } catch (Exception e) {
             e.printStackTrace();
             throw e;
@@ -300,24 +304,25 @@ public class SourcesResource extends BaseResource {
     }
 
 
-    private Long createSource(final String sourceName, final MediaType contentType, InputStream srcInputStream) throws IOException, XMLStreamException, FileSizeLimitExceededException {
-        if ( MediaType.TEXT_XML.isCompatible( contentType ) ) {
-            LOG.info("Accepting XML source document");
-            File fixed = EncodingUtils.fixEncoding(srcInputStream);
-            if ( this.maxSourceSize > 0 && fixed.length() > this.maxSourceSize ) {
-                throw new FileSizeLimitExceededException(sourceName+" too big",fixed.length(), this.maxSourceSize );
-            }
-            return writeSourceData(fixed, sourceName, true);
-        } else if ( MediaType.TEXT_PLAIN.isCompatible( contentType ) || MediaType.TEXT_HTML.isCompatible( contentType ) ) {
-            LOG.info("Accepting plain text source document");
-            File fixed = EncodingUtils.fixEncoding(srcInputStream);
-            if ( this.maxSourceSize > 0 && fixed.length() > this.maxSourceSize ) {
-                throw new FileSizeLimitExceededException(sourceName+" too big",fixed.length(), this.maxSourceSize );
-            }
-            return writeSourceData(fixed, sourceName, false);
+    private Long createSource(final String sourceName, final MediaType mediaType, InputStream srcInputStream) throws IOException, XMLStreamException, FileSizeLimitExceededException {
+        Source.Type contentType = Source.Type.TXT;
+        File fixed = EncodingUtils.fixEncoding(srcInputStream);
+        if ( MediaType.TEXT_XML.isCompatible( mediaType ) ) {
+            contentType = Source.Type.XML;
+        } else if ( MediaType.TEXT_HTML.isCompatible( mediaType ) ) {
+            contentType = Source.Type.HTML;
+            HtmlUtils.strip(fixed);
         } else {
-            throw new IOException("Unsupported content type "+contentType);
+            if ( sourceName.endsWith(".wiki")) {
+                contentType = Source.Type.WIKI;
+            }
         }
+
+        if ( this.maxSourceSize > 0 && fixed.length() > this.maxSourceSize ) {
+            throw new FileSizeLimitExceededException(sourceName+" too big",fixed.length(), this.maxSourceSize );
+        }
+        
+        return writeSourceData(fixed, sourceName, contentType);
     }
 
     private class SourcesSerializer implements JsonSerializer<Source> {
@@ -329,7 +334,7 @@ public class SourcesResource extends BaseResource {
             JsonObject  obj = new JsonObject();
             obj.add("id", new JsonPrimitive(src.getId()) );
             obj.add("name", new JsonPrimitive(src.getName()));
-            obj.add("type", new JsonPrimitive(src.getText().getType().toString()));
+            obj.add("type", new JsonPrimitive(src.getType().toString()));
             obj.add("length", new JsonPrimitive(src.getText().getLength()));
             obj.add("created", new JsonPrimitive( this.format.format(src.getCreated())));
             return obj;
