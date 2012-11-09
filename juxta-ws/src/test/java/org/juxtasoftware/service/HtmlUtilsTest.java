@@ -15,6 +15,26 @@ import org.juxtasoftware.util.HtmlUtils;
 public class HtmlUtilsTest {
     
     @Test
+    public void simpleTextTransform() throws Exception {
+        //InputStream is = getClass().getResourceAsStream("/simple.html");
+        InputStream is = new FileInputStream(  "/Users/loufoster/dev/juxta/juxta-web/public/help.html");
+        File tmp = copyToTempFile(is);
+        
+        HtmlUtils.strip(tmp);
+        File txt = HtmlUtils.toTxt( new FileInputStream(tmp) );
+        
+        FileInputStream fis = new FileInputStream(txt);
+        final String content = IOUtils.toString(fis);
+        IOUtils.closeQuietly(fis);
+        System.out.println(content);
+        txt.delete();
+        
+        Assert.assertFalse(content.contains("<"));
+        Assert.assertFalse(content.contains(">"));
+        Assert.assertFalse(content.contains("</"));
+    }
+    
+    @Test
     public void simpleCase() throws Exception {
         InputStream is = getClass().getResourceAsStream("/simple.html");
         File tmp = copyToTempFile(is);
@@ -72,6 +92,7 @@ public class HtmlUtilsTest {
     
     private File copyToTempFile( InputStream is ) throws IOException {
         File tmpSrc = File.createTempFile("src", "dat");
+        tmpSrc.deleteOnExit();
         FileOutputStream fos =  new FileOutputStream(tmpSrc);
         IOUtils.copyLarge(is, fos);
         IOUtils.closeQuietly(fos);
