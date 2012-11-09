@@ -81,7 +81,7 @@ public class HtmlUtils {
         final List<HTML.Tag> breakers = new ArrayList<HTML.Tag>();
         breakers.add(HTML.Tag.DIV);
         breakers.add(HTML.Tag.H1);
-        breakers.add(HTML.Tag.H3);
+        breakers.add(HTML.Tag.H2);
         breakers.add(HTML.Tag.H3);
         breakers.add(HTML.Tag.H4);
         breakers.add(HTML.Tag.H5);

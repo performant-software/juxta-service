@@ -16,8 +16,9 @@ public class HtmlUtilsTest {
     
     @Test
     public void simpleTextTransform() throws Exception {
-        //InputStream is = getClass().getResourceAsStream("/simple.html");
-        InputStream is = new FileInputStream(  "/Users/loufoster/dev/juxta/juxta-web/public/help.html");
+        InputStream is = getClass().getResourceAsStream("/simple.html");
+        //InputStream is = new FileInputStream(  "/Users/loufoster/dev/juxta/juxta-web/public/help.html");
+        //InputStream is = new FileInputStream(  "/Users/loufoster/Desktop/juxta_tests/dh.html");
         File tmp = copyToTempFile(is);
         
         HtmlUtils.strip(tmp);
