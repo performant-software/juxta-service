@@ -107,7 +107,7 @@ public class SourceDaoImpl implements SourceDao, InitializingBean {
         
         // create a new text entry for this source
         Text txtContent = null;
-        if ( src.getText().getType().equals(Text.Type.XML) ) {
+        if ( src.getType().equals(Source.Type.XML) ) {
             txtContent = this.textRepository.create(XML_INPUT_FACTORY.createXMLStreamReader(contentReader));
         } else {
             txtContent = this.textRepository.create(contentReader);

@@ -21,6 +21,7 @@ import javax.xml.transform.sax.SAXSource;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 
+import org.apache.commons.io.input.ReaderInputStream;
 import org.juxtasoftware.dao.JuxtaXsltDao;
 import org.juxtasoftware.dao.NoteDao;
 import org.juxtasoftware.dao.PageBreakDao;
@@ -32,6 +33,7 @@ import org.juxtasoftware.model.PageBreak;
 import org.juxtasoftware.model.RevisionInfo;
 import org.juxtasoftware.model.Source;
 import org.juxtasoftware.model.Witness;
+import org.juxtasoftware.util.HtmlUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.Scope;
@@ -76,7 +78,7 @@ public class SourceTransformer {
 
         // get original parse template
         JuxtaXslt xslt = null;
-        if (srcDoc.getText().getType().equals(Text.Type.XML)) {
+        if (srcDoc.getType().equals(Source.Type.XML)) {
             xslt = this.xsltDao.find( origWit.getXsltId());
         }
         
@@ -88,8 +90,10 @@ public class SourceTransformer {
         
         // redo the transform
         Text parsedContent = srcDoc.getText();
-        if (srcDoc.getText().getType().equals(Text.Type.XML)) {
+        if (srcDoc.getType().equals(Source.Type.XML)) {
             parsedContent = doTransform(srcDoc, xslt);
+        } else if  ( srcDoc.getType().equals(Source.Type.HTML) ) {
+            parsedContent = doHtmlTransform(srcDoc);
         } else {
             NullTransformReader rdr = new NullTransformReader();
             this.textRepository.read(srcDoc.getText(), rdr);
@@ -123,9 +127,11 @@ public class SourceTransformer {
         String witnessName = finalName;
 
         // transform into a new text_content object        
-        Text parsedContent = srcDoc.getText();
-        if (srcDoc.getText().getType().equals(Text.Type.XML)) {     
+        Text parsedContent = null;
+        if (srcDoc.getType().equals(Source.Type.XML)) {     
             parsedContent = doTransform(srcDoc, xslt);
+        } else if  ( srcDoc.getType().equals(Source.Type.HTML) ) {
+            parsedContent = doHtmlTransform(srcDoc);
         } else {
             NullTransformReader rdr = new NullTransformReader();
             this.textRepository.read(srcDoc.getText(), rdr);
@@ -150,6 +156,16 @@ public class SourceTransformer {
         }
         
         return id;
+    }
+
+    private Text doHtmlTransform(Source srcDoc) throws IOException {
+        File htmlOut = HtmlUtils.toTxt( new ReaderInputStream(this.sourceDao.getContentReader(srcDoc), "UTF-8") );
+        FileInputStream fis = new FileInputStream(htmlOut);
+        InputStreamReader isr = new InputStreamReader(fis, "UTF-8");
+        Text parsedContent = this.textRepository.create( isr );
+        isr.close();
+        htmlOut.delete();
+        return parsedContent;
     }
 
     private Text doTransform(Source srcDoc, JuxtaXslt xslt) throws IOException, TransformerException, FileNotFoundException, SAXException {        

@@ -26,8 +26,6 @@ import org.springframework.stereotype.Service;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-import eu.interedition.text.Text;
-
 /**
  * Resource used to transform source documents into
  * texts by applying a parsing template
@@ -102,7 +100,7 @@ public class Transformer extends BaseResource {
         } else {
             // if none specifed and source is xml, generate a new XSLT
             // based in the starter template
-            if ( srcDoc.getText().getType().equals(Text.Type.XML)) {
+            if ( srcDoc.getType().equals(Source.Type.XML)) {
                 try {
                     newXslt = true;
                     xslt = createXsltFromTemplate(srcDoc, finalName);

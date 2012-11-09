@@ -55,8 +55,6 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-import eu.interedition.text.Text;
-
 /**
  * REsource to get/update XSLT for a witness.
  * Also get the generic XSLT template.
@@ -189,7 +187,7 @@ public class XsltResource extends BaseResource  {
     private Representation previewWitness(JuxtaXslt xslt) {
         Witness w = this.witnessDao.find(this.witnessId);
         Source src = this.sourceDao.find(this.workspace.getId(), w.getSourceId());
-        if (src.getText().getType().equals(Text.Type.XML)) {
+        if (src.getType().equals(Source.Type.XML)) {
             try {
                 final File out = doTransform(src, xslt);
                 FileInputStream fis = new FileInputStream(out);

@@ -175,7 +175,7 @@ public class SourcesResource extends BaseResource {
         List<Long> idList = new ArrayList<Long>();
         try {
             // create the source
-            Long id = createSource(sourceName, MediaType.valueOf(contentType.toUpperCase()), srcInputStream);
+            Long id = createSource(sourceName, MediaType.valueOf(contentType), srcInputStream);
             idList.add( id );
         } catch ( FileSizeLimitExceededException e ) {
             setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
