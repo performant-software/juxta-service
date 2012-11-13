@@ -1,9 +1,4 @@
 
-# console appender for local devmode 
-log4j.appender.stdout=org.apache.log4j.ConsoleAppender
-log4j.appender.stdout.layout=org.apache.log4j.PatternLayout
-log4j.appender.stdout.layout.ConversionPattern=%d{E MMM dd, HH:mm:ss} [%p] - %m\n
-
 # rolling appender for prouction use
 log4j.appender.rolling=org.apache.log4j.DailyRollingFileAppender
 log4j.appender.rolling.File = logs/juxta-ws.log
@@ -12,9 +7,9 @@ log4j.appender.rolling.DatePattern = '.'yyy-MM-dd
 log4j.appender.rolling.layout=org.apache.log4j.PatternLayout
 log4j.appender.rolling.layout.ConversionPattern=%d{E MMM dd, HH:mm:ss} [%p] - %m\n
 
-# rolling appender for metrics logging 
-log4j.appender.metrics=org.apache.log4j.DailyRollingFileAppender
-log4j.appender.metrics.File = logs/metrics.log
+# file appender for metrics logging 
+log4j.appender.metrics=org.apache.log4j.FileAppender
+log4j.appender.metrics.File = home/juxta/ws_metrics/metrics.log
 log4j.appender.metrics.Append = true
 log4j.appender.metrics.layout=org.apache.log4j.PatternLayout
 log4j.appender.metrics.layout.ConversionPattern=%m\n
