@@ -1,0 +1,135 @@
+The '''digital humanities''' is an area of research, teaching, and creation concerned with the intersection of computing and the disciplines of the [[humanities]]. Developing from an earlier field called '''humanities computing,''' today digital humanities embrace a variety of topics ranging from curating online collections to data mining large cultural data sets. Digital Humanities currently incorporates both digitized and born-digital materials and combines the methodologies from the traditional humanities disciplines (such as [[history]], [[philosophy]], [[linguistics]], [[literature]], [[art]], [[archaeology]], [[music]], and [[cultural studies]]) with tools provided by [[computing]] (such as [[data visualisation]], [[information retrieval]], [[data mining]], [[statistics]], [[computational analysis]]) and [[electronic publication|digital publishing]].  
+
+==Objectives==
+Digital humanities scholars use computational methods either to answer existing research questions or to challenge existing theoretical paradigms, generating new questions and pioneering new approaches. One goal is to systematically integrate computer technology into the activities of humanities scholars, <ref name=neh-odh-grant-opportunities>{{cite web|title=Grant Opportunities|url=http://www.neh.gov/ODH/GrantOpportunities/tabid/57/Default.aspx|work=National Endowment for the Humanities, Office of Digital Humanities Grant Opportunities|accessdate=25 January 2012}}</ref>  such as the use of text-analytic techniques; [[GIS]]; [[commons-based peer collaboration]]; interactive games and [[multimedia]] in the traditional [[arts]] and [[humanities]] disciplines like it is done in contemporary empirical [[social sciences]].
+
+Another goal is to create scholarship that is more than texts and papers. This includes the integration of [[multimedia]], [[metadata]] and dynamic environments. An example of this is [[The Valley of the Shadow]] project at the [[University of Virginia]] or the [[Vectors Journal of Culture and Technology in a Dynamic Vernacular]] at [[University of Southern California]].
+
+A growing number of researchers in digital humanities are using computational methods for the analysis of large cultural data sets. Examples of such projects were highlighted by the Humanities High Performance Computing competition sponsored by the Office of Digital Humanities in 2008,<ref>{{cite news|title=Grant Announcement for Humanities High Performance Computing Program|date=
+December 1, 2008 |accessdate= May 1, 2012|first=Brett|last=Bobley|work=National Endowment for the Humanities|url=http://www.neh.gov/divisions/odh/grant-news/grant-announcement-humanities-high-performance-computing-program}}</ref> and also by the Digging Into Data challenge organized in 2009<ref>{{cite news|title=Awardees of 2009 Digging into Data Challenge|date= 2009 |accessdate= May 1, 2012|first=|last=|work=Digging into Data|url=http://www.diggingintodata.org/Home/AwardRecipients2009/tabid/175/Default.aspx}}</ref> and 2011<ref>{{cite news|title=NEH Announces Winners of 2011 Digging Into Data Challenge|date= January 3, 2012 |accessdate= May 1, 2012|first=|last=|work=National Endowment for the Humanities|url=http://www.neh.gov/news/press-release/2012-01-03}}</ref> by NEH in collaboration with NSF,<ref name=cohen-embrace>{{Cite news| issn = 0362-4331| last = Cohen| first = Patricia| title = Humanities Scholars Embrace Digital Technology| work = The New York Times| location = New York| accessdate = 2012-06-07| date = 2010-11-16| url = http://www.nytimes.com/2010/11/17/arts/17digital.html?pagewanted=all}}</ref> and in partnership with [[Joint Information Systems Committee|JISC]] in the UK, and [[Social Sciences and Humanities Research Council|SSHRC]] in Canada.<ref>{{cite news|title=Computationally Intensive Research in the Humanities and Social Sciences: A Report on the Experiences of First Respondents to the Digging Into Data Challenge| work=Council on Library and Information Resources|first= Christa|last= Williford| first2= Charles|last2= Henry|date=June 2012|ISBN= 978-1-932326-40-6|url=http://www.clir.org/pubs/reports/pub151}}</ref>
+
+At present, formal academic recognition of digital work in the humanities remains somewhat problematic, although there are signs that this might be changing.{{Citation needed|date=May 2012}} Some universities do offer programs related to the field.
+
+==Environments and tools==
+Digital humanities is also involved in the creation of software, providing "environments and tools for producing, curating, and interacting with knowledge that is 'born digital' and lives in various digital contexts."<ref>{{Cite news | last = Presner | first = Todd | title = Digital Humanities 2.0: A Report on Knowledge | work = Connexions | accessdate = 2012-06-09 | date = 2010 | url = http://cnx.org/content/m34246/latest/ }}</ref> In this context, the field is sometimes known as [[computational humanities]]. Many such projects share a "commitment to [[open standards]] and [[open source]]."<ref>{{Cite book| publisher = Ashgate| isbn = 9781409410683| pages = 11 - 26| page=14|editors = Marilyn Deegan and Willard McCarty (eds.)| last = Bradley | first = John | title = Collaborative Research in the Digital Humanities| chapter = No job for techies: Technical contributions to research in digital humanities| location = Farnham and Burlington| date = 2012}}</ref>
+
+==History==
+Digital humanities descends from the field of humanities computing, of computationally enabled "formal representations of the human record,"<ref name=unsworth-humanities-computing>{{Cite journal | volume = 4| last = Unsworth| first = John| title = What is Humanities Computing and What is not?| journal = Jahrbuch für Computerphilologie| accessdate = 2012-05-31| date = 2002-11-08| url = http://computerphilologie.tu-darmstadt.de/jg02/unsworth.html}}</ref> whose origins reach back to the late 1940s in the pioneering work of [[Roberto Busa]].<ref name=svensson>{{Cite journal| issn = 1938-4122| volume = 3| issue = 3| last = Svensson| first = Patrik| title = Humanities Computing as Digital Humanities| journal = Digital Humanities Quarterly| accessdate = 2012-05-30| date = 2009| url = http://digitalhumanities.org/dhq/vol/3/3/000065/000065.html}}</ref><ref name=hockney>{{Cite book| publisher = Blackwell| isbn = 1405103213| editors = Susan Schreibman, Ray Siemens, John Unsworth (eds.)| last = Hockney| first = Susan| title = Companion to Digital Humanities| chapter = The History of Humanities Computing| location = Oxford| series = Blackwell Companions to Literature and Culture| date = 2004| url=http://www.digitalhumanities.org/companion/view?docId=blackwell/9781405103213/9781405103213.xml&chunk.id=ss1-2-1&toc.depth=1&toc.id=ss1-2-1&brand=9781405103213_brand}}</ref>
+
+The [[Text Encoding Initiative]], born from the desire to create a standard encoding scheme for humanities electronic texts, is the outstanding achievement of early humanities computing. The project was launched in 1987 and published the first full version of the ''TEI Guidelines'' in May 1994.<ref name=hockney /> 
+
+In the nineties, major digital text and image archives emerged at centers of humanities computing in the U.S. (e.g. the ''Women Writers Project'',<ref>{{Cite| publisher = Brown University| coauthors = | title = Women Writers Project| accessdate = 2012-06-16| date =| url =http://www.wwp.brown.edu/}}</ref> the ''Rossetti Archive'',<ref>{{Cite| publisher = Institute for Advanced Technology in the Humanities, University of Virginia| coauthors = Jerome J. McGann (ed.)| title = Rossetti Archive| accessdate = 2012-06-16| date =| url = http://www.rossettiarchive.org/}}</ref> and the ''William Blake Archive''<ref>{{Cite| publisher = | coauthors = Morris Eaves, Robert Essick, and Joseph Viscomi (eds.)| title = The William Blake Archive| accessdate = 2012-06-16| date =| url = http://www.blakearchive.org/}}</ref>), which demonstrated the sophistication and robustness of text-encoding for literature.<ref>{{Cite journal| issn = 0093-1896| volume = 31| issue = 1| pages = 49-84| last = Liu| first = Alan| title = Transcendental Data: Toward a Cultural History and Aesthetics of the New Encoded Discourse| journal = Critical Inquiry| accessdate = 2012-06-16| date = 2004| url = http://www.jstor.org/stable/10.1086/427302}}</ref>
+
+The terminological change from "humanities computing" to "digital humanities" has been attributed to [[John Unsworth]] and [[Ray Siemens]] who, as editors of the monograph ''A Companion to Digital Humanities'' (2001), tried to prevent the field from being viewed as "mere digitization."<ref name="fitzpatrick">{{Cite news| last = Fitzpatrick| first = Kathleen| title = The humanities, done digitally| work = The Chronicle of Higher Education| accessdate = 2011-07-10| date = 2011-05-08| url = http://chronicle.com/article/The-Humanities-Done-Digitally/127382/}}</ref> Consequently, the hybrid term has created an overlap between fields like rhetoric and composition, which use "the methods of contemporary humanities in studying digital objects,"<ref name="fitzpatrick"/> and digital humanities, which uses "digital technology in studying traditional humanities objects".<ref name="fitzpatrick" /> The use of computational systems and the study of computational media within the arts and humanities more generally has been termed the 'computational turn'.<ref name="berry">{{Cite news| last = Berry| first = David| title = The Computational Turn: Thinking About the Digital Humanities| work = Culture Machine| accessdate = 2012-01-31| date = 2011-06-01| url = http://culturemachine.net/index.php/cm/article/viewDownloadInterstitial/440/470}}</ref>
+
+In 2006 the [[National Endowment for the Humanities]] (NEH), the federal granting agency for scholarships in the humanities, launched the Digital Humanities Initiative (renamed Office of Digital Humanities in 2008), which made widespread adoption of the term "digital humanities" all but irreversible in the United States.<ref name=kirschenbaum-dept />
+
+Digital humanities emerged from its former niche status and became "big news"<ref name=kirschenbaum-dept>{{Cite news| volume =| issue = 150| last = Kirschenbaum| first = Matthew G. | title = What is Digital Humanities and What's it Doing in English Departments?| work = ADE Bulletin| accessdate = | date = 2010| url = http://mkirschenbaum.files.wordpress.com/2011/01/kirschenbaum_ade150.pdf}}</ref> at the 2009 [[Modern Language Association |MLA convention]] in Philadelphia, where digital humanists made "some of the liveliest and most visible contributions"<ref>{{Cite news| issn = 0009-5982| last = Howard| first = Jennifer| title = The MLA Convention in Translation| work = The Chronicle of Higher Education | accessdate = 2012-05-31| date = 2009-12-31| url = http://chronicle.com/article/The-MLA-Convention-in/63379/}}</ref> and had their field hailed as "the first 'next big thing' in a long time."<ref name=pannapacker-mla>{{Cite web| last = Pannapacker| first = William| title = The MLA and the Digital Humanities| work = Brainstorm| format = The Chronicle of Higher Education| accessdate = 2012-05-30| date = 2009-12-28| url = http://chronicle.com/blogPost/The-MLAthe-Digital/19468/}}</ref>
+
+==Organizations and Institutions==
+
+The field of digital humanities is served by several organisations: [[The Association for Literary and Linguistic Computing]] (ALLC), the [[Association for Computers and the Humanities]] (ACH), and the [[Society_for_Digital_Humanities|Society for Digital Humanities/Société pour l'étude des médias interactifs]] (SDH/SEMI), which are joined under the umbrella organisation of the [[Alliance of Digital Humanities Organizations]] (ADHO). The alliance funds a number of projects such as the [[Digital Humanities Quarterly]], supports  the [[Text Encoding Initiative]], the organisation and sponsoring of workshops and conferences, as well as the funding of small projects, awards and bursaries.<ref>{{Cite journal| doi = 10.1093/llc/fqr002| volume = 26| issue = 1| pages = 3–4| last = Vanhoutte| first = Edward| title = Editorial| journal = Literary and Linguistic Computing| accessdate = 2011-07-11| date = 2011-04-01| url = http://llc.oxfordjournals.org/content/26/1/3.short}}</ref>
+
+ADHO also oversees a joint annual conference, which began as the ACH/ALLC (or ALLC/ACH) conference, and is now known as the [[Digital Humanities conference]].
+
+CenterNet is an international network of of about 100 digital humanities centers in 19 countries, working together to benefit digital humanities and related fields.<ref>{{cite web|url=http://digitalhumanities.org/centernet/about/|work=CenterNet|title=About|accessdate=June 16,2012}}</ref><ref name=caraco>{{Cite journal| volume = 57| issue = 2| last = Caraco| first = Benjamin| title = Les digital humanities et les bibliothèques | journal = Le Bulletin des Bibliothèques de France| accessdate = 12 April 2012| date = 1 January 2012| url = http://bbf.enssib.fr/consulter/bbf-2012-02-0069-002#appelnote-11}}</ref>
+
+==Criticism==
+Many conventional humanities scholars dismiss digital humanities as "whimsical."<ref name=cohen-embrace /> The literary theorist [[Stanley Fish]] claims that the digital humanities pursue a revolutionary agenda and thereby undermine the conventional standards of "pre-eminence, authority and disciplinary power."<ref name=fish-mortality>{{Cite news | last = Fish| first = Stanley | title = The Digital Humanities and the Transcending of Mortality | work = The New York Times | location = New York | accessdate = 2012-05-30| date = 2012-01-09 | url = http://opinionator.blogs.nytimes.com/2012/01/09/the-digital-humanities-and-the-transcending-of-mortality/}}</ref>
+
+==See also==
+
+===Centers===
+
+*[[Center for History and New Media | Roy Rosenzweig Center for History and New Media]]
+*[[Department of Digital Humanities|Department of Digital Humanities at King's College London]]
+*[[Digital Humanities Observatory]]
+*[[Humanities Advanced Technology and Information Institute]]
+*[[Institute for Advanced Technology in the Humanities]]
+*[[Maryland Institute for Technology in the Humanities]]
+*[[UCL Centre for Digital Humanities]]
+
+===Journals===
+
+*[http://www.tandfonline.com/loi/ndcr20 Digital Creativity]
+*[http://journalofdigitalhumanities.org Journal of Digital Humanities]
+*[[Digital Studies]]
+*[[Digital Medievalist]]
+*[[Digital Humanities Quarterly]]
+*[[Literary and Linguistic Computing]]
+*[[Southern Spaces]]
+
+===Meetings===
+
+*[[Digital Humanities conference]]
+*[[THATCamp]]
+
+===Miscellaneous===
+
+*[[Computers and writing]]
+*[[Computational archaeology]]
+*[[Cybertext]]
+*[[Cultural analytics]]
+*[[Digital Classicist]]
+*[[Digital library]]
+*[[Digital Medievalist]]
+*[[Digital history]]
+*[[Electronic Cultural Atlas Initiative]]
+*[[Electronic literature]]
+*[[EpiDoc]]
+*[[Humanistic informatics]]
+*[[Multimedia literacy]]
+*[[New media]]
+*[[Systems theory]]
+*[[Stylometry]]
+*[[Text Encoding Initiative]]
+*[[Text mining]]
+*[[Topic model|Topic Modeling]]
+*[[Transliteracy]]
+
+==References==
+{{reflist |2}}
+
+==Bibliography==
+#Berry, D. M., ed. (2012) ''[http://www.palgrave.com/products/title.aspx?pid=493310 Understanding Digital Humanities]'', Basingstoke: Palgrave Macmillan. 
+#Busa, Roberto. (1980). ‘The Annals of Humanities Computing: The Index Thomisticus’, in Computers and the Humanities vol. 14, pp.83-90. 
+#Computers and the Humanities (1966-2004)
+#Celentano A., Cortesi A., Mastandrea P. (2004), Informatica Umanistica: una disciplina di confine, Mondo Digitale, vol. 4, pp. 44-55.
+#Condron Frances, Michael Fraser, and Stuart Sutherland, eds. (2001), ''[http://users.ox.ac.uk/~ctitext2/resguide2000/contents.shtml Oxford University Computing Services Guide to Digital Resources for the Humanities]'', West Virginia University Press. 
+#Fitzpatrick, Kathleen (2011). ''[http://nyupress.org/books/book-details.aspx?bookId=4998 Planned Obsolescence: Publishing, Technology, and the Future of the Academy]''. New York; NYU Press. 
+#Gold, Matthew K., ed. (2012), ''[http://www.upress.umn.edu/book-division/books/debates-in-the-digital-humanities Debates In the Digital Humanities]''. Minneapolis: University of Minnesota Press. 
+#Hancock, B. & Giarlo, M.J. (2001). ''[http://dx.doi.org/10.1108/07378830110405139 Moving to XML: Latin texts XML conversion project at the Center for Electronic Texts in the Humanities]''. Library Hi Tech, 19(3), 257-264.
+#Hockey, Susan. (2001), ''Electronic Text in the Humanities: Principles and Practice'', Oxford: Oxford University Press.
+# Honing, Henkjan (2008). The role of ICT in music research: A bridge too far? ''International Journal of Humanities and Arts Computing'', 1 (1), 67-75. 
+#Inman James, Cheryl reed, & Peter Sands, eds. (2003), ''Electronic Collaboration in the Humanities: Issues and Options'', Mahwah, NJ: Lawrence Erlbaum.
+#Kenna, Stephanie and Seamus Ross, eds. (1995), ''Networking in the humanities: Proceedings of the Second Conference on Scholarship and Technology in the Humanities held at Elvetham Hall, Hampshire, UK 13-16 April 1994''. London: Bowker-Saur.
+#Kirschenbaum, Matthew (2008). ''[http://mitpress.mit.edu/catalog/item/default.asp?ttype=2&tid=11336 Mechanisms: New Media and the Forensic Imagination]''. Cambridge, Mass.: MIT Press. 
+#McCarty, Willard (2005), ''Humanities Computing'', Basingstoke: Palgrave Macmillan.
+#Moretti, Franco (2007), ''[http://www.versobooks.com/books/261-graphs-maps-trees Graphs, Maps, Trees: Abstract Models for Literary History]''. New York: Verso. 
+#Mullings, Christine, Stephanie Kenna, Marilyn Deegan, and Seamus Ross, eds. (1996), ''New Technologies for the Humanities'' London: Bowker-Saur.
+#Newell, William H., ed. (1998), ''Interdisciplinarity: Essays from the Literature.'' New York: College Entrance Examination Board.
+#Nowviskie, Bethany, ed. (2011). ''[http://mediacommons.futureofthebook.org/alt-ac/ Alt-Academy: Alternative Academic Careers for Humanities Scholars]''. New York: MediaCommons. 
+#Ramsay, Steve. (2011). ''[http://www.press.uillinois.edu/books/catalog/75tms2pw9780252036415.html Reading Machines: Toward an Algorithmic Criticism]''. Urbana: University of Illinois Press. 
+#Schreibman Susan, Siemens Ray, and Unsworth John eds. (2004). ''[http://www.digitalhumanities.org/companion/ A Companion To Digital Humanities]'' Blackwell Publishers. 
+#Selfridge-Field, Eleanor (ed). (1997) Beyond MIDI: The Handbook of Musical Codes. Cambridge, MA: The MIT Press.
+#Unsworth, John, (2005). ''[http://jefferson.village.virginia.edu/~jmu2m/Kings.5-00/primitives.html Scholarly Primitives: What methods do humanities researchers have in common, and how might our tools reflect this?]''
+
+==External links==
+
+
+*[http://www.digitalhumanities.org/ The Alliance of Digital Humanities Organizations]
+*[http://digitalhumanities.org/centernet/ CenterNet]
+*[http://tapor.ualberta.ca/taporwiki/index.php/Day_in_the_Life_of_the_Digital_Humanities A Day in the Life of the Digital Humanities]
+*[http://lab.softwarestudies.com/2012/03/computational-humanities-vs-digital.html Lev Manovich, Computational Humanities vs. Digital Humanities]
+*[http://digitalhumanities101.wordpress.com EPFL Course about digital humanities]
+
+[[Category:Digital humanities| ]]
+
+[[ar:إنسانيات رقمية]]
+[[cy:Dyniaethau digidol]]
+[[de:Digital Humanities]]
+[[fr:Humanités numériques]]
+[[it:Informatica umanistica]]
+[[ja:デジタル・ヒューマニティーズ]]
+[[sl:Digitalna humanistika]]
+[[sh:Дигиталне хуманистичке науке]]
