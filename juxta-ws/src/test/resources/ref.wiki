@@ -1,0 +1,20 @@
+In a recent case-control study of the eating habits of 2,018 women, consumption of Mushrooms and green tea was linked to a 90% lower occurrence of [[breast cancer]].<ref name="International Journal of Cancer 2009">
+{{cite journal
+ | last1 = Zhang
+ | first1 = M
+ | title = Dietary intakes of mushrooms and green tea combine to reduce the risk of breast cancer in Chinese women.
+ | journal = International Journal of Cancer
+ | volume = 124
+ | issue = 6
+ | pages = 1404–8
+ | year = 2009
+ | pmid=19048616
+ | doi = 10.1002/ijc.24047
+ | last2 = Huang
+ | first2 = J
+ | last3 = Xie
+ | first3 = X
+ | last4 = Holman
+ | first4 = CD
+ }}</ref>
+ The end.

@@ -20,7 +20,12 @@ public class WikiTextUtils {
     
     public static final File toTxt( InputStream wikiStream ) throws IOException {
         
-        // first strip <ref tags
+        // first strip markup that does not translate correctly into html or plain text, and make
+        // the output difficult to read/understand. Bad markup:
+        //    <ref></ref>, <ref/>
+        //    [[Image: ... ]]
+        //    [[File: ... ]]
+        //    {{Citation needed}}
         InputStreamReader isr = new InputStreamReader(wikiStream, "UTF-8");
         BufferedReader r = new BufferedReader( isr );
         File stripped = File.createTempFile("stripped", "dat");
@@ -33,8 +38,11 @@ public class WikiTextUtils {
             if ( line == null ) {
                 break;
             } else {
-
                 
+                line = stripCitationNeeded(line);
+                line = stripTag("[[File:", line);
+                line = stripTag("[[Image:", line);
+
                 if ( strippingRef ) {
                     if ( line.contains("</ref>") ) {
                         int end = line.indexOf("</ref>");
@@ -44,10 +52,12 @@ public class WikiTextUtils {
                 } 
                 
                 if ( strippingRef == false) {
-                    
-                    stripCitationNeeded(line);
-                    stripFile(line);
-                    
+                    // From [[Category:: on the file just sets up
+                    // links at the page footer. Doen't translate correctly to text
+                    // so stop here
+                    if ( line.contains("[[Category:") || line.contains("[[ar:") || line.contains("{{DEFAULTSORT:") ) {
+                        break;
+                    }
                     while ( line.contains("<ref") ) {
                         
                         int start = line.indexOf("<ref");
@@ -78,18 +88,17 @@ public class WikiTextUtils {
                             break;
                         }
                     }
-                }
-                
-                if ( line.trim().length() > 0 ) {
-                    line += "\n";
-                    osw.write(line);
+                    
+                    if ( line.trim().length() > 0 ) {
+                        line += "\n";
+                        osw.write(line);
+                    }
                 }
             }
         }
         IOUtils.closeQuietly(osw);
         
-        
-        // to html
+        // Next, turn this to html using textile-j (this one does the best job of those I tried out)
         File html = File.createTempFile("html", "dat");
         FileWriterWithEncoding fw = new FileWriterWithEncoding(html, "UTF-8");
         HtmlDocumentBuilder builder = new HtmlDocumentBuilder(fw);
@@ -101,25 +110,45 @@ public class WikiTextUtils {
         IOUtils.closeQuietly(fw);
         stripped.delete();
         
-        // to txt
+        // Finally, turn the html into plain text
         HtmlUtils.strip(html);
         return HtmlUtils.toTxt( new FileInputStream(html) );
 
     }
 
-    private static void stripFile(String line) {
-        if ( line.contains("[[File:") == false) {
-            return;
+    private static String stripTag(final String tagStart, String line) {
+        if ( line.contains(tagStart) == false) {
+            return line;
         }
         
+        int start = line.indexOf(tagStart);
+        int depth = 1;
+        StringBuilder buf= new StringBuilder();
+        for (int i=start+7; i<line.length(); i++) {
+            buf.append(line.charAt(i));
+            if  (buf.indexOf("[[") > -1) {
+                depth++;
+                buf = new StringBuilder();
+            } else if ( buf.indexOf("]]") > -1 ) {
+                depth--;
+                if ( depth == 0) {
+                    line = line.substring(0, start) + line.substring(i+1);
+                    break;
+                } else {
+                    buf = new StringBuilder();
+                }
+            }
+        }
+        return line;
     }
 
-    private static void stripCitationNeeded(String line) {
+    private static String stripCitationNeeded(String line) {
         while ( line.contains("{{Citation needed")) {
             int start = line.indexOf("{{Citation needed");
             int end = line.indexOf("}}", start);
             line = line.substring(0, start) + line.substring(end+2);
         }
+        return line;
     }
 
 }
