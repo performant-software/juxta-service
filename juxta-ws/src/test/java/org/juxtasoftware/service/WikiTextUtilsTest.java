@@ -64,6 +64,21 @@ public class WikiTextUtilsTest {
         Assert.assertTrue(content.contains("The end."));
         Assert.assertTrue(content.contains("cancer."));
     }
+    
+    @Test
+    public void testTroll() throws Exception {
+        InputStream is = getClass().getResourceAsStream("/troll.wiki");
+        File txt = WikiTextUtils.toTxt(is);
+        FileInputStream fis = new FileInputStream(txt);
+        final String content = IOUtils.toString(fis).trim();
+        IOUtils.closeQuietly(fis);
+        System.out.println(content);
+        txt.delete();
+        Assert.assertFalse(content.contains("{{pp-semi"));
+        Assert.assertFalse(content.contains("{{pp-move"));
+        Assert.assertTrue(content.contains("A troll is a supernatural being"));
+        Assert.assertTrue(content.contains("rarely helpful to human beings."));
+    }
 
     @Test
     public void wikipediaText2Transform() throws Exception {

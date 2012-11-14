@@ -43,8 +43,10 @@ public class WikiTextUtils {
             } else {
                 
                 line = stripCitationNeeded(line);
-                line = stripTag("[[File:", line);
-                line = stripTag("[[Image:", line);
+                line = stripTag("[[", "File:", "]]", line);
+                line = stripTag("[[", "Image:", "]]", line);
+                line = stripTag("{{", "pp-", "}}", line);
+                line = stripTag("{{", "-", "}}", line);
 
                 if ( strippingRef ) {
                     if ( line.contains("</ref>") ) {
@@ -119,26 +121,25 @@ public class WikiTextUtils {
 
     }
 
-    private static String stripTag(final String tagStart, String line) {
-        if ( line.contains(tagStart) == false) {
-            return line;
-        }
-        
-        int start = line.indexOf(tagStart);
-        int depth = 1;
-        StringBuilder buf= new StringBuilder();
-        for (int i=start+7; i<line.length(); i++) {
-            buf.append(line.charAt(i));
-            if  (buf.indexOf("[[") > -1) {
-                depth++;
-                buf = new StringBuilder();
-            } else if ( buf.indexOf("]]") > -1 ) {
-                depth--;
-                if ( depth == 0) {
-                    line = line.substring(0, start) + line.substring(i+1);
-                    break;
-                } else {
+    private static String stripTag(final String tagStart, final String tag, final String tagEnd, String line) {
+        final String fullStart = tagStart+tag;
+        while ( line.contains(fullStart) ) {
+            int start = line.indexOf(fullStart);
+            int depth = 1;
+            StringBuilder buf= new StringBuilder();
+            for (int i=start+7; i<line.length(); i++) {
+                buf.append(line.charAt(i));
+                if  (buf.indexOf(tagStart) > -1) {
+                    depth++;
                     buf = new StringBuilder();
+                } else if ( buf.indexOf(tagEnd) > -1 ) {
+                    depth--;
+                    if ( depth == 0) {
+                        line = line.substring(0, start) + line.substring(i+1);
+                        break;
+                    } else {
+                        buf = new StringBuilder();
+                    }
                 }
             }
         }
