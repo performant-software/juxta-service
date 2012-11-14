@@ -5,7 +5,10 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+import org.juxtasoftware.Constants;
 import org.juxtasoftware.dao.CacheDao;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.support.DataAccessUtils;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -16,7 +19,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class CacheDaoImpl implements CacheDao {
     @Autowired JdbcTemplate jdbcTemplate;
-    
+    protected static final Logger LOG = LoggerFactory.getLogger( Constants.WS_LOGGER_NAME ); 
     private final String TABLE = "juxta_collation_cache";
     
     @Override
@@ -64,22 +67,25 @@ public class CacheDaoImpl implements CacheDao {
 
     @Override
     public void cacheHeatmap(final Long setId, final Long baseId, final Reader data, final boolean condensed ) {
-        deleteHeatmap(setId);
-        final String sql = "insert into " + TABLE+ " (set_id, witness_list, data_type, data) values (?,?,?,?)";
-        this.jdbcTemplate.update(sql, new PreparedStatementSetter() {
-
-            @Override
-            public void setValues(PreparedStatement ps) throws SQLException {
-                String type = "HEATMAP";
-                if ( condensed ) {
-                    type = "CONDENSED_HEATMAP";
+        try {
+            final String sql = "insert into " + TABLE+ " (set_id, witness_list, data_type, data) values (?,?,?,?)";
+            this.jdbcTemplate.update(sql, new PreparedStatementSetter() {
+    
+                @Override
+                public void setValues(PreparedStatement ps) throws SQLException {
+                    String type = "HEATMAP";
+                    if ( condensed ) {
+                        type = "CONDENSED_HEATMAP";
+                    }
+                    ps.setLong(1, setId);
+                    ps.setString(2, baseId.toString());
+                    ps.setString(3, type);
+                    ps.setCharacterStream(4, data);
                 }
-                ps.setLong(1, setId);
-                ps.setString(2, baseId.toString());
-                ps.setString(3, type);
-                ps.setCharacterStream(4, data);
-            }
-        });    
+            }); 
+        } catch (Exception e) {
+            LOG.error("Unable to cache heatmap for set "+setId+" base "+baseId, e);
+        }
     }
     
     @Override
@@ -202,18 +208,21 @@ public class CacheDaoImpl implements CacheDao {
 
     @Override
     public void cacheSideBySide(final Long setId, final Long witness1, final Long witness2, final Reader data) {
-        deleteSideBySide(setId);
-        final String sql = "insert into " + TABLE+ " (set_id, witness_list, data_type, data) values (?,?,?,?)";
-        this.jdbcTemplate.update(sql, new PreparedStatementSetter() {
-
-            @Override
-            public void setValues(PreparedStatement ps) throws SQLException {
-                ps.setLong(1, setId);
-                ps.setString(2, witness1.toString()+","+witness2.toString());
-                ps.setString(3, "SIDEBYSIDE");
-                ps.setCharacterStream(4, data);
-            }
-        });  
+        try {
+            final String sql = "insert into " + TABLE+ " (set_id, witness_list, data_type, data) values (?,?,?,?)";
+            this.jdbcTemplate.update(sql, new PreparedStatementSetter() {
+    
+                @Override
+                public void setValues(PreparedStatement ps) throws SQLException {
+                    ps.setLong(1, setId);
+                    ps.setString(2, witness1.toString()+","+witness2.toString());
+                    ps.setString(3, "SIDEBYSIDE");
+                    ps.setCharacterStream(4, data);
+                }
+            });  
+        } catch (Exception e) {
+            LOG.error("Unable to cache side-by-side for set "+setId+" witnesses "+witness1+","+witness2, e);
+        }
     }
 
     @Override
