@@ -9,12 +9,15 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 
-import net.java.textilej.parser.MarkupParser;
-import net.java.textilej.parser.builder.HtmlDocumentBuilder;
-import net.java.textilej.parser.markup.mediawiki.MediaWikiDialect;
-
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.output.FileWriterWithEncoding;
+import org.eclipse.mylyn.wikitext.core.parser.MarkupParser;
+import org.eclipse.mylyn.wikitext.core.parser.builder.HtmlDocumentBuilder;
+import org.eclipse.mylyn.wikitext.mediawiki.core.MediaWikiLanguage;
+//import org.eclipse.mylyn.wikitext.core.parser.MarkupParser;
+//import org.eclipse.mylyn.wikitext.core.parser.builder.HtmlDocumentBuilder;
+//import org.eclipse.mylyn.wikitext.mediawiki.core.MediaWikiLanguage;
+//import org.sweble.wikitext.engine.utils.SimpleWikiConfiguration;
 
 public class WikiTextUtils {
     
@@ -103,7 +106,7 @@ public class WikiTextUtils {
         FileWriterWithEncoding fw = new FileWriterWithEncoding(html, "UTF-8");
         HtmlDocumentBuilder builder = new HtmlDocumentBuilder(fw);
         builder.setEmitAsDocument(false);
-        MarkupParser parser = new MarkupParser(new MediaWikiDialect());
+        MarkupParser parser = new MarkupParser(new MediaWikiLanguage());
         parser.setBuilder(builder);
         InputStream fis = new FileInputStream( stripped );
         parser.parse( new InputStreamReader(fis) );
