@@ -45,8 +45,8 @@ public class WikiTextUtils {
                 line = stripCitationNeeded(line);
                 line = stripTag("[[", "File:", "]]", line);
                 line = stripTag("[[", "Image:", "]]", line);
-                line = stripTag("{{", "pp-", "}}", line);
-                line = stripTag("{{", "-", "}}", line);
+                line = line.replaceAll("\\{\\{.*\\}\\}","");
+
 
                 if ( strippingRef ) {
                     if ( line.contains("</ref>") ) {

@@ -103,9 +103,12 @@
         <constructor-arg value="${juxta.authenticator.password}" />
     </bean>
     
-    <!-- property to set max source size limit -->
+    <!-- properties to enforce some limits -->
     <bean id="maxSourceSize" class="java.lang.Long" factory-method="valueOf">
         <constructor-arg value="${juxta.source.max}" />
+    </bean>
+     <bean id="maxSetWitnesses" class="java.lang.Integer" factory-method="valueOf">
+        <constructor-arg value="${juxta.set.maxWitnesses}" />
     </bean>
     
     <!-- property to set average size of alignments (in bytes) -->

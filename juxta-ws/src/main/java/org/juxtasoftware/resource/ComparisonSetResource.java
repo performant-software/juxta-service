@@ -42,7 +42,8 @@ import com.google.gson.JsonParser;
 public class ComparisonSetResource extends BaseResource {
     @Autowired private ComparisonSetDao comparionSetDao;
     @Autowired private WitnessDao witnessDao;
-
+    @Autowired private Integer maxSetWitnesses;
+    
     private enum PostAction {INVALID, ADD_WITNESSES, DELETE_WITNESSES};
     private ComparisonSet set;
     private PostAction postAction = PostAction.INVALID;
@@ -197,6 +198,12 @@ public class ComparisonSetResource extends BaseResource {
         JsonParser parser = new JsonParser();
         JsonArray jsonArray = parser.parse(jsonWitnesses).getAsJsonArray();
         Set<Witness> currWits = this.comparionSetDao.getWitnesses(this.set);
+        
+        if ( currWits.size() + jsonArray.size() > this.maxSetWitnesses ) {
+            setStatus(Status.CLIENT_ERROR_PRECONDITION_FAILED);
+            return toTextRepresentation("Witnesses per set limit ("+this.maxSetWitnesses+") exceeded");
+        }
+        
         Set<Witness> addWits = new HashSet<Witness>();
         for ( Iterator<JsonElement>  itr = jsonArray.iterator(); itr.hasNext(); ) {
             Long newWitId = itr.next().getAsLong();
