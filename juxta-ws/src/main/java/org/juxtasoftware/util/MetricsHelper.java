@@ -79,7 +79,6 @@ public class MetricsHelper {
                 this.metricsDao.create( m );
             }
         }
-        logMetrics();
     }
     
     public void workspaceAdded( final Workspace ws ) {
