@@ -192,6 +192,9 @@ CREATE TABLE IF NOT EXISTS juxta_metrics (
     secs_collating INT UNSIGNED not null default 0,
     started_collations INT UNSIGNED not null default 0,
     finished_collations INT UNSIGNED not null default 0,
+    max_set_witnesses INT UNSIGNED not null default 0,
+    min_set_witnesses INT UNSIGNED not null default 0,
+    mean_set_witnesses INT UNSIGNED not null default 0,
     PRIMARY KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 

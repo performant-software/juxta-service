@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.juxtasoftware.Constants;
+import org.juxtasoftware.dao.ComparisonSetDao;
 import org.juxtasoftware.dao.MetricsDao;
 import org.juxtasoftware.dao.SourceDao;
 import org.juxtasoftware.dao.WorkspaceDao;
@@ -34,6 +35,8 @@ public class MetricsHelper {
     @Autowired private WorkspaceDao workspaceDao;
     @Autowired private MetricsDao metricsDao;
     @Autowired private SourceDao srcDao;
+    @Autowired private ComparisonSetDao setDao;
+    
     private ConcurrentHashMap<Long, Long> collationStartTimes = new ConcurrentHashMap<Long, Long>();
     private static final Logger LOG = LoggerFactory.getLogger( Constants.METRICS_LOGGER_NAME );
     private static final Logger DEBUG_LOG = LoggerFactory.getLogger( Constants.WS_LOGGER_NAME );
@@ -68,7 +71,6 @@ public class MetricsHelper {
     
     
     public void init() {
-        // start by getting all known workspaces
         for (Workspace ws : this.workspaceDao.list()) {
             Metrics m = this.metricsDao.get(ws);
             if (m == null) {
@@ -76,7 +78,12 @@ public class MetricsHelper {
                 m = new Metrics();
                 m.setWorkspace(ws.getName());
                 updateSourceMetrics(ws, m);
+                updateSetMetrics(ws, m);
                 this.metricsDao.create( m );
+            } else {
+                updateSourceMetrics(ws, m);
+                updateSetMetrics(ws, m);
+                this.metricsDao.update(m);
             }
         }
     }
@@ -109,6 +116,33 @@ public class MetricsHelper {
             this.metricsDao.update( m );
         } catch (Exception e) {
             DEBUG_LOG.error("Metrics error tracking add "+src, e);
+        }
+    }
+    
+    private void updateSetMetrics( final Workspace ws, Metrics m ) {
+        try {
+            int max = -1;
+            int min = Integer.MAX_VALUE;
+            int total = 0;
+            List<ComparisonSet> sets = this.setDao.list(ws);
+            if ( sets.size() > 0 ) {
+                for (ComparisonSet set : sets) {
+                    int witCnt = this.setDao.getWitnesses(set).size();
+                    if ( witCnt > max ) {
+                        max = witCnt;
+                    }
+                    if ( witCnt < min ) {
+                        min = witCnt;
+                    }
+                    total += witCnt;
+                }
+                float mean = (float)total / (float)sets.size();
+                m.setMinSetWitnesses(min);
+                m.setMaxSetWitnesses(max);
+                m.setMeanSetWitnesses(Math.round(mean));
+            }
+        } catch (Exception e ) {
+            DEBUG_LOG.error("Metrics error tracking set witness counts ", e);
         }
     }
     
@@ -153,6 +187,12 @@ public class MetricsHelper {
         } catch ( Exception e ) {
             DEBUG_LOG.error("Metrics error tracking "+src+" removal", e);
         }
+    }
+    
+    public void setWitnessCountChanged( final Workspace ws) {
+        Metrics m = this.metricsDao.get(ws);
+        updateSetMetrics(ws, m);
+        this.metricsDao.update(m);
     }
     
     public void collationStarted( final Workspace ws, final ComparisonSet set ) {

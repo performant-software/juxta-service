@@ -12,6 +12,7 @@ import org.juxtasoftware.dao.ComparisonSetDao;
 import org.juxtasoftware.dao.WitnessDao;
 import org.juxtasoftware.model.ComparisonSet;
 import org.juxtasoftware.model.Witness;
+import org.juxtasoftware.util.MetricsHelper;
 import org.restlet.data.Status;
 import org.restlet.representation.Representation;
 import org.restlet.resource.Get;
@@ -36,6 +37,7 @@ public class ComparisonSetsResource extends BaseResource {
 
     @Autowired private ComparisonSetDao comparionSetDao;
     @Autowired private WitnessDao witnessDao;
+    @Autowired private MetricsHelper metrics;
     
     @Get("html")
     public Representation toHtml() {
@@ -95,6 +97,7 @@ public class ComparisonSetsResource extends BaseResource {
             this.comparionSetDao.addWitnesses(set, witnesses);
         }
         
+        this.metrics.setWitnessCountChanged(this.workspace);
         return toTextRepresentation(id.toString());
     }
     

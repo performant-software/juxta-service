@@ -48,7 +48,10 @@ public class MetricsDaoImpl extends JuxtaDaoImpl<Metrics> implements MetricsDao 
         sb.append("total_src_size=").append(m.getTotalSourcesSize()).append(", ");
         sb.append("secs_collating=").append(m.getTotalTimeCollating()).append(", ");
         sb.append("started_collations=").append(m.getNumCollationsStarted()).append(", ");
-        sb.append("finished_collations=").append(m.getNumCollationsFinished());   
+        sb.append("finished_collations=").append(m.getNumCollationsFinished()).append(", ");
+        sb.append("max_set_witnesses=").append(m.getMaxSetWitnesses()).append(", ");
+        sb.append("min_set_witnesses=").append(m.getMinSetWitnesses()).append(", ");
+        sb.append("mean_set_witnesses=").append(m.getMeanSetWitnesses());
         sb.append(" where id=").append(m.getId());
         this.jt.update(sb.toString());
     }
@@ -75,6 +78,9 @@ public class MetricsDaoImpl extends JuxtaDaoImpl<Metrics> implements MetricsDao 
         ps.addValue("secs_collating", obj.getTotalTimeCollating());
         ps.addValue("started_collations", obj.getNumCollationsStarted());
         ps.addValue("finished_collations", obj.getNumCollationsFinished());
+        ps.addValue("max_set_witnesses", obj.getMaxSetWitnesses());
+        ps.addValue("min_set_witnesses", obj.getMinSetWitnesses());
+        ps.addValue("mean_set_witnesses", obj.getMeanSetWitnesses());
         return ps;
     }
     
@@ -93,6 +99,9 @@ public class MetricsDaoImpl extends JuxtaDaoImpl<Metrics> implements MetricsDao 
             m.setTotalTimeCollating(rs.getLong("secs_collating"));
             m.setNumCollationsStarted(rs.getInt("started_collations"));
             m.setNumCollationsFinished(rs.getInt("finished_collations"));
+            m.setMaxSetWitnesses(rs.getInt("max_set_witnesses"));
+            m.setMinSetWitnesses(rs.getInt("min_set_witnesses"));
+            m.setMeanSetWitnesses(rs.getInt("mean_set_witnesses"));
             return m;
         }
     }

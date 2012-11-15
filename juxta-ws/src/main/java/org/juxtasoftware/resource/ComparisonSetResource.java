@@ -10,6 +10,7 @@ import org.juxtasoftware.dao.ComparisonSetDao;
 import org.juxtasoftware.dao.WitnessDao;
 import org.juxtasoftware.model.ComparisonSet;
 import org.juxtasoftware.model.Witness;
+import org.juxtasoftware.util.MetricsHelper;
 import org.restlet.data.Status;
 import org.restlet.representation.Representation;
 import org.restlet.resource.Delete;
@@ -43,6 +44,7 @@ public class ComparisonSetResource extends BaseResource {
     @Autowired private ComparisonSetDao comparionSetDao;
     @Autowired private WitnessDao witnessDao;
     @Autowired private Integer maxSetWitnesses;
+    @Autowired private MetricsHelper metrics;
     
     private enum PostAction {INVALID, ADD_WITNESSES, DELETE_WITNESSES};
     private ComparisonSet set;
@@ -186,6 +188,7 @@ public class ComparisonSetResource extends BaseResource {
             }
         }
         Integer added = jsonArray.size();
+        this.metrics.setWitnessCountChanged(this.workspace);
         return toTextRepresentation( added.toString() );
     }
 
@@ -199,7 +202,8 @@ public class ComparisonSetResource extends BaseResource {
         JsonArray jsonArray = parser.parse(jsonWitnesses).getAsJsonArray();
         Set<Witness> currWits = this.comparionSetDao.getWitnesses(this.set);
         
-        if ( currWits.size() + jsonArray.size() > this.maxSetWitnesses ) {
+        int newWitnessTotal =  currWits.size() + jsonArray.size();
+        if ( newWitnessTotal > this.maxSetWitnesses ) {
             setStatus(Status.CLIENT_ERROR_PRECONDITION_FAILED);
             return toTextRepresentation("Witnesses per set limit ("+this.maxSetWitnesses+") exceeded");
         }
@@ -224,8 +228,10 @@ public class ComparisonSetResource extends BaseResource {
         }
         
         this.comparionSetDao.addWitnesses(this.set, addWits);
-        
         Integer added = addWits.size();
+        
+        this.metrics.setWitnessCountChanged(this.workspace);
+        
         return toTextRepresentation( added.toString() );
     }
    
@@ -237,6 +243,7 @@ public class ComparisonSetResource extends BaseResource {
             return toTextRepresentation("Cannot delete set; collation is in progress");
         }
         this.comparionSetDao.delete(set);
+        this.metrics.setWitnessCountChanged(this.workspace);
         return toTextRepresentation("ok");
     }
 

@@ -11,6 +11,9 @@ public class Metrics {
     private long totalTimeCollating = 0;
     private int numCollationsStarted = 0;
     private int numCollationsFinished = 0;
+    private int minSetWitnesses = 0;
+    private int maxSetWitnesses = 0;
+    private int meanSetWitnesses = 0;
     
     public Long getId() {
         return id;
@@ -71,5 +74,23 @@ public class Metrics {
     }
     public void setNumCollationsFinished(int numCollationsFinished) {
         this.numCollationsFinished = numCollationsFinished;
+    }
+    public int getMinSetWitnesses() {
+        return minSetWitnesses;
+    }
+    public void setMinSetWitnesses(int minSetWitnesses) {
+        this.minSetWitnesses = minSetWitnesses;
+    }
+    public int getMaxSetWitnesses() {
+        return maxSetWitnesses;
+    }
+    public void setMaxSetWitnesses(int maxSetWitnesses) {
+        this.maxSetWitnesses = maxSetWitnesses;
+    }
+    public int getMeanSetWitnesses() {
+        return meanSetWitnesses;
+    }
+    public void setMeanSetWitnesses(int meanSetWitnesses) {
+        this.meanSetWitnesses = meanSetWitnesses;
     }
 }
