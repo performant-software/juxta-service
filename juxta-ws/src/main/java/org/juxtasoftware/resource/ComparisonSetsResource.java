@@ -38,6 +38,7 @@ public class ComparisonSetsResource extends BaseResource {
     @Autowired private ComparisonSetDao comparionSetDao;
     @Autowired private WitnessDao witnessDao;
     @Autowired private MetricsHelper metrics;
+    @Autowired private Integer maxSetWitnesses;
     
     @Get("html")
     public Representation toHtml() {
@@ -87,6 +88,10 @@ public class ComparisonSetsResource extends BaseResource {
         if ( jsonObj.has("witnesses")) {
             Set<Witness> witnesses = new HashSet<Witness>();
             JsonArray ids = jsonObj.get("witnesses").getAsJsonArray();
+            if ( ids.size() > this.maxSetWitnesses ) {
+                setStatus(Status.CLIENT_ERROR_PRECONDITION_FAILED);
+                return toTextRepresentation("Witnesses per set limit ("+this.maxSetWitnesses+") exceeded");
+            }
             for ( Iterator<JsonElement> itr = ids.iterator(); itr.hasNext(); ) {
                 Long witnessId = itr.next().getAsLong();
                 Witness witness = this.witnessDao.find( witnessId );

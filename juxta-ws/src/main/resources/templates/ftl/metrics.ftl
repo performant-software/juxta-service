@@ -14,6 +14,7 @@
             <table>
                 <th>Workspace</th><th>Source Count</th><th>Min Source Size (bytes)</th><th>Max Source Size (bytes)</th>
                 <th>Mean Source Size (bytes)</th><th>Total Source Size (bytes)</th>
+                <th>Min Set Witnesses</th><th>Max Set Witnesses</th><th>Mean Set Witnesses</th>
                 <th>Collating Time (ms)</th><th>Started Collations</th><th>Finished Collations</th>
                 <#list metrics as metric>
                     <tr>
@@ -23,6 +24,9 @@
                         <td>${metric.maxSourceSize}</td>
                         <td>${metric.meanSourceSize}</td>
                         <td>${metric.totalSourcesSize}</td>
+                        <td>${metric.minSetWitnesses}</td>
+                        <td>${metric.maxSetWitnesses}</td>
+                        <td>${metric.meanSetWitnesses}</td>
                         <td>${metric.totalTimeCollating}</td>
                         <td>${metric.numCollationsStarted}</td>
                         <td>${metric.numCollationsFinished}</td>

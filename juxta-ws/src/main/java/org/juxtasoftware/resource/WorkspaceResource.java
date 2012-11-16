@@ -1,6 +1,8 @@
 package org.juxtasoftware.resource;
 
+import org.juxtasoftware.dao.MetricsDao;
 import org.juxtasoftware.dao.WorkspaceDao;
+import org.juxtasoftware.model.Metrics;
 import org.juxtasoftware.model.Workspace;
 import org.restlet.data.Status;
 import org.restlet.representation.Representation;
@@ -27,6 +29,8 @@ import com.google.gson.JsonObject;
 public class WorkspaceResource extends BaseResource {
     private Workspace workspace;
     @Autowired private WorkspaceDao workspaceDao;
+    @Autowired private Integer maxSetWitnesses;
+    @Autowired private MetricsDao metrics;
     
     @Override
     protected void doInit() throws ResourceException {
@@ -43,6 +47,10 @@ public class WorkspaceResource extends BaseResource {
     public Representation toJson() {
         Gson gson = new Gson();
         JsonObject jsonObj = gson.toJsonTree(this.workspace).getAsJsonObject(); 
+        jsonObj.addProperty("maxSetWitnesses", this.maxSetWitnesses);
+        Metrics m = this.metrics.get(this.workspace);
+        jsonObj.addProperty("numSources", m.getNumSources());
+        jsonObj.addProperty("totalSourcesSize", m.getTotalSourcesSize());
         return toJsonRepresentation(jsonObj.toString()); 
     }
     
