@@ -167,11 +167,17 @@ public class Searcher extends BaseResource {
     }
 
     private void getSourceFragments(Map<HitItem, List<HitDetail>> hits) {
+        List<HitItem> deadHit = new ArrayList<Searcher.HitItem>();
         for (  Entry<HitItem, List<HitDetail>> ent : hits.entrySet()  ) {
             List<HitDetail> ranges = ent.getValue();
             
             Long srcId = Long.parseLong(ent.getKey().id);
             Source src = this.sourceDao.find(this.workspace.getId(), srcId); 
+            if ( src == null) {
+                LOG.warn("Source "+srcId+" no longer exists");
+                deadHit.add(ent.getKey());
+                continue;
+            }
             
             for ( Iterator<HitDetail> itr = ranges.iterator(); itr.hasNext();) {
                 Reader srcReader = this.sourceDao.getContentReader(src);
@@ -198,14 +204,25 @@ public class Searcher extends BaseResource {
                 }
             }
         }
+        
+        // clean out dead stuff from search results
+        for ( HitItem hi : deadHit) {
+            hits.remove(hi);
+        }
     }
     
     private void getWitnessFragments(Map<HitItem, List<HitDetail>> hits) {
+        List<HitItem> deadHit = new ArrayList<Searcher.HitItem>();
         for (  Entry<HitItem, List<HitDetail>> ent : hits.entrySet()  ) {
             List<HitDetail> ranges = ent.getValue();
             
             Long witId = Long.parseLong(ent.getKey().id);
             Witness wit = this.witnessDao.find(witId);
+            if ( wit == null ) {
+                LOG.warn("Witness "+witId+" no longer exists");
+                deadHit.add(ent.getKey());
+                continue;
+            }
             
             for ( Iterator<HitDetail> itr = ranges.iterator(); itr.hasNext();) {
                 Reader rdr = this.witnessDao.getContentStream(wit);
@@ -231,6 +248,11 @@ public class Searcher extends BaseResource {
                     LOG.error("Unable to get fragment for "+wit+" range: "+start+", "+end);
                 }
             }
+        }
+        
+        // clean out dead stuff from search results
+        for ( HitItem hi : deadHit) {
+            hits.remove(hi);
         }
     }
 

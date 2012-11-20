@@ -143,6 +143,9 @@ public class WitnessDaoImpl implements WitnessDao, InitializingBean {
     
     @Override
     public void delete(final Witness witness) {
+        // kill it from index
+        this.lucene.deleteDocument( ((RelationalText)witness.getText()).getId() );
+        
         // get a list of all uses of this witness.
         // Mark sets as NOT collated, clear their collation cache and remove all
         // alignments

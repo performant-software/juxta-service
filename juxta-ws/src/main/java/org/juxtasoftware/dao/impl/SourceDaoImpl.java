@@ -204,6 +204,7 @@ public class SourceDaoImpl implements SourceDao, InitializingBean {
     
     @Override
     public void delete(Source obj) {
+        this.lucene.deleteDocument( ((RelationalText)obj.getText()).getId() );
         this.jdbcTemplate.update("delete from "+TABLE_NAME+" where id=?", obj.getId());
         this.textRepository.delete(obj.getText());
     }
