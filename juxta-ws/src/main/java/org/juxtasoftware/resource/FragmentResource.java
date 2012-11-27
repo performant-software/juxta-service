@@ -150,13 +150,9 @@ public class FragmentResource extends BaseResource {
 
     private static class WitnessFragment {
         private Range range;
-        @SuppressWarnings("unused")
         @Expose private Long witnessId;
-        @SuppressWarnings("unused")
         @Expose private String witnessName;
-        @SuppressWarnings("unused")
         @Expose private final String typeSymbol;
-        @SuppressWarnings("unused")
         @Expose private String fragment;
         
         public WitnessFragment( final Witness witness, final Range r, final int editDist) {

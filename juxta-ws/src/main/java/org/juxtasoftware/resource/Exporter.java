@@ -210,131 +210,137 @@ public class Exporter extends BaseResource {
         // at that point, inject an <app>. Each witness content will be
         // added in <rdg> tags.
         
-        // setup readers/writers for the data
-        File out = File.createTempFile("ps_app", "dat");
-        out.deleteOnExit();
-        FileOutputStream fos = new FileOutputStream(out); 
-        OutputStream bout = new BufferedOutputStream(fos);
-        OutputStreamWriter ow = new OutputStreamWriter(bout, "UTF-8");
-        Reader witReader = this.witnessDao.getContentStream(this.base);
-        ow.write("<p>");
-        
-        // get a batch of alignments to work with.
-        QNameFilter changesFilter = this.qnameFilters.getDifferencesFilter();
-        AlignmentConstraint constraint = new AlignmentConstraint(set, this.base.getId());
-        constraint.setFilter(changesFilter);
-        List<Alignment> alignments = this.alignmentDao.list(constraint);        
-        List<AppData> appData = generateAppData(alignments);
-        Iterator<AppData> itr = appData.iterator();
-        
-        // set the current align to first in the available list
-        AppData currApp = null;
-        if ( itr.hasNext() ) {
-            currApp = itr.next();
-        }
-        
-        long pos = 0;
-        boolean appJustClosed = false;
-        int lastWritten = -1;
-        while ( true ) {
-            int data = witReader.read();
-            if ( data == -1 ) {
-                break;
+        OutputStreamWriter ow = null;
+        Reader witReader = null;
+        File out = null;
+        try {
+            // setup readers/writers for the data
+            out = File.createTempFile("ps_app", "dat");
+            out.deleteOnExit();
+            FileOutputStream fos = new FileOutputStream(out); 
+            OutputStream bout = new BufferedOutputStream(fos);
+            ow = new OutputStreamWriter(bout, "UTF-8");
+            witReader = this.witnessDao.getContentStream(this.base);
+            ow.write("<p>");
+            
+            // get a batch of alignments to work with.
+            QNameFilter changesFilter = this.qnameFilters.getDifferencesFilter();
+            AlignmentConstraint constraint = new AlignmentConstraint(set, this.base.getId());
+            constraint.setFilter(changesFilter);
+            List<Alignment> alignments = this.alignmentDao.list(constraint);        
+            List<AppData> appData = generateAppData(alignments);
+            Iterator<AppData> itr = appData.iterator();
+            
+            // set the current align to first in the available list
+            AppData currApp = null;
+            if ( itr.hasNext() ) {
+                currApp = itr.next();
             }
             
-            // new lines in base turn into TEI linebreaks
-            if ( data == '\n' ) {
-                ow.write("<lb/>");
-            }
-            
-            if ( currApp != null && pos == currApp.getBaseRange().getStart() ) {
+            long pos = 0;
+            boolean appJustClosed = false;
+            int lastWritten = -1;
+            while ( true ) {
+                int data = witReader.read();
+                if ( data == -1 ) {
+                    break;
+                }
                 
-                boolean firstPass = true;
-                while ( true ) {
+                // new lines in base turn into TEI linebreaks
+                if ( data == '\n' ) {
+                    ow.write("<lb/>");
+                }
+                
+                if ( currApp != null && pos == currApp.getBaseRange().getStart() ) {
                     
-                    // write the initial APP, RDG tags
-                    // NOTE: Always ensure that there is a space before the App tag
-                    // this will prevent words from running together
-                    if ( appJustClosed == false && lastWritten != -1 && Character.isWhitespace(lastWritten) == false ) {
-                        ow.write(" \n<app>\n");
-                    } else {
-                        ow.write("\n<app>\n");
-                    }
-                    ow.write( "   "+generateRdgTag(witnesses, currApp) );
-                    
-                    // write the character that triggered this first
-                    // Note that this only applies on the first time thru this
-                    // loop. Additional entries will not have data pre-seeded
-                    // with the initial rdg character.
-                    StringBuilder baseRdg = new StringBuilder();
-                    if ( firstPass == true ) {
-                        firstPass = false;
-                        baseRdg.append((char)data);   
-                        pos++;
-                    }
-
-                    // write the rest of the rdg content
-                    while ( pos < currApp.getBaseRange().getEnd() ) {                       
-                        data = witReader.read();
-                        if ( data == -1 ) {
-                            throw new IOException("invalid aligment: past end of document");
+                    boolean firstPass = true;
+                    while ( true ) {
+                        
+                        // write the initial APP, RDG tags
+                        // NOTE: Always ensure that there is a space before the App tag
+                        // this will prevent words from running together
+                        if ( appJustClosed == false && lastWritten != -1 && Character.isWhitespace(lastWritten) == false ) {
+                            ow.write(" \n<app>\n");
                         } else {
-                            if ( data == '\n') {
-                                baseRdg.append("|*LB*|");
-                            } else {
-                                baseRdg.append((char)data);
-                            }
+                            ow.write("\n<app>\n");
+                        }
+                        ow.write( "   "+generateRdgTag(witnesses, currApp) );
+                        
+                        // write the character that triggered this first
+                        // Note that this only applies on the first time thru this
+                        // loop. Additional entries will not have data pre-seeded
+                        // with the initial rdg character.
+                        StringBuilder baseRdg = new StringBuilder();
+                        if ( firstPass == true ) {
+                            firstPass = false;
+                            baseRdg.append((char)data);   
                             pos++;
                         }
-                    }
-                    
-                    // end the rdg tag 
-                    ow.write( StringEscapeUtils.escapeXml(baseRdg.toString()).replaceAll("\\|\\*LB\\*\\|", "<lb/>"));
-                    ow.write("</rdg>\n");
- 
-                    // write witnesses
-                    for ( Entry<Long, Range> entry : currApp.getWitnessData().entrySet()) {
-                        final String rdg = String.format("   <rdg wit=\"#wit-%d\">", entry.getKey());
-                        ow.write(rdg);
+    
+                        // write the rest of the rdg content
+                        while ( pos < currApp.getBaseRange().getEnd() ) {                       
+                            data = witReader.read();
+                            if ( data == -1 ) {
+                                ow.close();
+                                throw new IOException("invalid aligment: past end of document");
+                            } else {
+                                if ( data == '\n') {
+                                    baseRdg.append("|*LB*|");
+                                } else {
+                                    baseRdg.append((char)data);
+                                }
+                                pos++;
+                            }
+                        }
                         
-                        ow.write( getWitnessFragment(entry.getKey(), entry.getValue() ) );
-
+                        // end the rdg tag 
+                        ow.write( StringEscapeUtils.escapeXml(baseRdg.toString()).replaceAll("\\|\\*LB\\*\\|", "<lb/>"));
                         ow.write("</rdg>\n");
-                    }
-                    
-                    // NOTE: Added space after the APP tag to be sure words cannot run together
-                    // Also flag that this is the end of an app tag so we ca properly
-                    // detect wether ot not to write the next character
-                    ow.write("</app> ");    
-                    appJustClosed = true;
-                    
-                    // move on to the next annotation
-                    currApp = null;
-                    if ( itr.hasNext() ) {
-                        currApp = itr.next();
-                        if ( currApp.getBaseRange().getStart() > pos ) {
+     
+                        // write witnesses
+                        for ( Entry<Long, Range> entry : currApp.getWitnessData().entrySet()) {
+                            final String rdg = String.format("   <rdg wit=\"#wit-%d\">", entry.getKey());
+                            ow.write(rdg);
+                            
+                            ow.write( getWitnessFragment(entry.getKey(), entry.getValue() ) );
+    
+                            ow.write("</rdg>\n");
+                        }
+                        
+                        // NOTE: Added space after the APP tag to be sure words cannot run together
+                        // Also flag that this is the end of an app tag so we ca properly
+                        // detect wether ot not to write the next character
+                        ow.write("</app> ");    
+                        appJustClosed = true;
+                        
+                        // move on to the next annotation
+                        currApp = null;
+                        if ( itr.hasNext() ) {
+                            currApp = itr.next();
+                            if ( currApp.getBaseRange().getStart() > pos ) {
+                                break;
+                            }
+                        } else {
                             break;
                         }
-                    } else {
-                        break;
                     }
-                }
-            } else {
-                if ( appJustClosed && Character.isWhitespace(data)) {
-                    pos++;
                 } else {
-                    ow.write(data);
-                    lastWritten = data;
-                    pos++;
+                    if ( appJustClosed && Character.isWhitespace(data)) {
+                        pos++;
+                    } else {
+                        ow.write(data);
+                        lastWritten = data;
+                        pos++;
+                    }
+                    appJustClosed = false;
                 }
-                appJustClosed = false;
             }
+            
+            ow.write("</p>");
+        } finally {
+            IOUtils.closeQuietly(ow);
+            IOUtils.closeQuietly(witReader);
         }
-        
-        ow.write("</p>");
-        
-        IOUtils.closeQuietly(ow);
-        IOUtils.closeQuietly(witReader);
         return out;
     }
     

@@ -214,7 +214,7 @@ public class HistogramResource extends BaseResource {
         BufferedWriter bw = new BufferedWriter( new FileWriterWithEncoding(hist, "UTF-8") );
         try {
             boolean firstWrite = true;
-            bw.write( "{\"baseName\": \""+this.baseWitness.getName()+"\", \"histogram\": [" );
+            bw.write( "{\"baseName\": \""+this.baseWitness.getJsonName()+"\", \"histogram\": [" );
             for ( int i=0;i<histogram.length;i++) {
                 if ( firstWrite == false ) {
                     bw.write(",");
