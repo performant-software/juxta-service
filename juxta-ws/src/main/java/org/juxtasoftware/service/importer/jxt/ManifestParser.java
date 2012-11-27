@@ -105,12 +105,14 @@ public class ManifestParser extends DefaultHandler  {
                         } else if (line.contains("<juxta-doc-reference")) {
                             String val = extractValue(line, "filename=\"", '"');
                             if ( val == null ) {
+                                rdr.close();
                                 throw new SAXException(this.filePathBuilder+" is missing filename");
                             }
                             sourceInfo.srcFile = new File(comparandFile.getParentFile(), val);
                         } else if ( line.contains("parseTemplate") ) {
                             String val = extractValue(line, "<parseTemplate>", '<');
                             if ( val == null ) {
+                                rdr.close();
                                 throw new SAXException(this.filePathBuilder+" is missing parse template");
                             }
                             sourceInfo.templateGuid = val;
