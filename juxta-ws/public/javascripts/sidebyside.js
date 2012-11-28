@@ -271,7 +271,7 @@ $(function() {
             done = true;
          }
          
-         diffs.slice(idx, (idx + thisChunk)).forEach(function(diff) {
+         $.each( diffs.slice(idx, (idx + thisChunk)), function(idx, diff) {
    
             // calculate the extents of the braket for the left witness diff
             var rightDiffTop = $(diff).position().top - hdrHeight + rightScrollTop;
