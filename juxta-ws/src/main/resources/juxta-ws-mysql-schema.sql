@@ -10,17 +10,17 @@ CREATE TABLE IF NOT EXISTS juxta_workspace (
 
 CREATE TABLE IF NOT EXISTS juxta_source (
     id BIGINT NOT NULL AUTO_INCREMENT,
-	name VARCHAR(255) NOT NULL,
-	content_id BIGINT NOT NULL,
-	workspace_id BIGINT NOT NULL default 1,
-	content_type ENUM('TXT','XML','HTML','WIKI') not null,
-	created DATETIME not null,
-    updated DATETIME,
-	PRIMARY KEY (id),
+	 name VARCHAR(255) NOT NULL,
+	 content_id BIGINT NOT NULL,
+	 workspace_id BIGINT NOT NULL default 1,
+	 content_type ENUM('TXT','XML','HTML','WIKI','PDF') not null,
+	 created DATETIME not null,
+	 updated DATETIME,
+	 PRIMARY KEY (id),
     FOREIGN KEY (workspace_id) REFERENCES juxta_workspace (id) ON DELETE CASCADE,
     FOREIGN KEY (content_id) REFERENCES text_content (id),
     UNIQUE INDEX(name, workspace_id),
-	INDEX (name)
+	 INDEX (name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS juxta_qname_filter (
