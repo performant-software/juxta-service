@@ -305,6 +305,9 @@ public class SourcesResource extends BaseResource {
 
 
     private Long createSource(final String sourceName, final MediaType mediaType, InputStream srcInputStream) throws IOException, XMLStreamException, FileSizeLimitExceededException {
+        if ( MediaType.APPLICATION_PDF.isCompatible(mediaType)) {
+            // TODO
+        }
         Source.Type contentType = Source.Type.TXT;
         File fixed = EncodingUtils.fixEncoding(srcInputStream);
         if ( MediaType.TEXT_XML.isCompatible( mediaType ) ) {
