@@ -340,6 +340,12 @@ public class SourcesResource extends BaseResource {
         
         return writeSourceData(srcFile, sourceName, contentType);
     }
+    
+    private File extractDocText( final String name, InputStream srcInputStream ) throws IOException {
+        File srcFile = null;
+        // TODO
+        return srcFile;
+    }
 
     private File extractPdfText(final String sourceName, InputStream srcInputStream) throws IOException {
         OutputStreamWriter osw = null;

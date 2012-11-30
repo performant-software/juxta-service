@@ -40,7 +40,7 @@
         <dependency>
             <groupId>org.apache.poi</groupId>
             <artifactId>poi</artifactId>
-            <version>3.8-beta3</version>
+            <version>3.8</version>
         </dependency>
         
         <dependency>
