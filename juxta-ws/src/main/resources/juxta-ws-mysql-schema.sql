@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS juxta_source (
 	 name VARCHAR(255) NOT NULL,
 	 content_id BIGINT NOT NULL,
 	 workspace_id BIGINT NOT NULL default 1,
-	 content_type ENUM('TXT','XML','HTML','WIKI','PDF') not null,
+	 content_type ENUM('TXT','XML','HTML','WIKI') not null,
 	 created DATETIME not null,
 	 updated DATETIME,
 	 PRIMARY KEY (id),

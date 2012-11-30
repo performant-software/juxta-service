@@ -3,9 +3,11 @@ package org.juxtasoftware.resource;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.lang.reflect.Type;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -24,6 +26,8 @@ import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.params.HttpMethodParams;
 import org.apache.commons.io.IOUtils;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.util.PDFTextStripper;
 import org.juxtasoftware.dao.SourceDao;
 import org.juxtasoftware.model.Source;
 import org.juxtasoftware.util.EncodingUtils;
@@ -273,18 +277,25 @@ public class SourcesResource extends BaseResource {
                 throw new IOException(result + " code returned for URL: " + url);
             }
             
-            File fixed = EncodingUtils.fixEncoding( get.getResponseBodyAsStream() );
-            if ( contentType.equals(Source.Type.HTML)) {
-                HtmlUtils.strip(fixed);
+            File srcFile = null;
+            Source.Type finalType = contentType;
+            if ( contentType.equals(Source.Type.PDF)) {
+                finalType = Source.Type.TXT;
+                srcFile = extractPdfText(name,  get.getResponseBodyAsStream());
+            } else {
+                srcFile = EncodingUtils.fixEncoding( get.getResponseBodyAsStream() );
+                if ( contentType.equals(Source.Type.HTML)) {
+                    HtmlUtils.strip(srcFile);
+                }
             }
             
-            if ( this.maxSourceSize > 0 && fixed.length() > this.maxSourceSize ) {
-                String err = "Source size is "+fixed.length()/1024+
+            if ( this.maxSourceSize > 0 && srcFile.length() > this.maxSourceSize ) {
+                String err = "Source size is "+srcFile.length()/1024+
                     "K.\nThis exceeds the Juxta size limit of "+this.maxSourceSize/1024+"K.\n\n"+
                     "Try breaking the source into smaller segments and re-submitting.";
                 throw new Exception(err);
             }
-            return writeSourceData(fixed, name, contentType);
+            return writeSourceData(srcFile, name, finalType);
         } catch (Exception e) {
             e.printStackTrace();
             throw e;
@@ -305,27 +316,51 @@ public class SourcesResource extends BaseResource {
 
 
     private Long createSource(final String sourceName, final MediaType mediaType, InputStream srcInputStream) throws IOException, XMLStreamException, FileSizeLimitExceededException {
-        if ( MediaType.APPLICATION_PDF.isCompatible(mediaType)) {
-            // TODO
-        }
+        File srcFile = null;
         Source.Type contentType = Source.Type.TXT;
-        File fixed = EncodingUtils.fixEncoding(srcInputStream);
-        if ( MediaType.TEXT_XML.isCompatible( mediaType ) ) {
-            contentType = Source.Type.XML;
-        } else if ( MediaType.TEXT_HTML.isCompatible( mediaType ) ) {
-            contentType = Source.Type.HTML;
-            HtmlUtils.strip(fixed);
+        if ( MediaType.APPLICATION_PDF.isCompatible(mediaType)) {
+            srcFile = extractPdfText(sourceName, srcInputStream);
         } else {
-            if ( sourceName.endsWith(".wiki")) {
-                contentType = Source.Type.WIKI;
+            srcFile = EncodingUtils.fixEncoding(srcInputStream);
+            if ( MediaType.TEXT_XML.isCompatible( mediaType ) ) {
+                contentType = Source.Type.XML;
+            } else if ( MediaType.TEXT_HTML.isCompatible( mediaType ) ) {
+                contentType = Source.Type.HTML;
+                HtmlUtils.strip(srcFile);
+            } else {
+                if ( sourceName.endsWith(".wiki")) {
+                    contentType = Source.Type.WIKI;
+                }
             }
         }
-
-        if ( this.maxSourceSize > 0 && fixed.length() > this.maxSourceSize ) {
-            throw new FileSizeLimitExceededException(sourceName+" too big",fixed.length(), this.maxSourceSize );
+    
+        if ( this.maxSourceSize > 0 && srcFile.length() > this.maxSourceSize ) {
+            throw new FileSizeLimitExceededException(sourceName+" too big",srcFile.length(), this.maxSourceSize );
         }
         
-        return writeSourceData(fixed, sourceName, contentType);
+        return writeSourceData(srcFile, sourceName, contentType);
+    }
+
+    private File extractPdfText(final String sourceName, InputStream srcInputStream) throws IOException {
+        OutputStreamWriter osw = null;
+        PDDocument pdfDoc = null;
+        File srcFile = null;
+        try {
+            LOG.info("Beginning extraction of PDF text content for "+sourceName+"...");
+            srcFile = File.createTempFile("pdf", "dat");
+            srcFile.deleteOnExit();
+            osw = new OutputStreamWriter(new FileOutputStream( srcFile ), "UTF-8" );
+            pdfDoc = PDDocument.load(srcInputStream);
+            PDFTextStripper pdfStrip = new PDFTextStripper("UTF-8");
+            pdfStrip.writeText(pdfDoc, osw);
+            LOG.info("PDF text content for "+sourceName+" EXTRACTED");
+        } finally {
+            IOUtils.closeQuietly(osw);
+            if ( pdfDoc != null ) {
+                pdfDoc.close();
+            }
+        }
+        return srcFile;
     }
 
     private class SourcesSerializer implements JsonSerializer<Source> {
