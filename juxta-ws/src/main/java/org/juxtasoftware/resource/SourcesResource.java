@@ -28,6 +28,11 @@ import org.apache.commons.httpclient.params.HttpMethodParams;
 import org.apache.commons.io.IOUtils;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.util.PDFTextStripper;
+import org.apache.poi.POITextExtractor;
+import org.apache.poi.extractor.ExtractorFactory;
+import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
+import org.apache.poi.openxml4j.exceptions.OpenXML4JException;
+import org.apache.xmlbeans.XmlException;
 import org.juxtasoftware.dao.SourceDao;
 import org.juxtasoftware.model.Source;
 import org.juxtasoftware.util.EncodingUtils;
@@ -282,6 +287,9 @@ public class SourcesResource extends BaseResource {
             if ( contentType.equals(Source.Type.PDF)) {
                 finalType = Source.Type.TXT;
                 srcFile = extractPdfText(name,  get.getResponseBodyAsStream());
+            } else if ( contentType.equals(Source.Type.DOC )) {
+                finalType = Source.Type.TXT;
+                srcFile = extractDocText(name,  get.getResponseBodyAsStream());
             } else {
                 srcFile = EncodingUtils.fixEncoding( get.getResponseBodyAsStream() );
                 if ( contentType.equals(Source.Type.HTML)) {
@@ -320,6 +328,8 @@ public class SourcesResource extends BaseResource {
         Source.Type contentType = Source.Type.TXT;
         if ( MediaType.APPLICATION_PDF.isCompatible(mediaType)) {
             srcFile = extractPdfText(sourceName, srcInputStream);
+        } else if ( MediaType.APPLICATION_MSOFFICE_DOCX.isCompatible(mediaType) ||  MediaType.APPLICATION_WORD.isCompatible(mediaType)) {
+            srcFile = extractDocText(sourceName,  srcInputStream);
         } else {
             srcFile = EncodingUtils.fixEncoding(srcInputStream);
             if ( MediaType.TEXT_XML.isCompatible( mediaType ) ) {
@@ -343,7 +353,25 @@ public class SourcesResource extends BaseResource {
     
     private File extractDocText( final String name, InputStream srcInputStream ) throws IOException {
         File srcFile = null;
-        // TODO
+        OutputStreamWriter osw = null;
+        try {
+            srcFile = File.createTempFile("pdf", "dat");
+            srcFile.deleteOnExit();
+            osw = new OutputStreamWriter(new FileOutputStream( srcFile ), "UTF-8" );
+            POITextExtractor extractor = ExtractorFactory.createExtractor(srcInputStream);
+            osw.write( extractor.getText() );
+        } catch (InvalidFormatException e) {
+            LOG.error("Unable to accept doc source "+name, e);
+            throw new IOException(e);
+        } catch (OpenXML4JException e) {
+            LOG.error("Unable to accept doc source "+name, e);
+            throw new IOException(e);
+        } catch (XmlException e) {
+            LOG.error("Unable to accept doc source "+name, e);
+            throw new IOException(e);
+        } finally {
+            IOUtils.closeQuietly(osw);
+        }
         return srcFile;
     }
 

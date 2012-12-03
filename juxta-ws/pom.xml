@@ -9,7 +9,7 @@
     
     <artifactId>juxta-ws</artifactId>
     <packaging>jar</packaging>
-    <version>1.7.3-BETA</version>
+    <version>1.7.4-BETA</version>
     <name>Juxta :: Web Service</name>
 
     <!-- project property settings -->
@@ -31,6 +31,12 @@
 
     <dependencies>
 
+        <!--  support for PDF import (including basic decryption and internationalization -->
+        <dependency>
+            <groupId>org.apache.pdfbox</groupId>
+            <artifactId>pdfbox</artifactId>
+            <version>1.7.1</version>
+        </dependency>
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcprov-jdk15</artifactId>
@@ -46,16 +52,21 @@
             <artifactId>icu4j</artifactId>
             <version>3.8</version>
         </dependency>
-    
-        <dependency>
-            <groupId>org.apache.pdfbox</groupId>
-            <artifactId>pdfbox</artifactId>
-            <version>1.7.1</version>
-        </dependency>
-        
+
+        <!--  Support for import of MSWord files -->
         <dependency>
             <groupId>org.apache.poi</groupId>
             <artifactId>poi</artifactId>
+            <version>3.8</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+            <version>3.8</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-scratchpad</artifactId>
             <version>3.8</version>
         </dependency>
         
