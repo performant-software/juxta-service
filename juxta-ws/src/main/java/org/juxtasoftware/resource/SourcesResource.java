@@ -7,7 +7,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
 import java.lang.reflect.Type;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -26,15 +25,9 @@ import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.params.HttpMethodParams;
 import org.apache.commons.io.IOUtils;
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.util.PDFTextStripper;
-import org.apache.poi.POITextExtractor;
-import org.apache.poi.extractor.ExtractorFactory;
-import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
-import org.apache.poi.openxml4j.exceptions.OpenXML4JException;
-import org.apache.xmlbeans.XmlException;
 import org.juxtasoftware.dao.SourceDao;
 import org.juxtasoftware.model.Source;
+import org.juxtasoftware.util.ConversionUtils;
 import org.juxtasoftware.util.EncodingUtils;
 import org.juxtasoftware.util.HtmlUtils;
 import org.juxtasoftware.util.MetricsHelper;
@@ -63,9 +56,12 @@ import com.google.gson.JsonSerializer;
 @Service
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
 public class SourcesResource extends BaseResource {
-    @Autowired private SourceDao sourceDao;
-    @Autowired private Long maxSourceSize;
-    @Autowired private MetricsHelper metrics;
+    @Autowired
+    private SourceDao sourceDao;
+    @Autowired
+    private Long maxSourceSize;
+    @Autowired
+    private MetricsHelper metrics;
 
     /**
      * Get Json representation of all available sources
@@ -73,20 +69,18 @@ public class SourcesResource extends BaseResource {
      */
     @Get("json")
     public Representation toJson() {
-        List<Source> docs = this.sourceDao.list( this.workspace );
-        Gson gson = new GsonBuilder()
-            .registerTypeAdapter(Source.class, new SourcesSerializer())
-            .create();
-        return toJsonRepresentation( gson.toJson(docs) );
+        List<Source> docs = this.sourceDao.list(this.workspace);
+        Gson gson = new GsonBuilder().registerTypeAdapter(Source.class, new SourcesSerializer()).create();
+        return toJsonRepresentation(gson.toJson(docs));
     }
-    
+
     /**
      * Get HTML representation of all available sources
      * @return
      */
     @Get("html")
     public Representation toHtml() {
-        List<Source> docs = this.sourceDao.list(this.workspace );
+        List<Source> docs = this.sourceDao.list(this.workspace);
         Map<String, Object> map = new HashMap<String, Object>();
         map.put("docs", docs);
         map.put("page", "source");
@@ -94,51 +88,112 @@ public class SourcesResource extends BaseResource {
         return toHtmlRepresentation("sources.ftl", map);
     }
 
-   /**
-    * Accept posts to create sources. Two types are supported; one is a 
-    * multipart/form post consisting of a json header and a file stream. The 
-    * header must contain two members: sourceName and contentType.
-    * 
-    * The other is a json array. Each entry is a json object with the following data:
-    * name, type and data. Supported types are txt, xml and url. For txt and xml,
-    * the data element contains the raw text or xml data. For url, the data contains
-    * a url that will be scraped for source content.
-    * 
-    * These two types can be used together. In this case, the multipart/form would
-    * contain 3 parts; jsonHeader, file stream, and a json array.
-    * 
-    * @param entity
-    */
-   @Post
-   public Representation create( Representation entity  ) throws ResourceException {
-       if ( entity == null ) {
-           setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
-           return toTextRepresentation("Missing source payload");
-       }
-       
-       if (MediaType.MULTIPART_FORM_DATA.equals(entity.getMediaType(),true)) {
-           return handleMutipartPost( entity);
-       } else if ( MediaType.APPLICATION_JSON.equals(entity.getMediaType(),true)) {
-           return handleJsonPost( entity );
-       }
-       
-       setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
-       return toTextRepresentation("Unsupported content type in post");
-   }
-   
-    private Representation handleJsonPost(Representation entity)  {
-        JsonParser parser = new JsonParser();
-        try {
-            Gson gson = new Gson();
-            JsonArray jsonData = parser.parse( entity.getText()).getAsJsonArray();
-            List<Long> idList = createSources(jsonData);
-            return toJsonRepresentation( gson.toJson(idList) );
-        } catch (Exception e) {
+    /**
+     * Accept posts to create sources. Two types are supported; one is a 
+     * multipart/form post consisting of a json header and a file stream. The 
+     * header must contain two members: sourceName and contentType.
+     * 
+     * The other is a json array. Each entry is a json object with the following data:
+     * name, type and data. Supported types are txt, xml and url. For txt and xml,
+     * the data element contains the raw text or xml data. For url, the data contains
+     * a url that will be scraped for source content.
+     * 
+     * These two types can be used together. In this case, the multipart/form would
+     * contain 3 parts; jsonHeader, file stream, and a json array.
+     * 
+     * @param entity
+     */
+    @Post
+    public Representation create(Representation entity) throws ResourceException {
+        if (entity == null) {
             setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
-            return toTextRepresentation( e.getMessage() );
+            return toTextRepresentation("Missing source payload");
         }
+
+        if (MediaType.MULTIPART_FORM_DATA.equals(entity.getMediaType(), true)) {
+            return handleMutipartPost(entity);
+        } else if (MediaType.APPLICATION_JSON.equals(entity.getMediaType(), true)) {
+            return handleJsonPost(entity);
+        }
+
+        setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
+        return toTextRepresentation("Unsupported content type in post");
     }
 
+    /**
+     * Create sources based on a POST of JSON data. This post can either contain the raw
+     * source text or a URL that points to the source to be added
+     * 
+     * @param entity
+     * @return
+     */
+    private Representation handleJsonPost(Representation entity) {
+        // parse request into a JSON array
+        JsonParser parser = new JsonParser();
+        Gson gson = new Gson();
+        JsonArray jsonArray = null;
+        try {
+            jsonArray = parser.parse(entity.getText()).getAsJsonArray();
+        } catch (Exception e) {
+            setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
+            return toTextRepresentation("Invalid JSON data in request");
+        } 
+        
+        List<Long> ids = new ArrayList<Long>();
+        for (Iterator<JsonElement> itr = jsonArray.iterator(); itr.hasNext();) {
+            JsonObject jsonObj = itr.next().getAsJsonObject();
+            
+            // make sure all necessary data is present
+            if (jsonObj.has("type") == false) {
+                setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
+                return toTextRepresentation("Missing required information: type");
+            }
+            if (jsonObj.has("name") == false) {
+                setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
+                return toTextRepresentation("Missing required information: name");
+            }
+            if (jsonObj.has("data") == false) {
+                setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
+                return toTextRepresentation("Missing required information: data");
+            }
+            
+            String type = jsonObj.get("type").getAsString();
+            String name = jsonObj.get("name").getAsString();
+            String data = jsonObj.get("data").getAsString();
+
+            try {
+                if (type.equalsIgnoreCase("url")) {
+                    // pull content from the URL. Type will be determined from
+                    // the HTTP response
+                    ids.add( scrapeExternalUrl(name, data) );
+                } else if (type.equalsIgnoreCase("raw")) {
+                    if (jsonObj.has("contentType") == false) {
+                        setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
+                        return toTextRepresentation("Missing required information: contentType");
+                    }
+                    Source.Type contentType = Source.Type.valueOf(jsonObj.get("contentType").getAsString().toUpperCase());
+                    ids.add( createSourceFromRawData(name, data, contentType) );
+                }
+            } catch (IOException e) {
+                setStatus(Status.SERVER_ERROR_INTERNAL);
+                return toTextRepresentation("Unable to create source "+name+": "+e.toString());
+            } catch (XMLStreamException e) {
+                setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
+                return toTextRepresentation("Source "+name+" contains invalid XML: "+e.toString());
+            } catch (DuplicateSourceException e) {
+                setStatus(Status.CLIENT_ERROR_CONFLICT);
+                return toTextRepresentation("Source '" + name + "' already exists in workspace '"
+                    + this.workspace.getName() + "'");
+            }
+        }
+        return toJsonRepresentation(gson.toJson(ids)); 
+    }
+
+    /**
+     * Create sources from a multipart POST
+     * @param entity
+     * @return
+     */
     private Representation handleMutipartPost(Representation entity) {
         String sourceName = null;
         String contentType = null;
@@ -149,49 +204,36 @@ public class SourcesResource extends BaseResource {
             factory.setSizeThreshold(1000240);
             RestletFileUpload upload = new RestletFileUpload(factory);
             List<FileItem> items = upload.parseRequest(getRequest());
-            for ( FileItem item : items ) {
-                if ( item.getFieldName().equals("sourceName")) {
+            for (FileItem item : items) {
+                if (item.getFieldName().equals("sourceName")) {
                     sourceName = item.getString();
-                } else if ( item.getFieldName().equals("contentType")) {
+                } else if (item.getFieldName().equals("contentType")) {
                     contentType = item.getString();
-                } else if ( item.getFieldName().equals("sourceFile")) {
+                } else if (item.getFieldName().equals("sourceFile")) {
                     srcInputStream = item.getInputStream();
-                } 
+                }
             }
-            
+
             // validate that everything needed is present
-            if ( srcInputStream == null  ) {
+            if (srcInputStream == null) {
                 setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
                 return toTextRepresentation("Missing file data in post");
             }
-            if ( sourceName == null || contentType == null ) {
+            if (sourceName == null || contentType == null) {
                 setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
                 return toTextRepresentation("Missing name and/or content type information");
             }
         } catch (Exception e) {
             LOG.error("Unable to parse multipart data", e);
-            setStatus(Status.CLIENT_ERROR_BAD_REQUEST );
+            setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
             return toTextRepresentation("File upload failed");
-        }
-
-        // prevent duplicate file names
-        if (this.sourceDao.exists(this.workspace, sourceName)) {
-            setStatus(Status.CLIENT_ERROR_CONFLICT);
-            return toTextRepresentation("Source '" + sourceName + "' already exists in workspace '"
-                + this.workspace.getName() + "'");
         }
 
         List<Long> idList = new ArrayList<Long>();
         try {
             // create the source
             Long id = createSource(sourceName, MediaType.valueOf(contentType), srcInputStream);
-            idList.add( id );
-        } catch ( FileSizeLimitExceededException e ) {
-            setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
-            final String out = "Source size is "+e.getActualSize()/1024+
-                "K.\nThis exceeds the Juxta size limit of "+this.maxSourceSize/1024+"K.\n\n"+
-                "Try breaking the source into smaller segments and re-submitting.";
-            return toTextRepresentation(out);
+            idList.add(id);
         } catch (IOException e) {
             setStatus(Status.SERVER_ERROR_INTERNAL);
             return toTextRepresentation("Unable to import source: " + e.getMessage());
@@ -203,138 +245,44 @@ public class SourcesResource extends BaseResource {
                 msg = msg.substring(pos + 1).trim();
             }
             return toTextRepresentation("This document contains malformed xml - " + msg);
+        } catch (DuplicateSourceException e) {
+            setStatus(Status.CLIENT_ERROR_CONFLICT);
+            return toTextRepresentation("Source '" + e.getSourceName() + "' already exists in workspace '"
+                + this.workspace.getName() + "'");
         }
-         
+
         Gson gson = new Gson();
-        return toJsonRepresentation( gson.toJson(idList) );
+        return toJsonRepresentation(gson.toJson(idList));
     }
     
-    private List<Long> createSources(JsonArray jsonArray) throws Exception {
-        List<Long> ids = new ArrayList<Long>();
-        for (Iterator<JsonElement> itr = jsonArray.iterator(); itr.hasNext(); ) {
-            JsonObject jsonObj = itr.next().getAsJsonObject();
-            if ( jsonObj.has("type") == false) {
-                throw new Exception("Missing information: type");
-            }
-            if ( jsonObj.has("contentType") == false) {
-                throw new Exception("Missing information: contentType");
-            }
-            if ( jsonObj.has("name") == false) {
-                throw new Exception("Missing information: name");
-            }
-            if ( jsonObj.has("data") == false) {
-                throw new Exception("Missing information: data");
-            }
-            String type = jsonObj.get("type").getAsString();
-            Source.Type contentType = Source.Type.valueOf( jsonObj.get("contentType").getAsString().toUpperCase() );
-            String name = jsonObj.get("name").getAsString();
-            String data = jsonObj.get("data").getAsString();
-            
-            if ( this.sourceDao.exists(this.workspace, name) ) {
-                throw new Exception("Source \""+name+"\" already exists");
-            }
-            
-            if ( contentType == null ) {
-                throw new Exception("Unsupported content type");
-            }
-            
-            if ( type.equalsIgnoreCase("url")) {
-                ids.add( scrapeExternalUrl( name, data, contentType ) );
-            } else if ( type.equalsIgnoreCase("raw") ) {
-                ids.add( createSourceFromRawData( name, data, contentType) );
-            }
-        }
-        return ids;  
-    }
-    
-    private Long createSourceFromRawData(final String name, final String data, final Source.Type contentType) throws Exception {
-        if ( this.maxSourceSize > 0 && data.length() > this.maxSourceSize ) {
-            String err = "Source size is "+data.length()/1024+
-                "K.\nThis exceeds the Juxta size limit of "+this.maxSourceSize/1024+"K.\n\n"+
-                "Try breaking the source into smaller segments and re-submitting.";
-            throw new Exception(err);
-        }
-        File fixed = EncodingUtils.fixEncoding( new ByteArrayInputStream(data.getBytes()) );        
-        if ( contentType.equals(Source.Type.HTML) ) {
-            HtmlUtils.strip(fixed);
-        }
-        return writeSourceData(fixed, name, contentType);
-    }
-    
-    private Long writeSourceData( File srcFile, final String name, final Source.Type type )  throws IOException, XMLStreamException {
-        FileInputStream fis = new FileInputStream(srcFile);
-        InputStreamReader isr = new InputStreamReader(fis, "UTF-8");
-        Long id = this.sourceDao.create(this.workspace, name, type, isr);
-        IOUtils.closeQuietly(isr);
-        srcFile.delete();
-        
-        this.metrics.sourceAdded(this.workspace, this.sourceDao.find(this.workspace.getId(), id));
-        
-        return id;
-    }
-
-    private Long scrapeExternalUrl(final String name, final String url, final Source.Type contentType) throws Exception {
-        HttpClient httpClient = newHttpClient();
-        GetMethod get = new GetMethod(url);
-        try {
-            int result = httpClient.executeMethod(get);
-            if (result != 200) {
-                throw new IOException(result + " code returned for URL: " + url);
-            }
-            
-            File srcFile = null;
-            Source.Type finalType = contentType;
-            if ( contentType.equals(Source.Type.PDF)) {
-                finalType = Source.Type.TXT;
-                srcFile = extractPdfText(name,  get.getResponseBodyAsStream());
-            } else if ( contentType.equals(Source.Type.DOC )) {
-                finalType = Source.Type.TXT;
-                srcFile = extractDocText(name,  get.getResponseBodyAsStream());
-            } else {
-                srcFile = EncodingUtils.fixEncoding( get.getResponseBodyAsStream() );
-                if ( contentType.equals(Source.Type.HTML)) {
-                    HtmlUtils.strip(srcFile);
-                }
-            }
-            
-            if ( this.maxSourceSize > 0 && srcFile.length() > this.maxSourceSize ) {
-                String err = "Source size is "+srcFile.length()/1024+
-                    "K.\nThis exceeds the Juxta size limit of "+this.maxSourceSize/1024+"K.\n\n"+
-                    "Try breaking the source into smaller segments and re-submitting.";
-                throw new Exception(err);
-            }
-            return writeSourceData(srcFile, name, finalType);
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw e;
-        } finally {
-            get.releaseConnection();
-        } 
-    }
-
-    private HttpClient newHttpClient() {
-        final int REQUEST_TIMEOUT = 2 * 60 * 1000;   // 2 secs
-        HttpClient httpClient = new HttpClient();
-        httpClient.getHttpConnectionManager().getParams().setConnectionTimeout(
-            REQUEST_TIMEOUT);
-        httpClient.getHttpConnectionManager().getParams().setIntParameter(
-            HttpMethodParams.BUFFER_WARN_TRIGGER_LIMIT, 10000 * 1024); 
-        return httpClient;
-    }
-
-
-    private Long createSource(final String sourceName, final MediaType mediaType, InputStream srcInputStream) throws IOException, XMLStreamException, FileSizeLimitExceededException {
+    /**
+     * Create a source from a multipart data stream
+     * @param sourceName
+     * @param mediaType
+     * @param srcInputStream
+     * @return
+     * @throws IOException
+     * @throws XMLStreamException
+     * @throws FileSizeLimitExceededException
+     * @throws DuplicateSourceException 
+     */
+    private Long createSource(final String sourceName, final MediaType mediaType, InputStream srcInputStream) throws IOException, XMLStreamException, DuplicateSourceException {
         File srcFile = null;
         Source.Type contentType = Source.Type.TXT;
-        if ( MediaType.APPLICATION_PDF.isCompatible(mediaType)) {
-            srcFile = extractPdfText(sourceName, srcInputStream);
-        } else if ( MediaType.APPLICATION_MSOFFICE_DOCX.isCompatible(mediaType) ||  MediaType.APPLICATION_WORD.isCompatible(mediaType)) {
-            srcFile = extractDocText(sourceName,  srcInputStream);
-        } else {
+        
+        // Special handling for files that will not be auto transformed:
+        // be sure they are UTF-8 and set type flags. Strip scary stuff out
+        // of HTML files
+        if ( mediaType.equals(MediaType.APPLICATION_XML) ||  
+             mediaType.equals(MediaType.TEXT_XML) ||
+             mediaType.equals(MediaType.TEXT_HTML) ||
+             mediaType.equals(MediaType.TEXT_PLAIN) || 
+             sourceName.endsWith(".wiki") ) {
+            
             srcFile = EncodingUtils.fixEncoding(srcInputStream);
-            if ( MediaType.TEXT_XML.isCompatible( mediaType ) ) {
+            if ( mediaType.equals(MediaType.APPLICATION_XML) ||  mediaType.equals(MediaType.TEXT_XML)) {
                 contentType = Source.Type.XML;
-            } else if ( MediaType.TEXT_HTML.isCompatible( mediaType ) ) {
+            } else if ( mediaType.equals(MediaType.TEXT_HTML) ) {
                 contentType = Source.Type.HTML;
                 HtmlUtils.strip(srcFile);
             } else {
@@ -342,75 +290,178 @@ public class SourcesResource extends BaseResource {
                     contentType = Source.Type.WIKI;
                 }
             }
+            
         }
-    
-        if ( this.maxSourceSize > 0 && srcFile.length() > this.maxSourceSize ) {
-            throw new FileSizeLimitExceededException(sourceName+" too big",srcFile.length(), this.maxSourceSize );
+        else if ( ConversionUtils.canConvert( mediaType )) {
+            // General case: auto transform to TXT
+            srcFile = ConversionUtils.convertToText(srcInputStream);
+        } else {
+            throw new IOException("Unsupported file type");   
         }
-        
+   
         return writeSourceData(srcFile, sourceName, contentType);
     }
-    
-    private File extractDocText( final String name, InputStream srcInputStream ) throws IOException {
-        File srcFile = null;
-        OutputStreamWriter osw = null;
-        try {
-            srcFile = File.createTempFile("pdf", "dat");
-            srcFile.deleteOnExit();
-            osw = new OutputStreamWriter(new FileOutputStream( srcFile ), "UTF-8" );
-            POITextExtractor extractor = ExtractorFactory.createExtractor(srcInputStream);
-            osw.write( extractor.getText() );
-        } catch (InvalidFormatException e) {
-            LOG.error("Unable to accept doc source "+name, e);
-            throw new IOException(e);
-        } catch (OpenXML4JException e) {
-            LOG.error("Unable to accept doc source "+name, e);
-            throw new IOException(e);
-        } catch (XmlException e) {
-            LOG.error("Unable to accept doc source "+name, e);
-            throw new IOException(e);
-        } finally {
-            IOUtils.closeQuietly(osw);
+
+    /**
+     * Create a source from the string data passed along with the request. This can create sources that
+     * are based on ascii text: HTML, TXT and XML.
+     * 
+     * @param name
+     * @param data
+     * @param contentType
+     * @return
+     * @throws DuplicateSourceException 
+     * @throws XMLStreamException 
+     * @throws IOException 
+     * @throws Exception
+     */
+    private Long createSourceFromRawData(final String name, final String data, final Source.Type contentType) throws IOException, XMLStreamException, DuplicateSourceException {
+        File fixed = EncodingUtils.fixEncoding(new ByteArrayInputStream(data.getBytes()));
+        if (contentType.equals(Source.Type.HTML)) {
+            HtmlUtils.strip(fixed);
         }
-        return srcFile;
+        return writeSourceData(fixed, name, contentType);
     }
 
-    private File extractPdfText(final String sourceName, InputStream srcInputStream) throws IOException {
-        OutputStreamWriter osw = null;
-        PDDocument pdfDoc = null;
-        File srcFile = null;
-        try {
-            LOG.info("Beginning extraction of PDF text content for "+sourceName+"...");
-            srcFile = File.createTempFile("pdf", "dat");
-            srcFile.deleteOnExit();
-            osw = new OutputStreamWriter(new FileOutputStream( srcFile ), "UTF-8" );
-            pdfDoc = PDDocument.load(srcInputStream);
-            PDFTextStripper pdfStrip = new PDFTextStripper("UTF-8");
-            pdfStrip.writeText(pdfDoc, osw);
-            LOG.info("PDF text content for "+sourceName+" EXTRACTED");
-        } finally {
-            IOUtils.closeQuietly(osw);
-            if ( pdfDoc != null ) {
-                pdfDoc.close();
-            }
+    /**
+     * Create a new source with the sprcified type and name. 
+     * 
+     * @param srcFile
+     * @param name
+     * @param type
+     * @return
+     * @throws IOException
+     * @throws XMLStreamException
+     * @throws DuplicateSourceException 
+     */
+    private Long writeSourceData(File srcFile, final String name, final Source.Type type) throws IOException,
+        XMLStreamException, DuplicateSourceException {
+        if (this.maxSourceSize > 0 && srcFile.length() > this.maxSourceSize) {
+            String err = "Source size is " + srcFile.length() / 1024 + "K.\nThis exceeds the Juxta size limit of "
+                + this.maxSourceSize / 1024 + "K.\n\n"
+                + "Try breaking the source into smaller segments and re-submitting.";
+            throw new IOException(err);
         }
-        return srcFile;
+
+        String finalName = appendExtension(name, type);
+        
+        // prevent duplicate file names
+        if (this.sourceDao.exists(this.workspace, finalName)) {
+            throw new DuplicateSourceException(finalName);
+        }
+        
+        FileInputStream fis = new FileInputStream(srcFile);
+        InputStreamReader isr = new InputStreamReader(fis, "UTF-8");
+        Long id = this.sourceDao.create(this.workspace, finalName, type, isr);
+        IOUtils.closeQuietly(isr);
+        srcFile.delete();
+
+        this.metrics.sourceAdded(this.workspace, this.sourceDao.find(this.workspace.getId(), id));
+
+        return id;
+    }
+
+    private Long scrapeExternalUrl(final String name, final String url) throws IOException, XMLStreamException, DuplicateSourceException {
+        
+        // get the contents of the URL and store them in rawFile
+        HttpClient httpClient = newHttpClient();
+        GetMethod get = new GetMethod(url);
+        File rawFile = null;
+        FileOutputStream fos = null;
+        try {
+            int result = httpClient.executeMethod(get);
+            if (result != 200) {
+                throw new IOException(result + " code returned for URL: " + url);
+            }
+
+            rawFile = File.createTempFile("url", "dat");
+            rawFile.deleteOnExit();
+            fos = new FileOutputStream(rawFile);
+            IOUtils.copy(get.getResponseBodyAsStream(), fos);
+            
+        } catch (IOException e) {
+            throw new IOException("Unable to retriece content of URL", e);
+        } finally {
+            IOUtils.closeQuietly(fos);
+            get.releaseConnection();
+        }
+
+        // prepare source for addition to library
+        File srcFile = null;
+        MediaType mediaType = ConversionUtils.determineMediaType(rawFile);
+        if (MediaType.TEXT_XML.isCompatible(mediaType) || 
+            MediaType.APPLICATION_XML.isCompatible(mediaType) || 
+            MediaType.TEXT_HTML.isCompatible(mediaType) || 
+            MediaType.TEXT_PLAIN.isCompatible(mediaType)) {
+            
+            srcFile = EncodingUtils.fixEncoding(new FileInputStream(rawFile));
+            if (MediaType.TEXT_HTML.isCompatible(mediaType)) {
+                HtmlUtils.strip(srcFile);
+            }
+        } else {
+            mediaType = MediaType.TEXT_PLAIN;
+            srcFile = ConversionUtils.convertToText(new FileInputStream(rawFile));
+        }
+        rawFile.delete();
+
+        // Convert media type to Source Type
+        Source.Type srcType = Source.Type.TXT;
+        if (MediaType.TEXT_XML.isCompatible(mediaType)) {
+            srcType = Source.Type.XML;
+        } else if (MediaType.TEXT_HTML.isCompatible(mediaType)) {
+            srcType = Source.Type.HTML;
+        }
+
+        // dump results and enforce limits / uniqueness
+        return writeSourceData(srcFile, name, srcType);
+    }
+
+    private String appendExtension(String name, org.juxtasoftware.model.Source.Type srcType) {
+        // make sure theres some kind of extension
+        String finalName = name;
+        String lcName = name.toLowerCase();
+        if ( lcName.endsWith(".txt") == false && lcName.endsWith(".html") == false && 
+             lcName.endsWith(".xml") == false && lcName.endsWith(".wiki") == false  ) {
+            finalName = name + "." +srcType.toString().toLowerCase();
+        }
+        return finalName;
+    }
+
+    private HttpClient newHttpClient() {
+        final int REQUEST_TIMEOUT = 2 * 60 * 1000; // 2 secs
+        HttpClient httpClient = new HttpClient();
+        httpClient.getHttpConnectionManager().getParams().setConnectionTimeout(REQUEST_TIMEOUT);
+        httpClient.getHttpConnectionManager().getParams()
+            .setIntParameter(HttpMethodParams.BUFFER_WARN_TRIGGER_LIMIT, 10000 * 1024);
+        return httpClient;
     }
 
     private class SourcesSerializer implements JsonSerializer<Source> {
         private final DateFormat format = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
-        
+
         @Override
         public JsonElement serialize(Source src, Type typeOfSrc, JsonSerializationContext context) {
-            
-            JsonObject  obj = new JsonObject();
-            obj.add("id", new JsonPrimitive(src.getId()) );
+
+            JsonObject obj = new JsonObject();
+            obj.add("id", new JsonPrimitive(src.getId()));
             obj.add("name", new JsonPrimitive(src.getName()));
             obj.add("type", new JsonPrimitive(src.getType().toString()));
             obj.add("length", new JsonPrimitive(src.getText().getLength()));
-            obj.add("created", new JsonPrimitive( this.format.format(src.getCreated())));
+            obj.add("created", new JsonPrimitive(this.format.format(src.getCreated())));
             return obj;
         }
 
+    }
+    
+    private static class DuplicateSourceException extends Exception {
+        private static final long serialVersionUID = 8890164370720970377L;
+        private final String sourceName;
+        public DuplicateSourceException(String name) {
+            super();
+            this.sourceName = name;
+        }
+        public String getSourceName() {
+            return this.sourceName;
+        }
     }
 }

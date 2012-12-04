@@ -6,7 +6,7 @@ import eu.interedition.text.Text;
 
 public class Source extends WorkspaceMember {
 
-    public enum Type {TXT, XML, HTML, WIKI, PDF, DOC};
+    public enum Type {TXT, XML, HTML, WIKI};
     private String name;
     private Text text;
     private Date created;

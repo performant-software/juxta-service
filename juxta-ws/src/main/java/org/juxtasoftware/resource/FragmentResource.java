@@ -148,6 +148,7 @@ public class FragmentResource extends BaseResource {
         return toJsonRepresentation( gson.toJson(witnessDiffMap.values()) );
     }
 
+    @SuppressWarnings("unused")
     private static class WitnessFragment {
         private Range range;
         @Expose private Long witnessId;
