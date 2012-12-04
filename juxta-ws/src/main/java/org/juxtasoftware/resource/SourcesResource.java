@@ -420,7 +420,7 @@ public class SourcesResource extends BaseResource {
         // make sure theres some kind of extension
         String finalName = name;
         String lcName = name.toLowerCase();
-        if ( lcName.endsWith(".txt") == false && lcName.endsWith(".html") == false && 
+        if ( lcName.endsWith(".txt") == false && lcName.endsWith(".html") == false && lcName.endsWith(".htm") == false &&
              lcName.endsWith(".xml") == false && lcName.endsWith(".wiki") == false  ) {
             finalName = name + "." +srcType.toString().toLowerCase();
         }
