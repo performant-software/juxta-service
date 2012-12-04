@@ -380,7 +380,7 @@ public class SourcesResource extends BaseResource {
             IOUtils.copy(get.getResponseBodyAsStream(), fos);
             
         } catch (IOException e) {
-            throw new IOException("Unable to retriece content of URL", e);
+            throw new IOException("Unable to retrieve content of URL", e);
         } finally {
             IOUtils.closeQuietly(fos);
             get.releaseConnection();
