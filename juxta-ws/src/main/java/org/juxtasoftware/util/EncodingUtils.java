@@ -25,6 +25,28 @@ public final class EncodingUtils {
 
     private static final Logger LOG = LoggerFactory.getLogger( Constants.WS_LOGGER_NAME );
     
+    public static final void stripUnknownUTF8(File srcFile) throws IOException {
+        File fixed = File.createTempFile("txt", "dat");
+        fixed.deleteOnExit();
+        OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(fixed), "UTF-8");
+
+        BufferedReader r = new BufferedReader(new FileReader(srcFile));
+        while (true) {
+            String line = r.readLine();
+            if (line == null) {
+                break;
+            } else {
+                char bad = 0xfffd;
+                line = line.replaceAll("" + bad, "");
+                osw.write(line + "\n");
+            }
+        }
+        IOUtils.closeQuietly(r);
+        IOUtils.closeQuietly(osw);
+        IOUtils.copy(new FileInputStream(fixed), new FileOutputStream(srcFile));
+        fixed.delete();
+    }
+    
     /**
      * Normalize the content to UTF-8 and strip any tags that say otherwise
      * @return A file containing the UTF-8 contents
