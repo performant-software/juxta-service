@@ -405,6 +405,15 @@ $(function() {
             $('#pick-base-popup').hide();
          });
       }
+      
+      $(".visibility-toggle").on("click", function() {
+         var p = $(this).css("background-position");
+         if ( p.indexOf("16") === -1 ) {
+            $(this).css("background-position", "0px 16px");
+         } else {
+            $(this).css("background-position", "0px 0px");
+         }
+      });
 
       // clicks on background clear boxes
       // and revert to note display

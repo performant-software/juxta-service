@@ -27,9 +27,10 @@ div.files {
    float: left;
    padding: 0px;
    position: relative;
-   top: 5;
+   top: 4px;
    display: inline-block;
    background-image: url("/juxta/images/show_hide.png");
+   background-position: 0 0;
 }
 
 /** TOOLBAR **/
