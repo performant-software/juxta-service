@@ -116,6 +116,11 @@
         <constructor-arg value="${juxta.alignment.size}" />
     </bean>
     
+    <!-- property to set lifespan of cached visualization data (hours) -->
+    <bean id="cacheLifespan" class="java.lang.Integer" factory-method="valueOf">
+        <constructor-arg value="${juxta.cache.lifespan}" />
+    </bean>
+    
     <!-- batch limits -->
     <bean id="tokenizationBatchSize" class="java.lang.Integer" factory-method="valueOf">
         <constructor-arg value="${juxta.tokenization.batch}" />

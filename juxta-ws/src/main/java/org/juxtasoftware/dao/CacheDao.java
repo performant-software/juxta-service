@@ -22,9 +22,9 @@ public interface CacheDao {
     Reader getExport( final Long setId, final Long baseId );
     void cacheExport( final Long setId, final Long baseId, Reader data);
     
-    boolean histogramExists(  final Long setId, final Long baseId  );
-    Reader getHistogram( final Long setId, final Long baseId );
-    void cacheHistogram( final Long setId, final Long baseId, Reader data);
+    boolean histogramExists(  final Long setId, final Long key  );
+    Reader getHistogram( final Long setId, final Long key   );
+    void cacheHistogram( final Long setId, final Long key, Reader data);
     
     boolean sideBySideExists(  final Long setId, final Long witness1, final Long witness2  );
     void cacheSideBySide( final Long setId, final Long witness1, final Long witness2, Reader data);
@@ -33,4 +33,6 @@ public interface CacheDao {
     
 
     void deleteAll( final Long setId );
+    
+    void purgeExpired();
 }

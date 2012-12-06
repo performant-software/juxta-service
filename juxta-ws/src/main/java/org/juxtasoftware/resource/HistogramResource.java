@@ -4,6 +4,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
@@ -60,6 +61,7 @@ public class HistogramResource extends BaseResource {
     
     private ComparisonSet set;
     private Witness baseWitness;
+    private List<Long> witnessIdList;
     
     protected static final Logger LOG = LoggerFactory.getLogger( Constants.WS_LOGGER_NAME );
     
@@ -77,6 +79,7 @@ public class HistogramResource extends BaseResource {
             return;
         }
         
+        // Get the required base witness ID
         if (getQuery().getValuesMap().containsKey("base") == false ) {
             setStatus(Status.CLIENT_ERROR_BAD_REQUEST, "Missing base parameter");
         } else {
@@ -94,14 +97,37 @@ public class HistogramResource extends BaseResource {
                 return;
             }
         }
+        
+        // grab the witness id filter. If provided, only these witnesses
+        // will be included in the histogram.
+        this.witnessIdList = new ArrayList<Long>();
+        if (getQuery().getValuesMap().containsKey("docs")  ) {
+            String[] docStrIds = getQuery().getValues("docs").split(",");
+            for ( int i=0; i<docStrIds.length; i++ ) {
+                try {
+                    Long witId = Long.parseLong(docStrIds[i]);
+                    if ( id.equals(this.baseWitness.getId()) == false ) {
+                        this.witnessIdList.add( witId );
+                    }
+                } catch (Exception e ) {
+                    setStatus(Status.CLIENT_ERROR_BAD_REQUEST, "Invalid document id specified");
+                    return;
+                }
+            }
+        }
     }
     
     @Get("json")
     public Representation toJson() throws IOException {
+        // Create the info block that identifies this vsualization
+        HistogramInfo info = new HistogramInfo(this.set, this.baseWitness, this.witnessIdList);
+        
         // FIRST, see if the cached version is available:
-        if ( this.cacheDao.histogramExists(this.set.getId(), this.baseWitness.getId())) {
+        LOG.info("Is histogram cached: "+info);
+        if ( this.cacheDao.histogramExists(this.set.getId(), info.getKey())) {
+            LOG.info("Retrieving cached histogram");
             Representation rep = new ReaderRepresentation( 
-                this.cacheDao.getHistogram(this.set.getId(), this.baseWitness.getId()), 
+                this.cacheDao.getHistogram(this.set.getId(), info.getKey()), 
                 MediaType.APPLICATION_JSON);
             if ( isZipSupported() ) {
                 return new EncodeRepresentation(Encoding.GZIP, rep);
@@ -113,6 +139,9 @@ public class HistogramResource extends BaseResource {
         // set up a filter to get the annotations necessary for this histogram
         QNameFilter changesFilter = this.filters.getDifferencesFilter();
         AlignmentConstraint constraints = new AlignmentConstraint(this.set, this.baseWitness.getId());
+        for ( Long id : this.witnessIdList ) {
+            constraints.addWitnessIdFilter(id);
+        }
         constraints.setFilter(changesFilter);
         
         // Get the number of annotations that will be returned and do a rough calcuation
@@ -131,17 +160,20 @@ public class HistogramResource extends BaseResource {
         
         final String taskId =  generateTaskId(set.getId(), baseWitness.getId() );
         if ( this.taskManager.exists(taskId) == false ) {
-            HistogramTask task = new HistogramTask(taskId);
+            HistogramTask task = new HistogramTask(taskId, info);
             this.taskManager.submit(task);
         } 
         return toJsonRepresentation( "{\"status\": \"RENDERING\", \"taskId\": \""+taskId+"\"}" );
     }
     
-    private void render() throws IOException {
+    private void render(HistogramInfo histogramInfo) throws IOException {
 
         // Get all of the differences and sort them
         QNameFilter changesFilter = this.filters.getDifferencesFilter();
-        AlignmentConstraint constraints = new AlignmentConstraint(this.set, this.baseWitness.getId());
+        AlignmentConstraint constraints = new AlignmentConstraint( histogramInfo.set, histogramInfo.base.getId());
+        for ( Long id : histogramInfo.witnesses ) {
+            constraints.addWitnessIdFilter(id);
+        }
         constraints.setFilter(changesFilter);
         List<Alignment> diffs =  this.alignmentDao.list(constraints);
         Collections.sort(diffs, new Comparator<Alignment>() {
@@ -252,11 +284,15 @@ public class HistogramResource extends BaseResource {
 //        return toJsonRepresentation( foo );
         
         // cache the results and kill temp file
+        LOG.info("Cache histogram "+histogramInfo);
         FileReader r = new FileReader(hist);
-        this.cacheDao.cacheHistogram(this.set.getId(), this.baseWitness.getId(), r);
+        this.cacheDao.cacheHistogram(this.set.getId(), histogramInfo.getKey(), r);
         IOUtils.closeQuietly(r);
         hist.delete();
     }
+    
+    
+    
     
     private String generateTaskId( final Long setId, final Long baseId) {
         final int prime = 31;
@@ -287,18 +323,83 @@ public class HistogramResource extends BaseResource {
     }
     
     /**
+     * Data used to generate the histogram
+     * @author loufoster
+     *
+     */
+    public static class HistogramInfo {
+        public final ComparisonSet set;        
+        public final Witness base;
+        public final List<Long> witnesses = new ArrayList<Long>();
+        
+        public HistogramInfo(ComparisonSet set, Witness base, List<Long> witnesses ) {
+            this.base = base;
+            this.witnesses.addAll(witnesses);
+            this.set = set;
+        }
+        
+        public long getKey() {
+            return (long)hashCode();
+        }
+
+        @Override
+        public int hashCode() {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + ((base == null) ? 0 : base.hashCode());
+            result = prime * result + ((set == null) ? 0 : set.hashCode());
+            result = prime * result + ((witnesses == null) ? 0 : witnesses.hashCode());
+            return result;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj)
+                return true;
+            if (obj == null)
+                return false;
+            if (getClass() != obj.getClass())
+                return false;
+            HistogramInfo other = (HistogramInfo) obj;
+            if (base == null) {
+                if (other.base != null)
+                    return false;
+            } else if (!base.equals(other.base))
+                return false;
+            if (set == null) {
+                if (other.set != null)
+                    return false;
+            } else if (!set.equals(other.set))
+                return false;
+            if (witnesses == null) {
+                if (other.witnesses != null)
+                    return false;
+            } else if (!witnesses.equals(other.witnesses))
+                return false;
+            return true;
+        }
+        
+        @Override
+        public String toString() {
+            return "HistogramInfo [set=" + set + ", base=" + base + ", witnesses=" + witnesses + "] = KEY: " +getKey();
+        }
+    }
+    
+    /**
      * Task to asynchronously render the visualization
      */
     private class HistogramTask implements BackgroundTask {
         private final String name;
+        private final HistogramInfo histogramInfo;
         private BackgroundTaskStatus status;
         private Date startDate;
         private Date endDate;
         
-        public HistogramTask(final String name) {
+        public HistogramTask(final String name, HistogramInfo info) {
             this.name =  name;
             this.status = new BackgroundTaskStatus( this.name );
             this.startDate = new Date();
+            histogramInfo = info;
         }
         
         @Override
@@ -311,7 +412,7 @@ public class HistogramResource extends BaseResource {
             try {
                 LOG.info("Begin task "+this.name);
                 this.status.begin();
-                HistogramResource.this.render();
+                HistogramResource.this.render( this.histogramInfo );
                 LOG.info("Task "+this.name+" COMPLETE");
                 this.endDate = new Date();   
                 this.status.finish();
