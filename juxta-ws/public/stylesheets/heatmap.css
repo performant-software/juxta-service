@@ -19,6 +19,19 @@ div.files {
     font-weight: 300;
 }
 
+.visibility-toggle {
+   cursor: pointer;
+   width:16px;
+   height:16px;
+   margin-left: 4px;
+   float: left;
+   padding: 0px;
+   position: relative;
+   top: 5;
+   display: inline-block;
+   background-image: url("/juxta/images/show_hide.png");
+}
+
 /** TOOLBAR **/
 .heatmap-toolbar {
     border-bottom: 1px solid #999;
@@ -52,7 +65,7 @@ div.witness {
     text-overflow: ellipsis;
     cursor: pointer;
     float: left;
-    width:59%;
+    width:52%;
 }
 
 div.change-index {

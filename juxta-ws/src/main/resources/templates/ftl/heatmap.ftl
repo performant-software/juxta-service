@@ -18,6 +18,7 @@
                 <div class="base set-file" title="${witness.name}">${witness.name}<span id="base-tag">[base]</span></div>
             <#else>
                 <div class="set-witnesss set-file">
+                    <div id="toggle-${witness.id}" class="visibility-toggle"></div>
                     <div id="witness-${witness.id}" class="witness" title="${witness.name}">${witness.name}</div>
                     <div id="change-index-${witness.id}" class="change-index" juxta:change-index="${witness.changeIndex}"></div>
                     <div style="clear: both;"></div>
