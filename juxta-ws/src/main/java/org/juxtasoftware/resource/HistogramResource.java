@@ -23,6 +23,7 @@ import org.juxtasoftware.model.Alignment.AlignedAnnotation;
 import org.juxtasoftware.model.AlignmentConstraint;
 import org.juxtasoftware.model.ComparisonSet;
 import org.juxtasoftware.model.QNameFilter;
+import org.juxtasoftware.model.VisualizationInfo;
 import org.juxtasoftware.model.Witness;
 import org.juxtasoftware.util.BackgroundTask;
 import org.juxtasoftware.util.BackgroundTaskCanceledException;
@@ -106,7 +107,7 @@ public class HistogramResource extends BaseResource {
             for ( int i=0; i<docStrIds.length; i++ ) {
                 try {
                     Long witId = Long.parseLong(docStrIds[i]);
-                    if ( id.equals(this.baseWitness.getId()) == false ) {
+                    if ( witId.equals(this.baseWitness.getId()) == false ) {
                         this.witnessIdList.add( witId );
                     }
                 } catch (Exception e ) {
@@ -120,7 +121,7 @@ public class HistogramResource extends BaseResource {
     @Get("json")
     public Representation toJson() throws IOException {
         // Create the info block that identifies this vsualization
-        HistogramInfo info = new HistogramInfo(this.set, this.baseWitness, this.witnessIdList);
+        VisualizationInfo info = new VisualizationInfo(this.set, this.baseWitness, this.witnessIdList);
         
         // FIRST, see if the cached version is available:
         LOG.info("Is histogram cached: "+info);
@@ -166,12 +167,13 @@ public class HistogramResource extends BaseResource {
         return toJsonRepresentation( "{\"status\": \"RENDERING\", \"taskId\": \""+taskId+"\"}" );
     }
     
-    private void render(HistogramInfo histogramInfo) throws IOException {
+    private void render(VisualizationInfo histogramInfo) throws IOException {
 
         // Get all of the differences and sort them
         QNameFilter changesFilter = this.filters.getDifferencesFilter();
-        AlignmentConstraint constraints = new AlignmentConstraint( histogramInfo.set, histogramInfo.base.getId());
-        for ( Long id : histogramInfo.witnesses ) {
+        AlignmentConstraint constraints = new AlignmentConstraint( 
+            histogramInfo.getSet(), histogramInfo.getBase().getId());
+        for ( Long id : histogramInfo.getWitnessFilter() ) {
             constraints.addWitnessIdFilter(id);
         }
         constraints.setFilter(changesFilter);
@@ -323,79 +325,16 @@ public class HistogramResource extends BaseResource {
     }
     
     /**
-     * Data used to generate the histogram
-     * @author loufoster
-     *
-     */
-    public static class HistogramInfo {
-        public final ComparisonSet set;        
-        public final Witness base;
-        public final List<Long> witnesses = new ArrayList<Long>();
-        
-        public HistogramInfo(ComparisonSet set, Witness base, List<Long> witnesses ) {
-            this.base = base;
-            this.witnesses.addAll(witnesses);
-            this.set = set;
-        }
-        
-        public long getKey() {
-            return (long)hashCode();
-        }
-
-        @Override
-        public int hashCode() {
-            final int prime = 31;
-            int result = 1;
-            result = prime * result + ((base == null) ? 0 : base.hashCode());
-            result = prime * result + ((set == null) ? 0 : set.hashCode());
-            result = prime * result + ((witnesses == null) ? 0 : witnesses.hashCode());
-            return result;
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            if (this == obj)
-                return true;
-            if (obj == null)
-                return false;
-            if (getClass() != obj.getClass())
-                return false;
-            HistogramInfo other = (HistogramInfo) obj;
-            if (base == null) {
-                if (other.base != null)
-                    return false;
-            } else if (!base.equals(other.base))
-                return false;
-            if (set == null) {
-                if (other.set != null)
-                    return false;
-            } else if (!set.equals(other.set))
-                return false;
-            if (witnesses == null) {
-                if (other.witnesses != null)
-                    return false;
-            } else if (!witnesses.equals(other.witnesses))
-                return false;
-            return true;
-        }
-        
-        @Override
-        public String toString() {
-            return "HistogramInfo [set=" + set + ", base=" + base + ", witnesses=" + witnesses + "] = KEY: " +getKey();
-        }
-    }
-    
-    /**
      * Task to asynchronously render the visualization
      */
     private class HistogramTask implements BackgroundTask {
         private final String name;
-        private final HistogramInfo histogramInfo;
+        private final VisualizationInfo histogramInfo;
         private BackgroundTaskStatus status;
         private Date startDate;
         private Date endDate;
         
-        public HistogramTask(final String name, HistogramInfo info) {
+        public HistogramTask(final String name, VisualizationInfo info) {
             this.name =  name;
             this.status = new BackgroundTaskStatus( this.name );
             this.startDate = new Date();

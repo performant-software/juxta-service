@@ -34,6 +34,7 @@ import org.juxtasoftware.model.AnnotationConstraint;
 import org.juxtasoftware.model.ComparisonSet;
 import org.juxtasoftware.model.JuxtaAnnotation;
 import org.juxtasoftware.model.QNameFilter;
+import org.juxtasoftware.model.VisualizationInfo;
 import org.juxtasoftware.model.Witness;
 import org.juxtasoftware.resource.BaseResource;
 import org.juxtasoftware.util.BackgroundTask;
@@ -74,6 +75,7 @@ public class HeatmapView  {
     private List<Alignment> alignments;
     private BaseResource parent;
     private int minimumEditDistance = 0;
+    private VisualizationInfo visualizationInfo;
     
     protected static final Logger LOG = LoggerFactory.getLogger( Constants.WS_LOGGER_NAME );
     private static final int MEGABYTE = (1024*1024);
@@ -137,27 +139,31 @@ public class HeatmapView  {
                 break;
             }
         }
+        
+        // get the list of witnesses to include in this view (if none present,
+        // all witnesses will be included). Use this to create a visualiztion
+        // info object that will be used to generate a key to uniquely identify
+        // this visualization
+        List<Long> witFilterList = getWitnessFilterList( base.getId() );
+        this.visualizationInfo = new VisualizationInfo(set, base, witFilterList);
 
         // See if generation of the heatmp will use up too much memory
-        if ( willOverrunMemory( set, baseWitnessId) ) {
+        if ( willOverrunMemory( set, baseWitnessId, witFilterList) ) {
             this.parent.setStatus(Status.SERVER_ERROR_INSUFFICIENT_STORAGE);
             return this.parent.toTextRepresentation(
                 "The server has insufficent resources to generate this visualization." +
                 "\nTry again later. If this fails, try breaking large witnesses up into smaller segments.");
         }
         
+        // get a list of all diffs that will be used in this visualization
+        getRawHeatmapDiffs( set, baseWitnessId, witFilterList );
+        
         // Calculate the change index for the witnesses ( not necessary in condensed view: no witness list)
         try {
             List<SetWitness> witnesses; 
             if ( condensed == false ){
                 witnesses = calculateChangeIndex( set, setWitnesses, baseWitnessId );
-            } else {
-                // grab the alignments
-                QNameFilter changesFilter = this.filters.getDifferencesFilter();
-                AlignmentConstraint constraints = new AlignmentConstraint(set, baseWitnessId);
-                constraints.setFilter(changesFilter);
-                this.alignments = this.alignmentDao.list(constraints);
-                
+            } else {           
                 // just 0 out all change indexes for condensed views
                 witnesses = new ArrayList<HeatmapView.SetWitness>();
                 for (Witness w: setWitnesses ) {
@@ -167,8 +173,8 @@ public class HeatmapView  {
 
             // Asynchronously render heatmap main body (map, notes and margin boxes)
             // Grab it from cache if possible. 
-            if ( this.cacheDao.heatmapExists(set.getId(), base.getId(), condensed) == false) {
-                final String taskId =  generateTaskId(set.getId(), base.getId(), condensed);
+            if ( this.cacheDao.heatmapExists(set.getId(), this.visualizationInfo.getKey(), condensed) == false) {
+                final String taskId =  generateTaskId(set.getId(), this.visualizationInfo.getKey(), condensed);
                 if ( this.taskManager.exists(taskId) == false ) {
                     HeatmapTask task = new HeatmapTask(taskId, set, base, witnesses, condensed);
                     this.taskManager.submit(task);
@@ -188,6 +194,7 @@ public class HeatmapView  {
             map.put("hasRevisions", this.witnessDao.hasRevisions(base) );
             map.put("setId", set.getId());
             map.put("baseId", base.getId());
+            map.put("visualizationKey", this.visualizationInfo.getKey());
             map.put("baseName", base.getName() );
             map.put("witnessCount", witnesses.size() );
             map.put("witnesses", witnesses );
@@ -216,6 +223,30 @@ public class HeatmapView  {
         
     }
     
+    private void getRawHeatmapDiffs(ComparisonSet set, Long baseWitnessId, List<Long> witFilter) {
+        QNameFilter changesFilter = this.filters.getDifferencesFilter();
+        AlignmentConstraint constraints = new AlignmentConstraint(set, baseWitnessId);
+        for ( Long id : witFilter ) {
+            constraints.addWitnessIdFilter(id);
+        }
+        constraints.setFilter(changesFilter);
+        this.alignments = this.alignmentDao.list(constraints);
+    }
+
+    private List<Long> getWitnessFilterList( Long baseId ) {
+        List<Long> list = new ArrayList<Long>();
+        if ( this.parent.getQuery().getValuesMap().containsKey("filter")  ) {
+            String[] docStrIds = this.parent.getQuery().getValues("filter").split(",");
+            for ( int i=0; i<docStrIds.length; i++ ) {
+                Long witId = Long.parseLong(docStrIds[i]);
+                if ( witId.equals(baseId) == false ) {
+                    list.add( witId );
+                }
+            }
+        }
+        return list;
+    }
+
     private String generateTaskId( final Long setId, final Long baseId, final Boolean condensed) {
         final int prime = 31;
         int result = 1;
@@ -225,11 +256,14 @@ public class HeatmapView  {
         return "heatmap-"+result;
     }
     
-    private boolean willOverrunMemory(ComparisonSet set, Long baseWitnessId) {
+    private boolean willOverrunMemory(ComparisonSet set, Long baseWitnessId, List<Long> witFilter) {
                 
         // set up a filter to get the annotations necessary for this histogram
         QNameFilter changesFilter = this.filters.getDifferencesFilter();
         AlignmentConstraint constraints = new AlignmentConstraint(set, baseWitnessId);
+        for ( Long id : witFilter ) {
+            constraints.addWitnessIdFilter(id);
+        }
         constraints.setFilter(changesFilter);
   
         // Get the number of annotations that will be returned and do a rough calcuation
@@ -248,17 +282,14 @@ public class HeatmapView  {
     }
 
     private List<SetWitness> calculateChangeIndex( final ComparisonSet set, final List<Witness> witnesses, final Long baseWitnessId ) {
+        // init data structure to hold change index info
         List<SetWitness> out = new ArrayList<SetWitness>();
         Map<Long, Long> witnessDiffLen = new HashMap<Long, Long>();
         for ( Witness w : witnesses ) {
             witnessDiffLen.put(w.getId(), 0L);
         }
 
-        // get all alignments for this set and add up diff length for each annotaion
-        QNameFilter changesFilter = this.filters.getDifferencesFilter();
-        AlignmentConstraint constraints = new AlignmentConstraint(set, baseWitnessId);
-        constraints.setFilter(changesFilter);
-        this.alignments = this.alignmentDao.list(constraints);
+        // add up diff length for each annotaion in the alignments list
         for ( Alignment align : this.alignments ) {
             long longestDiff = -1;
             Long witnessId = null;
@@ -421,7 +452,7 @@ public class HeatmapView  {
         Representation heatmapFtl = this.parent.toHtmlRepresentation("heatmap_text.ftl", map, false, false);
                 
         // Stuff it in a cache for future fast response
-        this.cacheDao.cacheHeatmap(set.getId(), base.getId(), heatmapFtl.getReader(), condensed);
+        this.cacheDao.cacheHeatmap(set.getId(), this.visualizationInfo.getKey(), heatmapFtl.getReader(), condensed);
         
         // done with this file. kill it explicitly
         heatmapFile.delete();
@@ -495,6 +526,10 @@ public class HeatmapView  {
                     witness = findWitness(witnesses, witnessAnnotation.getWitnessId());
                     break;
                 }
+            }
+            if ( this.visualizationInfo.getWitnessFilter().indexOf(witness.getId()) != -1 ) {
+                LOG.info("Skipping diff from witness that was filtered out");
+                continue;
             }
                     
             // Add all witness change details to the base change. There can be many.

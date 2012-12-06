@@ -43,12 +43,12 @@ public class HeatmapStreamDirective implements TemplateDirectiveModel {
         }
         Long setId = Long.parseLong( val.toString());
         
-        // REQUIRED base id
-        val = env.getVariable("baseId");
+        // REQUIRED visualization key
+        val = env.getVariable("visualizationKey");
         if ( val == null ) {
-            throw new TemplateModelException("Missing required baseId variable");
+            throw new TemplateModelException("Missing required visualizationKey variable");
         }
-        Long baseWitnessId = Long.parseLong( val.toString());
+        Long key = Long.parseLong( val.toString());
         
         // REQUIRED condensed flag
         val = env.getVariable("condensed");
@@ -79,7 +79,7 @@ public class HeatmapStreamDirective implements TemplateDirectiveModel {
         }
         
         Writer out = env.getOut();
-        Reader reader = this.cacheDao.getHeatmap(setId, baseWitnessId, condensed);
+        Reader reader = this.cacheDao.getHeatmap(setId, key, condensed);
         int currLine = 0;
         while ( true ) {
             int data = reader.read();
