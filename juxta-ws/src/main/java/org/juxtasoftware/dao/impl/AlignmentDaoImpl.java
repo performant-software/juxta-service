@@ -8,7 +8,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 import org.juxtasoftware.Constants;
 import org.juxtasoftware.dao.AlignmentDao;
@@ -90,8 +89,11 @@ public class AlignmentDaoImpl implements AlignmentDao, InitializingBean  {
         long freeMem = usage.getMax() -usage.getUsed();
         LOG.info("["+ freeMem  +"] FREE MEMORY");
         
+        // basic query for alignmnents in set
         StringBuilder sql = alignmentAnnotationsQuery();
         sql.append(" where a.set_id = ").append(constraint.getSetId());
+        
+        // qName filtering
         if ( constraint.getFilter() != null ) {
             sql.append(" and aqn.id in (");
             int cnt = 0;
@@ -104,6 +106,11 @@ public class AlignmentDaoImpl implements AlignmentDao, InitializingBean  {
             }
             sql.append(")");
         }
+        
+        // add sql to handle witness filtering based on mode
+        addWitnessFilterConstraints( sql, constraint );
+        
+        // sort order
         sql.append(" order by max_start, min_start asc");
         
         if ( constraint.isResultsRangeSet() ) {
@@ -125,6 +132,39 @@ public class AlignmentDaoImpl implements AlignmentDao, InitializingBean  {
         return a;   
     }
     
+    private void addWitnessFilterConstraints(StringBuilder sql, AlignmentConstraint constraint) {
+        // turn the witness filter into a set
+        StringBuilder idSet = new StringBuilder();
+        if ( constraint.getWitnessIdFilter().size() > 0 ) {
+            idSet.append("(");
+            for ( Long id : constraint.getWitnessIdFilter() ) {
+                if (idSet.length() > 1) {
+                    idSet.append(",");
+                }
+                idSet.append(id);
+            }
+            idSet.append(")");
+        }
+        
+        // for non-baseless queries, make sure the base is one of the witnesse in annotations
+        if ( constraint.isBaseless() == false ) {
+            Long bID = constraint.getBaseId();
+            sql.append( " and (a1.witness_id=").append(bID).append(" or a2.witness_id=").append(bID).append(") " );
+            
+            // in BASED mode, the filter is EXCLUSIVE. Do not return alignments with
+            // annotataions on witnesses from the list.
+            if ( constraint.getWitnessIdFilter().size() > 0 ) {
+                sql.append(" and a1.witness_id not in ").append(idSet).append(" and a2.witness_id not in ").append(idSet);
+            }
+        } else {
+            // In Baseless mode, the witness filter is INCLUSIVE. Only return alignments that
+            // have annotations on witnesses that are included in the filter
+            if ( constraint.getWitnessIdFilter().size() > 0 ) {
+                sql.append(" and a1.witness_id in ").append(idSet).append(" and a2.witness_id in ").append(idSet);
+            }
+        }
+    }
+
     @Override
     public Long count(AlignmentConstraint constraint) {
         StringBuilder sql = countAnnotationsQuery();
@@ -141,6 +181,8 @@ public class AlignmentDaoImpl implements AlignmentDao, InitializingBean  {
             }
             sql.append(")");
         }
+        
+        addWitnessFilterConstraints(sql, constraint);
        
         return this.jdbcTemplate.queryForLong(sql.toString());   
     }
@@ -150,14 +192,8 @@ public class AlignmentDaoImpl implements AlignmentDao, InitializingBean  {
         sb.append("select count(*) as cnt ");
         sb.append(" from ").append(TABLE_NAME).append(" as a "); 
         sb.append(" inner join text_qname as aqn on a.qname_id=aqn.id ");
-        
         sb.append(" inner join juxta_annotation as a1 on a1.id=a.annotation_a_id ");
-        sb.append(" inner join text_qname as a1_qn on a1.qname_id=a1_qn.id ");
-        sb.append(" inner join juxta_witness as w1 on w1.text_id=a1.text_id ");
-        
         sb.append(" inner join juxta_annotation as a2 on a2.id=a.annotation_b_id ");
-        sb.append(" inner join text_qname as a2_qn on a2.qname_id=a2_qn.id ");
-        sb.append(" inner join juxta_witness as w2 on w2.text_id=a2.text_id ");
         return sb;
     }
 
@@ -171,22 +207,20 @@ public class AlignmentDaoImpl implements AlignmentDao, InitializingBean  {
         sb.append("select a.id as a_id, a.set_id as a_set_id, a.edit_distance as edit_distance, ");
         sb.append(" a.group_num as group_num, a.manual as manual, ");
         sb.append(" aqn.id as aqn_id, aqn.namespace as namespace, aqn.local_name as local_name, ");
-        sb.append(" w1.id as w1_id, a1.id as a1_id, a1.range_start as a1_start, a1.range_end as a1_end, ");
+        sb.append(" a1.witness_id as w1_id, a1.id as a1_id, a1.range_start as a1_start, a1.range_end as a1_end, ");
         sb.append(" a1_qn.id as a1_qn_id, a1_qn.namespace as a1_namespace, a1_qn.local_name as a1_local_name, ");
-        sb.append(" w2.id as w2_id, a2.id as a2_id, a2.range_start as a2_start, a2.range_end as a2_end, ");
+        sb.append(" a2.witness_id as w2_id, a2.id as a2_id, a2.range_start as a2_start, a2.range_end as a2_end, ");
         sb.append(" a2_qn.id as a2_qn_id, a2_qn.namespace as a2_namespace, a2_qn.local_name as a2_local_name, ");
         sb.append(" LEAST(a1.range_start, a2.range_start) as min_start, ");
         sb.append(" GREATEST(a1.range_start, a2.range_start) as max_start ");
         sb.append(" from ").append(TABLE_NAME).append(" as a "); 
         sb.append(" inner join text_qname as aqn on a.qname_id=aqn.id ");
-        
-        sb.append(" inner join juxta_annotation as a1 on a1.id=a.annotation_a_id ");
+   
+        sb.append(" inner join juxta_annotation as a1 on a1.id=a.annotation_a_id ");    // annotation #1
         sb.append(" inner join text_qname as a1_qn on a1.qname_id=a1_qn.id ");
-        sb.append(" inner join juxta_witness as w1 on w1.text_id=a1.text_id ");
         
-        sb.append(" inner join juxta_annotation as a2 on a2.id=a.annotation_b_id ");
+        sb.append(" inner join juxta_annotation as a2 on a2.id=a.annotation_b_id ");    // annotation #2
         sb.append(" inner join text_qname as a2_qn on a2.qname_id=a2_qn.id ");
-        sb.append(" inner join juxta_witness as w2 on w2.text_id=a2.text_id ");
         return sb;
     }
 
@@ -195,7 +229,6 @@ public class AlignmentDaoImpl implements AlignmentDao, InitializingBean  {
         StringBuilder sql = alignmentAnnotationsQuery();
         sql.append(" where a.id = ").append(id);
         AlignmentConstraint constraint = new AlignmentConstraint(set);
-        constraint.setAlignmentId(id);
         AlignmentsMapper mapper = new AlignmentsMapper(constraint );
         this.jdbcTemplate.query(sql.toString(), mapper );
         if  (mapper.getAlignments().isEmpty() ) {
@@ -237,7 +270,6 @@ public class AlignmentDaoImpl implements AlignmentDao, InitializingBean  {
             a.setFragment( 
                 FragmentFormatter.format(frag, origRange, new Range(start,end), witness.getText().getLength() ));
         }
-
     }
     
     /**
@@ -259,19 +291,13 @@ public class AlignmentDaoImpl implements AlignmentDao, InitializingBean  {
         
         @Override
         public Void mapRow(ResultSet rs, int rowNum) throws SQLException {
-            Long alignId = rs.getLong("a_id");
-            if (this.constraint.getAlignmentId() != null && 
-                this.constraint.getAlignmentId().equals(alignId) == false ) {
-                return null;
-            }
-            
+
             // grab some constraint data for readability
             Range tgtRange = this.constraint.getRange();
-            Long baseId = this.constraint.getBaseId();
             
             // create a new alignment with all data except annotations
             Alignment align = new Alignment();
-            align.setId(alignId );
+            align.setId( rs.getLong("a_id")  );
             RelationalName qname = new RelationalName(rs.getString("namespace"), rs.getString("local_name"), rs.getLong("aqn_id"));
             align.setName( qname );
             if ( rs.getBoolean("manual")) {
@@ -287,7 +313,7 @@ public class AlignmentDaoImpl implements AlignmentDao, InitializingBean  {
                 Long witnessId = rs.getLong("w"+i+"_id");
                 Range range = new Range(rs.getInt("a"+i+"_start"), rs.getInt("a"+i+"_end"));
                 if ( tgtRange != null ) {
-                    if ( this.constraint.isBaseless() || witnessId.equals( baseId ) ) {
+                    if ( this.constraint.isBaseless() || witnessId.equals( this.constraint.getBaseId() ) ) {
                         if ( range.getStart() < tgtRange.getStart() ||
                              range.getEnd() > tgtRange.getEnd() ) {
                             return null;
@@ -298,29 +324,11 @@ public class AlignmentDaoImpl implements AlignmentDao, InitializingBean  {
                     rs.getString("a"+i+"_namespace"), rs.getString("a"+i+"_local_name"), rs.getLong("a"+i+"_qn_id"));
                 align.addAnnotation( new AlignedAnnotation(qn, witnessId, annoId, range));
             }
-            
-            // check to see if the witnesses that make up this alignment
-            // are in the requested list of witness ids. If not, we don't care so toss it.
-            if ( matchesFilter(constraint.getWitnessIdFilter(), align.getAnnotations()) == false) {
-                return null;
-            }
 
             // If we got here, itsa keeper
             this.alignments.add(align);
             
             return null;
         } 
-        
-        private boolean matchesFilter(Set<Long> witnessIds, List<AlignedAnnotation> annotations) {
-            int matchCnt = 0;
-            for (Long witnessId : witnessIds ) {
-                for (AlignedAnnotation annotation : annotations ) {
-                    if ( annotation.getWitnessId().equals( witnessId)  ) {
-                        matchCnt++;
-                    }
-                }
-            }
-            return (matchCnt == witnessIds.size());
-        }
     }
 }
