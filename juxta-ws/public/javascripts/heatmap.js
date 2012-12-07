@@ -254,6 +254,11 @@ $(function() {
       var setId = $('#setId').text();
       var csUrl = $('#ajax-base-url').text() + setId + $('#fragment-segment').text();
       var url = csUrl + '?range=' + range + "&base=" + $("#baseId").text();
+      var filter =  $("#witness-filter").text();
+      filter = $.trim(filter.replace("[", "").replace("]",""));
+      if ( filter.length > 0 ) {
+         url = url + "&filter="+filter;
+      }
 
       $.ajax({
          contentType : 'application/json',

@@ -1,9 +1,11 @@
 package org.juxtasoftware.resource;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import org.juxtasoftware.dao.AlignmentDao;
 import org.juxtasoftware.dao.ComparisonSetDao;
@@ -41,6 +43,7 @@ public class FragmentResource extends BaseResource {
     private Long baseWitnessId;
     private ComparisonSet set;
     private Range range;
+    private Set<Long> witnessIdList;
     private static final int MAX_RANGE = 5000;
     private static final int FRAG_SIZE = 25;
     
@@ -86,6 +89,26 @@ public class FragmentResource extends BaseResource {
                 setStatus(Status.CLIENT_ERROR_BAD_REQUEST, "Invalid Range specified");
             }
         }
+        
+        // grab the witness id filter. These witness IDs will be filtered out
+        this.witnessIdList = new HashSet<Long>();
+        if (getQuery().getValuesMap().containsKey("filter")  ) {
+            String[] docStrIds = getQuery().getValues("filter").split(",");
+            for ( int i=0; i<docStrIds.length; i++ ) {
+                try {
+                    Long witId = Long.parseLong(docStrIds[i]);
+                    if ( witId.equals(this.baseWitnessId)  ) {
+                        setStatus(Status.CLIENT_ERROR_BAD_REQUEST, "Cannot filter out base witness");
+                        return;
+                    } else {
+                        this.witnessIdList.add(witId);
+                    }
+                } catch (Exception e ) {
+                    setStatus(Status.CLIENT_ERROR_BAD_REQUEST, "Invalid document id specified");
+                    return;
+                }
+            }
+        }
     }
     
     @Get("json")
@@ -94,6 +117,9 @@ public class FragmentResource extends BaseResource {
         AlignmentConstraint constraint = new AlignmentConstraint( this.set, this.baseWitnessId );
         constraint.setFilter( this.filters.getDifferencesFilter() );
         constraint.setRange( this.range );
+        for (Long witId : this.witnessIdList ) {
+            constraint.addWitnessIdFilter(witId);
+        }
         List<Alignment> aligns = this.alignmentDao.list( constraint );
         
         // consolidate ranges
