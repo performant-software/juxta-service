@@ -406,6 +406,12 @@ $(function() {
          });
       }
       
+      $.each( $.parseJSON( $("#witness-filter").text() ), function(idx, witId) {
+         $("#toggle-"+witId).css("background-position", "0px 16px");
+         $("#change-index-"+witId).hide();
+         $("#witness-"+witId).css("color", "#ccc");
+      });
+      
       $(".visibility-toggle").on("click", function() {
          var p = $(this).css("background-position");
          if ( p.indexOf("16") === -1 ) {

@@ -8,6 +8,7 @@
 <span id="setId" style="display: none">${setId}</span>
 <span id="baseId" style="display: none">${baseId}</span>
 <span id="condensed" style="display: none">${condensed?string}</span>
+<span id="witness-filter" style="display: none">${witnessFilter}</span>
 
 
 <#if !condensed>

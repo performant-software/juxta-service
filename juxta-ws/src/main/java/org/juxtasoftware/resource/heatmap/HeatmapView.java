@@ -199,6 +199,7 @@ public class HeatmapView  {
             map.put("witnessCount", witnesses.size() );
             map.put("witnesses", witnesses );
             map.put("heatmapStreamer", this.heatmapDirective);
+            map.put("witnessFilter", witFilterList.toString());
             map.put("page", "set");
             map.put("title", "Juxta Heatmap View: "+set.getName());
             
