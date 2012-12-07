@@ -254,15 +254,17 @@ $(function() {
       var setId = $('#setId').text();
       var csUrl = $('#ajax-base-url').text() + setId + $('#fragment-segment').text();
       var url = csUrl + '?range=' + range + "&base=" + $("#baseId").text();
-      var filter =  $("#witness-filter").text();
-      filter = $.trim(filter.replace("[", "").replace("]",""));
-      if ( filter.length > 0 ) {
-         url = url + "&filter="+filter;
+      var filter = $("#witness-filter").text();
+      filter = $.trim(filter.replace("[", "").replace("]", ""));
+      if (filter.length > 0) {
+         url = url + "&filter=" + filter;
       }
 
       $.ajax({
          contentType : 'application/json',
-         accepts : { json : 'application/json' }, 
+         accepts : {
+            json : 'application/json'
+         },
          type : 'GET',
          url : url,
          dataType : 'json',
@@ -322,6 +324,35 @@ $(function() {
       });
    };
 
+   var toggleVisibility = function(icon) {
+      var witnessId = $(icon).attr("id").substring("toggle-".length);
+      var p = $(icon).css("background-position");
+      if (p.indexOf("16") === -1) {
+         $(icon).css("background-position", "0px 16px");
+         $("#witness-" + witnessId).addClass("hidden-witness");
+      } else {
+         $(icon).css("background-position", "0px 0px");
+         $("#witness-" + witnessId).removeClass("hidden-witness");
+      }
+
+      var setId = $('#setId').text();
+      var csUrl = $('#ajax-base-url').text() + setId + $('#view-heatmap-segment').text() + "&base=" + $("#baseId").text();
+      var filter = "";
+      $(".visibility-toggle").each(function() {
+         p = $(this).css("background-position");
+         if (p.indexOf("16") > -1) {
+            if (filter.length > 0)
+               filter = filter + ",";
+            filter = filter + $(this).attr("id").substring("toggle-".length);
+         }
+      });
+
+      if (filter.length > 0) {
+         csUrl = csUrl + "&filter=" + filter;
+      }
+      window.location = csUrl;
+   };
+
    /**
     * Initialize heatmap size, layout and events
     */
@@ -371,12 +402,14 @@ $(function() {
 
          // change base witness by clicking on name in witness list on left
          $(".witness").on("click", function() {
-            var witnessId = $(this).attr("id");
-            // strip off 'witness-' and just get number
-            var id = witnessId.substring(8);
-            var setId = $('#setId').text();
-            var csUrl = $('#ajax-base-url').text() + setId + $('#view-heatmap-segment').text() + "&base=" + id;
-            window.location = csUrl;
+            var witnessId = $(this).attr("id").substring("witness-".length);
+            if ( $(this).hasClass("hidden-witness") ) {
+               toggleVisibility( $("#toggle-"+witnessId) );
+            } else {
+               var setId = $('#setId').text();
+               var csUrl = $('#ajax-base-url').text() + setId + $('#view-heatmap-segment').text() + "&base=" + witnessId;
+               window.location = csUrl;
+            }
          });
       } else {
          // show the pick base popover
@@ -410,20 +443,15 @@ $(function() {
             $('#pick-base-popup').hide();
          });
       }
-      
-      $.each( $.parseJSON( $("#witness-filter").text() ), function(idx, witId) {
-         $("#toggle-"+witId).css("background-position", "0px 16px");
-         $("#change-index-"+witId).hide();
-         $("#witness-"+witId).css("color", "#ccc");
+
+      $.each($.parseJSON($("#witness-filter").text()), function(idx, witId) {
+         $("#toggle-" + witId).css("background-position", "0px 16px");
+         $("#change-index-" + witId).hide();
+         $("#witness-" + witId).addClass("hidden-witness");
       });
-      
+
       $(".visibility-toggle").on("click", function() {
-         var p = $(this).css("background-position");
-         if ( p.indexOf("16") === -1 ) {
-            $(this).css("background-position", "0px 16px");
-         } else {
-            $(this).css("background-position", "0px 0px");
-         }
+         toggleVisibility($(this));
       });
 
       // clicks on background clear boxes
@@ -437,7 +465,7 @@ $(function() {
          showMarginBoxes($(this).attr("id"));
          event.stopPropagation();
       });
-      
+
       // hook up event handlers for the heatmap toolbar buttons
       $("#refresh-button").on("click", function() {
          refreshHeatmap();

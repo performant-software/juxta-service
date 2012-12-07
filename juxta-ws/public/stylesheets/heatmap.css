@@ -33,6 +33,10 @@ div.files {
    background-position: 0 0;
 }
 
+.hidden-witness {
+   color: #ccc;
+}
+
 /** TOOLBAR **/
 .heatmap-toolbar {
     border-bottom: 1px solid #999;
