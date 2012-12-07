@@ -329,6 +329,10 @@ $(function() {
       if ( witnessId === $("#baseId").text()) {
          return;
       }
+      var top = $("#heatmap-scroller").scrollTop();
+      var full = $("#heatmap-scroller")[0].scrollHeight;
+      var percent = top / full;
+      
       var p = $(icon).css("background-position");
       if (p.indexOf("16") === -1) {
          $(icon).css("background-position", "0px 16px");
@@ -340,6 +344,7 @@ $(function() {
 
       var setId = $('#setId').text();
       var csUrl = $('#ajax-base-url').text() + setId + $('#view-heatmap-segment').text() + "base=" + $("#baseId").text();
+      csUrl = csUrl + "&top="+percent.toFixed(5);
       var filter = "";
       $(".visibility-toggle").each(function() {
          p = $(this).css("background-position");
@@ -410,7 +415,7 @@ $(function() {
                Juxta.Heatmap.toggleVisibility( $("#toggle-"+witnessId) );
             } else {
                var setId = $('#setId').text();
-               var csUrl = $('#ajax-base-url').text() + setId + $('#view-heatmap-segment').text() + "&base=" + witnessId;
+               var csUrl = $('#ajax-base-url').text() + setId + $('#view-heatmap-segment').text() + "base=" + witnessId;
                window.location = csUrl;
             }
          });
@@ -439,7 +444,7 @@ $(function() {
                }
             });
             var setId = $('#setId').text();
-            var csUrl = $('#ajax-base-url').text() + setId + $('#view-heatmap-segment').text() + "&base=" + newBaseId;
+            var csUrl = $('#ajax-base-url').text() + setId + $('#view-heatmap-segment').text() + "base=" + newBaseId;
             window.location = csUrl;
          });
          $("#base-cancel-button").on("click", function() {
@@ -482,6 +487,21 @@ $(function() {
       $("#revisions-button").on("click", function() {
          toggleRevisionStyle();
       });
+      
+      var loc = ""+window.location;
+      var tp = loc.indexOf("&top=");
+      if  ( tp > -1 ) {
+         var end = loc.indexOf("&", tp+1);
+         var scrollPos;
+         if (end > -1 ) {
+            scrollPos = loc.substring(tp+5,end);
+         } else {
+            scrollPos = loc.substring(tp+5);
+         }
+         var full = $(".heatmap-scroller")[0].scrollHeight;
+         var top = scrollPos * full;
+         $(".heatmap-scroller").scrollTop(top);
+      }
    };
 
    // Let the world know that the heatmap code is now loaded and can be initialized
