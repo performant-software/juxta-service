@@ -326,6 +326,9 @@ $(function() {
 
    var toggleVisibility = function(icon) {
       var witnessId = $(icon).attr("id").substring("toggle-".length);
+      if ( witnessId === $("#baseId").text()) {
+         return;
+      }
       var p = $(icon).css("background-position");
       if (p.indexOf("16") === -1) {
          $(icon).css("background-position", "0px 16px");

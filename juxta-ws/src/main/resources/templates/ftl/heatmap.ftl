@@ -16,7 +16,10 @@
         <div class="header">Witness List</div>
         <#list witnesses as witness>
             <#if witness.id == baseId>
-                <div class="base set-file" title="${witness.name}">${witness.name}<span id="base-tag">[base]</span></div>
+                <div class="base set-file" title="${witness.name}">
+                  <div id="toggle-${witness.id}" class="visibility-toggle base-visibility"></div>${witness.name}
+                     <span id="base-tag">[base]</span>
+                  </div>
             <#else>
                 <div class="set-witnesss set-file">
                     <div id="toggle-${witness.id}" class="visibility-toggle"></div>

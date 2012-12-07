@@ -33,6 +33,13 @@ div.files {
    background-position: 0 0;
 }
 
+.base-visibility {
+   top: 1px;
+   margin-right: 4px;
+   margin-left: 0px;
+   cursor: default;
+}
+
 .hidden-witness {
    color: #ccc;
 }
