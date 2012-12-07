@@ -255,7 +255,7 @@ $(function() {
       var csUrl = $('#ajax-base-url').text() + setId + $('#fragment-segment').text();
       var url = csUrl + '?range=' + range + "&base=" + $("#baseId").text();
       var filter = $("#witness-filter").text();
-      filter = $.trim(filter.replace("[", "").replace("]", ""));
+      filter = $.trim(filter.replace("[", "").replace("]", "").replace(/\s+/g, ""));
       if (filter.length > 0) {
          url = url + "&filter=" + filter;
       }
