@@ -209,7 +209,7 @@ public class HeatmapView  {
             // for systems that embed heatmap views in the main ui. They
             // just provide alternate values for these 3 elemements
             map.put("ajaxBaseUrl", parent.getRequest().getHostRef().toString()+"/juxta/"+parent.getWorkspace()+"/set/");
-            map.put("viewHeatmapSegment", "/view?mode=heatmap");
+            map.put("viewHeatmapSegment", "/view?mode=heatmap&");
             map.put("fragmentSegment", "/diff/fragment");
             
             return this.parent.toHtmlRepresentation("heatmap.ftl", map);

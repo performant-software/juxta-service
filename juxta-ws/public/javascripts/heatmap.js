@@ -324,7 +324,7 @@ $(function() {
       });
    };
 
-   var toggleVisibility = function(icon) {
+   window.Juxta.Heatmap.toggleVisibility = function(icon) {
       var witnessId = $(icon).attr("id").substring("toggle-".length);
       if ( witnessId === $("#baseId").text()) {
          return;
@@ -339,7 +339,7 @@ $(function() {
       }
 
       var setId = $('#setId').text();
-      var csUrl = $('#ajax-base-url').text() + setId + $('#view-heatmap-segment').text() + "&base=" + $("#baseId").text();
+      var csUrl = $('#ajax-base-url').text() + setId + $('#view-heatmap-segment').text() + "base=" + $("#baseId").text();
       var filter = "";
       $(".visibility-toggle").each(function() {
          p = $(this).css("background-position");
@@ -407,7 +407,7 @@ $(function() {
          $(".witness").on("click", function() {
             var witnessId = $(this).attr("id").substring("witness-".length);
             if ( $(this).hasClass("hidden-witness") ) {
-               toggleVisibility( $("#toggle-"+witnessId) );
+               Juxta.Heatmap.toggleVisibility( $("#toggle-"+witnessId) );
             } else {
                var setId = $('#setId').text();
                var csUrl = $('#ajax-base-url').text() + setId + $('#view-heatmap-segment').text() + "&base=" + witnessId;
@@ -454,7 +454,7 @@ $(function() {
       });
 
       $(".visibility-toggle").on("click", function() {
-         toggleVisibility($(this));
+         Juxta.Heatmap.toggleVisibility($(this));
       });
 
       // clicks on background clear boxes
