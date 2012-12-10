@@ -101,7 +101,7 @@ public class Witness extends WorkspaceMember implements Comparand {
     @Override
     public boolean equals(Object obj) {
         if (id != 0 && obj != null && obj instanceof Witness) {
-            return id == ((Witness) obj).id;
+            return id.equals( ((Witness) obj).id );
         }
         return super.equals(obj);
     }
