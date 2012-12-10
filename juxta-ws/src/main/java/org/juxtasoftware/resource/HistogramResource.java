@@ -8,8 +8,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.output.FileWriterWithEncoding;
@@ -62,7 +64,7 @@ public class HistogramResource extends BaseResource {
     
     private ComparisonSet set;
     private Witness baseWitness;
-    private List<Long> witnessIdList;
+    private List<Long> witnessFilterList;
     
     protected static final Logger LOG = LoggerFactory.getLogger( Constants.WS_LOGGER_NAME );
     
@@ -101,14 +103,14 @@ public class HistogramResource extends BaseResource {
         
         // grab the witness id filter. If provided, only these witnesses
         // will be included in the histogram.
-        this.witnessIdList = new ArrayList<Long>();
+        Set<Long> includeIdList = new HashSet<Long>();
         if (getQuery().getValuesMap().containsKey("docs")  ) {
             String[] docStrIds = getQuery().getValues("docs").split(",");
             for ( int i=0; i<docStrIds.length; i++ ) {
                 try {
                     Long witId = Long.parseLong(docStrIds[i]);
                     if ( witId.equals(this.baseWitness.getId()) == false ) {
-                        this.witnessIdList.add( witId );
+                        includeIdList.add( witId );
                     }
                 } catch (Exception e ) {
                     setStatus(Status.CLIENT_ERROR_BAD_REQUEST, "Invalid document id specified");
@@ -116,12 +118,23 @@ public class HistogramResource extends BaseResource {
                 }
             }
         }
+        
+        // invert the include list into an exclude filter
+        this.witnessFilterList = new ArrayList<Long>();
+        if ( includeIdList.size() > 0 ) {
+            for (Witness w : this.setDao.getWitnesses(this.set) ) {
+                if ( includeIdList.contains( w.getId() ) == false && w.equals(this.baseWitness) == false) {
+                    this.witnessFilterList.add(w.getId() );
+                }
+            }
+        }
+        System.err.println( this.witnessFilterList );
     }
     
     @Get("json")
     public Representation toJson() throws IOException {
         // Create the info block that identifies this vsualization
-        VisualizationInfo info = new VisualizationInfo(this.set, this.baseWitness, this.witnessIdList);
+        VisualizationInfo info = new VisualizationInfo(this.set, this.baseWitness, this.witnessFilterList);
         
         // FIRST, see if the cached version is available:
         LOG.info("Is histogram cached: "+info);
@@ -140,7 +153,7 @@ public class HistogramResource extends BaseResource {
         // set up a filter to get the annotations necessary for this histogram
         QNameFilter changesFilter = this.filters.getDifferencesFilter();
         AlignmentConstraint constraints = new AlignmentConstraint(this.set, this.baseWitness.getId());
-        for ( Long id : this.witnessIdList ) {
+        for ( Long id : this.witnessFilterList ) {
             constraints.addWitnessIdFilter(id);
         }
         constraints.setFilter(changesFilter);
