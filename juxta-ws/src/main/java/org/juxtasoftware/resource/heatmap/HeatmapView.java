@@ -76,6 +76,7 @@ public class HeatmapView  {
     private BaseResource parent;
     private int minimumEditDistance = 0;
     private VisualizationInfo visualizationInfo;
+    private boolean newAlgo = false;
     
     protected static final Logger LOG = LoggerFactory.getLogger( Constants.WS_LOGGER_NAME );
     private static final int MEGABYTE = (1024*1024);
@@ -108,6 +109,9 @@ public class HeatmapView  {
         if (parent.getQuery().getValuesMap().containsKey("refresh") ) {
             this.cacheDao.deleteHeatmap(set.getId());
         }
+        if (parent.getQuery().getValuesMap().containsKey("new") ) {
+           this.newAlgo = true;
+        }
                
         // Determine base witnessID from query params
         Long baseWitnessId = null;
@@ -122,7 +126,7 @@ public class HeatmapView  {
             condensed = true;
         }
         
-        // Get all witness (and changeIndex) info.
+        // Get all witness 
         List<Witness> setWitnesses = new ArrayList<Witness>( this.setDao.getWitnesses(set) );
         if ( setWitnesses.size() < 2) {
             return this.parent.toTextRepresentation("This set contains less than two witnesess. Unable to view heatmap.");
@@ -140,9 +144,9 @@ public class HeatmapView  {
             }
         }
         
-        // get the list of witnesses to include in this view (if none present,
-        // all witnesses will be included). Use this to create a visualiztion
-        // info object that will be used to generate a key to uniquely identify
+        // get the witness filter list. these witnesses will not be rendered in the visualization.
+        // if no filter witnesses are  present, all witnesses will be included. 
+        // Use this to create a visualiztionInfo object that will be used to generate a key to uniquely identify
         // this visualization
         List<Long> witFilterList = getWitnessFilterList( base.getId() );
         this.visualizationInfo = new VisualizationInfo(set, base, witFilterList);
@@ -155,7 +159,7 @@ public class HeatmapView  {
                 "\nTry again later. If this fails, try breaking large witnesses up into smaller segments.");
         }
         
-        // get a list of all diffs that will be used in this visualization
+        // get a list of all diffs that will be used in this visualization (MEMORY SUCKER)
         getRawHeatmapDiffs( set, baseWitnessId, witFilterList );
         
         // Calculate the change index for the witnesses ( not necessary in condensed view: no witness list)
@@ -198,13 +202,13 @@ public class HeatmapView  {
             map.put("baseName", base.getName() );
             map.put("witnessCount", witnesses.size() );
             map.put("witnesses", witnesses );
-            map.put("heatmapStreamer", this.heatmapDirective);
+            map.put("heatmapStreamer", this.heatmapDirective);  // stream the cached content into template
             map.put("witnessFilter", witFilterList.toString());
             map.put("page", "set");
             map.put("title", "Juxta Heatmap View: "+set.getName());
             
-            // fill in the hidden spans with sements of urls so the
-            // javascript can piece together fill URLs for all of
+            // fill in the hidden spans with segments of urls so the
+            // javascript can piece together URLs for all of
             // its ajax requests. This also becomes an extnsion point
             // for systems that embed heatmap views in the main ui. They
             // just provide alternate values for these 3 elemements
@@ -363,7 +367,11 @@ public class HeatmapView  {
         // supporting markup into the witness heatmap stream
         final ChangeInjector changeInjector = this.context.getBean(ChangeInjector.class);
         changeInjector.setWitnessCount( witnesses.size() );
-        changeInjector.initialize( generateHeatmapChangelist( set, base, witnesses ) );
+        if ( this.newAlgo == false ) {
+            changeInjector.initialize( generateHeatmapChangelist( set, base, witnesses ) );
+        } else {
+            changeInjector.initialize( generateHeatmapChangelistXX( set, base, witnesses ) );
+        }
         final NoteInjector noteInjector = this.context.getBean(NoteInjector.class);
         noteInjector.initialize( this.noteDao.find(base.getId()) );
         final BreakInjector pbInjector = this.context.getBean(BreakInjector.class);
@@ -457,9 +465,9 @@ public class HeatmapView  {
         
         // done with this file. kill it explicitly
         heatmapFile.delete();
-    }    
-
-    private List<Change> generateHeatmapChangelist( final ComparisonSet set, final Witness base, final List<SetWitness> witnesses ) {
+    } 
+    
+private List<Change> generateHeatmapChangelist( final ComparisonSet set, final Witness base, final List<SetWitness> witnesses ) {
         
         // if there are no differences, there is nothing to do.Bail early
         if ( this.alignments.size() == 0) {
@@ -613,7 +621,222 @@ public class HeatmapView  {
         
         return changes;
     }
+
+    private List<Change> generateHeatmapChangelistXX( final ComparisonSet set, final Witness base, final List<SetWitness> witnesses ) {
+        
+//        // if there are no differences, there is nothing to do.Bail early
+//        if ( this.alignments.size() == 0) {
+//            return new ArrayList<Change>();
+//        }
+        
+        
+        // init 
+        long changeIdx = 0;
+        Map<Range, Change> changeMap = new HashMap<Range, Change>();
+        List<Change> changes = new ArrayList<Change>();
+        List<Alignment> aligns = new ArrayList<Alignment>();
+        
+        // generate heat map data 1 pair at a time
+
+
+            for (SetWitness wit : witnesses) {
+                if ( wit.getId().equals(base.getId())) {
+                    continue;
+                }
+                LOG.info("Generate heatmap data for "+ base +" vs "+wit );
+                aligns.addAll( getPairAlignments(set, base.getId(), wit.getId()) );
+                
+                Collections.sort(aligns, new Comparator<Alignment>() {
+                    @Override
+                    public int compare(Alignment a, Alignment b) {
+                        // NOTE: There is a bug in interedition Range. It will
+                        // order range [0,1] before [0,0] when sorting ascending.
+                        // So.. do NOT use its compareTo. Roll own.
+                        Range r1 = a.getWitnessAnnotation(base.getId()).getRange();
+                        Range r2 = b.getWitnessAnnotation(base.getId()).getRange();
+                        if ( r1.getStart() < r2.getStart() ) {
+                            return -1;
+                        } else if ( r1.getStart() > r2.getStart() ) {
+                            return 1;
+                        } else {
+                            if ( r1.getEnd() < r2.getEnd() ) {
+                                return -1;
+                            } else if ( r1.getEnd() > r2.getEnd() ) {
+                                return 1;
+                            } 
+                        }
+                        return 0;
+                    }
+                });
+                
+               
+                
+            }
+            
+            // generate a change list based on the sorted differences
+            for  ( Alignment align : aligns ) {
+                
+                // the heatmap is from the perspective of the BASE
+                // text, so only care about annotations that refer to it
+                AlignedAnnotation baseAnno = align.getWitnessAnnotation(base.getId());
+                        
+                // IGNORE all changes (not add/dels) that are 
+                // below the specified edit distance threshold
+                if (  align.getEditDistance() < this.minimumEditDistance &&
+                      align.getName().equals( Constants.ADD_DEL_NAME ) == false) {
+                    continue;
+                }
+                        
+                // Track all changed ranges in the base document
+                Change change = changeMap.get(baseAnno.getRange());
+                if ( change == null ) {
+                    change= new Change( changeIdx++, baseAnno.getRange(), align.getGroup() );
+                    changeMap.put(baseAnno.getRange(), change);
+                    changes.add(change);
+                }
+                
+                // Find the annotation details for the witness half
+                // of this alignment
+                AlignedAnnotation witnessAnnotation = null;
+                Witness witness = null;
+                for ( AlignedAnnotation a : align.getAnnotations()) {
+                    if ( a.getWitnessId().equals( base.getId()) == false ) {
+                        witnessAnnotation = a;
+                        witness = findWitness(witnesses, witnessAnnotation.getWitnessId());
+                        break;
+                    }
+                }
+                if ( this.visualizationInfo.getWitnessFilter().indexOf(witness.getId()) != -1 ) {
+                    LOG.info("Skipping diff from witness that was filtered out");
+                    continue;
+                }
+                        
+                // Add all witness change details to the base change. There can be many.
+                // This will occur when the witness has added/deleted several words to the text.
+                // Each word will show up here as an additional annotation linked to the
+                // base doc change. When this happens, add the new ranges to the existing
+                // witness change detail. these ranges will be used to highlight corresponding
+                // text in the margin box.
+                change.addWitnessDetail( witness, align.getName(), witnessAnnotation.getRange() );
+            }
+            
+
+         // Walk the ranges and extend them to cover gaps
+            // and merge adjacent, same intensity changes into one
+            List<Change> deleteList = new ArrayList<Change>();
+            Change prior = null;
+            for (Iterator<Change> itr = changes.iterator(); itr.hasNext();) {
+                Change change = itr.next();
+                if (prior != null) {
+                    // increase len of add/del so they are visible
+                    if (prior.getRange().length() == 0) {
+                        long start = prior.getRange().getStart();
+                        if (prior.getRange().getStart() == 0) {
+                            prior.adjustRange(start, start + 1);
+                        } else {
+                            long newStart = this.annotationDao.findNextTokenStart(base.getId(), start);
+                            prior.adjustRange(newStart, newStart + 1);
+                        }
+                        
+                        // if this overlaps the current change, toss the prior
+                        // and move on to next change
+                        if (change.getRange().getStart() <= prior.getRange().getStart()) {
+                            deleteList.add(prior);
+                            prior = change;
+                            continue;
+                        }
+                    }
+
+                    // See if these are a candidate to merge. Criteria:
+                    //  * diff must be between same witnesses
+                    //  * diffs must have same frequence
+                    //  * must be from the same alignment group   
+                    if ( change.hasMatchingGroup( prior ) && change.hasMatchingWitnesses(prior) && 
+                         change.getDifferenceFrequency() == prior.getDifferenceFrequency()) {
+                        prior.mergeChange(change);
+                        itr.remove();
+                        continue;
+                    }
+                } else {
+                    if (change.getRange().length() == 0) {
+                        long start = change.getRange().getStart();
+                        long newStart = this.annotationDao.findNextTokenStart(base.getId(), start);
+                        change.adjustRange(newStart, newStart + 1);
+                    }
+                }
+
+                prior = change;
+            }
+            
+            // see if the LAST change has 0 length and make it visible if this is the case
+            if ( prior.getRange().length() == 0 ) {
+                long start = prior.getRange().getStart();
+                if ( prior.getRange().getStart() < base.getText().getLength() ) {
+                    long newStart = this.annotationDao.findNextTokenStart(base.getId(), start);
+                    if ( newStart == start ) {
+                        prior.adjustRange(start, start+1);
+                    } else {
+                        prior.adjustRange(newStart, newStart + 1);
+                    }
+                } else {
+                    if ( start > 0) {
+                        prior.adjustRange(start-1, start);
+                    }
+                }
+            }
+
+            // scrub any that were found to overlap
+            for ( Change c : deleteList ) {
+                changes.remove(c);
+            }
+            
+       
+        
+        return changes;
+    }
     
+    private List<Alignment> getPairAlignments(final ComparisonSet set, final Long baseId, final Long witnessId) {
+        QNameFilter changesFilter = this.filters.getDifferencesFilter();
+        AlignmentConstraint constraints = new AlignmentConstraint(set);
+        constraints.addWitnessIdFilter(baseId);
+        constraints.addWitnessIdFilter(witnessId);
+        constraints.setFilter(changesFilter);
+        List<Alignment> aligns =  this.alignmentDao.list(constraints);
+        
+        // be sure sort order is good..(might not need this)
+        Collections.sort(aligns, new Comparator<Alignment>() {
+            @Override
+            public int compare(Alignment a, Alignment b) {
+                // NOTE: There is a bug in interedition Range. It will
+                // order range [0,1] before [0,0] when sorting ascending.
+                // So.. do NOT use its compareTo. Roll own.
+                Range r1 = a.getWitnessAnnotation(baseId).getRange();
+                Range r2 = b.getWitnessAnnotation(baseId).getRange();
+                if ( r1.getStart() < r2.getStart() ) {
+                    return -1;
+                } else if ( r1.getStart() > r2.getStart() ) {
+                    return 1;
+                } else {
+                    if ( r1.getEnd() < r2.getEnd() ) {
+                        return -1;
+                    } else if ( r1.getEnd() > r2.getEnd() ) {
+                        return 1;
+                    } 
+                }
+                return 0;
+            }
+        });
+        return aligns;
+    }
+
+    private void dumpAlignments() {
+        for (Alignment a : this.alignments ) {
+            List<AlignedAnnotation> annos = a.getAnnotations();
+            LOG.info(annos.get(0).getId()+" "+annos.get(0).getRange()+ " VS "+annos.get(1).getId()+" "+annos.get(1).getRange());
+        }
+        
+    }
+
     private Witness findWitness(List<SetWitness> witnesses, Long id) {
         for (Witness w: witnesses) {
             if (w.getId().equals( id )) {
