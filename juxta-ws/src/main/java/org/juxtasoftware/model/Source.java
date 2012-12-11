@@ -55,7 +55,7 @@ public class Source extends WorkspaceMember {
     @Override
     public boolean equals(Object obj) {
         if (id != 0 && obj != null && obj instanceof Source) {
-            return id == ((Source)obj).id;
+            return id.equals( ((Source)obj).id );
         }
         return super.equals(obj);
     }
