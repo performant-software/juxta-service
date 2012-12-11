@@ -10,7 +10,6 @@
 <span id="condensed" style="display: none">${condensed?string}</span>
 <span id="witness-filter" style="display: none">${witnessFilter}</span>
 
-
 <#if !condensed>
     <div id="files" class="files">
         <div class="header">Witness List</div>
@@ -24,7 +23,7 @@
                 <div class="set-witnesss set-file">
                     <div id="toggle-${witness.id}" class="visibility-toggle"></div>
                     <div id="witness-${witness.id}" class="witness" title="${witness.name}">${witness.name}</div>
-                    <div id="change-index-${witness.id}" class="change-index" juxta:change-index="${witness.changeIndex}"></div>
+                    <div id="change-index-${witness.id}" class="change-index"></div>
                     <div style="clear: both;"></div>
                 </div>
             </#if>

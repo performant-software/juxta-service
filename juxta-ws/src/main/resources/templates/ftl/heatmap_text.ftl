@@ -1,3 +1,5 @@
+
+<span id="witness-change-indexes" style="display: none">${changeIndexes}</span>
  
  <div id="heatmap-text" class="heatmap-text<#if condensed> condensed</#if>">
       <@fileReader src="${srcFile}"/>    

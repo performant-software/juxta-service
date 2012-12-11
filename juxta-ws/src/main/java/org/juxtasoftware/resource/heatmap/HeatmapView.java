@@ -29,9 +29,7 @@ import org.juxtasoftware.dao.WitnessDao;
 import org.juxtasoftware.model.Alignment;
 import org.juxtasoftware.model.Alignment.AlignedAnnotation;
 import org.juxtasoftware.model.AlignmentConstraint;
-import org.juxtasoftware.model.AnnotationConstraint;
 import org.juxtasoftware.model.ComparisonSet;
-import org.juxtasoftware.model.JuxtaAnnotation;
 import org.juxtasoftware.model.QNameFilter;
 import org.juxtasoftware.model.VisualizationInfo;
 import org.juxtasoftware.model.Witness;
@@ -74,6 +72,7 @@ public class HeatmapView  {
     private List<Alignment> alignments;
     private BaseResource parent;
     private VisualizationInfo visualizationInfo;
+    private List<SetWitness> witnesses;
     
     protected static final Logger LOG = LoggerFactory.getLogger( Constants.WS_LOGGER_NAME );
     private static final int MEGABYTE = (1024*1024);
@@ -130,10 +129,21 @@ public class HeatmapView  {
         if ( baseWitnessId == null ) {
             baseWitnessId = setWitnesses.get(0).getId();
         }
+        
+        // get the base witness AND its length
         Witness base = null;
+        long baseLength = 0L;
         for ( Witness w : setWitnesses ) {
             if ( w.getId().equals(baseWitnessId) ) {
                 base = w;
+                
+                // lookup the cached base length
+                baseLength = this.setDao.getTokenzedLength(set, w);
+                if ( baseLength == 0 ) {
+                    LOG.error("Missing tokenized length of witness "+w.getId());
+                    parent.setStatus(Status.SERVER_ERROR_INTERNAL);
+                    parent.toTextRepresentation("Missing length of base witness. Please re-collate.");
+                }
                 break;
             }
         }
@@ -146,27 +156,25 @@ public class HeatmapView  {
         this.visualizationInfo = new VisualizationInfo(set, base, witFilterList);
 
         // See if generation of the heatmp will use up too much memory
-        if ( willOverrunMemory( set, baseWitnessId, witFilterList) ) {
-            this.parent.setStatus(Status.SERVER_ERROR_INSUFFICIENT_STORAGE);
-            return this.parent.toTextRepresentation(
-                "The server has insufficent resources to generate this visualization." +
-                "\nTry again later. If this fails, try breaking large witnesses up into smaller segments.");
-        }
+        // FIXME this test is now invalid... re-write to find only largest set of
+        // alignments that are pulled in
+//        if ( willOverrunMemory( set, baseWitnessId, witFilterList) ) {
+//            this.parent.setStatus(Status.SERVER_ERROR_INSUFFICIENT_STORAGE);
+//            return this.parent.toTextRepresentation(
+//                "The server has insufficent resources to generate this visualization." +
+//                "\nTry again later. If this fails, try breaking large witnesses up into smaller segments.");
+//        }
         
         // get a list of all diffs that will be used in this visualization (MEMORY SUCKER)
         getRawHeatmapDiffs( set, baseWitnessId, witFilterList );
         
         // Calculate the change index for the witnesses ( not necessary in condensed view: no witness list)
         try {
-            List<SetWitness> witnesses; 
-            if ( condensed == false ){
-                witnesses = calculateChangeIndex( set, setWitnesses, baseWitnessId );
-            } else {           
-                // just 0 out all change indexes for condensed views
-                witnesses = new ArrayList<HeatmapView.SetWitness>();
-                for (Witness w: setWitnesses ) {
-                    witnesses.add( new SetWitness(w, true, 0.0f) );
-                }
+            // init witness list so all witnesses have change index of 0
+            // this will be filled in from cache or during heatmap generation
+            this.witnesses = new ArrayList<HeatmapView.SetWitness>();
+            for (Witness w: setWitnesses ) {
+                this.witnesses.add( new SetWitness(w, baseLength, w.equals(base)));
             }
 
             // Asynchronously render heatmap main body (map, notes and margin boxes)
@@ -174,7 +182,7 @@ public class HeatmapView  {
             if ( this.cacheDao.heatmapExists(set.getId(), this.visualizationInfo.getKey(), condensed) == false) {
                 final String taskId =  generateTaskId(set.getId(), this.visualizationInfo.getKey(), condensed);
                 if ( this.taskManager.exists(taskId) == false ) {
-                    HeatmapTask task = new HeatmapTask(taskId, set, base, witnesses, condensed);
+                    HeatmapTask task = new HeatmapTask(taskId, set, base, condensed);
                     this.taskManager.submit(task);
                 } 
                 return this.parent.toHtmlRepresentation( new StringReader("RENDERING "+taskId));
@@ -216,7 +224,7 @@ public class HeatmapView  {
                 this.alignments.clear();
             };
             return this.parent.toTextRepresentation(
-                "The server has insufficent resources to generate this visualization." +
+                "OUT OF MEMORY! The server has insufficent resources to generate this visualization." +
                 "\nTry again later. If this fails, try breaking large witnesses up into smaller segments.");
         }
         
@@ -279,89 +287,17 @@ public class HeatmapView  {
         final long memoryPad = MEGABYTE*5; // 5M memory pad
         return ( (estimatedByteUsage+memoryPad) > freeMem );
     }
-
-    private List<SetWitness> calculateChangeIndex( final ComparisonSet set, final List<Witness> witnesses, final Long baseWitnessId ) {
-        // init data structure to hold change index info
-        List<SetWitness> out = new ArrayList<SetWitness>();
-        Map<Long, Long> witnessDiffLen = new HashMap<Long, Long>();
-        for ( Witness w : witnesses ) {
-            witnessDiffLen.put(w.getId(), 0L);
-        }
-
-        // add up diff length for each annotaion in the alignments list
-        for ( Alignment align : this.alignments ) {
-            long longestDiff = -1;
-            Long witnessId = null;
-            for (AlignedAnnotation aa : align.getAnnotations() ) {
-                if ( aa.getWitnessId().equals( baseWitnessId ) == false ) {
-                    witnessId = aa.getWitnessId();
-                }
-                long len = aa.getRange().length();
-                if ( len > longestDiff ) {
-                    longestDiff = len;
-                }
-            }
-            
-            Long priorLen = witnessDiffLen.get(witnessId);
-            if ( priorLen == null) {
-                priorLen = new Long(0);
-            }
-            witnessDiffLen.put(witnessId, priorLen+longestDiff);
-        }
-
-        
-        // find length of base witness: get all tokens
-        // and sum up their lengths. Done this way because
-        // all alignments are tied to tokens. If the basic
-        // Text length was used, the data would be wrong - tokens 
-        // do not include whitespace/punctuation and text len does. 
-        // NOTE: This info should be cached in the comparison set member table. Try 
-        // pulling it from there first. If it is not present, it will have to 
-        // be calculated. Very memory intensive.
-        long baseLen = 0;
-        for (Witness w : witnesses ) {
-            if ( w.getId().equals( baseWitnessId )) {
-                baseLen = this.setDao.getTokenzedLength(set, w);
-                if ( baseLen == 0 ) {
-                    LOG.warn("Missing tokenized length of witness "+w.getId()+". Re-calculating");
-                    AnnotationConstraint constraint = new AnnotationConstraint( set.getId(), w);
-                    constraint.setIncludeText( false );
-                    constraint.setFilter( this.filters.getTokensFilter() );
-                    for (JuxtaAnnotation token : this.annotationDao.list( constraint ) ) {
-                        baseLen += token.getRange().length();
-                    }
-                }
-                this.setDao.setTokenzedLength(set, w, baseLen);
-                break;
-            }
-        }
-        
-        // now run thru all witnesses and append a change index to them
-        // change idx is [total witness diff chars] / [totals chars in base]
-        for (Witness w : witnesses ) {
-            if ( w.getId().equals( baseWitnessId )) {
-                out.add( new SetWitness(w, true, 0.0f));
-            } else {
-                Long changeLen = witnessDiffLen.get(w.getId());
-                float changeIdx = 0.0f;
-                if ( changeLen != null ) {
-                    changeIdx = (float)changeLen / (float)baseLen;
-                    out.add( new SetWitness(w, false, changeIdx));
-                }
-            }
-        }
-        
-        return out;
-    }
     
-    private void renderHeatMap(ComparisonSet set, Witness base, List<SetWitness> witnesses, boolean condensed) throws IOException {
+    private void renderHeatMap(ComparisonSet set, Witness base, boolean condensed) throws IOException {
                
+        LOG.info("Render heatmap");
+        
         // get a list of revisons, differeces, notes and breaks in ascending oder.
         // add this information to injectors that will be used to inject
         // supporting markup into the witness heatmap stream
         final ChangeInjector changeInjector = this.context.getBean(ChangeInjector.class);
-        changeInjector.setWitnessCount( witnesses.size() );
-        changeInjector.initialize( generateHeatmapChangelist( set, base, witnesses ) );
+        changeInjector.setWitnessCount( this.witnesses.size() );
+        changeInjector.initialize( generateHeatmapChangelist( set, base ) );
 
         final NoteInjector noteInjector = this.context.getBean(NoteInjector.class);
         noteInjector.initialize( this.noteDao.find(base.getId()) );
@@ -445,9 +381,11 @@ public class HeatmapView  {
         map.put("baseName", base.getName());
         map.put("srcFile", heatmapFile.getAbsoluteFile());
         map.put("fileReader", new FileDirective());   
-        map.put("numWitnesses", witnesses.size()-1);
+        map.put("numWitnesses", this.witnesses.size()-1);
         map.put("notes", noteInjector.getData() );
+        map.put("changeIndexes", generateChangeIndexJson() );
         
+        LOG.info("CACHE heatmap");
         // create the main body of the heatmap. NOTE the false params.
         // The first one tells the base NOT to use the layout template when generating
         // the representation. The second tells it NOT to GZIP the results
@@ -460,7 +398,20 @@ public class HeatmapView  {
         heatmapFile.delete();
     } 
     
-    private List<Change> generateHeatmapChangelist(final ComparisonSet set, final Witness base, final List<SetWitness> witnesses) {
+    private String generateChangeIndexJson() {
+        StringBuilder sb = new StringBuilder("[");
+        for ( SetWitness sw : this.witnesses) {
+            if ( sb.length() > 1 ) {
+                sb.append(",");
+            }
+            sb.append( "{\"id\":").append(sw.getId()).append(",");
+            sb.append("\"ci\":").append("\"").append(String.format("%.2f", sw.getChangeIndex()) ).append("\"}");
+        }
+        sb.append("]");
+        return sb.toString();
+    }
+
+    private List<Change> generateHeatmapChangelist(final ComparisonSet set, final Witness base) {
 
         // init 
         long changeIdx = 0;
@@ -469,7 +420,7 @@ public class HeatmapView  {
         List<Alignment> aligns = new ArrayList<Alignment>();
 
         // generate heat map data 1 pair at a time
-        for (SetWitness wit : witnesses) {
+        for (SetWitness wit : this.witnesses) {
             if (wit.getId().equals(base.getId())) {
                 continue;
             }
@@ -499,7 +450,7 @@ public class HeatmapView  {
                 for (AlignedAnnotation a : align.getAnnotations()) {
                     if (a.getWitnessId().equals(base.getId()) == false) {
                         witnessAnnotation = a;
-                        witness = findWitness(witnesses, witnessAnnotation.getWitnessId());
+                        witness = findWitness( witnessAnnotation.getWitnessId() );
                         break;
                     }
                 }
@@ -507,6 +458,11 @@ public class HeatmapView  {
                     LOG.info("Skipping diff from witness that was filtered out");
                     continue;
                 }
+                
+                // accumulate total diff length for this witness. it will be used to render the
+                // change index. always add on the longest diff.
+                long longestDiff = Math.max(baseAnno.getRange().length(), witnessAnnotation.getRange().length());
+                wit.addDiffLen(longestDiff);
 
                 // Add all witness change details to the base change. There can be many.
                 change.addWitness(witness);
@@ -574,7 +530,8 @@ public class HeatmapView  {
                 }
             }
         }
-
+        
+        LOG.info("Changelist generated");
         return changes;
     }
     
@@ -587,8 +544,8 @@ public class HeatmapView  {
         return this.alignmentDao.list(constraints);
     }
 
-    private Witness findWitness(List<SetWitness> witnesses, Long id) {
-        for (Witness w: witnesses) {
+    private Witness findWitness(Long id) {
+        for (Witness w: this.witnesses) {
             if (w.getId().equals( id )) {
                 return w;
             }
@@ -601,17 +558,22 @@ public class HeatmapView  {
      * @author loufoster
      *
      */
-    public static class SetWitness extends Witness  {
-        private final float changeIndex;
+    public static final class SetWitness extends Witness  {
+        private long totalDiffLen;
+        private final long baseLen;
         private final boolean isBase;
         
-        public SetWitness( Witness w, boolean isBase, float changeIdx) {
+        public SetWitness( Witness w, long baseLen, boolean isBase) {
             super(w);
             this.isBase = isBase;
-            this.changeIndex = changeIdx;
+            this.baseLen = baseLen;
+            this.totalDiffLen = 0;
+        }
+        void addDiffLen( long longestDiff ) {
+            this.totalDiffLen += longestDiff;
         }
         public float getChangeIndex() {
-            return this.changeIndex;
+            return (float)this.totalDiffLen / (float)this.baseLen;
         }
         public boolean isBase() {
             return this.isBase;
@@ -626,17 +588,15 @@ public class HeatmapView  {
         private BackgroundTaskStatus status;
         private final ComparisonSet set;
         private final Witness base;
-        private final List<SetWitness> witnesses;
         private final boolean condensed;
         private Date startDate;
         private Date endDate;
         
-        public HeatmapTask(final String name, final ComparisonSet set, final Witness base, final List<SetWitness> witnesses, boolean condensed) {
+        public HeatmapTask(final String name, final ComparisonSet set, final Witness base, boolean condensed) {
             this.name =  name;
             this.status = new BackgroundTaskStatus( this.name );
             this.set = set;
             this.base = base;
-            this.witnesses = witnesses;
             this.condensed = condensed;
             this.startDate = new Date();
         }
@@ -651,7 +611,7 @@ public class HeatmapView  {
             try {
                 LOG.info("Begin task "+this.name);
                 this.status.begin();
-                HeatmapView.this.renderHeatMap(set, base, witnesses, condensed);
+                HeatmapView.this.renderHeatMap(set, base, condensed);
                 LOG.info("Task "+this.name+" COMPLETE");
                 this.endDate = new Date();   
                 this.status.finish();

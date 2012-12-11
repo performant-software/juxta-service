@@ -33,14 +33,23 @@ $(function() {
          'stroke-width' : 0.5,
          'stroke-linejoin' : 'round'
       };
+      
+      var idxJson = $.parseJSON( $("#witness-change-indexes").text() );      
       var colors = ["#FFFFFF", "#EFF0FF", "#D5D9FF", "#BBC1FF", "#A1AAFF", "#8792FF", "#6D7BFF", "#5363FF"];
       var dim = "#aaa";
       var dark = "#000";
+      var witId;
+      var changeIndex;
       $(".change-index").each(function(index) {
-         var htmlEle = document.getElementById($(this).attr("id"));
-         var changeIndex = $(this).attr("juxta:change-index");
-         $(this).attr("title", parseFloat(changeIndex).toFixed(2) + " change index from base text");
-         var paper = new Raphael(htmlEle, $(this).width(), 22);
+         witId = $(this).attr("id").substring("change-index-".length);
+         $.each( idxJson, function(idx, obj) {
+            if (obj.id === parseInt(witId,10)) {
+               changeIndex = obj.ci;
+               return false;
+            }
+         });
+         $(this).attr("title", changeIndex + " change index from base text");
+         var paper = new Raphael($(this).get(0), $(this).width(), 22);
          $(this).data("paper", paper);
          var boxW = $(this).width() / 8 - 2;
          var x = 1;
@@ -349,8 +358,9 @@ $(function() {
       $(".visibility-toggle").each(function() {
          p = $(this).css("background-position");
          if (p.indexOf("16") > -1) {
-            if (filter.length > 0)
+            if (filter.length > 0) {
                filter = filter + ",";
+            }
             filter = filter + $(this).attr("id").substring("toggle-".length);
          }
       });
@@ -412,7 +422,7 @@ $(function() {
          $(".witness").on("click", function() {
             var witnessId = $(this).attr("id").substring("witness-".length);
             if ( $(this).hasClass("hidden-witness") ) {
-               Juxta.Heatmap.toggleVisibility( $("#toggle-"+witnessId) );
+               window.Juxta.Heatmap.toggleVisibility( $("#toggle-"+witnessId) );
             } else {
                var setId = $('#setId').text();
                var csUrl = $('#ajax-base-url').text() + setId + $('#view-heatmap-segment').text() + "base=" + witnessId;
@@ -459,7 +469,7 @@ $(function() {
       });
 
       $(".visibility-toggle").on("click", function() {
-         Juxta.Heatmap.toggleVisibility($(this));
+         window.Juxta.Heatmap.toggleVisibility($(this));
       });
 
       // clicks on background clear boxes
@@ -488,7 +498,7 @@ $(function() {
          toggleRevisionStyle();
       });
       
-      var loc = ""+window.location;
+      var loc = window.location.href;
       var tp = loc.indexOf("&top=");
       if  ( tp > -1 ) {
          var end = loc.indexOf("&", tp+1);
