@@ -5,9 +5,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
-import java.lang.management.ManagementFactory;
-import java.lang.management.MemoryMXBean;
-import java.lang.management.MemoryUsage;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -67,15 +64,13 @@ public class HeatmapView  {
     @Autowired private HeatmapStreamDirective heatmapDirective;
     @Autowired private ApplicationContext context;
     @Autowired private TaskManager taskManager;
-    @Autowired private Integer averageAlignmentSize;
+    @Autowired private Integer heatmapBatchSize;
     
-    private List<Alignment> alignments;
     private BaseResource parent;
     private VisualizationInfo visualizationInfo;
     private List<SetWitness> witnesses;
     
     protected static final Logger LOG = LoggerFactory.getLogger( Constants.WS_LOGGER_NAME );
-    private static final int MEGABYTE = (1024*1024);
 
     /**
      * Delete all cached heatmap data for the specified set
@@ -154,19 +149,6 @@ public class HeatmapView  {
         // this visualization
         List<Long> witFilterList = getWitnessFilterList( base.getId() );
         this.visualizationInfo = new VisualizationInfo(set, base, witFilterList);
-
-        // See if generation of the heatmp will use up too much memory
-        // FIXME this test is now invalid... re-write to find only largest set of
-        // alignments that are pulled in
-//        if ( willOverrunMemory( set, baseWitnessId, witFilterList) ) {
-//            this.parent.setStatus(Status.SERVER_ERROR_INSUFFICIENT_STORAGE);
-//            return this.parent.toTextRepresentation(
-//                "The server has insufficent resources to generate this visualization." +
-//                "\nTry again later. If this fails, try breaking large witnesses up into smaller segments.");
-//        }
-        
-        // get a list of all diffs that will be used in this visualization (MEMORY SUCKER)
-        getRawHeatmapDiffs( set, baseWitnessId, witFilterList );
         
         // Calculate the change index for the witnesses ( not necessary in condensed view: no witness list)
         try {
@@ -217,27 +199,13 @@ public class HeatmapView  {
             map.put("ajaxBaseUrl", parent.getRequest().getHostRef().toString()+"/juxta/"+parent.getWorkspace()+"/set/");
             map.put("viewHeatmapSegment", "/view?mode=heatmap&");
             map.put("fragmentSegment", "/diff/fragment");
-            
+
             return this.parent.toHtmlRepresentation("heatmap.ftl", map);
         } catch ( OutOfMemoryError e ) {
-            if ( this.alignments != null ) {
-                this.alignments.clear();
-            };
             return this.parent.toTextRepresentation(
-                "OUT OF MEMORY! The server has insufficent resources to generate this visualization." +
+                "The server has insufficent resources to generate this visualization." +
                 "\nTry again later. If this fails, try breaking large witnesses up into smaller segments.");
         }
-        
-    }
-    
-    private void getRawHeatmapDiffs(ComparisonSet set, Long baseWitnessId, List<Long> witFilter) {
-        QNameFilter changesFilter = this.filters.getDifferencesFilter();
-        AlignmentConstraint constraints = new AlignmentConstraint(set, baseWitnessId);
-        for ( Long id : witFilter ) {
-            constraints.addWitnessIdFilter(id);
-        }
-        constraints.setFilter(changesFilter);
-        this.alignments = this.alignmentDao.list(constraints);
     }
 
     private List<Long> getWitnessFilterList( Long baseId ) {
@@ -263,34 +231,9 @@ public class HeatmapView  {
         return "heatmap-"+result;
     }
     
-    private boolean willOverrunMemory(ComparisonSet set, Long baseWitnessId, List<Long> witFilter) {
-                
-        // set up a filter to get the annotations necessary for this histogram
-        QNameFilter changesFilter = this.filters.getDifferencesFilter();
-        AlignmentConstraint constraints = new AlignmentConstraint(set, baseWitnessId);
-        for ( Long id : witFilter ) {
-            constraints.addWitnessIdFilter(id);
-        }
-        constraints.setFilter(changesFilter);
-  
-        // Get the number of annotations that will be returned and do a rough calcuation
-        // to see if generating this visuzlization will exhaust available memory
-        final Long count = this.alignmentDao.count(constraints);
-        Runtime.getRuntime().gc();
-        Runtime.getRuntime().runFinalization();
-        final long estimatedByteUsage = count*this.averageAlignmentSize;
-        LOG.info("["+ estimatedByteUsage+"] ESTIMATED USAGE");
-        MemoryMXBean memoryBean = ManagementFactory.getMemoryMXBean();
-        MemoryUsage usage = memoryBean.getHeapMemoryUsage();
-        long freeMem = usage.getMax() -usage.getUsed();
-        LOG.info("["+ freeMem  +"] ESTIMATED FREE");
-        final long memoryPad = MEGABYTE*5; // 5M memory pad
-        return ( (estimatedByteUsage+memoryPad) > freeMem );
-    }
-    
     private void renderHeatMap(ComparisonSet set, Witness base, boolean condensed) throws IOException {
                
-        LOG.info("Render heatmap");
+        LOG.info("Rendering heatmap for "+set);
         
         // get a list of revisons, differeces, notes and breaks in ascending oder.
         // add this information to injectors that will be used to inject
@@ -385,7 +328,6 @@ public class HeatmapView  {
         map.put("notes", noteInjector.getData() );
         map.put("changeIndexes", generateChangeIndexJson() );
         
-        LOG.info("CACHE heatmap");
         // create the main body of the heatmap. NOTE the false params.
         // The first one tells the base NOT to use the layout template when generating
         // the representation. The second tells it NOT to GZIP the results
@@ -396,6 +338,7 @@ public class HeatmapView  {
         
         // done with this file. kill it explicitly
         heatmapFile.delete();
+        LOG.info("Hetmap rendered for "+set);
     } 
     
     private String generateChangeIndexJson() {
@@ -417,8 +360,8 @@ public class HeatmapView  {
         long changeIdx = 0;
         Map<Range, Change> changeMap = new HashMap<Range, Change>();
         List<Change> changes = new ArrayList<Change>();
-        List<Alignment> aligns = new ArrayList<Alignment>();
-
+        List<Alignment> aligns = null;
+        
         // generate heat map data 1 pair at a time
         for (SetWitness wit : this.witnesses) {
             if (wit.getId().equals(base.getId())) {
@@ -426,46 +369,55 @@ public class HeatmapView  {
             }
             
             LOG.info("Generate heatmap data for " + base + " vs " + wit);
-            aligns = getPairAlignments(set, base.getId(), wit.getId());
-
-            // generate a change list based on the sorted differences
-            for (Alignment align : aligns) {
-
-                // the heatmap is from the perspective of the BASE
-                // text, so only care about annotations that refer to it
-                AlignedAnnotation baseAnno = align.getWitnessAnnotation(base.getId());
-
-                // Track all changed ranges in the base document
-                Change change = changeMap.get(baseAnno.getRange());
-                if (change == null) {
-                    change = new Change(changeIdx++, baseAnno.getRange(), align.getGroup());
-                    changeMap.put(baseAnno.getRange(), change);
-                    changes.add(change);
+            boolean done = false;
+            int startIdx = 0;
+            while ( !done ) {
+                aligns = getPairAlignments(set, base.getId(), wit.getId(), startIdx, this.heatmapBatchSize);
+                if ( aligns.size() < this.heatmapBatchSize ) {
+                    done = true;
+                } else {
+                    startIdx += this.heatmapBatchSize;
                 }
-
-                // Find the annotation details for the witness half
-                // of this alignment
-                AlignedAnnotation witnessAnnotation = null;
-                Witness witness = null;
-                for (AlignedAnnotation a : align.getAnnotations()) {
-                    if (a.getWitnessId().equals(base.getId()) == false) {
-                        witnessAnnotation = a;
-                        witness = findWitness( witnessAnnotation.getWitnessId() );
-                        break;
+    
+                // generate a change list based on the sorted differences
+                for (Alignment align : aligns) {
+    
+                    // the heatmap is from the perspective of the BASE
+                    // text, so only care about annotations that refer to it
+                    AlignedAnnotation baseAnno = align.getWitnessAnnotation(base.getId());
+    
+                    // Track all changed ranges in the base document
+                    Change change = changeMap.get(baseAnno.getRange());
+                    if (change == null) {
+                        change = new Change(changeIdx++, baseAnno.getRange(), align.getGroup());
+                        changeMap.put(baseAnno.getRange(), change);
+                        changes.add(change);
                     }
+    
+                    // Find the annotation details for the witness half
+                    // of this alignment
+                    AlignedAnnotation witnessAnnotation = null;
+                    Witness witness = null;
+                    for (AlignedAnnotation a : align.getAnnotations()) {
+                        if (a.getWitnessId().equals(base.getId()) == false) {
+                            witnessAnnotation = a;
+                            witness = findWitness( witnessAnnotation.getWitnessId() );
+                            break;
+                        }
+                    }
+                    if (this.visualizationInfo.getWitnessFilter().indexOf(witness.getId()) != -1) {
+                        LOG.info("Skipping diff from witness that was filtered out");
+                        continue;
+                    }
+                    
+                    // accumulate total diff length for this witness. it will be used to render the
+                    // change index. always add on the longest diff.
+                    long longestDiff = Math.max(baseAnno.getRange().length(), witnessAnnotation.getRange().length());
+                    wit.addDiffLen(longestDiff);
+    
+                    // Add all witness change details to the base change. There can be many.
+                    change.addWitness(witness);
                 }
-                if (this.visualizationInfo.getWitnessFilter().indexOf(witness.getId()) != -1) {
-                    LOG.info("Skipping diff from witness that was filtered out");
-                    continue;
-                }
-                
-                // accumulate total diff length for this witness. it will be used to render the
-                // change index. always add on the longest diff.
-                long longestDiff = Math.max(baseAnno.getRange().length(), witnessAnnotation.getRange().length());
-                wit.addDiffLen(longestDiff);
-
-                // Add all witness change details to the base change. There can be many.
-                change.addWitness(witness);
             }
             
             // Always have to keep the changes in order to the below range merging works right
@@ -535,12 +487,13 @@ public class HeatmapView  {
         return changes;
     }
     
-    private List<Alignment> getPairAlignments(final ComparisonSet set, final Long baseId, final Long witnessId) {
+    private List<Alignment> getPairAlignments(final ComparisonSet set, final Long baseId, final Long witnessId, int startIdx, int batchSize) {
         QNameFilter changesFilter = this.filters.getDifferencesFilter();
         AlignmentConstraint constraints = new AlignmentConstraint(set);
         constraints.addWitnessIdFilter(baseId);
         constraints.addWitnessIdFilter(witnessId);
         constraints.setFilter(changesFilter);
+        constraints.setResultsRange(startIdx, batchSize);
         return this.alignmentDao.list(constraints);
     }
 
