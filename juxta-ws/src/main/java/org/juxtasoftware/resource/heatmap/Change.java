@@ -107,7 +107,8 @@ public final class Change implements Comparable<Change> {
                 if ( detail == null ) {
                     detail = addWitnessDetail( mergeDetail.getWitness(), Constants.ADD_DEL_NAME, mergeDetail.ranges.get(0) );
                 }
-                detail.expandRange( r);
+                //detail.expandRange( r);
+                detail.addRange(r);
             }
         }
     }
@@ -127,8 +128,9 @@ public final class Change implements Comparable<Change> {
             detail = new Detail(type, witness, witnessRange );
             this.details.add( detail );
         } else {
-            detail.expandRange( witnessRange );
-        }
+            //detail.expandRange( witnessRange );
+            detail.addRange(witnessRange);
+;        }
         return detail;
     }
     public List<Detail> getDetails() {
@@ -144,26 +146,22 @@ public final class Change implements Comparable<Change> {
     public final int getDifferenceFrequency() {
         return this.details.size();
     }
+    
     @Override
     public int compareTo(Change that) {
-        if ( this.range.getStart() < that.range.getStart() ) {
-            return -1;
-        } else if ( this.range.getStart() > that.range.getStart() ) {
-            return 1;
-        } else {
-            if ( this.range.getEnd() < that.range.getEnd() ) {
-                return -1;
-            } else if ( this.range.getEnd() > that.range.getEnd() ) {
-                return 1;
-            } 
-        }
-        return 0;
+        return this.range.compareTo(that.range);
     }
 
     @Override
     public String toString() {
         return "ID: " + this.id+" - Range: "+this.range + " Frequency: "+getDifferenceFrequency();
     }
+
+    public void sortDetails() {
+        for (Detail d : this.details ) {
+            Collections.sort( d.ranges );
+        }
+    }  
 
     /**
      * Track the range in the witness doc and the change type. Used
@@ -180,6 +178,9 @@ public final class Change implements Comparable<Change> {
         public Detail( final Type t, final Witness w, final Range r ) {
             this.type = t;
             this.witness = w;
+            this.ranges.add( r );
+        }
+        public void addRange( Range r ) {
             this.ranges.add( r );
         }
         public void expandRange( Range newRange ) {
@@ -217,5 +218,5 @@ public final class Change implements Comparable<Change> {
         public String toString() {
             return "WitnessID: "+this.witness.getId()+" - "+this.fragment;
         }
-    }   
+    } 
 }
