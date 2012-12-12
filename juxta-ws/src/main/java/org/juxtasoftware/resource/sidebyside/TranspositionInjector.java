@@ -3,22 +3,22 @@ package org.juxtasoftware.resource.sidebyside;
 import java.util.Iterator;
 import java.util.List;
 
-import org.juxtasoftware.resource.sidebyside.SideBySideView.Transposition;
+import org.juxtasoftware.resource.sidebyside.SideBySideView.Change;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 @Component
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
-public class TranspositionInjector implements OverlapInjector<Transposition> {
+public class TranspositionInjector implements OverlapInjector<Change> {
 
-    private List<Transposition> transpositions;
-    private Iterator<Transposition> transpositionItr;
-    private Transposition currTrans = null;
+    private List<Change> transpositions;
+    private Iterator<Change> transpositionItr;
+    private Change currTrans = null;
     private boolean tagStarted = false;
     
     @Override
-    public void initialize(List<Transposition> data) {
+    public void initialize(List<Change> data) {
         this.transpositions = data;
         this.transpositionItr = this.transpositions.iterator();
         if ( this.transpositionItr.hasNext() ) {
@@ -27,7 +27,7 @@ public class TranspositionInjector implements OverlapInjector<Transposition> {
     }
 
     @Override
-    public List<Transposition> getData() {
+    public List<Change> getData() {
         return this.transpositions;
     }
 
@@ -48,9 +48,9 @@ public class TranspositionInjector implements OverlapInjector<Transposition> {
     public void restartContent( StringBuilder line ) {
         if ( this.tagStarted ) {
             line.append("</span>");
-            line.append("<span id=\"move-").append(this.currTrans.id).append("-continued\"");
-            line.append(" class=\"move\" title=\"Transposition\"");
-            line.append(" juxta:connect-to=\"").append(this.currTrans.connectedToId).append("\"");
+            line.append("<span id=\"move-").append(this.currTrans.getId()).append("-continued\"");
+            line.append(" class=\"move\"");
+            line.append(" juxta:connect-to=\"").append(this.currTrans.getConnectedId()).append("\"");
             line.append(">");
         }
     }
@@ -58,9 +58,9 @@ public class TranspositionInjector implements OverlapInjector<Transposition> {
     public boolean injectContentStart(StringBuilder line, long currPositon) {
         if ( this.currTrans != null && this.tagStarted == false ) {
             if ( this.currTrans.getRange().getStart() == currPositon) {
-                line.append("<span id=\"move-").append(currTrans.id).append("\"");
-                line.append(" class=\"move\" title=\"Transposition\"");
-                line.append(" juxta:connect-to=\"").append(currTrans.connectedToId).append("\"");
+                line.append("<span id=\"move-").append(currTrans.getId()).append("\"");
+                line.append(" class=\"move\"");
+                line.append(" juxta:connect-to=\"").append(currTrans.getConnectedId()).append("\"");
                 line.append(">");
                 this.tagStarted = true;
                 return true;

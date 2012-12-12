@@ -48,10 +48,9 @@ public class DiffInjector implements OverlapInjector<Change> {
     public void restartContent( StringBuilder line ) {
         if ( this.tagStarted ) {
             line.append("</span>");
-            line.append("<span id=\"diff-").append(this.currChange.id).append("-continued\"");
+            line.append("<span id=\"diff-").append(this.currChange.getId()).append("-continued\"");
             line.append(" class=\"diff\"");
-            line.append(" juxta:connect-to=\"").append(this.currChange.connectedToId).append("\"");
-            line.append(" title=\"").append(this.currChange.type).append("\">");
+            line.append(" juxta:connect-to=\"").append(this.currChange.getConnectedId()).append("\"").append("\">");
         }
     }
     
@@ -59,10 +58,9 @@ public class DiffInjector implements OverlapInjector<Change> {
     public boolean injectContentStart(StringBuilder line, long currPositon) {
         if ( this.currChange != null && this.tagStarted == false ) {
             if ( this.currChange.getRange().getStart() <= currPositon) {
-                line.append("<span id=\"diff-").append(currChange.id).append("\"");
+                line.append("<span id=\"diff-").append(currChange.getId()).append("\"");
                 line.append(" class=\"diff\"");
-                line.append(" juxta:connect-to=\"").append(currChange.connectedToId).append("\"");
-                line.append(" title=\"").append(currChange.type).append("\">");
+                line.append(" juxta:connect-to=\"").append(currChange.getConnectedId()).append("\"").append("\">");
                 this.tagStarted = true;
                 return true;
             } 

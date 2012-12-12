@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -68,6 +69,7 @@ public class SideBySideView implements FileDirectiveListener  {
     @Autowired private ApplicationContext context;
     @Autowired private TaskManager taskManager;
     @Autowired private Integer averageAlignmentSize;
+    @Autowired private Integer visualizationBatchSize;
 
     protected static final Logger LOG = LoggerFactory.getLogger( Constants.WS_LOGGER_NAME );
     private static final int MEGABYTE = (1024*1024);
@@ -238,7 +240,8 @@ public class SideBySideView implements FileDirectiveListener  {
     }
     
     void connectTranspositions(ComparisonSet set) {
-        // grab any transpositions that have been marked
+        // grab any transpositions that have been marked.. should be a very
+        // small set of data; no need to work in batches here
         AlignmentConstraint constraint = new AlignmentConstraint( set );
         constraint.setFilter( this.filters.getTranspositionsFilter() );
         constraint.addWitnessIdFilter( this.witnessDetails.get(0).getId());
@@ -246,10 +249,10 @@ public class SideBySideView implements FileDirectiveListener  {
         List<Alignment> transpositions = this.alignmentDao.list(constraint);
         
         for ( Alignment align :  transpositions ) {
-            Transposition prior = null;
+            Change prior = null;
             for ( AlignedAnnotation a : align.getAnnotations() ) {
                 WitnessInfo witnessInfo = getWitnessInfo(a.getWitnessId());
-                Transposition t = new Transposition(a.getRange());
+                Change t = new Change(align, a.getRange(), 0);
                 witnessInfo.addTransposition(t);   
                 
                 // once we have 2, connect them
@@ -276,8 +279,7 @@ public class SideBySideView implements FileDirectiveListener  {
         for ( Change change : this.witnessDetails.get(0).changes ) {
             for ( Change otherChange : this.witnessDetails.get(1).changes ) {
                 if ( change.isConnected(otherChange)) {
-                    change.connectedToId = otherChange.id;
-                    otherChange.connectedToId = change.id;
+                    change.connect(otherChange);
                     break;
                 }
             }
@@ -290,8 +292,7 @@ public class SideBySideView implements FileDirectiveListener  {
             if ( change.connectedToId == null) {
                 for ( Change otherChange : this.witnessDetails.get(0).changes ) {
                     if ( change.isConnected(otherChange)) {
-                        change.connectedToId = otherChange.id;
-                        otherChange.connectedToId = change.id;
+                        change.connect(otherChange);
                         break;
                     }
                 }
@@ -304,23 +305,36 @@ public class SideBySideView implements FileDirectiveListener  {
         // witnesses in this comparison. Split the changes into
         // separate lists for each
         LOG.info("Get diffs...");
-        QNameFilter changesFilter = this.filters.getDifferencesFilter();
-        AlignmentConstraint constraints = new AlignmentConstraint(set);
-        constraints.addWitnessIdFilter( this.witnessDetails.get(0).getId() );
-        constraints.addWitnessIdFilter( this.witnessDetails.get(1).getId() );
-        constraints.setFilter(changesFilter);
-        for ( Alignment align :  this.alignmentDao.list(constraints) ) {
-            for ( AlignedAnnotation a : align.getAnnotations() ) {
-                WitnessInfo witnessInfo = getWitnessInfo(a.getWitnessId());
-                Change newChange = new Change(align, a.getRange(), align.getGroup());
-                witnessInfo.addChange( newChange );  
+        boolean done = false;
+        int startIdx = 0;
+        while (!done) {
+            QNameFilter changesFilter = this.filters.getDifferencesFilter();
+            AlignmentConstraint constraints = new AlignmentConstraint(set);
+            constraints.addWitnessIdFilter( this.witnessDetails.get(0).getId() );
+            constraints.addWitnessIdFilter( this.witnessDetails.get(1).getId() );
+            constraints.setFilter(changesFilter);
+            constraints.setResultsRange(startIdx, this.visualizationBatchSize);
+            List<Alignment> aligns =  this.alignmentDao.list(constraints);
+            
+            if ( aligns.size() < this.visualizationBatchSize ) {
+                done = true;
+            } else {
+                startIdx += this.visualizationBatchSize;
+            }
+            
+            // copy small subset of alignment data into sbs witness info
+            for ( Alignment align :  aligns) {
+                for ( AlignedAnnotation a : align.getAnnotations() ) {
+                    WitnessInfo witnessInfo = getWitnessInfo(a.getWitnessId());
+                    Change newChange = new Change(align, a.getRange(), align.getGroup());
+                    witnessInfo.addChange( newChange );  
+                }
             }
         }
         
         // sort each change set in ascending range order and merge adjacent changes
         LOG.info("Sort and merge diffs....");
         for ( WitnessInfo info : this.witnessDetails ) {
-            Collections.sort( info.getChanges() );
             Change prior = null;
             for ( Iterator<Change> itr =  info.getChanges().iterator(); itr.hasNext();  ) {
                 Change change = itr.next();
@@ -420,12 +434,12 @@ public class SideBySideView implements FileDirectiveListener  {
         final Witness witness;
         File file;
         List<Change> changes;
-        List<Transposition> transpositions;
+        List<Change> transpositions;
         
         public WitnessInfo( Witness witness ) throws IOException {
             this.witness = witness;
             this.changes = new ArrayList<Change>();
-            this.transpositions = new ArrayList<SideBySideView.Transposition>();
+            this.transpositions = new ArrayList<Change>();
             this.file = File.createTempFile("sbs_"+witness.getId(), "dat");
             this.file.deleteOnExit();
         }
@@ -454,11 +468,11 @@ public class SideBySideView implements FileDirectiveListener  {
             return this.changes;
         }
         
-        public void addTransposition( Transposition t ) {
+        public void addTransposition( Change t ) {
             this.transpositions.add(t);
         }
         
-        public List<Transposition> getTranspositions() {
+        public List<Change> getTranspositions() {
             return this.transpositions;
         }
         
@@ -467,51 +481,17 @@ public class SideBySideView implements FileDirectiveListener  {
             return this.witness.getName();
         }
     }
-    
-    /**
-     * Class to track transpositions
-     */
-    static class Transposition implements Comparable<Transposition> {
-        final Long id;
-        Long connectedToId;
-        Range range;
-        static long idGen = 0;
-        
-        public Transposition(Range witnessRange) {
-            this.id = Change.idGen++;
-            this.range = witnessRange;
-        }
-        
-        public Range getRange() {
-            return this.range;
-        }
-        @Override
-        public int compareTo(Transposition that) {
-            if ( this.range.getStart() < that.range.getStart() ) {
-                return -1;
-            } else if ( this.range.getStart() > that.range.getStart() ) {
-                return 1;
-            } else {
-                if ( this.range.getEnd() < that.range.getEnd() ) {
-                    return -1;
-                } else if ( this.range.getEnd() > that.range.getEnd() ) {
-                    return 1;
-                } 
-            }
-            return 0;
-        }
-    }
 
     /**
      * Simplified class to track change by id range and type
      */
-    static class Change implements Comparable<Change> {
-        List<Long> alignIdList = new ArrayList<Long>();
-        final Long id;
-        final int group;
-        Long connectedToId;
-        String type;
-        Range range;
+    public static final class Change implements Comparable<Change> {
+        public enum Type {CHANGE, ADD, DEL};
+        Set<Long> alignIdList = new HashSet<Long>();
+        private final Long id;
+        private final int group;
+        private Long connectedToId;
+        private Range range;
         static long idGen = 0;
         
         public Change( Alignment align, Range witnessRange, int group) {
@@ -519,14 +499,19 @@ public class SideBySideView implements FileDirectiveListener  {
             this.group = group;
             this.alignIdList.add( align.getId() );
             this.range = witnessRange;
-            this.type = "Change";
-            if ( align.getName().equals(Constants.ADD_DEL_NAME) ) {
-                if ( range.length() == 0 ) {
-                    this.type = "Deleted";
-                } else {
-                    this.type = "Inserted";
-                }
-            }
+        }
+        
+        public void connect(Change otherChange) {
+            this.connectedToId = otherChange.id;
+            otherChange.connectedToId = this.id;
+        }
+
+        public Long getId() {
+            return this.id;
+        }
+        
+        public Long getConnectedId() {
+            return this.connectedToId;
         }
         
         public boolean hasMatchingGroup(Change prior) {
@@ -536,7 +521,7 @@ public class SideBySideView implements FileDirectiveListener  {
                 return (getGroup() == prior.getGroup());
             }
         }
-
+        
         public int getGroup() {
             return this.group;
         }
@@ -544,6 +529,7 @@ public class SideBySideView implements FileDirectiveListener  {
         public Range getRange() {
             return this.range;
         }
+        
         public boolean isConnected( Change other ) {
             for ( Long id : this.alignIdList ) {
                 for ( Long otherId : other.alignIdList ) {
@@ -557,9 +543,11 @@ public class SideBySideView implements FileDirectiveListener  {
         
         public void merge(Change other ) {
             this.alignIdList.addAll( other.alignIdList );
-            this.range = new Range(this.range.getStart(), other.range.getEnd() );
+            this.range = new Range(
+                Math.min( this.range.getStart(), other.getRange().getStart() ),
+                Math.max( this.range.getEnd(), other.getRange().getEnd() )
+            );
         }
-
         
         @Override
         public int compareTo(Change that) {
