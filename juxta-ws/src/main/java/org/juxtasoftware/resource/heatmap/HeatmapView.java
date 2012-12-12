@@ -64,7 +64,7 @@ public class HeatmapView  {
     @Autowired private HeatmapStreamDirective heatmapDirective;
     @Autowired private ApplicationContext context;
     @Autowired private TaskManager taskManager;
-    @Autowired private Integer heatmapBatchSize;
+    @Autowired private Integer visualizationBatchSize;
     
     private BaseResource parent;
     private VisualizationInfo visualizationInfo;
@@ -372,11 +372,11 @@ public class HeatmapView  {
             boolean done = false;
             int startIdx = 0;
             while ( !done ) {
-                aligns = getPairAlignments(set, base.getId(), wit.getId(), startIdx, this.heatmapBatchSize);
-                if ( aligns.size() < this.heatmapBatchSize ) {
+                aligns = getPairAlignments(set, base.getId(), wit.getId(), startIdx, this.visualizationBatchSize);
+                if ( aligns.size() < this.visualizationBatchSize ) {
                     done = true;
                 } else {
-                    startIdx += this.heatmapBatchSize;
+                    startIdx += this.visualizationBatchSize;
                 }
     
                 // generate a change list based on the sorted differences
