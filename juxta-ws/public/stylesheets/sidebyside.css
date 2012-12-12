@@ -92,6 +92,7 @@ span.diff.lit, span.diff.lit span.move   {
 }
 .lit  {
     background-color: #6ECE6E !important;
+    box-shadow: 0px 0px 12px #4EaE4E;
 }
 
 span.move  {

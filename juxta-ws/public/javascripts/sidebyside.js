@@ -48,8 +48,8 @@ $(function() {
          'stroke-linejoin' : 'round'
       };
       var moveLink = {
-         stroke : '#f00',
-         'stroke-width' : 1,
+         stroke : '#a55',
+         'stroke-width' : 1.5,
          'stroke-linejoin' : 'round'
       };
       var litConnAttribs = {
@@ -74,7 +74,7 @@ $(function() {
             line = connectionPaper.path(pathStr);
             line.attr(moveLink);
             return true;
-         }
+         } 
 
          // if both are  out of the visible area, there is nothing
          // more that can be rendered - stop.
@@ -140,7 +140,7 @@ $(function() {
       renderConnections();
    };
 
-   var renderTranspositionsGutter = function(hdrHeight, defaultHeight) {
+   var renderTranspositionsGutter = function(connections, hdrHeight, defaultHeight) {
       var leftGutterPaper = $("#left-gutter-div").data("paper");
       var rightGutterPaper = $("#right-gutter-div").data("paper");
 
@@ -154,7 +154,8 @@ $(function() {
          stroke : '#CCC',
          'stroke-width' : 3
       };
-      var connections = $("#side-by-side").data("connections");
+
+      // loop over all move marks
       $("#right-witness-text").find(".move").each(function(index) {
 
          // calculate the extents of the braket for the left witness move
@@ -243,7 +244,7 @@ $(function() {
       $('#wait-popup').show();
 
       // first do transpositions so they are under the alignments
-      renderTranspositionsGutter(hdrHeight, defaultHeight);
+      renderTranspositionsGutter(connections, hdrHeight, defaultHeight);
 
       // start from the RIGHT; grab all of the text children
       // and find those that are of class 'diff'
@@ -866,6 +867,9 @@ $(function() {
 
       // Setup click handling that allows diffs to auto-align when clicked
       $(".witness-text").on("click", ".diff", function(event) {
+         alignOnDiff($(this));
+      });
+      $(".witness-text").on("click", ".move", function(event) {
          alignOnDiff($(this));
       });
 
