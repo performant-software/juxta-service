@@ -346,9 +346,11 @@ $(function() {
       if (p.indexOf("16") === -1) {
          $(icon).css("background-position", "0px 16px");
          $("#witness-" + witnessId).addClass("hidden-witness");
+         $("#toggle-"+witnessId).attr("title", "Show Witness");
       } else {
          $(icon).css("background-position", "0px 0px");
          $("#witness-" + witnessId).removeClass("hidden-witness");
+         $("#toggle-"+witnessId).attr("title", "Hide Witness");
       }
 
       var setId = $('#setId').text();
@@ -466,6 +468,7 @@ $(function() {
          $("#toggle-" + witId).css("background-position", "0px 16px");
          $("#change-index-" + witId).hide();
          $("#witness-" + witId).addClass("hidden-witness");
+         $("#toggle-"+witId).attr("title", "Show Witness");
       });
 
       $(".visibility-toggle").on("click", function() {

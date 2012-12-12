@@ -21,7 +21,7 @@
                   </div>
             <#else>
                 <div class="set-witnesss set-file">
-                    <div id="toggle-${witness.id}" class="visibility-toggle"></div>
+                    <div id="toggle-${witness.id}" class="visibility-toggle" title="Hide witness"></div>
                     <div id="witness-${witness.id}" class="witness" title="${witness.name}">${witness.name}</div>
                     <div id="change-index-${witness.id}" class="change-index"></div>
                     <div style="clear: both;"></div>
