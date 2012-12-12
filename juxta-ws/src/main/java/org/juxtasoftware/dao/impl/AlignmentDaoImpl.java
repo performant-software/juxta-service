@@ -1,9 +1,6 @@
 package org.juxtasoftware.dao.impl;
 
 import java.io.IOException;
-import java.lang.management.ManagementFactory;
-import java.lang.management.MemoryMXBean;
-import java.lang.management.MemoryUsage;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -83,11 +80,11 @@ public class AlignmentDaoImpl implements AlignmentDao, InitializingBean  {
     
     @Override
     public List<Alignment> list(final AlignmentConstraint constraint ) {
-        MemoryMXBean memoryBean = ManagementFactory.getMemoryMXBean();
-        memoryBean.gc();
-        MemoryUsage usage = memoryBean.getHeapMemoryUsage();
-        long freeMem = usage.getMax() -usage.getUsed();
-        LOG.info("["+ freeMem  +"] FREE MEMORY");
+//        MemoryMXBean memoryBean = ManagementFactory.getMemoryMXBean();
+//        memoryBean.gc();
+//        MemoryUsage usage = memoryBean.getHeapMemoryUsage();
+//        long freeMem = usage.getMax() -usage.getUsed();
+//        LOG.info("["+ freeMem  +"] FREE MEMORY");
         
         // basic query for alignmnents in set
         StringBuilder sql = alignmentAnnotationsQuery();
@@ -120,16 +117,16 @@ public class AlignmentDaoImpl implements AlignmentDao, InitializingBean  {
         // get the list of alignments that involve the base witness
         AlignmentsMapper mapper = new AlignmentsMapper( constraint );
         this.jdbcTemplate.query(sql.toString(), mapper );
-        List<Alignment> a = mapper.getAlignments();   
+        return mapper.getAlignments();   
         
-        usage = memoryBean.getHeapMemoryUsage();
-        long freeMem2 = usage.getMax() -usage.getUsed();
-        if ( a.size() > 0 ) {
-            LOG.info("["+ freeMem2  +"] FREE AFTER ALIGN LISTED. ALIGN COUNT: "+a.size());
-            double avg = (freeMem - freeMem2) / a.size();
-            LOG.info("AVERAGE ALIGNMENT SIZE: "+avg);
-        }
-        return a;   
+//        usage = memoryBean.getHeapMemoryUsage();
+//        long freeMem2 = usage.getMax() -usage.getUsed();
+//        if ( a.size() > 0 ) {
+//            LOG.info("["+ freeMem2  +"] FREE AFTER ALIGN LISTED. ALIGN COUNT: "+a.size());
+//            double avg = (freeMem - freeMem2) / a.size();
+//            LOG.info("AVERAGE ALIGNMENT SIZE: "+avg);
+//        }
+//        return a;   
     }
     
     private void addWitnessFilterConstraints(StringBuilder sql, AlignmentConstraint constraint) {
