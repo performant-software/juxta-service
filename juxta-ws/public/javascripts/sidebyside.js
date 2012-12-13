@@ -1,4 +1,4 @@
-/*global $, document, Raphael, alert, window, location, setTimeout, isEmbedded */
+/*global $, document, Raphael, alert, window, location, setTimeout, setInterval, clearInterval */
 
 // javascript for supporing side by side view
 if (!window.Juxta) {
@@ -9,6 +9,19 @@ if (!window.Juxta.SideBySide) {
 }
 
 $(function() {
+     
+   var hexDigits = new Array
+        ("0","1","2","3","4","5","6","7","8","9","a","b","c","d","e","f"); 
+
+   //Function to convert hex format to a rgb color
+   function rgb2hex(rgb) {
+    rgb = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
+    return "#" + hex(rgb[1]) + hex(rgb[2]) + hex(rgb[3]);
+   }
+   
+   function hex(x) {
+     return isNaN(x) ? "00" : hexDigits[(x - x % 16) / 16] + hexDigits[x % 16];
+   }
 
    window.Juxta.SideBySide.isLocked = function() {
       var locked = $("#scroll-mode-img").data("locked");
@@ -28,81 +41,71 @@ $(function() {
       connectionPaper.clear();
 
       // setup attributes and data
-      var leftTop = $("#left-gutter-div").scrollTop();
-      var rightTop = $("#right-gutter-div").scrollTop();
+      var leftTop = $("#left-witness-text").scrollTop();
+      var rightTop = $("#right-witness-text").scrollTop();
       var width = $("#connections-div").width();
       var height = $("#connections-div").height();
       var connAttribs = {
-         stroke : '#060',
-         'stroke-width' : 1,
-         'stroke-linejoin' : 'round'
-      };
-      var faded1 = {
-         stroke : '#060',
-         'stroke-width' : 0.5,
-         'stroke-linejoin' : 'round'
-      };
-      var faded2 = {
-         stroke : '#060',
-         'stroke-width' : 0.25,
-         'stroke-linejoin' : 'round'
+         'stroke' : rgb2hex( $("#connector-prototype").css("color")),
+         'stroke-width' : 0.75,
+         'fill' : rgb2hex( $("#connector-prototype").css("background-color"))
       };
       var moveLink = {
-         stroke : '#a55',
-         'stroke-width' : 1.5,
-         'stroke-linejoin' : 'round'
+         stroke : rgb2hex( $("#move-conn-prototype").css("color")),
+         'stroke-width' : 0.5,
+         'fill' : rgb2hex( $("#move-conn-prototype").css("background-color"))
       };
       var litConnAttribs = {
-         stroke : '#4d4',
-         'stroke-width' : 2.5,
-         'stroke-linejoin' : 'round'
+         'stroke' : rgb2hex( $("#lit-connector-prototype").css("color")),
+         'stroke-width' : 0.5,
+         'fill' : rgb2hex( $("#lit-connector-prototype").css("background-color"))
       };
 
       // run thru each connection and draw a line from left to right
       var connections = $("#side-by-side").data("connections");
       var pathStr, line;
+      var moveLines = [];
       $.each(connections, function(i, conn) {
 
          // grab co-ordinates of the connection and offset them by the
          // current scroll pos. This puts them relative to the visible
-         // gutter area
-         var leftPos = conn.left - leftTop;
-         var rightPos = conn.right - rightTop;
+         // gutter area         
+         var lt = conn.leftTop - leftTop;
+         var lb = lt + conn.leftHeight;
+         var rt = conn.rightTop - rightTop;
+         var rb = rt + conn.rightHeight;
+         pathStr = "M0," + lt + "L" + width + "," + rt +"L"+width+","+rb+"L0,"+lb+"Z";
 
-         if (conn.type === "transposition") {
-            pathStr = "M0," + leftPos + "L" + width + "," + rightPos;
+         if (conn.type === "move") {            
             line = connectionPaper.path(pathStr);
             line.attr(moveLink);
+            moveLines.push( line );
             return true;
          } 
 
          // if both are  out of the visible area, there is nothing
          // more that can be rendered - stop.
-         if (leftPos > height && rightPos > height) {
+         if (lt > height && rt > height) {
             return false;
          }
 
          // if they both occur befor the visible area skip them
-         if (leftPos < 0 && rightPos < 0) {
+         if (lb < 0 && lb < 0) {
             return true;
          }
 
-         // draw the line if its not too far away
-         if (Math.abs(leftPos - rightPos) < height * 0.5) {
-            pathStr = "M0," + (leftPos+3) + "L" + width + "," + (rightPos+3);
-            line = connectionPaper.path(pathStr);
-            if (conn.lit) {
-               line.attr(litConnAttribs);
-            } else {
-               if (Math.abs(leftPos - rightPos) < height * 0.2) {
-                  line.attr(connAttribs);
-               } else if (Math.abs(leftPos - rightPos) < height * 0.4) {
-                  line.attr(faded1);
-               } else {
-                  line.attr(faded2);
-               }
-            }
+         line = connectionPaper.path(pathStr);
+         if (conn.lit) {
+            line.attr(litConnAttribs);
+            line.toFront();
+         } else {
+            line.attr(connAttribs);
+            line.toBack();
          }
+      });
+      
+      $.each(moveLines, function(i, mv ) {
+         mv.toBack();
       });
    };
 
@@ -140,180 +143,83 @@ $(function() {
       renderConnections();
    };
 
-   var renderTranspositionsGutter = function(connections, hdrHeight, defaultHeight) {
-      var leftGutterPaper = $("#left-gutter-div").data("paper");
-      var rightGutterPaper = $("#right-gutter-div").data("paper");
-
-      // start from the RIGHT; grab all of the text children
-      // and find those that are of class 'MOVE'
-      var outline = {
-         stroke : '#000',
-         'stroke-width' : 5
-      };
-      var fill = {
-         stroke : '#CCC',
-         'stroke-width' : 3
-      };
-
-      // loop over all move marks
-      $("#right-witness-text").find(".move").each(function(index) {
-
-         // calculate the extents of the braket for the left witness move
-         var rightMoveTop = $(this).position().top - hdrHeight + 0.5 + $("#right-witness-text").scrollTop();
-         var rightMoveHeight = $(this).height();
-         if (rightMoveHeight === 0) {
-            rightMoveHeight = defaultHeight;
-         }
-         var rightMoveBottom = rightMoveTop + rightMoveHeight + 0.5;
-         var rightId = $(this).attr("id");
-
-         // draw the line
-         var pathStr = "M6," + rightMoveTop + "L6," + rightMoveBottom;
-         var bracket = rightGutterPaper.path(pathStr);
-         bracket.attr(outline);
-         pathStr = "M5.5," + (rightMoveTop + 1) + "L5.5," + (rightMoveBottom - 1);
-         bracket = rightGutterPaper.path(pathStr);
-         bracket.attr(fill);
-
-         // calculate the extents of the braket for the LEFT witness move
-         var connectToId = "move-" + $(this).attr("juxta:connect-to");
-         var leftMoveTop = $("#" + connectToId).position().top - hdrHeight + 0.5 + $("#left-witness-text").scrollTop();
-         var leftMoveHeight = $("#" + connectToId).height();
-         if (leftMoveHeight === 0) {
-            leftMoveHeight = defaultHeight;
-         }
-         var leftMoveBottom = leftMoveTop + leftMoveHeight + 0.5;
-         var leftId = $("#" + connectToId).attr("id");
-
-         // see if this one is split into 2
-         connectToId = connectToId + "-continued";
-         var extend = $("#" + connectToId);
-         if (extend.exists()) {
-            leftMoveHeight += extend.height();
-            leftMoveBottom += extend.height();
-         }
-
-         // draw the bracket
-         pathStr = "M0," + leftMoveTop + "L0," + leftMoveBottom;
-         bracket = leftGutterPaper.path(pathStr);
-         bracket.attr(outline);
-         pathStr = "M0.5," + (leftMoveTop + 1) + "05.5," + (leftMoveBottom - 1);
-         bracket = leftGutterPaper.path(pathStr);
-         bracket.attr(fill);
-
-         // store the midpoint of the left/right bracket
-         // heights as a connection point
-         if (rightId.indexOf("-continued") > -1) {
-            // This is a continuation of an existing move caused
-            // when overlapping tag heirarchies are fixed. Dont add a
-            // new connection; just extend the prior one
-            var c = connections[connections.length - 1];
-            c.right += rightMoveHeight / 2;
-         } else {
-            var connection = {};
-            connection.left = leftMoveTop + leftMoveHeight / 2;
-            connection.leftId = leftId;
-            connection.right = rightMoveTop + rightMoveHeight / 2;
-            connection.rightId = rightId;
-            connection.lit = false;
-            connection.type = "transposition";
-            connections.push(connection);
-         }
-      });
-   };
-
    /**
     * Render the left and right witness diff brackets in the narrow gutter
     * divs on either side of the connections area
     */
-   var renderAlignmentGutter = function() {
-
-      var leftGutterPaper = $("#left-gutter-div").data("paper");
-      leftGutterPaper.clear();
-      var rightGutterPaper = $("#right-gutter-div").data("paper");
-      rightGutterPaper.clear();
-      var connections = [];
-
+   var calculateAlignments = function() {
       // grab some info needed to calculate positions of brackets
       var hdrHeight = $(".header").outerHeight(true);
       var defaultHeight = parseInt($('.witness-text').css('line-height'), 10) - 3;
       var rightScrollTop = $("#right-witness-text").scrollTop();
       var leftScrollTop = $("#left-witness-text").scrollTop();
+      var connections = [];
       
       $("body").trigger('wait-requested', ["Calculating differences..."]);
       $('#wait-popup').show();
-
-      // first do transpositions so they are under the alignments
-      renderTranspositionsGutter(connections, hdrHeight, defaultHeight);
-
-      // start from the RIGHT; grab all of the text children
-      // and find those that are of class 'diff'
-      var bracketAttribs = {
-         stroke : '#060',
-         'stroke-width' : 1,
-         'stroke-linejoin' : 'round'
-      };
       
-      var diffs = [];
-      $("#right-witness-text").find(".diff").each( function() {
-         diffs.push( this );   
+      var diffs = $("#right-witness-text").find(".diff");
+      $("#right-witness-text").find(".move").each( function() {
+         diffs.push( $(this) ); 
       });
+      
       var idx = 0;
       var chunkSize = 1000;
-      var lastIdx = diffs.length - 1;
       var thisChunk = 0;
-      var done = false;
+      var done = false;   
+      var rightId, rightDiffTop, rightDiffHeight, rightDiffBottom;
+      var connectToId, connType;
+      var leftId, leftDiffTop, leftDiffHeight, leftDiffBottom;
       
+      // fake thread... run thru chunks of diffeences on an interval
       var tid = setInterval(function() {
          thisChunk = chunkSize;
-         if (idx + thisChunk > lastIdx) {
-            thisChunk = lastIdx - idx;
+         if (idx + thisChunk > diffs.length) {
+            thisChunk = diffs.length - idx;
             clearInterval(tid);
             done = true;
          }
          
-         $.each( diffs.slice(idx, (idx + thisChunk)), function(idx, diff) {
+         $.each( diffs.slice(idx, (idx + thisChunk)), function(i, diff) {
+            
+            // track type of connection
+            connType = "diff";
+            if ( $(diff).hasClass("move") ) {
+               connType = "move";
+            }
    
-            // calculate the extents of the braket for the left witness diff
-            var rightDiffTop = $(diff).position().top - hdrHeight + rightScrollTop;
-            var rightDiffHeight = $(diff).height();
+            // calculate the extents of the RIGHT witness diff
+            rightDiffTop = $(diff).position().top - hdrHeight + rightScrollTop;
+            rightDiffHeight = $(diff).height();
             if (rightDiffHeight === 0) {
                rightDiffHeight = defaultHeight;
             }
-            var rightDiffBottom = rightDiffTop + rightDiffHeight;
-            var rightId = $(diff).attr("id");
-   
-            // draw the bracket
-            var pathStr = "M6," + (rightDiffTop+2) + "L1," + (rightDiffTop+2) + "L1," + (rightDiffBottom+4) + "L6," + (rightDiffBottom+4);
-            var bracket = rightGutterPaper.path(pathStr);
-            bracket.attr(bracketAttribs);
+            rightDiffBottom = rightDiffTop + rightDiffHeight;
+            rightId = $(diff).attr("id");
    
             // Get the LEFT witness diff
-            var connectToId = "diff-" + $(diff).attr("juxta:connect-to");
+            connectToId = connType+ "-" + $(diff).attr("juxta:connect-to");
             if ($("#" + connectToId).exists()) {
-               var leftDiffTop = $("#" + connectToId).position().top - hdrHeight + leftScrollTop;
-               var leftDiffHeight = $("#" + connectToId).height();
+               leftDiffTop = $("#" + connectToId).position().top - hdrHeight + leftScrollTop;
+               leftDiffHeight = $("#" + connectToId).height();
                if (leftDiffHeight === 0) {
                   leftDiffHeight = defaultHeight;
                }
-               var leftDiffBottom = leftDiffTop + leftDiffHeight;
-               var leftId = $("#" + connectToId).attr("id");
+               leftDiffBottom = leftDiffTop + leftDiffHeight;
+               leftId = $("#" + connectToId).attr("id");
    
-               // draw the bracket
-               pathStr = "M0," + (leftDiffTop+2) + "L5," + (leftDiffTop+2) + "L5," + (leftDiffBottom+4) + "L0," + (leftDiffBottom+4);
-               bracket = leftGutterPaper.path(pathStr);
-               bracket.attr(bracketAttribs);
-   
-               // store the midpoint of the left/right bracket
-               // heights as a connection point
-               var connection = {};
-               connection.left = leftDiffTop + leftDiffHeight / 2;
-               connection.leftId = leftId;
-               connection.right = rightDiffTop + rightDiffHeight / 2;
-               connection.rightId = rightId;
-               connection.lit = false;
-               connection.type = "diff";
-               connections.push(connection);
+               connections.push( {
+                  leftTop: leftDiffTop,
+                  left: leftDiffTop + leftDiffHeight / 2,
+                  leftHeight: leftDiffHeight,
+                  leftId: leftId,
+                  rightTop: rightDiffTop,
+                  right: rightDiffTop + rightDiffHeight / 2,
+                  rightHeight: rightDiffHeight,
+                  rightId: rightId,
+                  lit: false,
+                  type: connType
+               });
             }
             idx += 1;
          }); 
@@ -334,8 +240,8 @@ $(function() {
             renderConnections();
             $('#wait-popup').hide();
             $("body").trigger('wait-completed');
-         }  
-      }, 10);
+         } 
+     }, 5);
    };
 
    /**
@@ -359,41 +265,22 @@ $(function() {
       });
 
       // get height headers
-      var hdrHeight = $(".header").outerHeight(true);
+      var hdrHeight = $("#left-witness .header").outerHeight(true);
       top += hdrHeight;
       height -= hdrHeight;
-
-      // position the left gutter
-      $("#left-gutter-div").css({
-         "top" : top + "px",
-         "left" : left + "px"
-      });
-      $("#left-gutter-div").width(6);
-      $("#left-gutter-div").height(height);
+      var hT = $("#left-witness-text").offset().top;
 
       // position the center connections paper
-      left += 6;
       $("#connections-div").css({
-         "top" : top + "px",
+         "top" : (hT) +"px",
          "left" : left + "px"
       });
-      $("#connections-div").width(width - 12);
+      $("#connections-div").width(width);
       $("#connections-div").height(height);
 
-      // position the right gutter
-      left += $("#connections-div").outerWidth(true);
-      $("#right-gutter-div").css({
-         "top" : top + "px",
-         "left" : left + "px"
-      });
-      $("#right-gutter-div").width(6);
-      $("#right-gutter-div").height(height);
-
       // create papers to match size
-      $("#left-gutter-div").data("paper", new Raphael(document.getElementById('left-gutter-div'), 6, window.Juxta.SideBySide.getMaxWitnessHeight() + 100));
-      $("#connections-div").data("paper", new Raphael(document.getElementById('connections-div'), width - 12, height));
-      $("#right-gutter-div").data("paper", new Raphael(document.getElementById('right-gutter-div'), 6, window.Juxta.SideBySide.getMaxWitnessHeight() + 100));
-      renderAlignmentGutter();
+      $("#connections-div").data("paper", new Raphael(document.getElementById('connections-div'), width, height));
+      calculateAlignments();
    };
 
    /**
@@ -484,15 +371,13 @@ $(function() {
          if (side === "left") {
             $("#right-witness-text").data("action", "match");
             delta = (conn.right - conn.left);
-            leftTop = $("#left-gutter-div").scrollTop();
+            leftTop = $("#left-witness-text").scrollTop();
             $("#right-witness-text").scrollTop(leftTop + delta);
-            $("#right-gutter-div").scrollTop($("#right-witness-text").scrollTop());
          } else {
             $("#left-witness-text").data("action", "match");
             delta = (conn.left - conn.right);
-            rightTop = $("#right-gutter-div").scrollTop();
+            rightTop = $("#right-witness-text").scrollTop();
             $("#left-witness-text").scrollTop(rightTop + delta);
-            $("#left-gutter-div").scrollTop($("#left-witness-text").scrollTop());
          }
          renderConnections();
       }
@@ -532,12 +417,11 @@ $(function() {
    var syncLeftJump = function() {
       // be sure to flag this scroll as the result of a JUMP
       $("#right-witness-text").data("action", "jump");
-      var leftTop = $("#left-gutter-div").scrollTop();
+      var leftTop = $("#left-witness-text").scrollTop();
 
       // Special case: no diffs. Just sync 1 to 1
       var connections = $("#side-by-side").data("connections");
       if (connections.length === 0) {
-         $("#right-gutter-div").scrollTop(leftTop);
          $("#right-witness-text").scrollTop(leftTop);
       } else {
          var maxLeftHeight = $("#left-witness-text")[0].scrollHeight;
@@ -558,7 +442,6 @@ $(function() {
          var delta = (conn.right - conn.left);
 
          // sync exactly to this point
-         $("#right-gutter-div").scrollTop(leftTop + delta);
          $("#right-witness-text").scrollTop(leftTop + delta);
       }
 
@@ -570,14 +453,13 @@ $(function() {
 
       // Flag this as sync scroll event and grab the new top of the right text
       $("#left-witness-text").data("action", "sync");
-      var rightTop = $("#right-gutter-div").scrollTop();
-      var lastRight = $("#right-gutter-div").data("lastTop");
-      var leftTop = $("#left-gutter-div").scrollTop();
-
+      var rightTop = $("#right-witness-text").scrollTop();
+      var lastRight = $("#right-witness-text").data("lastTop");
+      var leftTop = $("#left-witness-text").scrollTop();
+      
       // Special case: no diffs. Just sync 1 to 1
       var connections = $("#side-by-side").data("connections");
       if (connections.length === 0) {
-         $("#left-gutter-div").scrollTop(rightTop);
          $("#left-witness-text").scrollTop(rightTop);
       } else {
          var scrollDelta = rightTop - lastRight;
@@ -643,12 +525,11 @@ $(function() {
          }
 
          // do the scroll on left to synch it with right
-         $("#left-gutter-div").scrollTop(leftTop + posDelta);
          $("#left-witness-text").scrollTop(leftTop + posDelta);
       }
 
       // save this top as prior so deltas can be calculated
-      $("#right-gutter-div").data("lastTop", rightTop);
+      $("#right-witness-text").data("lastTop", rightTop);
 
       // re-render the connecting lines
       renderConnections();
@@ -733,7 +614,6 @@ $(function() {
             $("#right-witness-text").data("action", "wheel");
             currTop = $("#right-witness-text").scrollTop();
             $("#right-witness-text").scrollTop(currTop -= (delta * 30));
-            $("#right-gutter-div").scrollTop($("#right-witness-text").scrollTop());
             syncScrolling();
          } else {
             currTop = $("#left-witness-text").scrollTop();
@@ -748,7 +628,6 @@ $(function() {
          $("#right-witness-text").data("action", "wheel");
          var currTop = $("#right-witness-text").scrollTop();
          $("#right-witness-text").scrollTop(currTop -= (delta * 30));
-         $("#right-gutter-div").scrollTop($("#right-witness-text").scrollTop());
 
          if ( window.Juxta.SideBySide.isLocked()) {
             // in locked mode sync the right and left texts
@@ -763,9 +642,6 @@ $(function() {
    var initWitnessScrollHandling = function() {
 
       $("#left-witness-text").scroll(function(eventObject) {
-
-         // always keep the gutter in-sync with the text
-         $("#left-gutter-div").scrollTop($("#left-witness-text").scrollTop());
 
          if ( window.Juxta.SideBySide.isLocked() === false) {
             // just update the connecting lines
@@ -791,9 +667,6 @@ $(function() {
 
       $("#right-witness-text").scroll(function(eventObject) {
 
-         // always keep the gutter in-sync with the text
-         $("#right-gutter-div").scrollTop($("#right-witness-text").scrollTop());
-
          // right drives the sync sync. Handle this here.
          if ( window.Juxta.SideBySide.isLocked()) {
             var data = $("#right-witness-text").data("action");
@@ -802,7 +675,6 @@ $(function() {
                syncScrolling();
             }
          } else {
-            $("#right-gutter-div").scrollTop($("#right-witness-text").scrollTop());
             renderConnections();
          }
       });
@@ -843,9 +715,7 @@ $(function() {
       $("#juxta-ws-content").css("overflow", "hide");
       $("#left-witness-text").data("action", "none");
       $("#right-witness-text").data("action", "none");
-      $("#left-gutter-div").data("paper",null);
       $("#connections-div").data("paper",null);
-      $("#right-gutter-div").data("paper",null);
 
       var rightHeight = $("#right-witness").outerHeight(true);
       $("#right-witness").data("fullHeight", rightHeight);
@@ -854,17 +724,18 @@ $(function() {
       $("#side-by-side").data("connections", []);
       $("#side-by-side").data("maxWitnessHeight", Math.max(rightHeight, leftHeight));
       $("#side-by-side").data("isResizing", false);
-      $("#right-gutter-div").data("lastTop", 0);
+      $("#right-witness-text").data("lastTop", 0);
 
       // initially, scrolling is LOCKED. Must be set before
       // the calls to init height/canvas
       $("#scroll-mode-img").data("locked", true);
 
       // init height, scrollbars and raphael canvas objects
-      initDocumentHeight();
-      initCanvas();
-      //renderConnections();
-
+      setTimeout( function() {
+         initDocumentHeight();
+         initCanvas();
+      }, 100);
+      
       // Setup click handling that allows diffs to auto-align when clicked
       $(".witness-text").on("click", ".diff", function(event) {
          alignOnDiff($(this));
@@ -938,10 +809,8 @@ $(function() {
       rtime = new Date();
       if (resizing === false) {
          resizing = true;
-         if ( $("#left-gutter-div").data("paper") != null ) {
-            $("#left-gutter-div").data("paper").clear();
+         if ( $("#connections-div").data("paper") != null ) {
             $("#connections-div").data("paper").clear();
-            $("#right-gutter-div").data("paper").clear();
          }
          $(".canvas-div").hide();
          setTimeout(doneResizing, delta);

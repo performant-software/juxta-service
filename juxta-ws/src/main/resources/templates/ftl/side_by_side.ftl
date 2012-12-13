@@ -1,4 +1,8 @@
 
+<span id="connector-prototype" style="display:none"></span>
+<span id="lit-connector-prototype" style="display:none"></span>
+<span id="move-conn-prototype" style="display:none"></span>
+
 <div id="side-by-side">
     <span id="embedded" style="display: none">${embedded?string}</span>
     <span id="setId" style="display: none">${setId}</span>
@@ -21,9 +25,7 @@
         <img id="scroll-mode-img" src="${baseUrl}/images/lock.gif"/>
     </div>
     
-    <div id="left-gutter-div" class="canvas-div"></div>
     <div id="connections-div" class="canvas-div"></div> 
-    <div id="right-gutter-div" class="canvas-div"></div>
     
     <div id="right-witness" class="sbs-witness">
         <div class="header">

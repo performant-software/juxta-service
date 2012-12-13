@@ -65,6 +65,10 @@ div.canvas-div {
     float: left;
 }
 
+#connections-div{
+   outline: 1px solid #227799;
+}
+
 /* div containing the right witness for comparison */ 
 #right-witness {
     float: right;
@@ -85,19 +89,32 @@ div.witness-text {
 /* Note: bit after the comma means if a tag that has both diff and move */
 /* the diff style has priority */ 
 span.diff, span.diff span.move  {
-    background-color: #DAEEDA;
+    background-color: #d5d9ff;
 }
 span.diff.lit, span.diff.lit span.move   {
-    background-color: #6ECE6E !important;
+    background-color: #8792ff !important;
 }
 .lit  {
-    background-color: #6ECE6E !important;
-    box-shadow: 0px 0px 12px #4EaE4E;
+    background-color: #6b7bff !important;
+    color: #eff0ff;
 }
-
 span.move  {
     background-color: #eeeeee;
     padding: 0.15em;
+}
+
+
+#connector-prototype {
+   background-color: #eff0ff;
+   color: #ffffff;
+}
+#lit-connector-prototype {
+   background-color: #8792ff;
+   color: #8792ff;
+}
+#move-conn-prototype {
+   background-color: #eeeeee;
+   color: #aaaaaa;
 }
 
 .sbs-button {
