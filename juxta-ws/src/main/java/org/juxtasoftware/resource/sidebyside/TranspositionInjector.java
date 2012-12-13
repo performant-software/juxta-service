@@ -49,7 +49,7 @@ public class TranspositionInjector implements OverlapInjector<Change> {
         if ( this.tagStarted ) {
             line.append("</span>");
             line.append("<span id=\"move-").append(this.currTrans.getId()).append("-continued\"");
-            line.append(" class=\"move\"");
+            line.append(" class=\"move\"  title=\"Tranposition\"");
             line.append(" juxta:connect-to=\"").append(this.currTrans.getConnectedId()).append("\"");
             line.append(">");
         }
@@ -59,7 +59,7 @@ public class TranspositionInjector implements OverlapInjector<Change> {
         if ( this.currTrans != null && this.tagStarted == false ) {
             if ( this.currTrans.getRange().getStart() == currPositon) {
                 line.append("<span id=\"move-").append(currTrans.getId()).append("\"");
-                line.append(" class=\"move\"");
+                line.append(" class=\"move\" title=\"Tranposition\"");
                 line.append(" juxta:connect-to=\"").append(currTrans.getConnectedId()).append("\"");
                 line.append(">");
                 this.tagStarted = true;
