@@ -1,7 +1,7 @@
 package org.juxtasoftware.model;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Data used to generate the histogram
@@ -11,11 +11,11 @@ import java.util.List;
 public class VisualizationInfo {
     private final ComparisonSet set;        
     private final Witness base;
-    private final List<Long> witnesses = new ArrayList<Long>();
+    private final Set<Long> witnesses = new HashSet<Long>();
     
-    public VisualizationInfo(ComparisonSet set, Witness base, List<Long> witnesses ) {
+    public VisualizationInfo(ComparisonSet set, Witness base, Set<Long> witnessFilterList ) {
         this.base = base;
-        this.witnesses.addAll(witnesses);
+        this.witnesses.addAll(witnessFilterList);
         this.set = set;
     }
     
@@ -31,7 +31,7 @@ public class VisualizationInfo {
         return this.base;
     }
 
-    public List<Long> getWitnessFilter() {
+    public Set<Long> getWitnessFilter() {
         return this.witnesses;
     }
 

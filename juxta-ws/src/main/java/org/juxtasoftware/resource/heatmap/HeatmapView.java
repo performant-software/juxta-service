@@ -9,9 +9,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.io.output.FileWriterWithEncoding;
 import org.apache.commons.lang.StringEscapeUtils;
@@ -147,7 +149,7 @@ public class HeatmapView  {
         // if no filter witnesses are  present, all witnesses will be included. 
         // Use this to create a visualiztionInfo object that will be used to generate a key to uniquely identify
         // this visualization
-        List<Long> witFilterList = getWitnessFilterList( base.getId() );
+        Set<Long> witFilterList = getWitnessFilterList( base.getId() );
         this.visualizationInfo = new VisualizationInfo(set, base, witFilterList);
         
         // Calculate the change index for the witnesses ( not necessary in condensed view: no witness list)
@@ -208,8 +210,8 @@ public class HeatmapView  {
         }
     }
 
-    private List<Long> getWitnessFilterList( Long baseId ) {
-        List<Long> list = new ArrayList<Long>();
+    private Set<Long> getWitnessFilterList( Long baseId ) {
+        Set<Long> list = new HashSet<Long>();
         if ( this.parent.getQuery().getValuesMap().containsKey("filter")  ) {
             String[] docStrIds = this.parent.getQuery().getValues("filter").split(",");
             for ( int i=0; i<docStrIds.length; i++ ) {
@@ -367,6 +369,10 @@ public class HeatmapView  {
             if (wit.getId().equals(base.getId())) {
                 continue;
             }
+            if (this.visualizationInfo.getWitnessFilter().contains(wit.getId()) ) {
+                LOG.info("Skipping filtered witness "+wit.getName()+"["+wit.getId()+"]");
+                continue;
+            }
             
             LOG.info("Generate heatmap data for " + base + " vs " + wit);
             boolean done = false;
@@ -405,7 +411,7 @@ public class HeatmapView  {
                             break;
                         }
                     }
-                    if (this.visualizationInfo.getWitnessFilter().indexOf(witness.getId()) != -1) {
+                    if (this.visualizationInfo.getWitnessFilter().contains(witness.getId())) {
                         LOG.info("Skipping diff from witness that was filtered out");
                         continue;
                     }
