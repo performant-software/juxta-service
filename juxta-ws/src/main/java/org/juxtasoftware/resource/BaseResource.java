@@ -123,10 +123,12 @@ public class BaseResource extends ServerResource {
      */
     protected boolean validateModel( final WorkspaceMember model ) {
         if ( model == null ) {
+            LOG.error("Resource is null");
             setStatus(Status.CLIENT_ERROR_NOT_FOUND, 
                 "Invalid resource identifier specified");
             return false;
         } else if ( model.isMemberOf( this.workspace) == false ) {
+            LOG.error("Resource "+model.getId()+" is not a member of workspace "+this.workspace.getName());
             setStatus(Status.CLIENT_ERROR_NOT_FOUND, 
                 "Resource "+model.getId()+" does not exist in workspace " +
                 this.workspace.getName());

@@ -71,11 +71,6 @@ public class Transformer extends BaseResource {
             getResponse().setStatus(Status.CLIENT_ERROR_NOT_FOUND);
             return toTextRepresentation( "Invalid source "+sourceId);
         }
-        if ( this.workspace.getId().equals(srcDoc.getWorkspaceId()) == false) {
-            setStatus(Status.CLIENT_ERROR_NOT_FOUND);
-            return toTextRepresentation( "Source "+sourceId+
-                " does not exist in workspace "+this.workspace.getName());    
-        }
         
         // if an alternate name for the parsed witness was passed
         // get it; otherwise its just the src file minus extenson
