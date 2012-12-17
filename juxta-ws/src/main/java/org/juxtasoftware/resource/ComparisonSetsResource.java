@@ -12,12 +12,14 @@ import org.juxtasoftware.dao.ComparisonSetDao;
 import org.juxtasoftware.dao.WitnessDao;
 import org.juxtasoftware.model.ComparisonSet;
 import org.juxtasoftware.model.Witness;
+import org.juxtasoftware.service.SetRemover;
 import org.juxtasoftware.util.MetricsHelper;
 import org.restlet.data.Status;
 import org.restlet.representation.Representation;
 import org.restlet.resource.Delete;
 import org.restlet.resource.Get;
 import org.restlet.resource.Post;
+import org.restlet.resource.ResourceException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.Scope;
@@ -40,6 +42,7 @@ public class ComparisonSetsResource extends BaseResource {
     @Autowired private WitnessDao witnessDao;
     @Autowired private MetricsHelper metrics;
     @Autowired private Integer maxSetWitnesses;
+    @Autowired private SetRemover remover;
     
     @Get("html")
     public Representation toHtml() {
@@ -109,8 +112,26 @@ public class ComparisonSetsResource extends BaseResource {
     
     @Delete("json")
     public Representation batchDelete( final String jsonContent) {
-        setStatus(Status.SERVER_ERROR_NOT_IMPLEMENTED);
-        return toTextRepresentation("Not ready yet");
+        LOG.info("Batch delete sets "+jsonContent);
+        JsonParser parser = new JsonParser();
+        JsonArray jsonArray = parser.parse(jsonContent).getAsJsonArray();
+        int delCnt = 0;
+        for ( Iterator<JsonElement>  itr = jsonArray.iterator(); itr.hasNext(); ) {
+            JsonElement ele = itr.next();
+            Long id = ele.getAsLong();
+            ComparisonSet set = this.comparionSetDao.find(id);
+            if ( set != null ) {
+                try {
+                    this.remover.remove(this.workspace, set);
+                    delCnt++;
+                } catch ( ResourceException e ) {
+                    LOG.warn(e.toString());
+                }
+            } else {
+                LOG.warn("Set ID "+id+" is not valid for this workspace");
+            }
+        }
+        return toTextRepresentation(""+delCnt);
     }
     
     private static class SetsExclusion implements ExclusionStrategy {

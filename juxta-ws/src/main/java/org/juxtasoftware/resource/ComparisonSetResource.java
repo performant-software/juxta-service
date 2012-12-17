@@ -10,6 +10,7 @@ import org.juxtasoftware.dao.ComparisonSetDao;
 import org.juxtasoftware.dao.WitnessDao;
 import org.juxtasoftware.model.ComparisonSet;
 import org.juxtasoftware.model.Witness;
+import org.juxtasoftware.service.SetRemover;
 import org.juxtasoftware.util.MetricsHelper;
 import org.restlet.data.Status;
 import org.restlet.representation.Representation;
@@ -45,6 +46,7 @@ public class ComparisonSetResource extends BaseResource {
     @Autowired private WitnessDao witnessDao;
     @Autowired private Integer maxSetWitnesses;
     @Autowired private MetricsHelper metrics;
+    @Autowired private SetRemover remover;
     
     private enum PostAction {INVALID, ADD_WITNESSES, DELETE_WITNESSES};
     private ComparisonSet set;
@@ -238,13 +240,14 @@ public class ComparisonSetResource extends BaseResource {
     @Delete
     public Representation deleteComparisonSet() {
         LOG.info("Delete set "+this.set.getId());
-        if ( this.set.getStatus().equals(ComparisonSet.Status.COLLATING)) {
-            setStatus(Status.CLIENT_ERROR_CONFLICT);
-            return toTextRepresentation("Cannot delete set; collation is in progress");
+        try {
+            this.remover.remove(this.workspace, this.set);
+            return toTextRepresentation("ok");
+        } catch (ResourceException e) {
+            LOG.error(e.toString());
+            setStatus(e.getStatus());
+            return toTextRepresentation(e.getMessage());
         }
-        this.comparionSetDao.delete(set);
-        this.metrics.setWitnessCountChanged(this.workspace);
-        return toTextRepresentation("ok");
     }
 
     private static class SourceExclusion implements ExclusionStrategy {
