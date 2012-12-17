@@ -1,6 +1,5 @@
 package org.juxtasoftware.service;
 
-import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -16,6 +15,8 @@ import org.juxtasoftware.model.Usage;
 import org.juxtasoftware.model.Witness;
 import org.juxtasoftware.model.Workspace;
 import org.juxtasoftware.util.MetricsHelper;
+import org.restlet.data.Status;
+import org.restlet.resource.ResourceException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.Scope;
@@ -32,7 +33,7 @@ public class SourceRemover {
     @Autowired private JuxtaXsltDao xsltDao;
     @Autowired private MetricsHelper metrics;
     
-    public List<Usage> removeSource( Workspace workspace, Source source ) throws IOException {
+    public List<Usage> removeSource( Workspace workspace, Source source ) throws ResourceException {
         // Get a list of all uses of this source
         List<Usage> usage = this.sourceDao.getUsage( source );
         
@@ -41,7 +42,8 @@ public class SourceRemover {
             if ( u.getType().equals(Usage.Type.COMPARISON_SET)) {
                 ComparisonSet s = this.setDao.find(u.getId());
                 if ( s.getStatus().equals(ComparisonSet.Status.COLLATING)) {
-                    throw new IOException("Cannot delete source; related set '"+s.getName()+"' is collating.");
+                    throw new ResourceException(Status.CLIENT_ERROR_CONFLICT, 
+                        "Cannot delete source; related set '"+s.getName()+"' is collating.");
                 }
             }
         }

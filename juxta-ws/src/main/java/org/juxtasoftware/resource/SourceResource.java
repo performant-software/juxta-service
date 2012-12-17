@@ -272,9 +272,9 @@ public class SourceResource extends BaseResource  {
             List<Usage> usage = this.remover.removeSource(this.workspace, this.source);
             Gson gson = new Gson();
             return toJsonRepresentation( gson.toJson(usage));
-        } catch (IOException e) {
-            setStatus(Status.CLIENT_ERROR_CONFLICT);
-            return toTextRepresentation("Cannot delete source; related set is collating.");
+        } catch (ResourceException e) {
+            setStatus(e.getStatus());
+            return toTextRepresentation(e.getMessage());
         }
     }
     

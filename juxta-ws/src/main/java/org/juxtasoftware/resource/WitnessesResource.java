@@ -2,6 +2,7 @@ package org.juxtasoftware.resource;
 
 import java.io.StringReader;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -15,6 +16,7 @@ import org.juxtasoftware.model.Source;
 import org.juxtasoftware.model.Usage;
 import org.juxtasoftware.model.Witness;
 import org.juxtasoftware.service.SourceTransformer;
+import org.juxtasoftware.service.WitnessRemover;
 import org.restlet.data.Status;
 import org.restlet.representation.Representation;
 import org.restlet.resource.Delete;
@@ -28,6 +30,8 @@ import org.springframework.stereotype.Service;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
@@ -47,6 +51,7 @@ public class WitnessesResource extends BaseResource {
     @Autowired private SourceTransformer transformer;
     @Autowired private SourceDao sourceDao;
     @Autowired private ComparisonSetDao setDao;
+    @Autowired private WitnessRemover remover;
     
     @Override
     protected void doInit() throws ResourceException {
@@ -126,7 +131,25 @@ public class WitnessesResource extends BaseResource {
     
     @Delete("json")
     public Representation batchDelete( final String jsonContent) {
-        setStatus(Status.SERVER_ERROR_NOT_IMPLEMENTED);
-        return toTextRepresentation("Not ready yet");
+        LOG.info("Batch delete witnesses "+jsonContent);
+        JsonParser parser = new JsonParser();
+        JsonArray jsonArray = parser.parse(jsonContent).getAsJsonArray();
+        int delCnt = 0;
+        for ( Iterator<JsonElement>  itr = jsonArray.iterator(); itr.hasNext(); ) {
+            JsonElement ele = itr.next();
+            Long id = ele.getAsLong();
+            Witness w = this.witnessDao.find(id);
+            if ( w != null ) {
+                try {
+                    this.remover.remove(w);
+                    delCnt++;
+                } catch ( ResourceException e ) {
+                    LOG.warn(e.toString());
+                }
+            } else {
+                LOG.warn("Witness ID "+id+" is not a valid witness for this workspace");
+            }
+        }
+        return toTextRepresentation(""+delCnt);
     }
 }

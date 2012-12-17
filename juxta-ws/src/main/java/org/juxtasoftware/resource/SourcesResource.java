@@ -101,8 +101,8 @@ public class SourcesResource extends BaseResource {
                 try {
                     this.remover.removeSource(this.workspace, s);
                     delCnt++;
-                } catch ( IOException e ) {
-                    LOG.warn("Unable to delete "+s+": related set is collating");
+                } catch ( ResourceException e ) {
+                    LOG.warn(e.toString());
                 }
             } else {
                 LOG.warn("Source ID "+id+" is not a valid source for this workspace");

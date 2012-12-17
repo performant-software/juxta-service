@@ -6,13 +6,12 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang.StringEscapeUtils;
-import org.juxtasoftware.dao.ComparisonSetDao;
 import org.juxtasoftware.dao.JuxtaXsltDao;
 import org.juxtasoftware.dao.WitnessDao;
-import org.juxtasoftware.model.ComparisonSet;
 import org.juxtasoftware.model.JuxtaXslt;
 import org.juxtasoftware.model.Usage;
 import org.juxtasoftware.model.Witness;
+import org.juxtasoftware.service.WitnessRemover;
 import org.juxtasoftware.util.RangedTextReader;
 import org.restlet.data.Status;
 import org.restlet.representation.Representation;
@@ -23,7 +22,6 @@ import org.restlet.resource.ResourceException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.Scope;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 import com.google.gson.Gson;
@@ -46,8 +44,8 @@ public class WitnessResource extends BaseResource {
     private Range range = null;
     
     @Autowired private WitnessDao witnessDao;
+    @Autowired private WitnessRemover remover;
     @Autowired private JuxtaXsltDao xsltDao;
-    @Autowired private ComparisonSetDao setDao;
 
     /**
      * Extract the text ID and range info from the request attributes
@@ -174,34 +172,14 @@ public class WitnessResource extends BaseResource {
      */
     @Delete
     public Representation deleteWitness() {   
-        LOG.info("Delete witness "+this.witness.getId());
-        
-        // delete the witness  - this will schedule deletion of all
-        // witness text, annotations and sets collation data that used it
-        LOG.info("DELETE "+this.witness);
-        List<Usage> usage = this.witnessDao.getUsage( this.witness ); 
-        for (Usage u : usage ) {
-            if ( u.getType().equals(Usage.Type.COMPARISON_SET)) {
-                ComparisonSet s = this.setDao.find(u.getId());
-                if ( s.getStatus().equals(ComparisonSet.Status.COLLATING)) {
-                    setStatus(Status.CLIENT_ERROR_CONFLICT);
-                    return toTextRepresentation("Cannot delete witness; related set '"+s.getName()+"' is collating.");
-                }
-            }
-        }
-        
-        this.witnessDao.delete( this.witness );
-        JuxtaXslt xslt = this.xsltDao.find( this.witness.getXsltId() );
         try {
-            this.xsltDao.delete( xslt );
-        } catch ( DataIntegrityViolationException e) {
-            // This happens for TEI ps imports. One XSLT
-            // has multiple witnesses. Only when the last witness
-            // is deleted will this succeed
+            LOG.info("Delete witness "+this.witness.getId());
+            List<Usage> usage = this.remover.remove(this.witness);
+            Gson gson = new Gson();
+            return toJsonRepresentation( gson.toJson(usage) );
+        } catch (ResourceException e) {
+            setStatus(e.getStatus());
+            return toTextRepresentation(e.getMessage());
         }
-        
-        // return the json list of itmes that were affected
-        Gson gson = new Gson();
-        return toJsonRepresentation( gson.toJson(usage) );
     }
 }
