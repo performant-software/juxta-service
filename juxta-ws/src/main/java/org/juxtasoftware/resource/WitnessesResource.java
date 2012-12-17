@@ -17,6 +17,7 @@ import org.juxtasoftware.model.Witness;
 import org.juxtasoftware.service.SourceTransformer;
 import org.restlet.data.Status;
 import org.restlet.representation.Representation;
+import org.restlet.resource.Delete;
 import org.restlet.resource.Get;
 import org.restlet.resource.Post;
 import org.restlet.resource.ResourceException;
@@ -121,5 +122,11 @@ public class WitnessesResource extends BaseResource {
             setStatus(Status.SERVER_ERROR_INTERNAL, e.getMessage());
             LOG.error("Copy preparation settings failed", e);
         } 
+    }
+    
+    @Delete("json")
+    public Representation batchDelete( final String jsonContent) {
+        setStatus(Status.SERVER_ERROR_NOT_IMPLEMENTED);
+        return toTextRepresentation("Not ready yet");
     }
 }

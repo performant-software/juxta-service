@@ -27,6 +27,7 @@ import org.apache.commons.httpclient.params.HttpMethodParams;
 import org.apache.commons.io.IOUtils;
 import org.juxtasoftware.dao.SourceDao;
 import org.juxtasoftware.model.Source;
+import org.juxtasoftware.service.SourceRemover;
 import org.juxtasoftware.util.ConversionUtils;
 import org.juxtasoftware.util.EncodingUtils;
 import org.juxtasoftware.util.HtmlUtils;
@@ -35,6 +36,7 @@ import org.restlet.data.MediaType;
 import org.restlet.data.Status;
 import org.restlet.ext.fileupload.RestletFileUpload;
 import org.restlet.representation.Representation;
+import org.restlet.resource.Delete;
 import org.restlet.resource.Get;
 import org.restlet.resource.Post;
 import org.restlet.resource.ResourceException;
@@ -56,13 +58,10 @@ import com.google.gson.JsonSerializer;
 @Service
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
 public class SourcesResource extends BaseResource {
-    @Autowired
-    private SourceDao sourceDao;
-    @Autowired
-    private Long maxSourceSize;
-    @Autowired
-    private MetricsHelper metrics;
-
+    @Autowired private SourceDao sourceDao;
+    @Autowired private Long maxSourceSize;
+    @Autowired private MetricsHelper metrics;
+    @Autowired private SourceRemover remover;
     /**
      * Get Json representation of all available sources
      * @return
@@ -86,6 +85,30 @@ public class SourcesResource extends BaseResource {
         map.put("page", "source");
         map.put("title", "Juxta Sources");
         return toHtmlRepresentation("sources.ftl", map);
+    }
+    
+    @Delete("json")
+    public Representation batchDelete( final String jsonContent) {
+        LOG.info("Batch delete sources "+jsonContent);
+        JsonParser parser = new JsonParser();
+        JsonArray jsonArray = parser.parse(jsonContent).getAsJsonArray();
+        int delCnt = 0;
+        for ( Iterator<JsonElement>  itr = jsonArray.iterator(); itr.hasNext(); ) {
+            JsonElement ele = itr.next();
+            Long id = ele.getAsLong();
+            Source s = this.sourceDao.find(this.workspace.getId(), id);
+            if ( s != null ) {
+                try {
+                    this.remover.removeSource(this.workspace, s);
+                    delCnt++;
+                } catch ( IOException e ) {
+                    LOG.warn("Unable to delete "+s+": related set is collating");
+                }
+            } else {
+                LOG.warn("Source ID "+id+" is not a valid source for this workspace");
+            }
+        }
+        return toTextRepresentation(""+delCnt);
     }
 
     /**
