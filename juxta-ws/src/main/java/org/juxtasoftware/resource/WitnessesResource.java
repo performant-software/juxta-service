@@ -2,9 +2,11 @@ package org.juxtasoftware.resource;
 
 import java.io.StringReader;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.juxtasoftware.dao.ComparisonSetDao;
 import org.juxtasoftware.dao.JuxtaXsltDao;
@@ -45,6 +47,7 @@ import com.google.gson.JsonParser;
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
 public class WitnessesResource extends BaseResource {
     private boolean isCopyRequest = false;
+    private boolean batchDelete = false;
     
     @Autowired private WitnessDao witnessDao;
     @Autowired private JuxtaXsltDao xsltDao;
@@ -55,10 +58,11 @@ public class WitnessesResource extends BaseResource {
     
     @Override
     protected void doInit() throws ResourceException {
-        
         super.doInit();
         String lastSeg  = getRequest().getResourceRef().getLastSegment();
-        this.isCopyRequest = ( lastSeg.equalsIgnoreCase("copy_settings"));    }
+        this.isCopyRequest = lastSeg.equalsIgnoreCase("copy_settings");
+        this.batchDelete =  lastSeg.equals("delete");
+    }
        
     /**
      * Get a HTML representation of all available witnesses
@@ -86,10 +90,13 @@ public class WitnessesResource extends BaseResource {
     }
     
     @Post("json")
-    public void handlePost( final String jsonData ) {
+    public Representation handlePost( final String jsonData ) {
+        if ( this.batchDelete ) {
+            return batchDelete(jsonData);  
+        }
         if ( this.isCopyRequest == false ) {
             setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
-            return;
+            return null;
         }
         
         JsonParser parser = new JsonParser();
@@ -99,10 +106,10 @@ public class WitnessesResource extends BaseResource {
         Witness from = this.witnessDao.find(fromId);
         Witness to = this.witnessDao.find(toId);
         if ( validateModel(from) == false ) {
-            return;
+            return null;
         }
         if ( validateModel(to) == false ) {
-            return;
+            return null;
         } 
 
         // grab the xslt for the source and copy it into the
@@ -127,6 +134,7 @@ public class WitnessesResource extends BaseResource {
             setStatus(Status.SERVER_ERROR_INTERNAL, e.getMessage());
             LOG.error("Copy preparation settings failed", e);
         } 
+        return toTextRepresentation("ok");
     }
     
     @Delete("json")
@@ -134,15 +142,14 @@ public class WitnessesResource extends BaseResource {
         LOG.info("Batch delete witnesses "+jsonContent);
         JsonParser parser = new JsonParser();
         JsonArray jsonArray = parser.parse(jsonContent).getAsJsonArray();
-        int delCnt = 0;
+        Set<Usage> usage = new HashSet<Usage>();
         for ( Iterator<JsonElement>  itr = jsonArray.iterator(); itr.hasNext(); ) {
             JsonElement ele = itr.next();
             Long id = ele.getAsLong();
             Witness w = this.witnessDao.find(id);
             if ( w != null ) {
                 try {
-                    this.remover.remove(w);
-                    delCnt++;
+                    usage.addAll( this.remover.remove(w) );
                 } catch ( ResourceException e ) {
                     LOG.warn(e.toString());
                 }
@@ -150,6 +157,7 @@ public class WitnessesResource extends BaseResource {
                 LOG.warn("Witness ID "+id+" is not a valid witness for this workspace");
             }
         }
-        return toTextRepresentation(""+delCnt);
+        Gson gson = new Gson();
+        return toJsonRepresentation( gson.toJson(usage) );
     }
 }

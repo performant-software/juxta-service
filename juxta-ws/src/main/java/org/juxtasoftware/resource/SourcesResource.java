@@ -12,9 +12,11 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.xml.stream.XMLStreamException;
 
@@ -27,6 +29,7 @@ import org.apache.commons.httpclient.params.HttpMethodParams;
 import org.apache.commons.io.IOUtils;
 import org.juxtasoftware.dao.SourceDao;
 import org.juxtasoftware.model.Source;
+import org.juxtasoftware.model.Usage;
 import org.juxtasoftware.service.SourceRemover;
 import org.juxtasoftware.util.ConversionUtils;
 import org.juxtasoftware.util.EncodingUtils;
@@ -62,6 +65,15 @@ public class SourcesResource extends BaseResource {
     @Autowired private Long maxSourceSize;
     @Autowired private MetricsHelper metrics;
     @Autowired private SourceRemover remover;
+    private boolean batchDelete;
+    
+    @Override
+    protected void doInit() throws ResourceException { 
+        super.doInit();
+        String lastSeg  = getRequest().getResourceRef().getLastSegment().toLowerCase();
+        this.batchDelete =  lastSeg.equals("delete");
+    }
+    
     /**
      * Get Json representation of all available sources
      * @return
@@ -92,15 +104,14 @@ public class SourcesResource extends BaseResource {
         LOG.info("Batch delete sources "+jsonContent);
         JsonParser parser = new JsonParser();
         JsonArray jsonArray = parser.parse(jsonContent).getAsJsonArray();
-        int delCnt = 0;
+        Set<Usage> usage = new HashSet<Usage>();
         for ( Iterator<JsonElement>  itr = jsonArray.iterator(); itr.hasNext(); ) {
             JsonElement ele = itr.next();
             Long id = ele.getAsLong();
             Source s = this.sourceDao.find(this.workspace.getId(), id);
             if ( s != null ) {
                 try {
-                    this.remover.removeSource(this.workspace, s);
-                    delCnt++;
+                    usage.addAll( this.remover.removeSource(this.workspace, s));
                 } catch ( ResourceException e ) {
                     LOG.warn(e.toString());
                 }
@@ -108,7 +119,8 @@ public class SourcesResource extends BaseResource {
                 LOG.warn("Source ID "+id+" is not a valid source for this workspace");
             }
         }
-        return toTextRepresentation(""+delCnt);
+        Gson gson = new Gson();
+        return toJsonRepresentation( gson.toJson(usage) );
     }
 
     /**
@@ -128,6 +140,15 @@ public class SourcesResource extends BaseResource {
      */
     @Post
     public Representation create(Representation entity) throws ResourceException {
+        if ( this.batchDelete ) {
+            try {
+                return batchDelete(entity.getText());
+            } catch (IOException e) {
+                setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
+                return toTextRepresentation("Invalid delete data");
+            }
+        }
+        
         if (entity == null) {
             setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
             return toTextRepresentation("Missing source payload");

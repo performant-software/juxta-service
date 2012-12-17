@@ -44,6 +44,15 @@ public class ComparisonSetsResource extends BaseResource {
     @Autowired private Integer maxSetWitnesses;
     @Autowired private SetRemover remover;
     
+    boolean batchDelete;
+    
+    @Override
+    protected void doInit() throws ResourceException { 
+        super.doInit();
+        String lastSeg  = getRequest().getResourceRef().getLastSegment().toLowerCase();
+        this.batchDelete =  lastSeg.equals("delete");
+    }
+    
     @Get("html")
     public Representation toHtml() {
         List<ComparisonSet> sets = this.comparionSetDao.list( this.workspace );
@@ -67,12 +76,15 @@ public class ComparisonSetsResource extends BaseResource {
     }
     
     @Post("json")
-    public Representation acceptJson( final String jsonSet ) {
-        LOG.info("Create comparison set from "+jsonSet);
+    public Representation acceptJson( final String jsonData ) {
+        if ( this.batchDelete) {
+            return batchDelete(jsonData);
+        }
+        LOG.info("Create comparison set from "+jsonData);
         
         // parse out the main set object from string
         Gson gson = new Gson();
-        ComparisonSet set = gson.fromJson(jsonSet, ComparisonSet.class);
+        ComparisonSet set = gson.fromJson(jsonData, ComparisonSet.class);
         set.setCreated( new Date() );
         set.setWorkspaceId( this.workspace.getId() );
         
@@ -88,7 +100,7 @@ public class ComparisonSetsResource extends BaseResource {
         
         // If present, lookup each witnessID found and generate a list for this set
         JsonParser parser = new JsonParser();
-        JsonObject jsonObj = parser.parse(jsonSet).getAsJsonObject();
+        JsonObject jsonObj = parser.parse(jsonData).getAsJsonObject();
         if ( jsonObj.has("witnesses")) {
             Set<Witness> witnesses = new HashSet<Witness>();
             JsonArray ids = jsonObj.get("witnesses").getAsJsonArray();
