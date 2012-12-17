@@ -9,19 +9,21 @@ if (!window.Juxta.SideBySide) {
 }
 
 $(function() {
-     
-   var hexDigits = new Array
-        ("0","1","2","3","4","5","6","7","8","9","a","b","c","d","e","f"); 
+
+   var connectionSet = null;
+   var paper = null;
+   var hexDigits = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f"];
 
    //Function to convert hex format to a rgb color
-   function rgb2hex(rgb) {
-    rgb = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
-    return "#" + hex(rgb[1]) + hex(rgb[2]) + hex(rgb[3]);
-   }
-   
    function hex(x) {
-     return isNaN(x) ? "00" : hexDigits[(x - x % 16) / 16] + hexDigits[x % 16];
+      return isNaN(x) ? "00" : hexDigits[(x - x % 16) / 16] + hexDigits[x % 16];
    }
+
+   function rgb2hex(rgb) {
+      rgb = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
+      return "#" + hex(rgb[1]) + hex(rgb[2]) + hex(rgb[3]);
+   }
+
 
    window.Juxta.SideBySide.isLocked = function() {
       var locked = $("#scroll-mode-img").data("locked");
@@ -32,13 +34,51 @@ $(function() {
       return $("#side-by-side").data("maxWitnessHeight");
    };
 
+   var alignOnDiff = function(diffEle) {
+      // find the connection containing the diff clicked
+      // and determine witch witness contains is (left or right)
+      var side = "left";
+      var clickedId = diffEle.attr("id");
+      var conn = null;
+      var connections = $("#side-by-side").data("connections");
+      $.each(connections, function(i, testConn) {
+         if (testConn.leftId === clickedId) {
+            conn = testConn;
+            side = "left";
+            return false;
+         } else if (testConn.rightId === clickedId) {
+            conn = testConn;
+            side = "right";
+            return false;
+         }
+      });
+
+      // if a matching connection was found, sync the views
+      var delta, leftTop, rightTop;
+      if (conn !== null) {
+         if (side === "left") {
+            $("#right-witness-text").data("action", "match");
+            delta = (conn.right - conn.left);
+            leftTop = $("#left-witness-text").scrollTop();
+            $("#right-witness-text").scrollTop(leftTop + delta);
+         } else {
+            $("#left-witness-text").data("action", "match");
+            delta = (conn.left - conn.right);
+            rightTop = $("#right-witness-text").scrollTop();
+            $("#left-witness-text").scrollTop(rightTop + delta);
+         }
+         renderConnections();
+      }
+   };
+
    var renderConnections = function() {
-      if ( $("#connections-div").exists() === false ) {
+      if ($("#connections-div").exists() === false) {
          return;
       }
+
       // wipe out the old lines
-      var connectionPaper = $("#connections-div").data("paper");
-      connectionPaper.clear();
+      paper.clear();
+      connectionSet.clear();
 
       // setup attributes and data
       var leftTop = $("#left-witness-text").scrollTop();
@@ -46,19 +86,19 @@ $(function() {
       var width = $("#connections-div").width();
       var height = $("#connections-div").height();
       var connAttribs = {
-         'stroke' : rgb2hex( $("#connector-prototype").css("color")),
+         'stroke' : rgb2hex($("#connector-prototype").css("color")),
          'stroke-width' : 0.75,
-         'fill' : rgb2hex( $("#connector-prototype").css("background-color"))
+         'fill' : rgb2hex($("#connector-prototype").css("background-color"))
       };
       var moveLink = {
-         stroke : rgb2hex( $("#move-conn-prototype").css("color")),
+         stroke : rgb2hex($("#move-conn-prototype").css("color")),
          'stroke-width' : 0.5,
-         'fill' : rgb2hex( $("#move-conn-prototype").css("background-color"))
+         'fill' : rgb2hex($("#move-conn-prototype").css("background-color"))
       };
       var litConnAttribs = {
-         'stroke' : rgb2hex( $("#lit-connector-prototype").css("color")),
+         'stroke' : rgb2hex($("#lit-connector-prototype").css("color")),
          'stroke-width' : 0.5,
-         'fill' : rgb2hex( $("#lit-connector-prototype").css("background-color"))
+         'fill' : rgb2hex($("#lit-connector-prototype").css("background-color"))
       };
 
       // run thru each connection and draw a line from left to right
@@ -69,19 +109,21 @@ $(function() {
 
          // grab co-ordinates of the connection and offset them by the
          // current scroll pos. This puts them relative to the visible
-         // gutter area         
+         // gutter area
          var lt = conn.leftTop - leftTop;
          var lb = lt + conn.leftHeight;
          var rt = conn.rightTop - rightTop;
          var rb = rt + conn.rightHeight;
-         pathStr = "M0," + lt + "L" + width + "," + rt +"L"+width+","+rb+"L0,"+lb+"Z";
+         pathStr = "M0," + lt + "L" + width + "," + rt + "L" + width + "," + rb + "L0," + lb + "Z";
 
-         if (conn.type === "move") {            
-            line = connectionPaper.path(pathStr);
+         if (conn.type === "move") {
+            line = paper.path(pathStr);
             line.attr(moveLink);
-            moveLines.push( line );
+            moveLines.push(line);
+            connectionSet.push(line);
+            conn.line = line;
             return true;
-         } 
+         }
 
          // if both are  out of the visible area, there is nothing
          // more that can be rendered - stop.
@@ -90,11 +132,12 @@ $(function() {
          }
 
          // if they both occur befor the visible area skip them
-         if (lb < 0 && lb < 0) {
+         if (lb < 0 && rb < 0) {
             return true;
          }
 
-         line = connectionPaper.path(pathStr);
+         line = paper.path(pathStr);
+         connectionSet.push(line);
          if (conn.lit) {
             line.attr(litConnAttribs);
             line.toFront();
@@ -102,10 +145,61 @@ $(function() {
             line.attr(connAttribs);
             line.toBack();
          }
+         conn.line = line;
       });
-      
-      $.each(moveLines, function(i, mv ) {
+
+      $.each(moveLines, function(i, mv) {
          mv.toBack();
+      });
+
+      connectionSet.mouseover(function() {
+         this.attr(litConnAttribs);
+         var foo = this;
+         $.each(connections, function(i, conn) {
+            if (conn.line == foo) {
+               var ele = $("#" + conn.leftId);
+               if (ele.hasClass() === false) {
+                  ele.addClass("lit");
+               }
+               if (ele.width() === 0) {
+                  ele.html("&nbsp;");
+               }
+               ele = $("#" + conn.rightId);
+               if (ele.hasClass() === false) {
+                  ele.addClass("lit");
+               }
+               if (ele.width() === 0) {
+                  ele.html("&nbsp;");
+               }
+            }
+         });
+      });
+      connectionSet.mouseout(function() {
+         this.attr(connAttribs);
+         var foo = this;
+         $.each(connections, function(i, conn) {
+            if (conn.line == foo) {
+               var ele = $("#" + conn.leftId);
+               ele.removeClass("lit");
+               if (ele.html() === "&nbsp;") {
+                  ele.html("");
+               }
+               ele = $("#" + conn.rightId);
+               ele.removeClass("lit");
+               if (ele.html() === "&nbsp;") {
+                  ele.html("");
+               }
+               $("#" + conn.rightId).removeClass("lit");
+            }
+         });
+      });
+      connectionSet.click(function() {
+         var foo = this;
+         $.each(connections, function(i, conn) {
+            if (conn.line == foo) {
+               alignOnDiff($("#" + conn.rightId));
+            }
+         });
       });
    };
 
@@ -154,23 +248,23 @@ $(function() {
       var rightScrollTop = $("#right-witness-text").scrollTop();
       var leftScrollTop = $("#left-witness-text").scrollTop();
       var connections = [];
-      
+
       $("body").trigger('wait-requested', ["Calculating differences..."]);
       $('#wait-popup').show();
-      
+
       var diffs = $("#right-witness-text").find(".diff");
-      $("#right-witness-text").find(".move").each( function() {
-         diffs.push( $(this) ); 
+      $("#right-witness-text").find(".move").each(function() {
+         diffs.push($(this));
       });
-      
+
       var idx = 0;
       var chunkSize = 1000;
       var thisChunk = 0;
-      var done = false;   
+      var done = false;
       var rightId, rightDiffTop, rightDiffHeight, rightDiffBottom;
       var connectToId, connType;
       var leftId, leftDiffTop, leftDiffHeight, leftDiffBottom;
-      
+
       // fake thread... run thru chunks of diffeences on an interval
       var tid = setInterval(function() {
          thisChunk = chunkSize;
@@ -179,15 +273,15 @@ $(function() {
             clearInterval(tid);
             done = true;
          }
-         
-         $.each( diffs.slice(idx, (idx + thisChunk)), function(i, diff) {
-            
+
+         $.each(diffs.slice(idx, (idx + thisChunk)), function(i, diff) {
+
             // track type of connection
             connType = "diff";
-            if ( $(diff).hasClass("move") ) {
+            if ($(diff).hasClass("move")) {
                connType = "move";
             }
-   
+
             // calculate the extents of the RIGHT witness diff
             rightDiffTop = $(diff).position().top - hdrHeight + rightScrollTop;
             rightDiffHeight = $(diff).height();
@@ -196,9 +290,9 @@ $(function() {
             }
             rightDiffBottom = rightDiffTop + rightDiffHeight;
             rightId = $(diff).attr("id");
-   
+
             // Get the LEFT witness diff
-            connectToId = connType+ "-" + $(diff).attr("juxta:connect-to");
+            connectToId = connType + "-" + $(diff).attr("juxta:connect-to");
             if ($("#" + connectToId).exists()) {
                leftDiffTop = $("#" + connectToId).position().top - hdrHeight + leftScrollTop;
                leftDiffHeight = $("#" + connectToId).height();
@@ -207,24 +301,24 @@ $(function() {
                }
                leftDiffBottom = leftDiffTop + leftDiffHeight;
                leftId = $("#" + connectToId).attr("id");
-   
-               connections.push( {
-                  leftTop: leftDiffTop,
-                  left: leftDiffTop + leftDiffHeight / 2,
-                  leftHeight: leftDiffHeight,
-                  leftId: leftId,
-                  rightTop: rightDiffTop,
-                  right: rightDiffTop + rightDiffHeight / 2,
-                  rightHeight: rightDiffHeight,
-                  rightId: rightId,
-                  lit: false,
-                  type: connType
+
+               connections.push({
+                  leftTop : leftDiffTop,
+                  left : leftDiffTop + leftDiffHeight / 2,
+                  leftHeight : leftDiffHeight,
+                  leftId : leftId,
+                  rightTop : rightDiffTop,
+                  right : rightDiffTop + rightDiffHeight / 2,
+                  rightHeight : rightDiffHeight,
+                  rightId : rightId,
+                  lit : false,
+                  type : connType
                });
             }
             idx += 1;
-         }); 
-         
-         if ( done === true ) {
+         });
+
+         if (done === true) {
             // sort connections in ascending order by right pos
             connections.sort(function(a, b) {
                if (a.right < b.right) {
@@ -235,13 +329,13 @@ $(function() {
                }
                return 0;
             });
-      
+
             $("#side-by-side").data("connections", connections);
             renderConnections();
             $('#wait-popup').hide();
             $("body").trigger('wait-completed');
-         } 
-     }, 5);
+         }
+      }, 5);
    };
 
    /**
@@ -249,7 +343,7 @@ $(function() {
     * match available area. Positions them appropriately
     */
    var initCanvas = function() {
-      if ( $("#left-witness").exists() === false ) {
+      if ($("#left-witness").exists() === false) {
          return;
       }
       // figure out the gap between the text areas
@@ -272,14 +366,15 @@ $(function() {
 
       // position the center connections paper
       $("#connections-div").css({
-         "top" : (hT) +"px",
+         "top" : (hT) + "px",
          "left" : left + "px"
       });
       $("#connections-div").width(width);
       $("#connections-div").height(height);
 
       // create papers to match size
-      $("#connections-div").data("paper", new Raphael(document.getElementById('connections-div'), width, height));
+      paper = new Raphael($("#connections-div")[0], width, height);
+      connectionSet = paper.set();
       calculateAlignments();
    };
 
@@ -338,52 +433,15 @@ $(function() {
          }
       }
 
-      setTimeout( function() {
+      setTimeout(function() {
          initDocumentHeight();
          initCanvas();
          //renderConnections();
-      },100);
-      
+      }, 100);
+
    };
 
-   var alignOnDiff = function(diffEle) {
-      // find the connection containing the diff clicked
-      // and determine witch witness contains is (left or right)
-      var side = "left";
-      var clickedId = diffEle.attr("id");
-      var conn = null;
-      var connections = $("#side-by-side").data("connections");
-      $.each(connections, function(i, testConn) {
-         if (testConn.leftId === clickedId) {
-            conn = testConn;
-            side = "left";
-            return false;
-         } else if (testConn.rightId === clickedId) {
-            conn = testConn;
-            side = "right";
-            return false;
-         }
-      });
-
-      // if a matching connection was found, sync the views
-      var delta, leftTop, rightTop;
-      if (conn !== null) {
-         if (side === "left") {
-            $("#right-witness-text").data("action", "match");
-            delta = (conn.right - conn.left);
-            leftTop = $("#left-witness-text").scrollTop();
-            $("#right-witness-text").scrollTop(leftTop + delta);
-         } else {
-            $("#left-witness-text").data("action", "match");
-            delta = (conn.left - conn.right);
-            rightTop = $("#right-witness-text").scrollTop();
-            $("#left-witness-text").scrollTop(rightTop + delta);
-         }
-         renderConnections();
-      }
-   };
-   
-    /*
+   /*
     * find a connection given a position in either the right or left witness
     */
    var findConnection = function(tgtPos, side) {
@@ -456,7 +514,7 @@ $(function() {
       var rightTop = $("#right-witness-text").scrollTop();
       var lastRight = $("#right-witness-text").data("lastTop");
       var leftTop = $("#left-witness-text").scrollTop();
-      
+
       // Special case: no diffs. Just sync 1 to 1
       var connections = $("#side-by-side").data("connections");
       if (connections.length === 0) {
@@ -548,8 +606,8 @@ $(function() {
       $(".witness-option").removeClass("sbs-wit-selected");
       $(".witness-option").each(function(index) {
          var id = $(this).attr("id").substring("sel-sbs-wit-".length);
-         if ( id === witnessId) {
-             $(this).addClass("sbs-wit-selected");
+         if (id === witnessId) {
+            $(this).addClass("sbs-wit-selected");
          }
       });
 
@@ -572,7 +630,7 @@ $(function() {
       // find the selected ID from the list
       var selectedId = "";
       $(".witness-option").each(function(index) {
-         if ($(this).hasClass("sbs-wit-selected") ) {
+         if ($(this).hasClass("sbs-wit-selected")) {
             selectedId = $(this).attr("id").substring("sel-sbs-wit-".length);
          }
       });
@@ -610,7 +668,7 @@ $(function() {
          // when locked and moving wheel over the left witness,
          // just transfer the scroll to the RIGHT text and sync the two
          var currTop = 0;
-         if ( window.Juxta.SideBySide.isLocked()) {
+         if (window.Juxta.SideBySide.isLocked()) {
             $("#right-witness-text").data("action", "wheel");
             currTop = $("#right-witness-text").scrollTop();
             $("#right-witness-text").scrollTop(currTop -= (delta * 30));
@@ -629,7 +687,7 @@ $(function() {
          var currTop = $("#right-witness-text").scrollTop();
          $("#right-witness-text").scrollTop(currTop -= (delta * 30));
 
-         if ( window.Juxta.SideBySide.isLocked()) {
+         if (window.Juxta.SideBySide.isLocked()) {
             // in locked mode sync the right and left texts
             syncScrolling();
          } else {
@@ -643,7 +701,7 @@ $(function() {
 
       $("#left-witness-text").scroll(function(eventObject) {
 
-         if ( window.Juxta.SideBySide.isLocked() === false) {
+         if (window.Juxta.SideBySide.isLocked() === false) {
             // just update the connecting lines
             renderConnections();
          } else {
@@ -668,7 +726,7 @@ $(function() {
       $("#right-witness-text").scroll(function(eventObject) {
 
          // right drives the sync sync. Handle this here.
-         if ( window.Juxta.SideBySide.isLocked()) {
+         if (window.Juxta.SideBySide.isLocked()) {
             var data = $("#right-witness-text").data("action");
             $("#right-witness-text").data("action", "none");
             if (data === "none") {
@@ -679,33 +737,33 @@ $(function() {
          }
       });
    };
-   
-   window.Juxta.SideBySide.syncDocuments = function ( topOffset ) {
+
+   window.Juxta.SideBySide.syncDocuments = function(topOffset) {
       var leftTop = $("#left-witness-text").scrollTop();
       var diffTop;
       var bestDiff = null;
       var smallestDist = 99999999;
       var testDist = 0;
-      $.each( $("#left-witness-text").find(".diff"), function(i, diff) {
+      $.each($("#left-witness-text").find(".diff"), function(i, diff) {
          diffTop = $(diff).offset().top - $("#left-witness-text").offset().top;
-         if ( diffTop > 0 ) {
+         if (diffTop > 0) {
             testDist = diffTop - topOffset;
-            if ( testDist > 0 && testDist < smallestDist ) {
-               bestDiff =  diff;
+            if (testDist > 0 && testDist < smallestDist) {
+               bestDiff = diff;
                smallestDist = testDist;
             }
-            
+
             var bottom = $("#left-witness-text").position().top + $("#left-witness-text").height();
-            if ( diffTop > bottom) {
+            if (diffTop > bottom) {
                return false;
             }
          }
       });
-      
-      setTimeout( function() {
+
+      setTimeout(function() {
          //$(bestDiff).css("color", "red");
-         alignOnDiff( $(bestDiff) );
-         }, 500);
+         alignOnDiff($(bestDiff));
+      }, 500);
    };
 
    /**
@@ -715,7 +773,6 @@ $(function() {
       $("#juxta-ws-content").css("overflow", "hide");
       $("#left-witness-text").data("action", "none");
       $("#right-witness-text").data("action", "none");
-      $("#connections-div").data("paper",null);
 
       var rightHeight = $("#right-witness").outerHeight(true);
       $("#right-witness").data("fullHeight", rightHeight);
@@ -731,11 +788,11 @@ $(function() {
       $("#scroll-mode-img").data("locked", true);
 
       // init height, scrollbars and raphael canvas objects
-      setTimeout( function() {
+      setTimeout(function() {
          initDocumentHeight();
          initCanvas();
       }, 100);
-      
+
       // Setup click handling that allows diffs to auto-align when clicked
       $(".witness-text").on("click", ".diff", function(event) {
          alignOnDiff($(this));
@@ -758,7 +815,7 @@ $(function() {
 
       initMouseWheelScrollHandling();
       initWitnessScrollHandling();
-      
+
       // event handling
       $("#change-left").on("click", function() {
          changeWitness('change-left');
@@ -766,26 +823,26 @@ $(function() {
       $("#change-right").on("click", function() {
          changeWitness('change-right');
       });
-      $("#sbs-ok-button").on("click", function() { 
-         okWitnessChange(); 
+      $("#sbs-ok-button").on("click", function() {
+         okWitnessChange();
       });
-      $("#sbs-cancel-button").on("click", function() { 
-         cancelWitnessChange(); 
+      $("#sbs-cancel-button").on("click", function() {
+         cancelWitnessChange();
       });
       $(".witness-option").on("mouseenter", function() {
-         if ( $(this).hasClass("sbs-wit-hover") === false && $(this).hasClass("sbs-wit-selected") === false) {
-            $(this).addClass("sbs-wit-hover");    
+         if ($(this).hasClass("sbs-wit-hover") === false && $(this).hasClass("sbs-wit-selected") === false) {
+            $(this).addClass("sbs-wit-hover");
          }
       });
       $(".witness-option").on("mouseleave", function() {
-         $(this).removeClass("sbs-wit-hover");     
+         $(this).removeClass("sbs-wit-hover");
       });
       $(".witness-option").on("click", function() {
          $(".witness-option").removeClass("sbs-wit-selected");
-         $(this).addClass("sbs-wit-selected");    
+         $(this).addClass("sbs-wit-selected");
       });
    };
-   
+
    // Let the world know that the side-by-side code is now loaded and can be initialized
    $("body").trigger('sidebyside-loaded');
 
@@ -797,25 +854,23 @@ $(function() {
          setTimeout(doneResizing, delta);
       } else {
          resizing = false;
-         
+
          $(".canvas-div").show();
          initDocumentHeight();
          initCanvas();
-         //renderConnections();
       }
    };
-   
+
    $(window).resize(function() {
       rtime = new Date();
       if (resizing === false) {
          resizing = true;
-         if ( $("#connections-div").data("paper") != null ) {
-            $("#connections-div").data("paper").clear();
+         if (paper != null) {
+            paper.clear();
          }
          $(".canvas-div").hide();
          setTimeout(doneResizing, delta);
       }
    });
-
 });
 
