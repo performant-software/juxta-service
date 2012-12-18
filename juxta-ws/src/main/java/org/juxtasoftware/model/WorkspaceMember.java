@@ -29,6 +29,6 @@ public abstract class WorkspaceMember {
     }
     
     public boolean isMemberOf( final Workspace ws ) {
-        return (this.workspaceId == ws.getId());
+        return (this.workspaceId.equals(ws.getId()) );
     }
 }
