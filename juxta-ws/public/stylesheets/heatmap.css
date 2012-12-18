@@ -24,6 +24,7 @@ div.files {
    width:16px;
    height:16px;
    margin-left: 4px;
+   margin-right: 3px;
    float: left;
    padding: 0px;
    position: relative;
@@ -35,7 +36,7 @@ div.files {
 
 .base-visibility {
    top: 1px;
-   margin-right: 4px;
+   margin-right: 6px;
    margin-left: 0px;
    cursor: default;
 }
@@ -77,7 +78,7 @@ div.witness {
     text-overflow: ellipsis;
     cursor: pointer;
     float: left;
-    width:52%;
+    width:51%;
 }
 
 div.change-index {

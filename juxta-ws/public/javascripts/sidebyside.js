@@ -129,12 +129,12 @@ $(function() {
 
          // if either is  out of the visible area, there is nothing
          // more that can be rendered - stop.
-         if (lt > height || rt > height) {
+         if (lt > (height+height*0.15) || rt > (height+height*0.15) ) {
             return false;
          }
 
          // if either occurs befor the visible area skip them
-         if (lb < 0 || rb < 0) {
+         if (lb < (0-height*0.15) || rb < (0-height*0.15)) {
             return true;
          }
 
