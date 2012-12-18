@@ -11,6 +11,7 @@ if (!window.Juxta.SideBySide) {
 $(function() {
 
    var connectionSet = null;
+   var connections = [];
    var paper = null;
    var hexDigits = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f"];
 
@@ -40,7 +41,6 @@ $(function() {
       var side = "left";
       var clickedId = diffEle.attr("id");
       var conn = null;
-      var connections = $("#side-by-side").data("connections");
       $.each(connections, function(i, testConn) {
          if (testConn.leftId === clickedId) {
             conn = testConn;
@@ -102,10 +102,12 @@ $(function() {
       };
 
       // run thru each connection and draw a line from left to right
-      var connections = $("#side-by-side").data("connections");
       var pathStr, line;
       var moveLines = [];
       $.each(connections, function(i, conn) {
+         if (conn.type === "move-hidden") {
+            return true;
+         }
 
          // grab co-ordinates of the connection and offset them by the
          // current scroll pos. This puts them relative to the visible
@@ -212,7 +214,6 @@ $(function() {
       }
 
       var diffId = diffEle.attr("id");
-      var connections = $("#side-by-side").data("connections");
       var i = 0;
       $.each(connections, function(i, conn) {
          if (conn.rightId === diffId || conn.leftId === diffId) {
@@ -230,7 +231,6 @@ $(function() {
          }
       });
       $(".diff").removeClass("lit");
-      var connections = $("#side-by-side").data("connections");
       $.each(connections, function(i, conn) {
          conn.lit = false;
       });
@@ -247,7 +247,7 @@ $(function() {
       var defaultHeight = parseInt($('.witness-text').css('line-height'), 10) - 3;
       var rightScrollTop = $("#right-witness-text").scrollTop();
       var leftScrollTop = $("#left-witness-text").scrollTop();
-      var connections = [];
+      connections = [];
 
       $("body").trigger('wait-requested', ["Calculating differences..."]);
       $('#wait-popup').show();
@@ -264,6 +264,7 @@ $(function() {
       var rightId, rightDiffTop, rightDiffHeight, rightDiffBottom;
       var connectToId, connType;
       var leftId, leftDiffTop, leftDiffHeight, leftDiffBottom;
+      $("#toggle-moves").hide();
 
       // fake thread... run thru chunks of diffeences on an interval
       var tid = setInterval(function() {
@@ -280,6 +281,7 @@ $(function() {
             connType = "diff";
             if ($(diff).hasClass("move")) {
                connType = "move";
+               $("#toggle-moves").show();
             }
 
             // calculate the extents of the RIGHT witness diff
@@ -445,7 +447,6 @@ $(function() {
     * find a connection given a position in either the right or left witness
     */
    var findConnection = function(tgtPos, side) {
-      var connections = $("#side-by-side").data("connections");
       var out = null;
       $.each(connections, function(i, conn) {
          if (side === "right") {
@@ -478,7 +479,6 @@ $(function() {
       var leftTop = $("#left-witness-text").scrollTop();
 
       // Special case: no diffs. Just sync 1 to 1
-      var connections = $("#side-by-side").data("connections");
       if (connections.length === 0) {
          $("#right-witness-text").scrollTop(leftTop);
       } else {
@@ -516,7 +516,6 @@ $(function() {
       var leftTop = $("#left-witness-text").scrollTop();
 
       // Special case: no diffs. Just sync 1 to 1
-      var connections = $("#side-by-side").data("connections");
       if (connections.length === 0) {
          $("#left-witness-text").scrollTop(rightTop);
       } else {
@@ -840,6 +839,35 @@ $(function() {
       $(".witness-option").on("click", function() {
          $(".witness-option").removeClass("sbs-wit-selected");
          $(this).addClass("sbs-wit-selected");
+      });
+      
+      $("#toggle-moves").on("click", function() {
+         var isPushed = $(this).hasClass("pushed");
+         $.each(connections, function(idx, conn) {
+            if ( isPushed ) {
+                if (conn.type === "move") {
+                   conn.type = "move-hidden";
+                }
+            } else {
+               if (conn.type === "move-hidden") {
+                   conn.type = "move";
+                }
+            }
+         });  
+         if ( isPushed ) {
+            $(this).removeClass("pushed");
+            $("#side-by-side").find(".move").each( function() {
+               $(this).removeClass("move");
+               $(this).addClass("move-hidden");
+            });
+         } else {
+            $(this).addClass("pushed");
+            $("#side-by-side").find(".move-hidden").each( function() {
+               $(this).removeClass("move-hidde");
+               $(this).addClass("move");
+            });
+         }
+         renderConnections();
       });
    };
 

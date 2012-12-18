@@ -31,6 +31,7 @@
         <div class="header">
             <div class="sbs-title" title="${witnessDetails[1].name}">${witnessDetails[1].name}</div>
             <a id="change-right" class="juxta-button sbs-button">Change</a>
+            <a id="toggle-moves" class="juxta-button sbs-button pushed" style="display:none" title="Toggle moves visibility">Moves</a>
             <div style="clear: both;"></div>
         </div>
         <span id="right-witness-id" style="display: none">${witnessDetails[1].id}</span>
