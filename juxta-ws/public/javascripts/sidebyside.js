@@ -127,14 +127,14 @@ $(function() {
             return true;
          }
 
-         // if both are  out of the visible area, there is nothing
+         // if either is  out of the visible area, there is nothing
          // more that can be rendered - stop.
-         if (lt > height && rt > height) {
+         if (lt > height || rt > height) {
             return false;
          }
 
-         // if they both occur befor the visible area skip them
-         if (lb < 0 && rb < 0) {
+         // if either occurs befor the visible area skip them
+         if (lb < 0 || rb < 0) {
             return true;
          }
 
@@ -258,7 +258,7 @@ $(function() {
       });
 
       var idx = 0;
-      var chunkSize = 1000;
+      var chunkSize = 500;
       var thisChunk = 0;
       var done = false;
       var rightId, rightDiffTop, rightDiffHeight, rightDiffBottom;
@@ -332,12 +332,11 @@ $(function() {
                return 0;
             });
 
-            $("#side-by-side").data("connections", connections);
             renderConnections();
             $('#wait-popup').hide();
             $("body").trigger('wait-completed');
          }
-      }, 5);
+      }, 50);
    };
 
    /**
@@ -377,7 +376,7 @@ $(function() {
       // create papers to match size
       paper = new Raphael($("#connections-div")[0], width, height);
       connectionSet = paper.set();
-      calculateAlignments();
+      setTimeout( function() {calculateAlignments()}, 500);
    };
 
    /**
@@ -777,7 +776,6 @@ $(function() {
       $("#right-witness").data("fullHeight", rightHeight);
       var leftHeight = $("#left-witness").outerHeight(true);
       $("#left-witness").data("fullHeight", leftHeight);
-      $("#side-by-side").data("connections", []);
       $("#side-by-side").data("maxWitnessHeight", Math.max(rightHeight, leftHeight));
       $("#side-by-side").data("isResizing", false);
       $("#right-witness-text").data("lastTop", 0);
