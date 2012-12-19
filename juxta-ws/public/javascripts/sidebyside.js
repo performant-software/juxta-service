@@ -757,21 +757,20 @@ $(function() {
          return;
       }
 
-      setTimeout(function() {
-         $("#left-witness-text").data("action", "move");
-         $("#left-witness-text").scrollTop(topOffset);
-        
-         $("#right-witness-text").data("action", "match");
-         delta = (tgtConn.right - tgtConn.left);
-         $("#right-witness-text").scrollTop(topOffset + delta);
-         renderConnections();
-      }, 500);
+      $("#left-witness-text").data("action", "move");
+      $("#left-witness-text").scrollTop(topOffset);
+     
+      $("#right-witness-text").data("action", "match");
+      delta = (tgtConn.right - tgtConn.left);
+      $("#right-witness-text").scrollTop(topOffset + delta);
+      renderConnections();
    };
 
    /**
     * Main entry point for visualization: initialize everythign anf make it ready for use
     */
    window.Juxta.SideBySide.initialize = function() {
+      $("body").css("overflow", "hide");
       $("#juxta-ws-content").css("overflow", "hide");
       $("#left-witness-text").data("action", "none");
       $("#right-witness-text").data("action", "none");
@@ -789,10 +788,10 @@ $(function() {
       $("#scroll-mode-img").data("locked", true);
 
       // init height, scrollbars and raphael canvas objects
+      initDocumentHeight();
       setTimeout(function() {
-         initDocumentHeight();
          initCanvas();
-      }, 100);
+      }, 250);
 
       // Setup click handling that allows diffs to auto-align when clicked
       $(".witness-text").on("click", ".diff", function(event) {
@@ -878,10 +877,10 @@ $(function() {
 
    var rtime = null;
    var resizing = false;
-   var delta = 500;
+   var resizeDelta = 500;
    var doneResizing = function() {
-      if (new Date() - rtime < delta) {
-         setTimeout(doneResizing, delta);
+      if (new Date() - rtime < resizeDelta) {
+         setTimeout(doneResizing, resizeDelta);
       } else {
          resizing = false;
 
@@ -899,7 +898,7 @@ $(function() {
             paper.clear();
          }
          $(".canvas-div").hide();
-         setTimeout(doneResizing, delta);
+         setTimeout(doneResizing, resizeDelta);
       }
    });
 });
