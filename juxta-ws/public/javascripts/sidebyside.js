@@ -129,12 +129,12 @@ $(function() {
 
          // if either is  out of the visible area, there is nothing
          // more that can be rendered - stop.
-         if (lt > (height+height*0.15) || rt > (height+height*0.15) ) {
+         if (lt > height || rt > height ) {
             return false;
          }
 
          // if either occurs befor the visible area skip them
-         if (lb < (0-height*0.15) || rb < (0-height*0.15)) {
+         if (lb < 0 || rb < 0 ) {
             return true;
          }
 
@@ -376,7 +376,8 @@ $(function() {
       // create papers to match size
       paper = new Raphael($("#connections-div")[0], width, height);
       connectionSet = paper.set();
-      setTimeout( function() {calculateAlignments()}, 500);
+      //setTimeout( function() {calculateAlignments()}, 500);
+      calculateAlignments();
    };
 
    /**
@@ -737,30 +738,33 @@ $(function() {
    };
 
    window.Juxta.SideBySide.syncDocuments = function(topOffset) {
-      var leftTop = $("#left-witness-text").scrollTop();
-      var diffTop;
-      var bestDiff = null;
-      var smallestDist = 99999999;
-      var testDist = 0;
-      $.each($("#left-witness-text").find(".diff"), function(i, diff) {
-         diffTop = $(diff).offset().top - $("#left-witness-text").offset().top;
-         if (diffTop > 0) {
-            testDist = diffTop - topOffset;
-            if (testDist > 0 && testDist < smallestDist) {
-               bestDiff = diff;
-               smallestDist = testDist;
-            }
-
-            var bottom = $("#left-witness-text").position().top + $("#left-witness-text").height();
-            if (diffTop > bottom) {
-               return false;
-            }
+      topOffset = parseInt(topOffset, 10);
+      if ( topOffset === 0) {
+         return;
+      }
+      
+      var tgtConn = null;
+      $.each(connections, function(idx, conn) {
+         //console.log(topOffset+" vs "+conn.leftTop);
+         if ( conn.leftTop >= topOffset ) {
+            tgtConn = conn;
+            //console.log("MATCH");
+            return false;
          }
       });
+      
+      if  (tgtConn === null ) {
+         return;
+      }
 
       setTimeout(function() {
-         //$(bestDiff).css("color", "red");
-         alignOnDiff($(bestDiff));
+         $("#left-witness-text").data("action", "move");
+         $("#left-witness-text").scrollTop(topOffset);
+        
+         $("#right-witness-text").data("action", "match");
+         delta = (tgtConn.right - tgtConn.left);
+         $("#right-witness-text").scrollTop(topOffset + delta);
+         renderConnections();
       }, 500);
    };
 
