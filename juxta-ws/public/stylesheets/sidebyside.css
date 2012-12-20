@@ -81,8 +81,8 @@ div.witness-text {
     font: 15px "Helvetica Neue", Helvetica, Arial, sans-serif;
     font-weight: 300;
     line-height: 1.4;    
-    overflow: scroll;
-    overflow-x: hidden; 
+    overflow: hidden;
+    height: 0px;
 }
 
 /* DIFF span style */

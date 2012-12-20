@@ -25,14 +25,9 @@ $(function() {
       return "#" + hex(rgb[1]) + hex(rgb[2]) + hex(rgb[3]);
    }
 
-
    window.Juxta.SideBySide.isLocked = function() {
       var locked = $("#scroll-mode-img").data("locked");
       return locked;
-   };
-
-   window.Juxta.SideBySide.getMaxWitnessHeight = function() {
-      return $("#side-by-side").data("maxWitnessHeight");
    };
 
    var alignOnDiff = function(diffEle) {
@@ -399,14 +394,14 @@ $(function() {
          newH = parent.height() - extraH;
       }
 
-      if (newH < window.Juxta.SideBySide.getMaxWitnessHeight()) {
+      //if (newH < window.Juxta.SideBySide.getMaxWitnessHeight()) {
          $(".witness-text").height(newH);
-         $(".witness-text").css("overflow-y", "visible");
-      } else {
-         $(".witness-text").height(window.Juxta.SideBySide.getMaxWitnessHeight());
-         $(".witness-text").css("overflow-y", "hidden");
-         $("#scroll-mode-img").css("visibility", "hidden");
-      }
+         $(".witness-text").css("overflow-y", "auto");
+      // } else {
+         // $(".witness-text").height(window.Juxta.SideBySide.getMaxWitnessHeight());
+         // $(".witness-text").css("overflow-y", "hidden");
+         // $("#scroll-mode-img").css("visibility", "hidden");
+      // }
 
       // when in locked mode, only show the RIGHT scrollbar
       if (window.Juxta.SideBySide.isLocked()) {
@@ -770,16 +765,9 @@ $(function() {
     * Main entry point for visualization: initialize everythign anf make it ready for use
     */
    window.Juxta.SideBySide.initialize = function() {
-      $("body").css("overflow", "hide");
       $("#juxta-ws-content").css("overflow", "hide");
       $("#left-witness-text").data("action", "none");
       $("#right-witness-text").data("action", "none");
-
-      var rightHeight = $("#right-witness").outerHeight(true);
-      $("#right-witness").data("fullHeight", rightHeight);
-      var leftHeight = $("#left-witness").outerHeight(true);
-      $("#left-witness").data("fullHeight", leftHeight);
-      $("#side-by-side").data("maxWitnessHeight", Math.max(rightHeight, leftHeight));
       $("#side-by-side").data("isResizing", false);
       $("#right-witness-text").data("lastTop", 0);
 
