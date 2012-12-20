@@ -765,6 +765,7 @@ $(function() {
     * Main entry point for visualization: initialize everythign anf make it ready for use
     */
    window.Juxta.SideBySide.initialize = function() {
+      $("body").css("overflow","hide");
       $("#juxta-ws-content").css("overflow", "hide");
       $("#left-witness-text").data("action", "none");
       $("#right-witness-text").data("action", "none");
@@ -774,12 +775,6 @@ $(function() {
       // initially, scrolling is LOCKED. Must be set before
       // the calls to init height/canvas
       $("#scroll-mode-img").data("locked", true);
-
-      // init height, scrollbars and raphael canvas objects
-      initDocumentHeight();
-      setTimeout(function() {
-         initCanvas();
-      }, 250);
 
       // Setup click handling that allows diffs to auto-align when clicked
       $(".witness-text").on("click", ".diff", function(event) {
@@ -800,9 +795,6 @@ $(function() {
       $("#scroll-mode-img").click(function() {
          handleLockToggle();
       });
-
-      initMouseWheelScrollHandling();
-      initWitnessScrollHandling();
 
       // event handling
       $("#change-left").on("click", function() {
@@ -859,9 +851,16 @@ $(function() {
          renderConnections();
       });
    };
-
-   // Let the world know that the side-by-side code is now loaded and can be initialized
-   $("body").trigger('sidebyside-loaded');
+   
+   $(window).load(function () {
+      setTimeout( function() {
+         $("body").trigger('sidebyside-loaded');
+         initDocumentHeight();
+         initCanvas();
+         initMouseWheelScrollHandling();
+         initWitnessScrollHandling();
+      }, 500);
+   });
 
    var rtime = null;
    var resizing = false;
