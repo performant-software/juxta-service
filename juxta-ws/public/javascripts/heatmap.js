@@ -500,21 +500,6 @@ $(function() {
       $("#revisions-button").on("click", function() {
          toggleRevisionStyle();
       });
-      
-      var loc = window.location.href;
-      var tp = loc.indexOf("&top=");
-      if  ( tp > -1 ) {
-         var end = loc.indexOf("&", tp+1);
-         var scrollPos;
-         if (end > -1 ) {
-            scrollPos = loc.substring(tp+5,end);
-         } else {
-            scrollPos = loc.substring(tp+5);
-         }
-         var full = $(".heatmap-scroller")[0].scrollHeight;
-         var top = scrollPos * full;
-         $(".heatmap-scroller").scrollTop(top);
-      }
    };
 
    // Let the world know that the heatmap code is now loaded and can be initialized

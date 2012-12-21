@@ -330,6 +330,7 @@ $(function() {
             renderConnections();
             $('#wait-popup').hide();
             $("body").trigger('wait-completed');
+            $("body").trigger('sbs-alignments-calculated');
          }
       }, 50);
    };
@@ -723,33 +724,13 @@ $(function() {
       });
    };
 
-   window.Juxta.SideBySide.syncDocuments = function(topOffset) {
-      topOffset = parseInt(topOffset, 10);
-      if ( topOffset === 0) {
-         return;
-      }
-      
-      var tgtConn = null;
-      $.each(connections, function(idx, conn) {
-         //console.log(topOffset+" vs "+conn.leftTop);
-         if ( conn.leftTop >= topOffset ) {
-            tgtConn = conn;
-            //console.log("MATCH");
-            return false;
-         }
-      });
-      
-      if  (tgtConn === null ) {
-         return;
-      }
-
-      $("#left-witness-text").data("action", "move");
-      $("#left-witness-text").scrollTop(topOffset);
-     
-      $("#right-witness-text").data("action", "match");
-      delta = (tgtConn.right - tgtConn.left);
-      $("#right-witness-text").scrollTop(topOffset + delta);
-      renderConnections();
+   /**
+    * Sync documents to a percentage position in the LEFT document
+    */
+   window.Juxta.SideBySide.syncDocuments = function( scrollPercent ) {
+      // just scrolling here will trigger the scroll handler and auto sync the docs
+      var full = $("#left-witness-text")[0].scrollHeight;
+      $("#left-witness-text").scrollTop( scrollPercent * full );
    };
 
    /**
