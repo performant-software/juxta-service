@@ -394,14 +394,8 @@ $(function() {
          newH = parent.height() - extraH;
       }
 
-      //if (newH < window.Juxta.SideBySide.getMaxWitnessHeight()) {
-         $(".witness-text").height(newH);
-         $(".witness-text").css("overflow-y", "auto");
-      // } else {
-         // $(".witness-text").height(window.Juxta.SideBySide.getMaxWitnessHeight());
-         // $(".witness-text").css("overflow-y", "hidden");
-         // $("#scroll-mode-img").css("visibility", "hidden");
-      // }
+      $(".witness-text").height(newH);
+      $(".witness-text").css("overflow-y", "auto");
 
       // when in locked mode, only show the RIGHT scrollbar
       if (window.Juxta.SideBySide.isLocked()) {
@@ -425,16 +419,13 @@ $(function() {
          $("#left-witness-text").css("overflow-y", "hidden");
       } else {
          $("#scroll-mode-img").attr("src", imgSrc + "/unlock.gif");
-         if (window.Juxta.SideBySide.getMaxWitnessHeight() > $("#left-witness-text").height()) {
-            $("#left-witness-text").css("overflow-y", "visible");
-         }
+         $("#left-witness-text").css("overflow-y", "auto");
       }
 
       setTimeout(function() {
          initDocumentHeight();
          initCanvas();
-         //renderConnections();
-      }, 100);
+      }, 500);
 
    };
 
