@@ -425,37 +425,17 @@ public class HeatmapView  {
                     change.addWitness(witness);
                 }
             }
+        //}// TODO more testss. is this way ok or do all chnages need to be collected before merge?
             
             // Always have to keep the changes in order to the below range merging works right
             Collections.sort(changes);
-
+    
             // Walk the ranges and extend them to cover gaps
             // and merge adjacent, same intensity changes into one
             Change prior = null;
             for (Iterator<Change> itr = changes.iterator(); itr.hasNext();) {
                 Change change = itr.next();
-                
                 if (prior != null) {
-                    // increase len of add/del so they are visible
-                    if (prior.getRange().length() == 0) {
-                        long start = prior.getRange().getStart();
-                        if (prior.getRange().getStart() == 0) {
-                            prior.adjustRange(start, start + 1);
-                        } else {
-                            long newStart = this.annotationDao.findNextTokenStart(base.getId(), start);
-                            prior.adjustRange(newStart, newStart + 1);
-                        }
-
-                        // if this overlaps the current change, toss the prior
-                        // and move on to next change
-                        if (change.getRange().getStart() <= prior.getRange().getStart()) {
-                            //deleteList.add(prior);
-                            itr.remove();
-                            prior = change;
-                            continue;
-                        }
-                    }
-
                     // See if these are a candidate to merge. Criteria:
                     //  * diff must be between same witnesses
                     //  * diffs must have same frequence
@@ -467,29 +447,53 @@ public class HeatmapView  {
                         continue;
                     }
                 } 
-
+    
                 prior = change;
             }
-
-            // see if the LAST change has 0 length and make it visible if this is the case
-            if (prior != null && prior.getRange().length() == 0) {
-                long start = prior.getRange().getStart();
-                if (prior.getRange().getStart() < base.getText().getLength()) {
-                    long newStart = this.annotationDao.findNextTokenStart(base.getId(), start);
-                    if (newStart == start) {
-                        prior.adjustRange(start, start + 1);
-                    } else {
-                        prior.adjustRange(newStart, newStart + 1);
-                    }
+        }
+            
+        // Now take another pass and look for lone add/deletes. Ecpand their range by
+        // one so they can be seen in the visualization
+        Change prior = null;
+        for (Iterator<Change> itr = changes.iterator(); itr.hasNext();) {
+            Change c = itr.next();
+            if ( prior != null ) {
+                if ( c.getRange().getStart() <= prior.getRange().getEnd()) {
+                    prior.mergeChange(c);
+                    itr.remove();
+                    continue;
                 } else {
-                    if (start > 0) {
-                        prior.adjustRange(start - 1, start);
-                    }
+                  if (c.getRange().length() == 0) {
+                      long start = c.getRange().getStart();
+                      if (c.getRange().getStart() == 0) {
+                          prior.adjustRange(start, start + 1);
+                      } else {
+                          long newStart = this.annotationDao.findNextTokenStart(base.getId(), start);
+                          c.adjustRange(newStart, newStart + 1);
+                      }
+                  }
+                }
+            }
+            prior = c;
+        }
+            
+        // see if the LAST change has 0 length and make it visible if this is the case
+        if (prior != null && prior.getRange().length() == 0) {
+            long start = prior.getRange().getStart();
+            if (prior.getRange().getStart() < base.getText().getLength()) {
+                long newStart = this.annotationDao.findNextTokenStart(base.getId(), start);
+                if (newStart == start) {
+                    prior.adjustRange(start, start + 1);
+                } else {
+                    prior.adjustRange(newStart, newStart + 1);
+                }
+            } else {
+                if (start > 0) {
+                    prior.adjustRange(start - 1, start);
                 }
             }
         }
-        
-        LOG.info("Changelist generated");
+
         return changes;
     }
     

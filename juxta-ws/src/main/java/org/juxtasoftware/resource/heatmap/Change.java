@@ -100,7 +100,24 @@ public final class Change implements Comparable<Change> {
     
     @Override
     public int compareTo(Change that) {
-        return this.range.compareTo(that.range);
+        
+        // NOTE: There is a bug in interedition Range. It will
+        // order range [0,1] before [0,0] when sorting ascending.
+        // So.. do NOT use its compareTo. Roll own.
+        Range r1 = this.range;
+        Range r2 = that.range;
+        if ( r1.getStart() < r2.getStart() ) {
+            return -1;
+        } else if ( r1.getStart() > r2.getStart() ) {
+            return 1;
+        } else {
+            if ( r1.getEnd() < r2.getEnd() ) {
+                return -1;
+            } else if ( r1.getEnd() > r2.getEnd() ) {
+                return 1;
+            } 
+        }
+        return 0;
     }
 
     @Override
