@@ -127,6 +127,15 @@ public class FragmentResource extends BaseResource {
         Map<Long, Witness> witnessMap = new HashMap<Long, Witness>();
         for (Alignment align : aligns ) {
             
+            // if the diff is an addition, and it is on the first char on the range it is 
+            // on the line between 2 adjacent changes. count it in the prior change and skip it here
+            AlignedAnnotation baseAnno = align.getWitnessAnnotation(this.baseWitnessId);
+            if ( baseAnno.getRange().length() == 0 && 
+                 baseAnno.getRange().getStart() == this.range.getStart() &&
+                 this.range.length() > 0) {
+                continue;
+            }
+            
             // find the WITNESS portion of this alignment
             AlignedAnnotation witnessAnno = null;
             for ( AlignedAnnotation a : align.getAnnotations()) {

@@ -10,7 +10,6 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -57,7 +56,6 @@ import eu.interedition.text.Range;
 public class HeatmapView  {
     @Autowired private CacheDao cacheDao;
     @Autowired private AlignmentDao alignmentDao;
-    @Autowired private JuxtaAnnotationDao annotationDao;
     @Autowired private ComparisonSetDao setDao;    
     @Autowired private NoteDao noteDao;
     @Autowired private PageBreakDao pbDao;
@@ -67,6 +65,7 @@ public class HeatmapView  {
     @Autowired private ApplicationContext context;
     @Autowired private TaskManager taskManager;
     @Autowired private Integer visualizationBatchSize;
+    @Autowired private JuxtaAnnotationDao annotationDao;
     
     private BaseResource parent;
     private VisualizationInfo visualizationInfo;
@@ -356,13 +355,15 @@ public class HeatmapView  {
         return sb.toString();
     }
 
-    private List<Change> generateHeatmapChangelist(final ComparisonSet set, final Witness base) {
-
+    private List<Change> generateHeatmapChangelist(final ComparisonSet set, final Witness base) throws IOException {
+        
         // init 
-        long changeIdx = 0;
-        Map<Range, Change> changeMap = new HashMap<Range, Change>();
-        List<Change> changes = new ArrayList<Change>();
-        List<Alignment> aligns = null;
+        List<Integer> zeroLen = new ArrayList<Integer>();
+        int len = (int)base.getText().getLength();
+        byte[] heat = new byte[len];
+        for (int i = 0; i < len; i++) {
+            heat[i] = 0;
+        }
         
         // generate heat map data 1 pair at a time
         for (SetWitness wit : this.witnesses) {
@@ -378,7 +379,7 @@ public class HeatmapView  {
             boolean done = false;
             int startIdx = 0;
             while ( !done ) {
-                aligns = getPairAlignments(set, base.getId(), wit.getId(), startIdx, this.visualizationBatchSize);
+                List<Alignment> aligns = getPairAlignments(set, base.getId(), wit.getId(), startIdx, this.visualizationBatchSize);
                 if ( aligns.size() < this.visualizationBatchSize ) {
                     done = true;
                 } else {
@@ -386,114 +387,99 @@ public class HeatmapView  {
                 }
     
                 // generate a change list based on the sorted differences
+                int lastGroupId = -1;
+                int lastEnd = -1;
                 for (Alignment align : aligns) {
-    
                     // the heatmap is from the perspective of the BASE
                     // text, so only care about annotations that refer to it
-                    AlignedAnnotation baseAnno = align.getWitnessAnnotation(base.getId());
-    
-                    // Track all changed ranges in the base document
-                    Change change = changeMap.get(baseAnno.getRange());
-                    if (change == null) {
-                        change = new Change(changeIdx++, baseAnno.getRange(), align.getGroup());
-                        changeMap.put(baseAnno.getRange(), change);
-                        changes.add(change);
-                    }
-    
-                    // Find the annotation details for the witness half
-                    // of this alignment
-                    AlignedAnnotation witnessAnnotation = null;
-                    Witness witness = null;
-                    for (AlignedAnnotation a : align.getAnnotations()) {
-                        if (a.getWitnessId().equals(base.getId()) == false) {
-                            witnessAnnotation = a;
-                            witness = findWitness( witnessAnnotation.getWitnessId() );
-                            break;
-                        }
-                    }
-                    if (this.visualizationInfo.getWitnessFilter().contains(witness.getId())) {
-                        LOG.info("Skipping diff from witness that was filtered out");
-                        continue;
-                    }
+                    AlignedAnnotation baseAnno = align.getWitnessAnnotation(base.getId());  
+                    AlignedAnnotation witAnnotation = align.getWitnessAnnotation(wit.getId());  
                     
                     // accumulate total diff length for this witness. it will be used to render the
                     // change index. always add on the longest diff.
-                    long longestDiff = Math.max(baseAnno.getRange().length(), witnessAnnotation.getRange().length());
+                    long longestDiff = Math.max(baseAnno.getRange().length(), witAnnotation.getRange().length());
                     wit.addDiffLen(longestDiff);
-    
-                    // Add all witness change details to the base change. There can be many.
-                    change.addWitness(witness);
-                }
-            }
-        //}// TODO more testss. is this way ok or do all chnages need to be collected before merge?
-            
-            // Always have to keep the changes in order to the below range merging works right
-            Collections.sort(changes);
-    
-            // Walk the ranges and extend them to cover gaps
-            // and merge adjacent, same intensity changes into one
-            Change prior = null;
-            for (Iterator<Change> itr = changes.iterator(); itr.hasNext();) {
-                Change change = itr.next();
-                if (prior != null) {
-                    // See if these are a candidate to merge. Criteria:
-                    //  * diff must be between same witnesses
-                    //  * diffs must have same frequence
-                    //  * must be from the same alignment group   
-                    if (change.hasMatchingGroup(prior) && change.hasMatchingWitnesses(prior)
-                        && change.getDifferenceFrequency() == prior.getDifferenceFrequency()) {
-                        prior.mergeChange(change);
-                        itr.remove();
-                        continue;
+   
+                    // Save off the start and end positions of the annotaion on the base
+                    int start = (int)baseAnno.getRange().getStart();
+                    int end = (int)baseAnno.getRange().getEnd();
+
+                    // see if this has matching group to prior
+                    // change. if so, extend the end of that to match the
+                    // start of this. keeps heatmap contiguous
+                    if ( lastGroupId > -1 ) {
+                        if ( lastGroupId == align.getGroup() ) {
+                            for ( int i=lastEnd;i<start;i++) {
+                                heat[i]++;
+                            }
+                        }
                     }
-                } 
-    
-                prior = change;
-            }
-        }
-            
-        // Now take another pass and look for lone add/deletes. Ecpand their range by
-        // one so they can be seen in the visualization
-        Change prior = null;
-        for (Iterator<Change> itr = changes.iterator(); itr.hasNext();) {
-            Change c = itr.next();
-            if ( prior != null ) {
-                if ( c.getRange().getStart() <= prior.getRange().getEnd()) {
-                    prior.mergeChange(c);
-                    itr.remove();
-                    continue;
-                } else {
-                  if (c.getRange().length() == 0) {
-                      long start = c.getRange().getStart();
-                      if (c.getRange().getStart() == 0) {
-                          prior.adjustRange(start, start + 1);
-                      } else {
-                          long newStart = this.annotationDao.findNextTokenStart(base.getId(), start);
-                          c.adjustRange(newStart, newStart + 1);
-                      }
-                  }
+                    
+                    if ( baseAnno.getRange().length() == 0 ) {
+                        Integer pos = (int)baseAnno.getRange().getStart();
+                        if ( (long)pos > lastEnd ) {
+                            zeroLen.add(pos);
+                        }
+                    } else {
+                        // ... now add the data to the byte array
+                        for ( int i=start; i<end;i++) {
+                            heat[i]++;
+                        }
+                    }
+                    
+                    lastEnd = end;
+                    lastGroupId = align.getGroup();
                 }
             }
-            prior = c;
         }
             
-        // see if the LAST change has 0 length and make it visible if this is the case
-        if (prior != null && prior.getRange().length() == 0) {
-            long start = prior.getRange().getStart();
-            if (prior.getRange().getStart() < base.getText().getLength()) {
-                long newStart = this.annotationDao.findNextTokenStart(base.getId(), start);
-                if (newStart == start) {
-                    prior.adjustRange(start, start + 1);
-                } else {
-                    prior.adjustRange(newStart, newStart + 1);
+        // Convert the byte heat array to a list of changes
+        List<Change> changes = new ArrayList<Change>();
+        byte lastVal = 0;
+        int changeStart = 0;
+        int changeId= 1;
+        for (int i = 0; i < len; i++) {
+            if ( heat[i] == 0 ) {
+                if ( lastVal != 0 ) {
+                    changes.add( new Change(changeId++, new Range(changeStart,i),lastVal));
+                    changeStart = i;
+                    lastVal = heat[i];
                 }
             } else {
-                if (start > 0) {
-                    prior.adjustRange(start - 1, start);
+                if ( heat[i] != lastVal ) {
+                    if ( lastVal != 0 ) {
+                        changes.add( new Change(changeId++, new Range(changeStart,i),lastVal));
+                        changeStart = i;
+                        lastVal = heat[i];
+                    } else {
+                        changeStart = i;
+                        lastVal = heat[i];
+                    }
                 }
             }
         }
-
+        
+        // overlay adds
+        Collections.sort(zeroLen);
+        for (Integer pos : zeroLen ) {
+            boolean handled = false;
+            for ( Change c : changes ) {
+                if ( (long)pos >= c.getRange().getStart() && (long)pos <= c.getRange().getEnd() ) {
+                    handled  = true;
+                    c.increaseDiffFrequency();
+                    break;
+                }
+            }
+            
+            if ( handled == false ) {
+                Change c =  new Change(changeId++, new Range(pos, pos), 1);
+                int adjPos = (int)this.annotationDao.findNextTokenStart(base.getId(), pos);
+                c.adjustRange(adjPos, adjPos+1);
+                changes.add(c );
+                Collections.sort(changes);
+            }
+        }
+        
         return changes;
     }
     
@@ -505,15 +491,6 @@ public class HeatmapView  {
         constraints.setFilter(changesFilter);
         constraints.setResultsRange(startIdx, batchSize);
         return this.alignmentDao.list(constraints);
-    }
-
-    private Witness findWitness(Long id) {
-        for (Witness w: this.witnesses) {
-            if (w.getId().equals( id )) {
-                return w;
-            }
-        }
-        return null;
     }
     
     /**

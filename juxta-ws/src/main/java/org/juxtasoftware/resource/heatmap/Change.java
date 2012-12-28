@@ -1,10 +1,5 @@
 package org.juxtasoftware.resource.heatmap;
 
-import java.util.HashSet;
-import java.util.Set;
-
-import org.juxtasoftware.model.Witness;
-
 import eu.interedition.text.Range;
 
 /**
@@ -16,21 +11,16 @@ import eu.interedition.text.Range;
  */
 public final class Change implements Comparable<Change> {
     private final long id;
-    private final int group;
+    private int diffFrequency;
     private Range range;
     private Range origRange;
     private boolean rangeAdjusted = false;
-    private Set<Long> witnesses = new HashSet<Long>();
     
-    public Change(long id, Range range, int group) {
+    public Change(long id, Range range, int diffFrequency) {
         this.id = id;
-        this.group = group;
-        this.range = range;
+        this.diffFrequency = diffFrequency;
+        this.range = new Range(range);
         this.origRange = new Range(range);
-    }
-    
-    public int getGroup() {
-        return this.group;
     }
     
     public void adjustRange( long newStart, long newEnd ) {
@@ -46,47 +36,6 @@ public final class Change implements Comparable<Change> {
         return new Range( this.origRange);
     }
 
-    public boolean hasMatchingWitnesses(Change other) {
-        if (this.witnesses.size() != other.witnesses.size() ) {
-            return false;
-        }
-        for ( Long thisWitnessId : this.witnesses ) {
-            boolean found = false;
-            for ( Long otherWitnessId : other.witnesses ) {
-                if ( thisWitnessId.equals(otherWitnessId ) ) {
-                    found = true;
-                    break;
-                }
-            }
-            if ( found == false ) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    public boolean hasMatchingGroup(Change prior) {
-        if ( getGroup() == 0 || prior.getGroup() == 0 ) {
-            return false;
-        } else {
-            return (getGroup() == prior.getGroup());
-        }
-    } 
-
-    public void mergeChange( Change mergeFrom ) {
-
-        // new range of this change is the  min/max of the two ranges
-        this.range = new Range(//
-                Math.min( this.range.getStart(), mergeFrom.getRange().getStart() ),//
-                Math.max( this.range.getEnd(), mergeFrom.getRange().getEnd() )
-        );
-        this.witnesses.addAll(mergeFrom.witnesses);
-    }
-    
-    public void addWitness( Witness witness   ) {
-        this.witnesses.add(witness.getId());
-    }
-
     public final Range getRange() {
         return this.range;
     }
@@ -95,7 +44,10 @@ public final class Change implements Comparable<Change> {
     }
 
     public final int getDifferenceFrequency() {
-        return this.witnesses.size();
+        return this.diffFrequency;
+    }
+    public void increaseDiffFrequency() {
+        this.diffFrequency++;
     }
     
     @Override
