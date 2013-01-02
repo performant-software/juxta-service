@@ -239,7 +239,8 @@ $(function() {
    var calculateAlignments = function() {
       // grab some info needed to calculate positions of brackets
       var hdrHeight = $(".header").outerHeight(true);
-      var defaultHeight = parseInt($('.witness-text').css('line-height'), 10) - 3;
+      var fntSize = $('.witness-text').css('font-size');
+      var defaultHeight = parseInt(fntSize, 10)+2;
       var rightScrollTop = $("#right-witness-text").scrollTop();
       var leftScrollTop = $("#left-witness-text").scrollTop();
       connections = [];
