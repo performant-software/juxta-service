@@ -2,7 +2,6 @@
     <template guid="c9e966ea-4b43-428d-a98d-8c42a7b662d2" isDefault="true" name="TEI-parallel-segmentation" rootTagName="TEI">
         <tag action="EXCLUDE" name="front" newLine="false"/>
         <tag action="EXCLUDE" name="teiHeader" newLine="false"/>
-        <tag action="EXCLUDE" name="reg" newLine="false"/>
         <tag action="INCLUDE" name="ab" newLine="true"/>
         <tag action="INCLUDE" name="activity" newLine="true"/>
         <tag action="INCLUDE" name="actor" newLine="true"/>

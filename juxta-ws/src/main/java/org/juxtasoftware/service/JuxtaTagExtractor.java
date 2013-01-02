@@ -48,6 +48,7 @@ public class JuxtaTagExtractor extends DefaultHandler  {
     private PsWitnessInfo psWitnessInfo;
     private StringBuilder psWitnessContent;
     private CharArrayWriter contentBuffer = new CharArrayWriter();
+    private Stack<Boolean> choiceExtractedStack = new Stack<Boolean>();
     
     /**
      * For parallel segmentated sources, set the witness information that will
@@ -77,6 +78,10 @@ public class JuxtaTagExtractor extends DefaultHandler  {
         return this.psWitnessContent.toString();
     }
     
+    private boolean isChoice( final String qName ) {
+        final String localName = stripNamespace(qName);
+        return ( localName.equals("choice") );
+    }
     private boolean isRevision(final String qName ) {
         final String localName = stripNamespace(qName);
         return ( localName.equals("add") || localName.equals("addSpan") ||
@@ -134,7 +139,16 @@ public class JuxtaTagExtractor extends DefaultHandler  {
         }
       
         // cache the exclusion state of this tag. Kinda expensive and used multiple times
-        final boolean isExcluded = this.xslt.isExcluded(qName, this.tagOccurences.get(qName));
+        boolean isExcluded = this.xslt.isExcluded(qName, this.tagOccurences.get(qName));
+        
+        // special choice tag handling for ps witnesses: only take content from the
+        // first child for each choice element
+        if ( this.psWitnessContent != null ) {
+            if ( isExcluded == false && this.choiceExtractedStack.empty() == false && this.choiceExtractedStack.peek() == true ) {
+                // once the first nested tag of a choice is grabbed, bag the rest
+                isExcluded = true;
+            }
+        }
         
         // Handle all tags with special extraction behavior first
         if ( this.psWitnessInfo != null && isPsWitnessContent(qName) ) {
@@ -143,7 +157,9 @@ public class JuxtaTagExtractor extends DefaultHandler  {
                 this.isExcluding = true;
                 this.exclusionContext.push(qName);
             } 
-        } else if ( isRevision(qName) ) {
+        } else if (isChoice(qName) ) {
+            this.choiceExtractedStack.push(false);
+        }else if ( isRevision(qName) ) {
             this.revisionExtractStack.push( new ExtractRevision(isExcluded, this.currPos) );
         } else if ( isNote(qName) ) {
             handleNote(attributes);
@@ -275,7 +291,9 @@ public class JuxtaTagExtractor extends DefaultHandler  {
             this.revisions.add( new RevisionInfo(qName, range, rev.content.toString(), !rev.isExcluded) );
 
             
-        } else if ( isNote(qName) ) {
+        } else if ( isChoice(qName)) {
+            this.choiceExtractedStack.pop();
+        }else if ( isNote(qName) ) {
             this.currNote.setContent(this.currNoteContent.toString().replaceAll("\\s+", " ").trim());
             if ( this.currNote.getContent().length() == 0 ) {
                 this.notes.remove(this.currNote);
@@ -360,15 +378,23 @@ public class JuxtaTagExtractor extends DefaultHandler  {
         if ( this.currNote != null ) {
             this.currNoteContent.append(txt);
         } else {
-            if ( this.revisionExtractStack.empty() || this.revisionExtractStack.peek().isExcluded == false) {
+            if ( this.choiceExtractedStack.empty() == false ) {
+                this.choiceExtractedStack.setElementAt(true, 0);
                 this.currPos += txt.length();
                 if ( this.psWitnessContent != null ) {
                     this.psWitnessContent.append(txt);
                 }
-            }
-            
-            if ( this.revisionExtractStack.empty() == false ) {
-                this.revisionExtractStack.peek().content.append(txt);
+            } else {
+                if ( this.revisionExtractStack.empty() || this.revisionExtractStack.peek().isExcluded == false) {
+                    this.currPos += txt.length();
+                    if ( this.psWitnessContent != null ) {
+                        this.psWitnessContent.append(txt);
+                    }
+                }
+                
+                if ( this.revisionExtractStack.empty() == false ) {
+                    this.revisionExtractStack.peek().content.append(txt);
+                }
             }
         }
         
