@@ -58,7 +58,8 @@ public class DiffCollator {
             this.transpositionCollation = true;
             collate(config, new Comparison(base, witness, transposition));
         }
-
+        Runtime.getRuntime().gc();
+        Runtime.getRuntime().runFinalization();
     }
 
     protected void collate(DiffCollatorConfiguration config, Comparison collation) throws IOException {

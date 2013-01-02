@@ -4,6 +4,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.Reader;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -135,12 +136,17 @@ public class HistogramResource extends BaseResource {
         LOG.info("Is histogram cached: " + info);
         if (this.cacheDao.histogramExists(this.set.getId(), info.getKey())) {
             LOG.info("Retrieving cached histogram");
-            Representation rep = new ReaderRepresentation(this.cacheDao.getHistogram(this.set.getId(), info.getKey()),
-                MediaType.APPLICATION_JSON);
-            if (isZipSupported()) {
-                return new EncodeRepresentation(Encoding.GZIP, rep);
+            Reader histogramReader = this.cacheDao.getHistogram(this.set.getId(), info.getKey());
+            if ( histogramReader != null ) {
+                Representation rep = new ReaderRepresentation( histogramReader, MediaType.APPLICATION_JSON);
+                if (isZipSupported()) {
+                    return new EncodeRepresentation(Encoding.GZIP, rep);
+                } else {
+                    return rep;
+                }
             } else {
-                return rep;
+                LOG.warn("Unable to retrieved cached data for "+set+". Clearing  bad data");
+                this.cacheDao.deleteAll(set.getId());
             }
         }
 

@@ -126,13 +126,17 @@ public class Exporter extends BaseResource {
             }
             
             if ( this.cacheDao.exportExists(this.set.getId(), this.base.getId())) {
-                Representation rep = new ReaderRepresentation( 
-                    this.cacheDao.getExport(this.set.getId(), this.base.getId()), 
-                    MediaType.TEXT_XML);
-                if ( isZipSupported() ) {
-                    return new EncodeRepresentation(Encoding.GZIP, rep);
+                Reader rdr = this.cacheDao.getExport(this.set.getId(), this.base.getId());
+                if ( rdr != null ) {
+                    Representation rep = new ReaderRepresentation( rdr, MediaType.TEXT_XML);
+                    if ( isZipSupported() ) {
+                        return new EncodeRepresentation(Encoding.GZIP, rep);
+                    } else {
+                        return rep;
+                    }
                 } else {
-                    return rep;
+                    LOG.warn("Unable to retrieved cached data for "+set+". Clearing  bad data");
+                    this.cacheDao.deleteAll(set.getId());
                 }
             }
             

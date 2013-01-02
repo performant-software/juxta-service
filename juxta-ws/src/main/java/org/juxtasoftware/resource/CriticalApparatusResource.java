@@ -1,5 +1,6 @@
 package org.juxtasoftware.resource;
 
+import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -107,13 +108,17 @@ public class CriticalApparatusResource extends BaseResource {
         
         // send back cached data id it is avaialable
         if ( this.cacheDao.criticalApparatusExists(this.set.getId(), this.baseWitnessId)) {
-            Representation rep = new ReaderRepresentation( 
-                this.cacheDao.getCriticalApparatus(this.set.getId(), this.baseWitnessId), 
-                MediaType.APPLICATION_JSON);
-            if ( isZipSupported() ) {
-                return new EncodeRepresentation(Encoding.GZIP, rep);
+            Reader rdr = this.cacheDao.getCriticalApparatus(this.set.getId(), this.baseWitnessId);
+            if ( rdr != null ) {
+                Representation rep = new ReaderRepresentation( rdr, MediaType.APPLICATION_JSON);
+                if ( isZipSupported() ) {
+                    return new EncodeRepresentation(Encoding.GZIP, rep);
+                } else {
+                    return rep;
+                }
             } else {
-                return rep;
+                LOG.warn("Unable to retrieved cached data for "+set+". Clearing  bad data");
+                this.cacheDao.deleteAll(set.getId());
             }
         }
         

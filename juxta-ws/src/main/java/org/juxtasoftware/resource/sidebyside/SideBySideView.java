@@ -5,9 +5,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
-import java.lang.management.ManagementFactory;
-import java.lang.management.MemoryMXBean;
-import java.lang.management.MemoryUsage;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -68,11 +65,9 @@ public class SideBySideView implements FileDirectiveListener  {
     @Autowired private CacheDao cacheDao;
     @Autowired private ApplicationContext context;
     @Autowired private TaskManager taskManager;
-    @Autowired private Integer averageAlignmentSize;
     @Autowired private Integer visualizationBatchSize;
 
     protected static final Logger LOG = LoggerFactory.getLogger( Constants.WS_LOGGER_NAME );
-    private static final int MEGABYTE = (1024*1024);
     
     private BaseResource parent;
     private List<WitnessInfo> witnessDetails = new ArrayList<SideBySideView.WitnessInfo>(2);
@@ -121,14 +116,12 @@ public class SideBySideView implements FileDirectiveListener  {
         if ( this.cacheDao.sideBySideExists(set.getId(), witnessIds[0], witnessIds[1]) == true) {
             LOG.info("Pulling side-by-side view from cache");
             Reader sbsReader = this.cacheDao.getSideBySide(set.getId(), witnessIds[0], witnessIds[1]);
-            return parent.toHtmlRepresentation(sbsReader);
-        }
-        
-        if ( willOverrunMemory( set, witnessIds[0], witnessIds[1]) ) {
-            this.parent.setStatus(Status.SERVER_ERROR_INSUFFICIENT_STORAGE);
-            return this.parent.toTextRepresentation(
-                "The server has insufficent resources to generate this visualization." +
-                "\nTry again later. If this fails, try breaking large witnesses up into smaller segments.");
+            if ( sbsReader != null ) {
+                return parent.toHtmlRepresentation(sbsReader);
+            } else {
+                LOG.warn("Unable to retrieved cached data for "+set+". Clearing  bad data");
+                this.cacheDao.deleteAll(set.getId());
+            }
         }
         
         // get witnesses for each ID and initialize the changes map
@@ -207,29 +200,6 @@ public class SideBySideView implements FileDirectiveListener  {
         // NOTE: this can be a big file. Be sure to update the mysql config to handle large posts.
         // This is usually in /etc/my.cnf. The setting to add is: max_allowed_packet=8M (or whaterver size)
         this.cacheDao.cacheSideBySide(set.getId(), leftWitId, rightWitId, sbsFtl.getReader());
-    }
-    
-    private boolean willOverrunMemory(ComparisonSet set, Long wit1, Long wit2) {
-        
-        QNameFilter changesFilter = this.filters.getDifferencesFilter();
-        AlignmentConstraint constraints = new AlignmentConstraint(set);
-        constraints.addWitnessIdFilter( wit1 );
-        constraints.addWitnessIdFilter( wit2 );
-        constraints.setFilter(changesFilter);
-        
-        // Get the number of annotations that will be returned and do a rough calcuation
-        // to see if generating this visuzlization will exhaust available memory
-        final Long count = this.alignmentDao.count(constraints);
-        Runtime.getRuntime().gc();
-        Runtime.getRuntime().runFinalization();
-        final long estimatedByteUsage = count*this.averageAlignmentSize;
-        LOG.info("["+ estimatedByteUsage+"] ESTIMATED USAGE");
-        MemoryMXBean memoryBean = ManagementFactory.getMemoryMXBean();
-        MemoryUsage usage = memoryBean.getHeapMemoryUsage();
-        long freeMem = usage.getMax() -usage.getUsed();
-        LOG.info("["+ freeMem  +"] ESTIMATED FREE");
-        final long memoryPad = MEGABYTE*5; // 5M memory pad
-        return ( (estimatedByteUsage+memoryPad) > freeMem );
     }
 
     @Override
@@ -424,7 +394,6 @@ public class SideBySideView implements FileDirectiveListener  {
         
         // close up the file
         writer.close();
-        
     }
     
     /**
