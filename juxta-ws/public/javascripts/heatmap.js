@@ -503,8 +503,10 @@ $(function() {
    };
 
    // Let the world know that the heatmap code is now loaded and can be initialized
-   $("body").trigger('heatmap-loaded');
-
+   if ( $("#heatmap-text").exists() > 0 ) {
+      $("body").trigger('heatmap-loaded');
+   }
+   
    $(window).resize(function() {
       // don't try to do anything if the curr page
       // does not contain a heatmap

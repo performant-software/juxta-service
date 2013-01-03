@@ -236,7 +236,7 @@ $(function() {
     * Render the left and right witness diff brackets in the narrow gutter
     * divs on either side of the connections area
     */
-   var calculateAlignments = function() {
+   var calculateAlignments = function( fireEvent ) {
       // grab some info needed to calculate positions of brackets
       var hdrHeight = $(".header").outerHeight(true);
       var fntSize = $('.witness-text').css('font-size');
@@ -331,7 +331,9 @@ $(function() {
             renderConnections();
             $('#wait-popup').hide();
             $("body").trigger('wait-completed');
-            $("body").trigger('sbs-alignments-calculated');
+            if ( fireEvent) {
+               $("body").trigger('sbs-alignments-calculated');
+            }
          }
       }, 50);
    };
@@ -373,8 +375,6 @@ $(function() {
       // create papers to match size
       paper = new Raphael($("#connections-div")[0], width, height);
       connectionSet = paper.set();
-      //setTimeout( function() {calculateAlignments()}, 500);
-      calculateAlignments();
    };
 
    /**
@@ -427,6 +427,8 @@ $(function() {
       setTimeout(function() {
          initDocumentHeight();
          initCanvas();
+         calculateAlignments(false);
+         renderConnections();
       }, 500);
 
    };
@@ -830,6 +832,7 @@ $(function() {
          $("body").trigger('sidebyside-loaded');
          initDocumentHeight();
          initCanvas();
+         calculateAlignments(true);
          initMouseWheelScrollHandling();
          initWitnessScrollHandling();
       }, 500);
@@ -847,6 +850,7 @@ $(function() {
          $(".canvas-div").show();
          initDocumentHeight();
          initCanvas();
+         calculateAlignments(false);
       }
    };
 
