@@ -9,6 +9,7 @@ import org.juxtasoftware.model.CollatorConfig;
 import org.juxtasoftware.model.ComparisonSet;
 import org.juxtasoftware.model.Witness;
 import org.juxtasoftware.service.ComparisonSetCollator;
+import org.juxtasoftware.service.Tokenizer;
 import org.juxtasoftware.util.BackgroundTask;
 import org.juxtasoftware.util.BackgroundTaskCanceledException;
 import org.juxtasoftware.util.BackgroundTaskStatus;
@@ -35,6 +36,7 @@ public class CollatorResource extends BaseResource {
     }
 
     @Autowired private ComparisonSetDao setDao;
+    @Autowired private Tokenizer tokenizer;
     @Autowired private ComparisonSetCollator collator;
     @Autowired private TaskManager taskManager;
     @Autowired private MetricsHelper metrics;
@@ -83,7 +85,7 @@ public class CollatorResource extends BaseResource {
 
     private Representation doCollation() {
 
-        if (this.set.getStatus().equals(ComparisonSet.Status.COLLATING)) {
+        if (this.set.getStatus().equals(ComparisonSet.Status.COLLATING) || this.set.getStatus().equals(ComparisonSet.Status.TOKENIZING)) {
             setStatus(Status.CLIENT_ERROR_CONFLICT);
             return toTextRepresentation("Set " + this.set.getId() + " is currently collating");
         }
@@ -156,12 +158,18 @@ public class CollatorResource extends BaseResource {
             try {
                 LOG.info("Begin collation task " + this.name);
                 this.status.begin();
-                CollatorResource.this.collator.collate(set, this.config, this.status);
+                if ( set.getStatus().equals(ComparisonSet.Status.TOKENIZED)) {
+                    CollatorResource.this.collator.collate(set, this.config, this.status);
+                } else {
+                    CollatorResource.this.metrics.collationStarted(CollatorResource.this.workspace, CollatorResource.this.set);
+                    LOG.info(this.name+" tokenizing....");
+                    CollatorResource.this.tokenizer.tokenize( CollatorResource.this.set, this.config, this.status);
+                    LOG.info(this.name+" collating....");
+                    CollatorResource.this.collator.collate(set, this.config, this.status);
+                }
                 LOG.info("collation task " + this.name + " COMPLETE");
                 metrics.collationFinished(workspace,set);
                 this.endDate = new Date();
-                set.setStatus(ComparisonSet.Status.COLLATED);
-                setDao.update(set);
             } catch (IOException e) {
                 LOG.error(this.name + " task failed", e.toString());
                 this.status.fail(e.toString());

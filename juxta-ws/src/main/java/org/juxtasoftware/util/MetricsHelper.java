@@ -203,7 +203,6 @@ public class MetricsHelper {
             this.collationStartTimes.put(set.getId(), System.currentTimeMillis());
             DEBUG_LOG.info("Mark collation start of "+set);
             DEBUG_LOG.info("Timestamp "+this.collationStartTimes.get(set.getId()));
-            DEBUG_LOG.info("MAP "+set);
         } catch ( Exception e ) {
             DEBUG_LOG.error("Metrics error tracking "+set+" collation start", e);
         }
@@ -215,7 +214,6 @@ public class MetricsHelper {
             m.setNumCollationsFinished( m.getNumCollationsFinished()+1 );
             
             Long startTime = this.collationStartTimes.get(set.getId());
-            DEBUG_LOG.info("MAP "+set);
             DEBUG_LOG.info("Mark collation END of "+set);
             DEBUG_LOG.info("Timestamp "+this.collationStartTimes.get(set.getId()));
             this.collationStartTimes.remove(set.getId());

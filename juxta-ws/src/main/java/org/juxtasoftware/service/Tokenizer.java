@@ -60,12 +60,16 @@ public class Tokenizer {
     public void tokenize(ComparisonSet comparisonSet, CollatorConfig config, BackgroundTaskStatus taskStatus) throws IOException {
         final Set<Witness> witnesses = comparisonSetDao.getWitnesses(comparisonSet);
         final BackgroundTaskSegment ts = taskStatus.add(1, new BackgroundTaskSegment(witnesses.size()));
-          
-        LOG.info("Token batchs size: " + this.tokenizationBatchSize );
+        
+        this.set = comparisonSet;
+                 
+        LOG.info("Token batch size: " + this.tokenizationBatchSize );
         taskStatus.setNote("Clearing old tokens");
         LOG.info("Cleanup collation data ");
-        this.set = comparisonSet;
         this.comparisonSetDao.clearCollationData(comparisonSet);
+        
+        this.set.setStatus(ComparisonSet.Status.TOKENIZING );
+        this.comparisonSetDao.update(this.set);
         
         this.tokenQName = this.qnameRepo.get(Constants.TOKEN_NAME);
         
@@ -77,6 +81,9 @@ public class Tokenizer {
             comparisonSetDao.setTokenzedLength(comparisonSet, witness, totalTokenLen);
             ts.incrementValue();            
         }
+        
+        this.set.setStatus(ComparisonSet.Status.TOKENIZED );
+        this.comparisonSetDao.update(this.set);
     }
     
     private long tokenize(final CollatorConfig config, final Witness witness) throws IOException {

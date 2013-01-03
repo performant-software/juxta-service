@@ -71,6 +71,8 @@ public class ComparisonSetCollator extends DiffCollator {
         // grab reference to key data used in the colaltion
         this.comparisonSet = comparisonSet;
         this.witnessList = this.setDao.getWitnesses(comparisonSet);
+        this.comparisonSet.setStatus(ComparisonSet.Status.COLLATING);
+        this.setDao.update(this.comparisonSet);
         
         // copy the witness list into a working copy
         final Set<Witness> witnesses = new HashSet<Witness>( this.witnessList );
@@ -93,6 +95,9 @@ public class ComparisonSetCollator extends DiffCollator {
                 ts.incrementValue();
             }
         }
+        
+        this.comparisonSet.setStatus(ComparisonSet.Status.COLLATED);
+        this.setDao.update(this.comparisonSet);
     }
 
     private class CollatorConfigAdapter implements DiffCollatorConfiguration, TokenizerConfiguration, TranspositionSource {

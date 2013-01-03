@@ -10,7 +10,6 @@ import org.juxtasoftware.service.Tokenizer;
 import org.juxtasoftware.util.BackgroundTask;
 import org.juxtasoftware.util.BackgroundTaskCanceledException;
 import org.juxtasoftware.util.BackgroundTaskStatus;
-import org.juxtasoftware.util.MetricsHelper;
 import org.juxtasoftware.util.TaskManager;
 import org.restlet.data.Status;
 import org.restlet.representation.Representation;
@@ -33,7 +32,6 @@ public class TokenizerResource extends BaseResource {
     @Autowired private ComparisonSetDao comparisonSetDao;
     @Autowired private Tokenizer tokenizer;
     @Autowired private TaskManager taskManager;
-    @Autowired private MetricsHelper metrics;
     private ComparisonSet set;
        
     @Override
@@ -67,7 +65,6 @@ public class TokenizerResource extends BaseResource {
             return toTextRepresentation("Collation requires at least 2 witnesses. This set has "+witCnt+".");
         }
         
-        this.metrics.collationStarted(this.workspace, this.set);
         final String taskId = generateTaskName(this.set.getId());
         this.taskManager.submit( new TokenizeTask(taskId) );
         return toTextRepresentation( taskId );   
@@ -118,7 +115,7 @@ public class TokenizerResource extends BaseResource {
                 LOG.info( this.name+" task was canceled");
                 this.endDate = new Date();
             } catch (Exception e) {
-                LOG.error(this.name+" task failed", e.toString());
+                LOG.error(this.name+" task failed", e);
                 this.status.fail(e.toString());
                 this.endDate = new Date();
             }
