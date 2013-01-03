@@ -828,14 +828,18 @@ $(function() {
    };
    
    $(window).load(function () {
-      setTimeout( function() {
+      if (  $("#left-witness-text").exists()  ) {
+         setTimeout( function() {
+            $("body").trigger('sidebyside-loaded');
+            initDocumentHeight();
+            initCanvas();
+            calculateAlignments(true);
+            initMouseWheelScrollHandling();
+            initWitnessScrollHandling();
+         }, 500);
+      } else { 
          $("body").trigger('sidebyside-loaded');
-         initDocumentHeight();
-         initCanvas();
-         calculateAlignments(true);
-         initMouseWheelScrollHandling();
-         initWitnessScrollHandling();
-      }, 500);
+      }
    });
 
    var rtime = null;
