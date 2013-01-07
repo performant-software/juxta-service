@@ -82,22 +82,32 @@ public class ComparisonSetCollator extends DiffCollator {
         taskStatus.setNote("Collating SET " + comparisonSet);
         LOG.info("Collating " + comparisonSet);
 
-        for (Iterator<Witness> baseIt = witnesses.iterator(); baseIt.hasNext(); ) {
-            final Witness base = baseIt.next();
-            baseIt.remove();
-
-            for (Witness witness : witnesses) {
-                taskStatus.setNote(base.getJsonName() + " vs. " + witness.getJsonName());
-                LOG.info("Collating: " + base + " vs. " + witness);
-
-                collate(configAdapter, base, witness);
-                configAdapter.getDifferenceStore().save();
-                ts.incrementValue();
+        try {
+            for (Iterator<Witness> baseIt = witnesses.iterator(); baseIt.hasNext(); ) {
+                final Witness base = baseIt.next();
+                baseIt.remove();
+    
+                for (Witness witness : witnesses) {
+                    taskStatus.setNote(base.getJsonName() + " vs. " + witness.getJsonName());
+                    LOG.info("Collating: " + base + " vs. " + witness);
+    
+                    collate(configAdapter, base, witness);
+                    configAdapter.getDifferenceStore().save();
+                    ts.incrementValue();
+                }
             }
+            
+            this.comparisonSet.setStatus(ComparisonSet.Status.COLLATED);
+            this.setDao.update(this.comparisonSet);
+        } catch ( OutOfMemoryError  oom ) {
+            LOG.error("Not enough memory to collate "+this.comparisonSet);
+            this.comparisonSet.setStatus(ComparisonSet.Status.ERROR);
+            this.setDao.update(this.comparisonSet);
+        } catch ( Exception e ) {
+            LOG.error("Collation of "+this.comparisonSet+" FAILED",e);
+            this.comparisonSet.setStatus(ComparisonSet.Status.ERROR);
+            this.setDao.update(this.comparisonSet);
         }
-        
-        this.comparisonSet.setStatus(ComparisonSet.Status.COLLATED);
-        this.setDao.update(this.comparisonSet);
     }
 
     private class CollatorConfigAdapter implements DiffCollatorConfiguration, TokenizerConfiguration, TranspositionSource {
