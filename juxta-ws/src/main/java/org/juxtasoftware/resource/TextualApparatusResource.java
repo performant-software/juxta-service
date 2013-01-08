@@ -314,12 +314,7 @@ public class TextualApparatusResource extends BaseResource implements FileDirect
             if ( v.getRange().length() > 0 ) {
                 baseTxt = getWitnessText(this.baseWitnessId, v.getRange());
             } else {
-                baseTxt = getWitnessText(this.baseWitnessId, new Range(v.getRange().getStart()-15, v.getRange().getEnd()+15));
-                String before = baseTxt.substring(0,15).trim();
-                String wb = before.substring(before.lastIndexOf(' ')).trim();
-                String after = baseTxt.substring(15).trim();
-                String wa = after.substring(0, after.indexOf(' ')).trim();
-                baseTxt = wb+" "+wa;
+                baseTxt = getAdditionContext(this.baseWitnessId, v.getRange());
             }
             StringBuilder sb = new StringBuilder(baseTxt);
             sb.append("] ").append(baseSiglum).append("; ");
@@ -334,12 +329,7 @@ public class TextualApparatusResource extends BaseResource implements FileDirect
                 if ( witRng.length() > 0 ) {
                     witTxt = getWitnessText(witId, witRng);
                 } else {
-                    witTxt = getWitnessText(witId, new Range(witRng.getStart()-15, witRng.getEnd()+15));
-                    String before = witTxt.substring(0,15).trim();
-                    String wb = before.substring(before.lastIndexOf(' ')).trim();
-                    String after = witTxt.substring(15).trim();
-                    String wa = after.substring(0, after.indexOf(' ')).trim();
-                    witTxt = wb+" "+wa;
+                    witTxt = getAdditionContext(witId, witRng);
                 }
                 sb.append(witTxt).append(": ");
                 final String witSiglum = getSiglum(witId);
@@ -352,6 +342,21 @@ public class TextualApparatusResource extends BaseResource implements FileDirect
         
         IOUtils.closeQuietly(osw);
         return appFile;
+    }
+    
+    private String getAdditionContext(final Long witId, final Range witRng) {
+        final int contextSize = 20;
+        if ( witRng.getStart() == 0 ) {
+            String witTxt = getWitnessText(witId, new Range(0, contextSize)).trim();
+            return witTxt.substring(0, witTxt.indexOf(' '));
+        }
+        String witTxt = getWitnessText(witId, new Range(witRng.getStart()-contextSize, witRng.getEnd()+contextSize));
+        String before = witTxt.substring(0,contextSize).trim();
+        String wb = before.substring(before.lastIndexOf(' ')).trim();
+        String after = witTxt.substring(contextSize).trim();
+        String wa = after.substring(0, after.indexOf(' ')).trim();
+        witTxt = wb+" "+wa;
+        return witTxt;
     }
     
     private String findLineNumber(Range tgtRange, List<Range> lineRanges) {
@@ -384,10 +389,7 @@ public class TextualApparatusResource extends BaseResource implements FileDirect
             return ""+lineStart;
         }
         else {
-            if ( lineEnd < 0 ) {
-                System.err.println("huh");
-            }
-            return lineStart+"-"+lineEnd;
+            return lineStart+" - "+lineEnd;
         }
     }
 

@@ -12,10 +12,13 @@
                list-style: none;
             }
             .num-col {
-               width: 40px;
+               width: 60px;
                vertical-align: top;
-               color: #bbbbbb;
+               color: #BBB;
                font-weight: 100;
+               font-size: 0.8em;
+               text-align: right;
+               padding-right: 10px;
             }
          </style>
     </head>
