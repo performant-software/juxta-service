@@ -116,8 +116,8 @@
     <bean name="/juxta/filter/{id}" class="org.juxtasoftware.resource.QNameFilterResource" scope="prototype" autowire="byName" />
     
     <!-- critical apparatus -->
-    <bean name="/juxta/set/{id}/criticalapparatus" class="org.juxtasoftware.resource.CriticalApparatusResource" scope="prototype" autowire="byName" />
-    <bean name="/juxta/{workspace}/set/{id}/criticalapparatus" class="org.juxtasoftware.resource.CriticalApparatusResource" scope="prototype" autowire="byName" />
+    <bean name="/juxta/set/{id}/textualapparatus" class="org.juxtasoftware.resource.TextualApparatusResource" scope="prototype" autowire="byName" />
+    <bean name="/juxta/{workspace}/set/{id}/textualapparatus" class="org.juxtasoftware.resource.TextualApparatusResource" scope="prototype" autowire="byName" />
 
     <!-- comparison set -->
     <bean name="/juxta/{workspace}/set/delete" class="org.juxtasoftware.resource.ComparisonSetsResource" scope="prototype" autowire="byName" />
