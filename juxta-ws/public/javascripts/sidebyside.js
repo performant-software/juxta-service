@@ -99,6 +99,7 @@ $(function() {
       // run thru each connection and draw a line from left to right
       var pathStr, line;
       var moveLines = [];
+      var litLine = null;
       $.each(connections, function(i, conn) {
          if (conn.type === "move-hidden") {
             return true;
@@ -137,7 +138,7 @@ $(function() {
          connectionSet.push(line);
          if (conn.lit) {
             line.attr(litConnAttribs);
-            line.toFront();
+            litLine = line;
          } else {
             line.attr(connAttribs);
             line.toBack();
@@ -148,6 +149,10 @@ $(function() {
       $.each(moveLines, function(i, mv) {
          mv.toBack();
       });
+      
+      if ( litLine != null ) {
+         litLine.toFront();
+      }
 
       connectionSet.mouseover(function() {
          this.attr(litConnAttribs);
@@ -423,6 +428,9 @@ $(function() {
          $("#scroll-mode-img").attr("src", imgSrc + "/unlock.gif");
          $("#left-witness-text").css("overflow-y", "auto");
       }
+      
+      $("#right-witness-text").data("action","lock-change");
+      $("#left-witness-text").data("action","lock-change");
 
       setTimeout(function() {
          initDocumentHeight();
