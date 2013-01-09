@@ -159,6 +159,7 @@ $(function() {
          var foo = this;
          $.each(connections, function(i, conn) {
             if (conn.line == foo) {
+               foo.toFront();
                var ele = $("#" + conn.leftId);
                if (ele.hasClass() === false) {
                   ele.addClass("lit");
