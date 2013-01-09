@@ -34,7 +34,9 @@
           <h4>Textual Notes</h4>
           <ul>
              <#list witnesses as witness>
-                <li>${witness.siglum}: ${witness.title}<#if witness.isBase> - This is the base text.</#if></li>
+                <#if witness.isIncluded>
+                   <li>${witness.siglum}: ${witness.title}<#if witness.isBase> - This is the base text.</#if></li>
+                </#if>
              </#list>
           </ul>
        </div>

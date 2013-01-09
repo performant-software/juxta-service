@@ -8,10 +8,12 @@ import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import org.apache.commons.io.IOUtils;
 import org.juxtasoftware.dao.AlignmentDao;
@@ -149,6 +151,8 @@ public class TextualApparatusResource extends BaseResource implements FileDirect
             
             if ( included ) {
                 this.witnesses.add( new TaWitness(witId, siglum, w.getName(), isBase));
+            } else {
+                this.witnesses.add( new TaWitness(witId));
             }
         }
         
@@ -257,6 +261,11 @@ public class TextualApparatusResource extends BaseResource implements FileDirect
             // create report based on alignments
             for (Alignment align : aligns) {
                 
+                long id = align.getId();
+                if ( id == 900554  || id == 900555 ) {
+                    System.err.println("dfv");
+                }
+                
                 // get base and witness annotations
                 AlignedAnnotation baseAnno = align.getWitnessAnnotation(this.baseWitnessId);
                 AlignedAnnotation witAnno = null;
@@ -287,13 +296,19 @@ public class TextualApparatusResource extends BaseResource implements FileDirect
                 }
                 
                 // add the witness info
-                variant.addWitnessDetail(witAnno.getWitnessId(), witAnno.getRange());
+                variant.addWitnessDetail(witAnno.getWitnessId(), witAnno.getRange(), align.getGroup());
             }
             
             // merge related variants
             Variant prior = null;
             for (Iterator<Variant> itr = variants.iterator(); itr.hasNext();) {
                 Variant variant = itr.next();
+                
+                // HACK
+                String txt = getWitnessText(this.baseWitnessId, variant.getRange());
+                if ( txt.equals("blue")) {
+                    System.err.println("df");
+                }
                 if (prior != null) {
                     // See if these are a candidate to merge
                     if (variant.hasMatchingGroup(prior) && variant.hasMatchingWitnesses(prior)) {
@@ -310,18 +325,19 @@ public class TextualApparatusResource extends BaseResource implements FileDirect
         // build the variant table one line at a time and stream it out to a file
         final String baseSiglum = getSiglum(this.baseWitnessId );
         for (Variant v : variants) {
+            // First, grab the base witness fragment and add it to the variant string
             String baseTxt = "";
             if ( v.getRange().length() > 0 ) {
                 baseTxt = getWitnessText(this.baseWitnessId, v.getRange());
             } else {
-                baseTxt = getAdditionContext(this.baseWitnessId, v.getRange());
+                baseTxt = getAdditionContext(this.baseWitnessId, v.getRange().getStart());
             }
             StringBuilder sb = new StringBuilder(baseTxt);
             sb.append("] ").append(baseSiglum).append("; ");
             
-            // find line num for range
-            String lineRange = findLineNumber(v.getRange(), lineRanges);
-            
+            // no walk thru each of the witnesses that have differences from
+            // the base at this particular range. Extract the variant text.
+            Map<String,String> txtSiglumMap = new HashMap<String,String>();
             for (Entry<Long, Range> ent : v.getWitnessRangeMap().entrySet()) {
                 Long witId = ent.getKey();
                 Range witRng = ent.getValue();
@@ -329,32 +345,60 @@ public class TextualApparatusResource extends BaseResource implements FileDirect
                 if ( witRng.length() > 0 ) {
                     witTxt = getWitnessText(witId, witRng);
                 } else {
-                    witTxt = getAdditionContext(witId, witRng);
+                    witTxt = "<i>not in </i>";
                 }
-                sb.append(witTxt).append(": ");
-                final String witSiglum = getSiglum(witId);
-                sb.append(witSiglum).append("; ");
                 
-                final String out = "<tr><td class=\"num-col\">"+lineRange+"</td><td>"+sb.toString()+"</td></tr>\n";
-                osw.write(out);
+                // accumulate the witness text fragments in a map
+                // that can associate them with multiple witnesses
+                final String witSiglum = getSiglum(witId);
+                if ( txtSiglumMap.containsKey(witTxt)) {
+                    String prior = txtSiglumMap.get(witTxt);
+                    prior = prior + ", " + witSiglum;
+                    txtSiglumMap.put(witTxt, prior);
+                } else {
+                    txtSiglumMap.put(witTxt, witSiglum);
+                }
             }
+            
+            // use the merged data from above to create the witness variants
+            for (Entry<String, String> ent : txtSiglumMap.entrySet() ) {
+                String witTxt = ent.getKey();
+                String ids = ent.getValue();
+                sb.append(witTxt);
+                if  ( witTxt.equals("<i>not in </i>") == false ) {
+                    sb.append(": ");
+                }
+                sb.append(ids).append("; ");
+            }
+            
+            // find line num for range
+            String lineRange = findLineNumber(v.getRange(), lineRanges);
+  
+            // shove the whole thing into a table row and wroite it out to disk
+            final String out = "<tr><td class=\"num-col\">"+lineRange+"</td><td>"+sb.toString()+"</td></tr>\n";
+            osw.write(out);
         }
         
         IOUtils.closeQuietly(osw);
         return appFile;
     }
     
-    private String getAdditionContext(final Long witId, final Range witRng) {
-        final int contextSize = 20;
-        if ( witRng.getStart() == 0 ) {
+    private String getAdditionContext(final Long witId, final long addPos) {
+        final int defaultSize = 20;
+        int contextSize = defaultSize;
+        if ( addPos == 0 ) {
             String witTxt = getWitnessText(witId, new Range(0, contextSize)).trim();
             return witTxt.substring(0, witTxt.indexOf(' '));
         }
-        String witTxt = getWitnessText(witId, new Range(witRng.getStart()-contextSize, witRng.getEnd()+contextSize));
+        contextSize = Math.min( defaultSize, (int)addPos);
+        String witTxt = getWitnessText(witId, new Range(addPos-contextSize, addPos+contextSize)).trim();
         String before = witTxt.substring(0,contextSize).trim();
         String wb = before.substring(before.lastIndexOf(' ')).trim();
         String after = witTxt.substring(contextSize).trim();
-        String wa = after.substring(0, after.indexOf(' ')).trim();
+        String wa = after;
+        if ( after.indexOf(' ') > -1 ) {
+            wa = after.substring(0, after.indexOf(' ')).trim();
+        }
         witTxt = wb+" "+wa;
         return witTxt;
     }
@@ -404,45 +448,19 @@ public class TextualApparatusResource extends BaseResource implements FileDirect
     
     private List<Alignment> getAlignments(int startIdx, int batchSize) {
         QNameFilter changesFilter = this.filters.getDifferencesFilter();
-        AlignmentConstraint constraints = new AlignmentConstraint(set);
-        constraints.addWitnessIdFilter(this.baseWitnessId);
+        AlignmentConstraint constraints = new AlignmentConstraint(this.set, this.baseWitnessId);
+        
+        // when constraints use a base witness, the filter is EXCLUSIVE.
+        // add any excluded witnesses to the filter now
         for ( TaWitness w : this.witnesses ) {
-            constraints.addWitnessIdFilter(w.id);
+            if ( w.included == false ) {
+                constraints.addWitnessIdFilter(w.id);
+            }
         }
         constraints.setFilter(changesFilter);
         constraints.setResultsRange(startIdx, batchSize);
         return this.alignmentDao.list(constraints);
     }
-
-//        JsonArray out = new JsonArray();
-//        for ( Variant lemma : lemmas ) {
-//            JsonObject jo = new JsonObject();
-//            JsonArray jsonWits = new JsonArray();
-//            String baseTxt = getWitnessText(base, lemma.getRange());
-//            String witnessTxt = "";
-//            for ( Entry<Long, Range> ent : lemma.getWitnessRangeMap().entrySet() ) {
-//                Long witId = ent.getKey();
-//                jsonWits.add( new JsonPrimitive(witId) );
-//                Range witRng = ent.getValue();
-//                if ( witnessTxt.length() == 0 ) {
-//                    witnessTxt = getWitnessText( findWitness(witnesses, witId), witRng);
-//                }
-//            }
-//            
-//            if ( baseTxt.length() == 0 ) {
-//                jo.addProperty("text","^"+witnessTxt);
-//            } else if ( witnessTxt.length() == 0 ) {
-//                jo.addProperty("text", baseTxt+"~");
-//            } else {
-//                jo.addProperty("text", baseTxt+" ] "+witnessTxt);
-//            }
-//            jo.add("witnesses", jsonWits);
-//            
-//            out.add(jo);
-//        }
-//        
-//        return out;
-
     
     private String getWitnessText( final Long witId, final Range range ) {
         try {
@@ -459,13 +477,13 @@ public class TextualApparatusResource extends BaseResource implements FileDirect
     }
     
     private static class Variant {
-        private final int group;
+        private Set<Integer> groups = new HashSet<Integer>();
         private Range range;
         private Map<Long, Range> witnessRangeMap = new HashMap<Long, Range>();
         
         public Variant( final Range r, final int groupId) {
             this.range = new Range(r);
-            this.group = groupId;
+            this.groups.add(groupId);
         }
         
         public boolean hasMatchingWitnesses(Variant other) {
@@ -485,8 +503,9 @@ public class TextualApparatusResource extends BaseResource implements FileDirect
             return this.witnessRangeMap;
         }
 
-        public void addWitnessDetail(Long witnessId, Range range) {
+        public void addWitnessDetail(Long witnessId, Range range, int group) {
             Range witRange = this.witnessRangeMap.get(witnessId);
+            this.groups.add(group);
             if (witRange == null) {
                 this.witnessRangeMap.put(witnessId, range);
             } else {
@@ -497,12 +516,16 @@ public class TextualApparatusResource extends BaseResource implements FileDirect
             }
         }
         
-        public boolean hasMatchingGroup(Variant prior) {
-            if ( this.group == 0 || prior.group == 0 ) {
+        public boolean hasMatchingGroup(Variant other) {
+            if ( this.groups.size() != other.groups.size()) {
                 return false;
-            } else {
-                return (this.group == prior.group);
             }
+            for ( Integer g1 : this.groups ) {
+                if ( other.groups.contains(g1) == false) {
+                    return false;
+                }
+            }
+            return true;
         } 
         
         public void merge( Variant mergeFrom ) {
@@ -511,6 +534,8 @@ public class TextualApparatusResource extends BaseResource implements FileDirect
                     Math.min( this.range.getStart(), mergeFrom.getRange().getStart() ),
                     Math.max( this.range.getEnd(), mergeFrom.getRange().getEnd() )
             );
+            
+            this.groups.addAll(mergeFrom.groups);
             
             // for each of the witness details in the merge source, grab the
             // details and add them to the details on this change. note that
@@ -610,12 +635,22 @@ public class TextualApparatusResource extends BaseResource implements FileDirect
         private final String siglum;
         private final String title;
         private final boolean isBase;
+        private final boolean included;
+        
+        public TaWitness( Long id) {
+            this.id = id;
+            this.siglum = "";
+            this.title = "";
+            this.isBase = false;
+            this.included = false;
+        }
         
         public TaWitness( Long id, String siglum, String title, boolean base) {
             this.id = id;
             this.siglum = siglum;
             this.title = title;
             this.isBase = base;
+            this.included = true;
         }
         
         public Long getId() {
@@ -632,6 +667,10 @@ public class TextualApparatusResource extends BaseResource implements FileDirect
         
         public boolean getIsBase() {
             return this.isBase;
+        }
+        
+        public boolean getIsIncluded() {
+            return this.included;
         }
     }
 
