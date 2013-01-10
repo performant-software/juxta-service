@@ -14,9 +14,9 @@ public interface CacheDao {
     void cacheHeatmap( final Long setId, final Long key, Reader data, boolean condensed );
     void deleteHeatmap( final Long setId );
     
-    boolean textualApparatusExists(  final Long setId, final int configHash  );
-    Reader getTextualApparatus( final Long setId,  final int configHash  );
-    void cacheTextualApparatus( final Long setId,  final int configHash , Reader data);
+    boolean editionExists(  final Long setId, final int configHash  );
+    Reader getEdition( final Long setId,  final int configHash  );
+    void cacheEdition( final Long setId,  final int configHash , Reader data);
     
     boolean exportExists(  final Long setId, final Long baseId  );
     Reader getExport( final Long setId, final Long baseId );

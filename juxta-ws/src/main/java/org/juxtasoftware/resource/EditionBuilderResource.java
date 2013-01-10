@@ -56,14 +56,14 @@ import com.google.gson.JsonParser;
 import eu.interedition.text.Range;
 
 /**
- * Resource used to create a Textual Apparatus based on a set.
+ * Resource used to create an Edition based on a set.
  * 
  * @author loufoster
  *
  */
 @Service
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
-public class TextualApparatusResource extends BaseResource implements FileDirectiveListener {
+public class EditionBuilderResource extends BaseResource implements FileDirectiveListener {
 
     private enum Format { HTML, RTF };
 
@@ -96,7 +96,7 @@ public class TextualApparatusResource extends BaseResource implements FileDirect
     }
     
     /**
-     * Create the textual apparatus based on settings present in the JSON payload.
+     * Create an based on settings present in the JSON payload.
      * Expected format:
      * { 
      *     format: html|rtf,
@@ -111,7 +111,7 @@ public class TextualApparatusResource extends BaseResource implements FileDirect
     public Representation create( final String jsonData) throws IOException {
         if ( this.set.getStatus().equals(ComparisonSet.Status.COLLATED) == false ) {
             setStatus(Status.CLIENT_ERROR_CONFLICT);
-            return toTextRepresentation("Unable to generate textual apparatus - set is not collated");
+            return toTextRepresentation("Unable to generate edition - set is not collated");
         }
                
         // parse the config 
@@ -170,8 +170,8 @@ public class TextualApparatusResource extends BaseResource implements FileDirect
         
         // generate a hash for the config and see if the data is cached
         final int configHash =  generateConfigHash();
-        if ( this.cacheDao.textualApparatusExists(this.set.getId(), configHash)) {
-            Reader rdr = this.cacheDao.getTextualApparatus(this.set.getId(), configHash);
+        if ( this.cacheDao.editionExists(this.set.getId(), configHash)) {
+            Reader rdr = this.cacheDao.getEdition(this.set.getId(), configHash);
             if ( rdr != null ) {
                 Representation rep = new ReaderRepresentation( rdr, MediaType.TEXT_HTML);
                 if (isZipSupported()) {
@@ -180,15 +180,15 @@ public class TextualApparatusResource extends BaseResource implements FileDirect
                     return rep;
                 }
             } else {
-                LOG.warn("Unable to retrieved cached textual apparatus for "+set+". Clearing  bad data");
+                LOG.warn("Unable to retrieved cached edition for "+set+". Clearing  bad data");
                 this.cacheDao.deleteAll(set.getId());
             }
         }
         
         // kick off a task to render the apparatus
-        final String taskId =  "textualapp"+configHash;
+        final String taskId =  "edition"+configHash;
         if ( this.taskManager.exists(taskId) == false ) {
-            CaTask task = new CaTask(taskId, configHash);
+            EditionBuilderTask task = new EditionBuilderTask(taskId, configHash);
             this.taskManager.submit(task);
         } 
         return toJsonRepresentation( "{\"status\": \"RENDERING\", \"taskId\": \""+taskId+"\"}" );
@@ -259,8 +259,8 @@ public class TextualApparatusResource extends BaseResource implements FileDirect
         fd.setListener(this);
         map.put("fileReader", fd);  
         
-        Representation rep = this.toHtmlRepresentation("textual_apparatus.ftl", map, false);
-        this.cacheDao.cacheTextualApparatus(this.set.getId(), configHash, rep.getReader());
+        Representation rep = this.toHtmlRepresentation("edition.ftl", map, false);
+        this.cacheDao.cacheEdition(this.set.getId(), configHash, rep.getReader());
     }
     
     private File generateApparatus(List<Range> lineRanges) throws IOException {
@@ -651,14 +651,14 @@ public class TextualApparatusResource extends BaseResource implements FileDirect
     /**
      * Task to asynchronously render the visualization
      */
-    private class CaTask implements BackgroundTask {
+    private class EditionBuilderTask implements BackgroundTask {
         private final String name;
         private BackgroundTaskStatus status;
         private final int configHash;
         private Date startDate;
         private Date endDate;
         
-        public CaTask(final String name, int configHash) {
+        public EditionBuilderTask(final String name, int configHash) {
             this.name =  name;
             this.configHash = configHash;
             this.status = new BackgroundTaskStatus( this.name );
@@ -675,7 +675,7 @@ public class TextualApparatusResource extends BaseResource implements FileDirect
             try {
                 LOG.info("Begin task "+this.name);
                 this.status.begin();
-                TextualApparatusResource.this.render( this.configHash  );
+                EditionBuilderResource.this.render( this.configHash  );
                 LOG.info("Task "+this.name+" COMPLETE");
                 this.endDate = new Date();   
                 this.status.finish();

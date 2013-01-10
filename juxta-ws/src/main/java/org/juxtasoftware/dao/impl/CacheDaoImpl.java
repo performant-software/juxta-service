@@ -160,7 +160,7 @@ public class CacheDaoImpl implements CacheDao {
     }
     
     @Override
-    public boolean textualApparatusExists(  final Long setId, final int configHash  ) {
+    public boolean editionExists(  final Long setId, final int configHash  ) {
         try {
             final String sql = "select count(*) as cnt from "
                 +TABLE+" where set_id=? and config=? and data_type=?";
@@ -173,7 +173,7 @@ public class CacheDaoImpl implements CacheDao {
     }
     
     @Override
-    public Reader getTextualApparatus( final Long setId,  final int configHash  ) {
+    public Reader getEdition( final Long setId,  final int configHash  ) {
         try {
             final String sql = "select data from "+TABLE+" where set_id=? and config=? and data_type=?";
             return DataAccessUtils.uniqueResult(
@@ -192,7 +192,7 @@ public class CacheDaoImpl implements CacheDao {
     }
     
     @Override
-    public void cacheTextualApparatus( final Long setId, final int configHash, final Reader data) {
+    public void cacheEdition( final Long setId, final int configHash, final Reader data) {
         try {
             final String sql = "insert into " + TABLE+ " (set_id, config, data_type, data) values (?,?,?,?)";
             this.jdbcTemplate.update(sql, new PreparedStatementSetter() {
