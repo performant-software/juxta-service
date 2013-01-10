@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -34,7 +35,11 @@ import org.juxtasoftware.util.RangedTextReader;
 import org.juxtasoftware.util.TaskManager;
 import org.juxtasoftware.util.ftl.FileDirective;
 import org.juxtasoftware.util.ftl.FileDirectiveListener;
+import org.restlet.data.Encoding;
+import org.restlet.data.MediaType;
 import org.restlet.data.Status;
+import org.restlet.engine.application.EncodeRepresentation;
+import org.restlet.representation.ReaderRepresentation;
 import org.restlet.representation.Representation;
 import org.restlet.resource.Post;
 import org.restlet.resource.ResourceException;
@@ -165,18 +170,28 @@ public class TextualApparatusResource extends BaseResource implements FileDirect
         
         // generate a hash for the config and see if the data is cached
         final int configHash =  generateConfigHash();
-//        if ( this.cacheDao.textualApparatusExists(this.set.getId(), configHash)) {
-//            // TODO
-//        }
+        if ( this.cacheDao.textualApparatusExists(this.set.getId(), configHash)) {
+            Reader rdr = this.cacheDao.getTextualApparatus(this.set.getId(), configHash);
+            if ( rdr != null ) {
+                Representation rep = new ReaderRepresentation( rdr, MediaType.TEXT_HTML);
+                if (isZipSupported()) {
+                    return new EncodeRepresentation(Encoding.GZIP, rep);
+                } else {
+                    return rep;
+                }
+            } else {
+                LOG.warn("Unable to retrieved cached textual apparatus for "+set+". Clearing  bad data");
+                this.cacheDao.deleteAll(set.getId());
+            }
+        }
         
         // kick off a task to render the apparatus
         final String taskId =  "textualapp"+configHash;
-//        if ( this.taskManager.exists(taskId) == false ) {
-//            CaTask task = new CaTask(taskId);
-//            this.taskManager.submit(task);
-//        } 
-//        return toJsonRepresentation( "{\"status\": \"RENDERING\", \"taskId\": \""+taskId+"\"}" );
-        return render();
+        if ( this.taskManager.exists(taskId) == false ) {
+            CaTask task = new CaTask(taskId, configHash);
+            this.taskManager.submit(task);
+        } 
+        return toJsonRepresentation( "{\"status\": \"RENDERING\", \"taskId\": \""+taskId+"\"}" );
     }
     
 
@@ -196,7 +211,7 @@ public class TextualApparatusResource extends BaseResource implements FileDirect
         return result;
     }
 
-    private Representation render() throws IOException {
+    private void render( final int configHash ) throws IOException {
         // stream contents to text file. this will be read into the template below
         // during this process, convert the lines into a table and append
         // line numbering as needed. Further, track the range of each line.
@@ -227,9 +242,11 @@ public class TextualApparatusResource extends BaseResource implements FileDirect
                 osw.write(lb.toString());
             }
         }
-        osw.close();
-        rdr.close();
+        IOUtils.closeQuietly(osw);
+        IOUtils.closeQuietly(rdr);
         
+        // do all the heay liftign required to create the textual apparatus
+        // results will be an html table rendered to the file
         File appFile = generateApparatus(lineRanges);
         
         // populate template map and generate HTML
@@ -243,8 +260,7 @@ public class TextualApparatusResource extends BaseResource implements FileDirect
         map.put("fileReader", fd);  
         
         Representation rep = this.toHtmlRepresentation("textual_apparatus.ftl", map, false);
-        
-        return rep;
+        this.cacheDao.cacheTextualApparatus(this.set.getId(), configHash, rep.getReader());
     }
     
     private File generateApparatus(List<Range> lineRanges) throws IOException {
@@ -256,7 +272,6 @@ public class TextualApparatusResource extends BaseResource implements FileDirect
         List<Variant> variants = generateVariantList();
         
         // build the variant table one line at a time and stream it out to a file
-        final String baseSiglum = getSiglum(this.baseWitnessId );
         String priorBaseTxt = null;
         Set<String> priorWitsWithChange = new HashSet<String>();
         for (Variant v : variants) {
@@ -639,11 +654,13 @@ public class TextualApparatusResource extends BaseResource implements FileDirect
     private class CaTask implements BackgroundTask {
         private final String name;
         private BackgroundTaskStatus status;
+        private final int configHash;
         private Date startDate;
         private Date endDate;
         
-        public CaTask(final String name) {
+        public CaTask(final String name, int configHash) {
             this.name =  name;
+            this.configHash = configHash;
             this.status = new BackgroundTaskStatus( this.name );
             this.startDate = new Date();
         }
@@ -658,7 +675,7 @@ public class TextualApparatusResource extends BaseResource implements FileDirect
             try {
                 LOG.info("Begin task "+this.name);
                 this.status.begin();
-                TextualApparatusResource.this.render();
+                TextualApparatusResource.this.render( this.configHash  );
                 LOG.info("Task "+this.name+" COMPLETE");
                 this.endDate = new Date();   
                 this.status.finish();
