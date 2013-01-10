@@ -75,8 +75,7 @@ public class TextualApparatusResource extends BaseResource implements FileDirect
     private Long baseWitnessId;
     private Format format;
     private Integer lineFrequency;
-    private List<TaWitness> witnesses = new ArrayList<TaWitness>();
-    
+    private List<TaWitness> witnesses = new ArrayList<TaWitness>();   
     
     @Override
     protected void doInit() throws ResourceException {
@@ -119,7 +118,6 @@ public class TextualApparatusResource extends BaseResource implements FileDirect
             return toTextRepresentation("Invalid output format specified. Only HTML and RTF are acceptable.");
         }
         this.lineFrequency = jsonObj.get("lineFrequency").getAsInt();
-        
         
         JsonArray jsonWits = jsonObj.get("witnesses").getAsJsonArray();
         for ( Iterator<JsonElement>  itr = jsonWits.iterator(); itr.hasNext(); ) {
@@ -165,8 +163,14 @@ public class TextualApparatusResource extends BaseResource implements FileDirect
             return toTextRepresentation("At least 2 witnesses must be included.");
         }
         
+        // generate a hash for the config and see if the data is cached
+        final int configHash =  generateConfigHash();
+//        if ( this.cacheDao.textualApparatusExists(this.set.getId(), configHash)) {
+//            // TODO
+//        }
+        
         // kick off a task to render the apparatus
-        final String taskId =  generateTaskId();
+        final String taskId =  "textualapp"+configHash;
 //        if ( this.taskManager.exists(taskId) == false ) {
 //            CaTask task = new CaTask(taskId);
 //            this.taskManager.submit(task);
@@ -181,14 +185,15 @@ public class TextualApparatusResource extends BaseResource implements FileDirect
         file.delete();
     }
     
-    private String generateTaskId() {
+    private int generateConfigHash() {
         final int prime = 31;
         int result = 1;
         result = prime * result + this.set.getId().hashCode();
         result = prime * result + this.baseWitnessId.hashCode();
         result = prime * result + this.format.hashCode();
         result = prime * result + this.lineFrequency.hashCode();
-        return "textualapp-"+result;
+        result = prime * result + this.witnesses.hashCode();
+        return result;
     }
 
     private Representation render() throws IOException {
@@ -247,6 +252,147 @@ public class TextualApparatusResource extends BaseResource implements FileDirect
         appFile.deleteOnExit();
         OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(appFile), "UTF-8");
 
+        // collect/merge all of the differences into a variant list
+        List<Variant> variants = generateVariantList();
+        
+        // build the variant table one line at a time and stream it out to a file
+        final String baseSiglum = getSiglum(this.baseWitnessId );
+        String priorBaseTxt = null;
+        Set<String> priorWitsWithChange = new HashSet<String>();
+        for (Variant v : variants) {
+            
+            // First, grab the base witness fragment and add it to the variant string
+            String baseTxt = "";
+            boolean additionToBase = false;
+            if ( v.getRange().length() > 0 ) {
+                baseTxt = getWitnessText(this.baseWitnessId, v.getRange());
+            } else {
+                // if base len is 0, this means that a witness added text relative to
+                // the base. grab the two words from the base text to the left and right of
+                // this addition to bookend the change. These two words will also
+                // be appeneded on the ends of the witness text to make it clear that
+                // the witness added content between them. IMPORTANT: this reach ahead/behind
+                // opens the possibity of NESTED changes (one witness has a difference from base 
+                // in one of these words). To balance this out, always keep track of the prior
+                // set of base text and witnesses with diffs. When building the list of
+                // sigla that are the same as base, this prior info will be consulted.
+                additionToBase = true;
+                baseTxt = getAdditionContext(this.baseWitnessId, v.getRange().getStart());
+            }
+            
+            // Start the variant string. It is the base text followed by ]. 
+            StringBuilder sb = new StringBuilder(baseTxt).append("] ");
+            
+            // walk thru each of the witnesses that have differences from
+            // the base at this particular range. Extract the variant text.
+            boolean nestedChange = false;
+            Map<String,Set<String>> txtSiglumMap = new HashMap<String,Set<String>>();
+            for (Entry<Long, Range> ent : v.getWitnessRangeMap().entrySet()) {
+                Long witId = ent.getKey();
+                Range witRng = ent.getValue();
+                String witTxt = "";
+                if ( witRng.length() > 0 ) {
+                    witTxt = getWitnessText(witId, witRng);
+                    if ( additionToBase ) {
+                        // Since this is an addition relative to the base, bookend the
+                        // witness text with the two words from the base. this makes
+                        // it clear that base and witness share those 2 words, but witness
+                        // added the content in the middle.
+                        String[] bits = baseTxt.split(" ");
+                        witTxt = bits[0] + " " + witTxt + " "+bits[1];
+                        if ( bits[0].equals(priorBaseTxt)) {
+                            // the first part of the bookend text was already
+                            // handled by the prior line of the apparatus. flag
+                            // it here so the witnesss wont get double counted. maybe
+                            nestedChange = true;
+                        }
+                    }
+                } else {
+                    witTxt = "<i>not in </i>";
+                }
+                
+                // accumulate the witness text fragments in a map
+                // that can associate them with multiple witnesses
+                final String witSiglum = getSiglum(witId);
+                if ( txtSiglumMap.containsKey(witTxt)) {
+                    txtSiglumMap.get(witTxt).add(witSiglum);
+                } else {
+                    Set<String> sigla = new HashSet<String>();
+                    sigla.add(witSiglum);
+                    txtSiglumMap.put(witTxt, sigla);
+                }
+            }
+            
+            // add any witnesses that are NOT accounted for in the txtSiglumMap
+            // these are witnesses that are the same as the base. add their siglum
+            // to the witness list following the base fragment
+            addWitnessesMatchingBase(sb, txtSiglumMap, nestedChange, priorWitsWithChange);
+            
+            // end the base portion of the variant report
+            sb.append("; ");
+            
+            // Lastly, use the merged data from above to create the witness variants
+            for (Entry<String, Set<String>> ent : txtSiglumMap.entrySet() ) {
+                String witTxt = ent.getKey();
+                StringBuilder ids = new StringBuilder();
+                for ( String siglum: ent.getValue() ) {
+                    if ( ids.length() > 0 ) {
+                        ids.append(", ");
+                    }
+                    ids.append(siglum);
+                }
+                sb.append(witTxt);
+                if  ( witTxt.equals("<i>not in </i>") == false ) {
+                    sb.append(": ");
+                }
+                sb.append(ids).append("; ");
+            }
+            
+            // find line num for range
+            String lineRange = findLineNumber(v.getRange(), lineRanges);
+  
+            // shove the whole thing into a table row and wroite it out to disk
+            final String out = "<tr><td class=\"num-col\">"+lineRange+"</td><td>"+sb.toString()+"</td></tr>\n";
+            osw.write(out);
+            
+            // save priors to detect special cases
+            priorBaseTxt = baseTxt;
+            priorWitsWithChange.clear();
+            for (  Set<String> sigla : txtSiglumMap.values()) {
+                priorWitsWithChange.addAll(sigla);
+            }
+        }
+        
+        IOUtils.closeQuietly(osw);
+        return appFile;
+    }
+    
+    private void addWitnessesMatchingBase(StringBuilder variantSb, Map<String, Set<String>> txtSiglumMap, 
+                                          boolean nestedChange, Set<String> priorWitsWithChange) {
+        
+        // merge all of the sigla entries into one list
+        Set<String> witsWithDiffs = new HashSet<String>();
+        for ( Set<String> s : txtSiglumMap.values()) {
+            witsWithDiffs.addAll(s);
+        }
+        
+        // if a witness is NOT in the diff list, it has the same
+        // text as the base. Add it to the sigla list associated
+        // associated with the base text
+        StringBuilder sameAsBase = new StringBuilder();
+        for ( TaWitness w : this.witnesses ) {
+            boolean alreadyHandled = ( nestedChange && priorWitsWithChange.contains(w.siglum));
+            if ( witsWithDiffs.contains(w.siglum) == false && alreadyHandled == false ) {
+                if ( sameAsBase.length() > 0) {
+                    sameAsBase.append(", ");
+                }
+                sameAsBase.append(w.siglum);
+            }
+        }
+        variantSb.append(sameAsBase);
+    }
+
+    private List<Variant> generateVariantList() {
         boolean done = false;
         int startIdx = 0;
         List<Variant> variants = new ArrayList<Variant>();
@@ -260,11 +406,6 @@ public class TextualApparatusResource extends BaseResource implements FileDirect
             
             // create report based on alignments
             for (Alignment align : aligns) {
-                
-                long id = align.getId();
-                if ( id == 900554  || id == 900555 ) {
-                    System.err.println("dfv");
-                }
                 
                 // get base and witness annotations
                 AlignedAnnotation baseAnno = align.getWitnessAnnotation(this.baseWitnessId);
@@ -303,12 +444,6 @@ public class TextualApparatusResource extends BaseResource implements FileDirect
             Variant prior = null;
             for (Iterator<Variant> itr = variants.iterator(); itr.hasNext();) {
                 Variant variant = itr.next();
-                
-                // HACK
-                String txt = getWitnessText(this.baseWitnessId, variant.getRange());
-                if ( txt.equals("blue")) {
-                    System.err.println("df");
-                }
                 if (prior != null) {
                     // See if these are a candidate to merge
                     if (variant.hasMatchingGroup(prior) && variant.hasMatchingWitnesses(prior)) {
@@ -321,68 +456,9 @@ public class TextualApparatusResource extends BaseResource implements FileDirect
                 prior = variant;
             }
         }
-        
-        // build the variant table one line at a time and stream it out to a file
-        final String baseSiglum = getSiglum(this.baseWitnessId );
-        for (Variant v : variants) {
-            // First, grab the base witness fragment and add it to the variant string
-            String baseTxt = "";
-            if ( v.getRange().length() > 0 ) {
-                baseTxt = getWitnessText(this.baseWitnessId, v.getRange());
-            } else {
-                baseTxt = getAdditionContext(this.baseWitnessId, v.getRange().getStart());
-            }
-            StringBuilder sb = new StringBuilder(baseTxt);
-            sb.append("] ").append(baseSiglum).append("; ");
-            
-            // no walk thru each of the witnesses that have differences from
-            // the base at this particular range. Extract the variant text.
-            Map<String,String> txtSiglumMap = new HashMap<String,String>();
-            for (Entry<Long, Range> ent : v.getWitnessRangeMap().entrySet()) {
-                Long witId = ent.getKey();
-                Range witRng = ent.getValue();
-                String witTxt = "";
-                if ( witRng.length() > 0 ) {
-                    witTxt = getWitnessText(witId, witRng);
-                } else {
-                    witTxt = "<i>not in </i>";
-                }
-                
-                // accumulate the witness text fragments in a map
-                // that can associate them with multiple witnesses
-                final String witSiglum = getSiglum(witId);
-                if ( txtSiglumMap.containsKey(witTxt)) {
-                    String prior = txtSiglumMap.get(witTxt);
-                    prior = prior + ", " + witSiglum;
-                    txtSiglumMap.put(witTxt, prior);
-                } else {
-                    txtSiglumMap.put(witTxt, witSiglum);
-                }
-            }
-            
-            // use the merged data from above to create the witness variants
-            for (Entry<String, String> ent : txtSiglumMap.entrySet() ) {
-                String witTxt = ent.getKey();
-                String ids = ent.getValue();
-                sb.append(witTxt);
-                if  ( witTxt.equals("<i>not in </i>") == false ) {
-                    sb.append(": ");
-                }
-                sb.append(ids).append("; ");
-            }
-            
-            // find line num for range
-            String lineRange = findLineNumber(v.getRange(), lineRanges);
-  
-            // shove the whole thing into a table row and wroite it out to disk
-            final String out = "<tr><td class=\"num-col\">"+lineRange+"</td><td>"+sb.toString()+"</td></tr>\n";
-            osw.write(out);
-        }
-        
-        IOUtils.closeQuietly(osw);
-        return appFile;
+        return variants;
     }
-    
+
     private String getAdditionContext(final Long witId, final long addPos) {
         final int defaultSize = 20;
         int contextSize = defaultSize;
@@ -672,6 +748,50 @@ public class TextualApparatusResource extends BaseResource implements FileDirect
         public boolean getIsIncluded() {
             return this.included;
         }
+
+        @Override
+        public int hashCode() {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + ((id == null) ? 0 : id.hashCode());
+            result = prime * result + (included ? 1231 : 1237);
+            result = prime * result + (isBase ? 1231 : 1237);
+            result = prime * result + ((siglum == null) ? 0 : siglum.hashCode());
+            result = prime * result + ((title == null) ? 0 : title.hashCode());
+            return result;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj)
+                return true;
+            if (obj == null)
+                return false;
+            if (getClass() != obj.getClass())
+                return false;
+            TaWitness other = (TaWitness) obj;
+            if (id == null) {
+                if (other.id != null)
+                    return false;
+            } else if (!id.equals(other.id))
+                return false;
+            if (included != other.included)
+                return false;
+            if (isBase != other.isBase)
+                return false;
+            if (siglum == null) {
+                if (other.siglum != null)
+                    return false;
+            } else if (!siglum.equals(other.siglum))
+                return false;
+            if (title == null) {
+                if (other.title != null)
+                    return false;
+            } else if (!title.equals(other.title))
+                return false;
+            return true;
+        }
+        
     }
 
 }
