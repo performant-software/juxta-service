@@ -160,11 +160,11 @@ public class CacheDaoImpl implements CacheDao {
     }
     
     @Override
-    public boolean criticalApparatusExists(  final Long setId, final Long baseId  ) {
+    public boolean textualApparatusExists(  final Long setId, final int configHash  ) {
         try {
             final String sql = "select count(*) as cnt from "
                 +TABLE+" where set_id=? and config=? and data_type=?";
-            long cnt = jdbcTemplate.queryForLong(sql, setId, baseId.toString(), "CRITICAL_APPARATUS");
+            long cnt = jdbcTemplate.queryForLong(sql, setId, configHash, "CRITICAL_APPARATUS");
             return cnt > 0;
         } catch (Exception e) {
             LOG.error("Critical apparatus exists failed for set "+setId, e);
@@ -173,7 +173,7 @@ public class CacheDaoImpl implements CacheDao {
     }
     
     @Override
-    public Reader getCriticalApparatus( final Long setId, final Long baseId ) {
+    public Reader getTextualApparatus( final Long setId,  final int configHash  ) {
         try {
             final String sql = "select data from "+TABLE+" where set_id=? and config=? and data_type=?";
             return DataAccessUtils.uniqueResult(
@@ -184,7 +184,7 @@ public class CacheDaoImpl implements CacheDao {
                         return rs.getCharacterStream("data");
                     }
                     
-                }, setId, baseId.toString(), "CRITICAL_APPARATUS") );
+                }, setId, configHash, "CRITICAL_APPARATUS") );
         } catch (Exception e) {
             LOG.error("Unable to get critical apparatus for set "+setId, e);
             return null;
@@ -192,7 +192,7 @@ public class CacheDaoImpl implements CacheDao {
     }
     
     @Override
-    public void cacheCriticalApparatus( final Long setId, final Long baseId, final Reader data) {
+    public void cacheTextualApparatus( final Long setId, final int configHash, final Reader data) {
         try {
             final String sql = "insert into " + TABLE+ " (set_id, config, data_type, data) values (?,?,?,?)";
             this.jdbcTemplate.update(sql, new PreparedStatementSetter() {
@@ -200,7 +200,7 @@ public class CacheDaoImpl implements CacheDao {
                 @Override
                 public void setValues(PreparedStatement ps) throws SQLException {
                     ps.setLong(1, setId);
-                    ps.setString(2, baseId.toString());
+                    ps.setString(2, Integer.toString(configHash) );
                     ps.setString(3, "CRITICAL_APPARATUS");
                     ps.setCharacterStream(4, data);
                 }

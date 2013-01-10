@@ -9,15 +9,14 @@ import java.io.Reader;
  */
 public interface CacheDao {
     
-    // TODO eventually kill the setId. It is included in the hashed key
     boolean heatmapExists(  final Long setId, final Long key, boolean condensed );
     Reader getHeatmap( final Long setId, final Long key, boolean condensed  );
     void cacheHeatmap( final Long setId, final Long key, Reader data, boolean condensed );
     void deleteHeatmap( final Long setId );
     
-    boolean criticalApparatusExists(  final Long setId, final Long baseId  );
-    Reader getCriticalApparatus( final Long setId, final Long baseId );
-    void cacheCriticalApparatus( final Long setId, final Long baseId, Reader data);
+    boolean textualApparatusExists(  final Long setId, final int configHash  );
+    Reader getTextualApparatus( final Long setId,  final int configHash  );
+    void cacheTextualApparatus( final Long setId,  final int configHash , Reader data);
     
     boolean exportExists(  final Long setId, final Long baseId  );
     Reader getExport( final Long setId, final Long baseId );
