@@ -78,6 +78,7 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
     
     private ComparisonSet set;
     private Long baseWitnessId;
+    private String editionTitle;
     private Format format;
     private Integer lineFrequency;
     private List<TaWitness> witnesses = new ArrayList<TaWitness>();   
@@ -117,6 +118,7 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
         // parse the config 
         JsonParser p = new JsonParser();
         JsonObject jsonObj = p.parse(jsonData).getAsJsonObject();
+        this.editionTitle = jsonObj.get("title").getAsString();
         this.format = Format.valueOf(jsonObj.get("format").getAsString().toUpperCase());
         if ( this.format == null ) {
             setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
@@ -251,7 +253,7 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
         
         // populate template map and generate HTML
         Map<String, Object> map = new HashMap<String, Object>();
-        map.put("title", "Textual Apparatus for Comparison Set \""+this.set.getName()+"\"");
+        map.put("title", this.editionTitle);
         map.put("witnesses", this.witnesses);
         map.put("baseWitnessText", baseTxt.getAbsoluteFile());
         map.put("apparatusFile", appFile.getAbsoluteFile());

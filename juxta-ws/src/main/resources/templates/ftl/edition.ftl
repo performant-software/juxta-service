@@ -24,6 +24,7 @@
     </head>
 
     <body>
+      <h3>${title}</h3>
        <div id="base-text">
           <table>
             <@fileReader src="${baseWitnessText}"/>   
