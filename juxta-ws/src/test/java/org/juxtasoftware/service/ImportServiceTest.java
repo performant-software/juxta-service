@@ -33,6 +33,7 @@ public class ImportServiceTest extends AbstractTest {
 
     @Before
     public void setup() throws Exception {
+        System.setProperty("javax.xml.transform.TransformerFactory", "net.sf.saxon.TransformerFactoryImpl");
         Workspace ws = this.workspaceDao.getPublic();
         if ( ws == null ) {
             ws = new Workspace();
