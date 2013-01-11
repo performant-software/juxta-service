@@ -35,12 +35,11 @@ import org.juxtasoftware.util.RangedTextReader;
 import org.juxtasoftware.util.TaskManager;
 import org.juxtasoftware.util.ftl.FileDirective;
 import org.juxtasoftware.util.ftl.FileDirectiveListener;
-import org.restlet.data.Encoding;
 import org.restlet.data.MediaType;
 import org.restlet.data.Status;
-import org.restlet.engine.application.EncodeRepresentation;
 import org.restlet.representation.ReaderRepresentation;
 import org.restlet.representation.Representation;
+import org.restlet.resource.Get;
 import org.restlet.resource.Post;
 import org.restlet.resource.ResourceException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -79,7 +78,6 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
     private ComparisonSet set;
     private Long baseWitnessId;
     private String editionTitle;
-    private Format format;
     private Integer lineFrequency;
     private List<TaWitness> witnesses = new ArrayList<TaWitness>();   
     
@@ -94,6 +92,45 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
         if ( validateModel(this.set) == false ) {
             return;
         }
+    }
+    
+    @Get
+    public Representation get() {
+        if (getQuery().getValuesMap().containsKey("format") == false ) {
+            return toTextRepresentation("Missing edition token");
+        }
+        
+        long token = -1;
+        try {
+            token = Long.parseLong(getQuery().getValuesMap().get("token"));
+        } catch (Exception e) {
+            return toTextRepresentation("Invalid edition token format");
+        }
+        
+        Format format = Format.HTML;
+        if (getQuery().getValuesMap().containsKey("format") ) {
+            format = Format.valueOf(getQuery().getValuesMap().get("format").toUpperCase());
+            if ( format == null ) {
+                setStatus(Status.CLIENT_ERROR_BAD_REQUEST, "Invalid output format specified. Only HTML and RTF are acceptable.");
+            }
+        }
+        
+        if ( this.cacheDao.editionExists(this.set.getId(), token)) {
+            Reader rdr = this.cacheDao.getEdition(this.set.getId(), token);
+            if ( rdr != null ) {
+                Representation rep = null;
+                if ( format.equals(Format.HTML)) {
+                    rep = new ReaderRepresentation( rdr, MediaType.TEXT_HTML);
+                } else {
+                    setStatus(Status.SERVER_ERROR_NOT_IMPLEMENTED);
+                    return toTextRepresentation("RTF editions are not yet implemented");
+                }
+                return rep;
+            } 
+        }
+        
+        setStatus(Status.CLIENT_ERROR_NOT_FOUND);
+        return toTextRepresentation("Invalid edition token");
     }
     
     /**
@@ -119,11 +156,6 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
         JsonParser p = new JsonParser();
         JsonObject jsonObj = p.parse(jsonData).getAsJsonObject();
         this.editionTitle = jsonObj.get("title").getAsString();
-        this.format = Format.valueOf(jsonObj.get("format").getAsString().toUpperCase());
-        if ( this.format == null ) {
-            setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
-            return toTextRepresentation("Invalid output format specified. Only HTML and RTF are acceptable.");
-        }
         this.lineFrequency = jsonObj.get("lineFrequency").getAsInt();
         
         JsonArray jsonWits = jsonObj.get("witnesses").getAsJsonArray();
@@ -170,30 +202,15 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
             return toTextRepresentation("At least 2 witnesses must be included.");
         }
         
-        // generate a hash for the config and see if the data is cached
-        final int configHash =  generateConfigHash();
-        if ( this.cacheDao.editionExists(this.set.getId(), configHash)) {
-            Reader rdr = this.cacheDao.getEdition(this.set.getId(), configHash);
-            if ( rdr != null ) {
-                Representation rep = new ReaderRepresentation( rdr, MediaType.TEXT_HTML);
-                if (isZipSupported()) {
-                    return new EncodeRepresentation(Encoding.GZIP, rep);
-                } else {
-                    return rep;
-                }
-            } else {
-                LOG.warn("Unable to retrieved cached edition for "+set+". Clearing  bad data");
-                this.cacheDao.deleteAll(set.getId());
-            }
-        }
-        
         // kick off a task to render the apparatus
-        final String taskId =  "edition"+configHash;
+        final String taskId =  "edition-"+set.hashCode();
+        final long token = System.currentTimeMillis();
         if ( this.taskManager.exists(taskId) == false ) {
-            EditionBuilderTask task = new EditionBuilderTask(taskId, configHash);
+            EditionBuilderTask task = new EditionBuilderTask(taskId, token);
             this.taskManager.submit(task);
         } 
-        return toJsonRepresentation( "{\"status\": \"RENDERING\", \"taskId\": \""+taskId+"\"}" );
+        return toJsonRepresentation( 
+            "{\"status\": \"RENDERING\", \"taskId\": \""+taskId+"\", \"token\": \""+token+"\"}" );
     }
     
 
@@ -201,19 +218,8 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
     public void fileReadComplete(File file) {
         file.delete();
     }
-    
-    private int generateConfigHash() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + this.set.getId().hashCode();
-        result = prime * result + this.baseWitnessId.hashCode();
-        result = prime * result + this.format.hashCode();
-        result = prime * result + this.lineFrequency.hashCode();
-        result = prime * result + this.witnesses.hashCode();
-        return result;
-    }
 
-    private void render( final int configHash ) throws IOException {
+    private void render( final long token ) throws IOException {
         // stream contents to text file. this will be read into the template below
         // during this process, convert the lines into a table and append
         // line numbering as needed. Further, track the range of each line.
@@ -261,8 +267,8 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
         fd.setListener(this);
         map.put("fileReader", fd);  
         
-        Representation rep = this.toHtmlRepresentation("edition.ftl", map, false);
-        this.cacheDao.cacheEdition(this.set.getId(), configHash, rep.getReader());
+        Representation rep = this.toHtmlRepresentation("edition.ftl", map, false, false);
+        this.cacheDao.cacheEdition(this.set.getId(), token, rep.getReader());
     }
     
     private File generateApparatus(List<Range> lineRanges) throws IOException {
@@ -656,13 +662,13 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
     private class EditionBuilderTask implements BackgroundTask {
         private final String name;
         private BackgroundTaskStatus status;
-        private final int configHash;
+        private final long token;
         private Date startDate;
         private Date endDate;
         
-        public EditionBuilderTask(final String name, int configHash) {
+        public EditionBuilderTask(final String name, long token) {
             this.name =  name;
-            this.configHash = configHash;
+            this.token = token;
             this.status = new BackgroundTaskStatus( this.name );
             this.startDate = new Date();
         }
@@ -677,7 +683,7 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
             try {
                 LOG.info("Begin task "+this.name);
                 this.status.begin();
-                EditionBuilderResource.this.render( this.configHash  );
+                EditionBuilderResource.this.render( this.token  );
                 LOG.info("Task "+this.name+" COMPLETE");
                 this.endDate = new Date();   
                 this.status.finish();

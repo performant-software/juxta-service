@@ -160,20 +160,20 @@ public class CacheDaoImpl implements CacheDao {
     }
     
     @Override
-    public boolean editionExists(  final Long setId, final int configHash  ) {
+    public boolean editionExists(  final Long setId, final long token ) {
         try {
             final String sql = "select count(*) as cnt from "
                 +TABLE+" where set_id=? and config=? and data_type=?";
-            long cnt = jdbcTemplate.queryForLong(sql, setId, configHash, "CRITICAL_APPARATUS");
+            long cnt = jdbcTemplate.queryForLong(sql, setId, token, "EDITION");
             return cnt > 0;
         } catch (Exception e) {
-            LOG.error("Critical apparatus exists failed for set "+setId, e);
+            LOG.error("Edition exists failed for set "+setId, e);
             return false;
         }
     }
     
     @Override
-    public Reader getEdition( final Long setId,  final int configHash  ) {
+    public Reader getEdition( final Long setId,  final long token  ) {
         try {
             final String sql = "select data from "+TABLE+" where set_id=? and config=? and data_type=?";
             return DataAccessUtils.uniqueResult(
@@ -184,15 +184,15 @@ public class CacheDaoImpl implements CacheDao {
                         return rs.getCharacterStream("data");
                     }
                     
-                }, setId, configHash, "CRITICAL_APPARATUS") );
+                }, setId, token, "EDITION") );
         } catch (Exception e) {
-            LOG.error("Unable to get critical apparatus for set "+setId, e);
+            LOG.error("Unable to get Edition for set "+setId, e);
             return null;
         }
     }
     
     @Override
-    public void cacheEdition( final Long setId, final int configHash, final Reader data) {
+    public void cacheEdition( final Long setId, final long token, final Reader data) {
         try {
             final String sql = "insert into " + TABLE+ " (set_id, config, data_type, data) values (?,?,?,?)";
             this.jdbcTemplate.update(sql, new PreparedStatementSetter() {
@@ -200,13 +200,13 @@ public class CacheDaoImpl implements CacheDao {
                 @Override
                 public void setValues(PreparedStatement ps) throws SQLException {
                     ps.setLong(1, setId);
-                    ps.setString(2, Integer.toString(configHash) );
-                    ps.setString(3, "CRITICAL_APPARATUS");
+                    ps.setString(2, Long.toString(token) );
+                    ps.setString(3, "EDITION");
                     ps.setCharacterStream(4, data);
                 }
             });  
         } catch (Exception e) {
-            LOG.error("Cache critical apparatus failed for set "+setId, e);
+            LOG.error("Cache Edition failed for set "+setId, e);
         }
     }
     
