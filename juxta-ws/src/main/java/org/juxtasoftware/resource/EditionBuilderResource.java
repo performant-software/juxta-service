@@ -298,6 +298,7 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
             boolean additionToBase = false;
             if ( v.getRange().length() > 0 ) {
                 baseTxt = getWitnessText(this.baseWitnessId, v.getRange());
+                baseTxt = baseTxt.replaceAll("\\n+", " ").replaceAll("\\s+", " ").trim();
             } else {
                 // if base len is 0, this means that a witness added text relative to
                 // the base. grab the two words from the base text to the left and right of
@@ -310,6 +311,7 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
                 // sigla that are the same as base, this prior info will be consulted.
                 additionToBase = true;
                 baseTxt = getAdditionContext(this.baseWitnessId, v.getRange().getStart());
+                baseTxt = baseTxt.replaceAll("\\n+", " ").replaceAll("\\s+", " ").trim();
             }
             
             // Start the variant string. It is the base text followed by ]. 
@@ -331,12 +333,16 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
                         // it clear that base and witness share those 2 words, but witness
                         // added the content in the middle.
                         String[] bits = baseTxt.split(" ");
-                        witTxt = bits[0] + " " + witTxt + " "+bits[1];
-                        if ( bits[0].equals(priorBaseTxt)) {
-                            // the first part of the bookend text was already
-                            // handled by the prior line of the apparatus. flag
-                            // it here so the witnesss wont get double counted. maybe
-                            nestedChange = true;
+                        if ( bits.length < 2 ) {
+                            witTxt = baseTxt+" "+witTxt;
+                        } else {
+                            witTxt = bits[0] + " " + witTxt + " "+bits[1];
+                            if ( bits[0].equals(priorBaseTxt)) {
+                                // the first part of the bookend text was already
+                                // handled by the prior line of the apparatus. flag
+                                // it here so the witnesss wont get double counted. maybe
+                                nestedChange = true;
+                            }
                         }
                     }
                 } else {
