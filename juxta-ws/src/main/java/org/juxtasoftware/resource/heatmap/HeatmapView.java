@@ -474,7 +474,11 @@ public class HeatmapView  {
             if ( handled == false ) {
                 Change c =  new Change(changeId++, new Range(pos, pos), 1);
                 int adjPos = (int)this.annotationDao.findNextTokenStart(base.getId(), pos);
-                c.adjustRange(adjPos, adjPos+1);
+                if ( adjPos+1 >= base.getText().getLength() ) {
+                    c.adjustRange(adjPos-1, adjPos);
+                } else {
+                    c.adjustRange(adjPos, adjPos+1);
+                }
                 changes.add(c );
                 Collections.sort(changes);
             }
