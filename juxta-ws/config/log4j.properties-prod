@@ -24,6 +24,7 @@ log4j.logger.eu.interedition.text=INFO, rolling
 log4j.logger.freemarker.cache=ERROR, rolling
 log4j.logger.org.apache.pdfbox=INFO, rolling
 log4j.logger.org.apache.commons.httpclient=INFO, rolling
+log4j.logger.org.docx4j=ERROR,rolling
 
 #log4j.category.com.googlecode.ehcache.annotations=DEBUG,stdout
 #log4j.additivity.com.googlecode.ehcache.annotations=false

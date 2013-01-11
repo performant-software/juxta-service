@@ -30,6 +30,7 @@ import org.juxtasoftware.model.Witness;
 import org.juxtasoftware.util.BackgroundTask;
 import org.juxtasoftware.util.BackgroundTaskCanceledException;
 import org.juxtasoftware.util.BackgroundTaskStatus;
+import org.juxtasoftware.util.ConversionUtils;
 import org.juxtasoftware.util.QNameFilters;
 import org.juxtasoftware.util.RangedTextReader;
 import org.juxtasoftware.util.TaskManager;
@@ -37,6 +38,7 @@ import org.juxtasoftware.util.ftl.FileDirective;
 import org.juxtasoftware.util.ftl.FileDirectiveListener;
 import org.restlet.data.MediaType;
 import org.restlet.data.Status;
+import org.restlet.representation.FileRepresentation;
 import org.restlet.representation.ReaderRepresentation;
 import org.restlet.representation.Representation;
 import org.restlet.resource.Get;
@@ -64,7 +66,7 @@ import eu.interedition.text.Range;
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
 public class EditionBuilderResource extends BaseResource implements FileDirectiveListener {
 
-    private enum Format { HTML, RTF };
+    private enum Format { HTML, DOCX };
 
     
     @Autowired private ComparisonSetDao setDao;
@@ -118,14 +120,11 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
         if ( this.cacheDao.editionExists(this.set.getId(), token)) {
             Reader rdr = this.cacheDao.getEdition(this.set.getId(), token);
             if ( rdr != null ) {
-                Representation rep = null;
                 if ( format.equals(Format.HTML)) {
-                    rep = new ReaderRepresentation( rdr, MediaType.TEXT_HTML);
+                    return new ReaderRepresentation( rdr, MediaType.TEXT_HTML);
                 } else {
-                    setStatus(Status.SERVER_ERROR_NOT_IMPLEMENTED);
-                    return toTextRepresentation("RTF editions are not yet implemented");
+                    return convertHtmlToRtf(rdr);
                 }
-                return rep;
             } 
         }
         
@@ -133,6 +132,16 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
         return toTextRepresentation("Invalid edition token");
     }
     
+    private Representation convertHtmlToRtf(Reader reader) {
+        try {
+            File out = ConversionUtils.convertHtmlToDocx(reader);
+            return new FileRepresentation(out, MediaType.APPLICATION_MSOFFICE_DOCX);
+        } catch (Exception e) {
+            setStatus(Status.SERVER_ERROR_INTERNAL);
+            return toTextRepresentation("Unable to create docx version of Edition. Try HTML");
+        }
+    }
+
     /**
      * Create an based on settings present in the JSON payload.
      * Expected format:

@@ -5,6 +5,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
+import java.io.Reader;
+
+import javax.xml.bind.JAXBException;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.tika.detect.DefaultDetector;
@@ -16,6 +19,10 @@ import org.apache.tika.parser.AutoDetectParser;
 import org.apache.tika.parser.ParseContext;
 import org.apache.tika.parser.Parser;
 import org.apache.tika.sax.BodyContentHandler;
+import org.docx4j.convert.in.xhtml.XHTMLImporter;
+import org.docx4j.openpackaging.exceptions.Docx4JException;
+import org.docx4j.openpackaging.packages.WordprocessingMLPackage;
+import org.docx4j.openpackaging.parts.WordprocessingML.NumberingDefinitionsPart;
 import org.restlet.data.MediaType;
 import org.restlet.engine.header.ContentType;
 import org.xml.sax.SAXException;
@@ -68,6 +75,24 @@ public class ConversionUtils {
         }
         MediaType mt = ContentType.readMediaType(mimeType);
         return mt;
+    }
+    
+    public static File convertHtmlToDocx( Reader htmlReader ) throws IOException, JAXBException, Docx4JException {
+        File outFile = File.createTempFile("edition", "docx");
+        outFile.deleteOnExit();
+        
+        WordprocessingMLPackage wordMLPackage = WordprocessingMLPackage.createPackage();
+        NumberingDefinitionsPart ndp = new NumberingDefinitionsPart();
+        wordMLPackage.getMainDocumentPart().addTargetPart(ndp);
+        ndp.unmarshalDefaultNumbering();
+        
+        // Convert the XHTML, and add it into the empty docx we made
+        wordMLPackage.getMainDocumentPart().getContent().addAll( 
+                XHTMLImporter.convert(htmlReader, null, wordMLPackage) );
+        
+        wordMLPackage.save( outFile );
+        
+        return outFile;
     }
     
     

@@ -12,7 +12,7 @@
                list-style: none;
             }
             .num-col {
-               width: 60px;
+               width: 40px;
                vertical-align: top;
                color: #BBB;
                font-weight: 100;
