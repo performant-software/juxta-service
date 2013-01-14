@@ -144,7 +144,7 @@ CREATE TABLE IF NOT EXISTS juxta_page_mark (
     witness_id BIGINT NOT NULL,
     offset BIGINT NOT NULL,
     label TEXT,
-    mark_type enum('PAGE_BREAK','LINE_NUMBER') not null,
+    mark_type enum('PAGE_BREAK','LINE_NUMBER') not null default 'PAGE_BREAK',
     PRIMARY KEY (id),
     FOREIGN KEY (witness_id) REFERENCES juxta_witness (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
