@@ -1,16 +1,19 @@
 package org.juxtasoftware.model;
 
 /**
- * Data describing a TEI PB (page break) tag
+ * Data describing a marks on a page. These marks include TEI <pb> and <l> tags
  * 
  * @author loufoster
  *
  */
-public class PageBreak {
+public class PageMark {
+    public enum Type{PAGE_BREAK, LINE_NUMBER};
+    
     private Long id;
     private Long witnessId;
     private long offset;
     private String label;
+    private Type type;
     
     public final Long getId() {
         return id;
@@ -36,6 +39,12 @@ public class PageBreak {
     public final void setLabel(String label) {
         this.label = label;
     }
+    public Type getType() {
+        return type;
+    }
+    public void setType(Type type) {
+        this.type = type;
+    }
     @Override
     public int hashCode() {
         final int prime = 31;
@@ -45,28 +54,23 @@ public class PageBreak {
     }
     @Override
     public boolean equals(Object obj) {
-        if (this == obj) {
+        if (this == obj)
             return true;
-        }
-        if (obj == null) {
+        if (obj == null)
             return false;
-        }
-        if (getClass() != obj.getClass()) {
+        if (getClass() != obj.getClass())
             return false;
-        }
-        PageBreak other = (PageBreak) obj;
+        PageMark other = (PageMark) obj;
         if (id == null) {
-            if (other.id != null) {
+            if (other.id != null)
                 return false;
-            }
-        } else if (!id.equals(other.id)) {
+        } else if (!id.equals(other.id))
             return false;
-        }
         return true;
     }
     @Override
     public String toString() {
-        return "PageBreak [id=" + id + ", witnessId=" + witnessId + ", offset=" + offset + ", label=" + label + "]";
+        return "PageMark [id=" + id + ", type=" + type + ", witnessId=" + witnessId + ", offset=" + offset + ", label=" + label + "]";
     }
     
     

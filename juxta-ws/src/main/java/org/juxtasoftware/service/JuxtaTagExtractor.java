@@ -11,7 +11,7 @@ import java.util.Stack;
 
 import org.juxtasoftware.model.JuxtaXslt;
 import org.juxtasoftware.model.Note;
-import org.juxtasoftware.model.PageBreak;
+import org.juxtasoftware.model.PageMark;
 import org.juxtasoftware.model.RevisionInfo;
 import org.juxtasoftware.service.importer.jxt.Util;
 import org.juxtasoftware.service.importer.ps.WitnessParser.PsWitnessInfo;
@@ -35,7 +35,7 @@ public class JuxtaTagExtractor extends DefaultHandler  {
     private Note currNote = null;
     private StringBuilder currNoteContent;
     private List<Note> notes = new ArrayList<Note>();
-    private List<PageBreak> breaks = new ArrayList<PageBreak>();
+    private List<PageMark> breaks = new ArrayList<PageMark>();
     private Map<String, Range> identifiedRanges = Maps.newHashMap();
     private Map<String,Integer> tagOccurences = Maps.newHashMap();
     private JuxtaXslt xslt;     
@@ -71,7 +71,7 @@ public class JuxtaTagExtractor extends DefaultHandler  {
     public List<Note> getNotes() {
         return this.notes;
     }
-    public List<PageBreak> getPageBreaks() {
+    public List<PageMark> getPageBreaks() {
         return this.breaks;
     }
     public String getPsWitnessContent() {
@@ -238,8 +238,9 @@ public class JuxtaTagExtractor extends DefaultHandler  {
     }
 
     private void handlePageBreak(Attributes attributes) {
-        PageBreak pb = new PageBreak();
+        PageMark pb = new PageMark();
         pb.setOffset(this.currPos);
+        pb.setType(PageMark.Type.PAGE_BREAK);
         //System.err.println("======> PB "+this.currPos);
         
         for (int idx = 0; idx<attributes.getLength(); idx++) {  

@@ -24,12 +24,12 @@ import javax.xml.transform.stream.StreamSource;
 import org.apache.commons.io.input.ReaderInputStream;
 import org.juxtasoftware.dao.JuxtaXsltDao;
 import org.juxtasoftware.dao.NoteDao;
-import org.juxtasoftware.dao.PageBreakDao;
+import org.juxtasoftware.dao.PageMarkDao;
 import org.juxtasoftware.dao.SourceDao;
 import org.juxtasoftware.dao.WitnessDao;
 import org.juxtasoftware.model.JuxtaXslt;
 import org.juxtasoftware.model.Note;
-import org.juxtasoftware.model.PageBreak;
+import org.juxtasoftware.model.PageMark;
 import org.juxtasoftware.model.RevisionInfo;
 import org.juxtasoftware.model.Source;
 import org.juxtasoftware.model.Witness;
@@ -58,7 +58,7 @@ public class SourceTransformer {
     @Autowired private WitnessDao witnessDao;
     @Autowired private JuxtaXsltDao xsltDao;
     @Autowired private NoteDao noteDao;
-    @Autowired private PageBreakDao pbDao;
+    @Autowired private PageMarkDao pbDao;
     @Autowired private SourceDao sourceDao;
 
     /**
@@ -243,7 +243,7 @@ public class SourceTransformer {
         }
         this.noteDao.create(extractor.getNotes());
         
-        for (PageBreak pb : extractor.getPageBreaks()  ) {
+        for (PageMark pb : extractor.getPageBreaks()  ) {
             pb.setWitnessId(w.getId());
         }
         this.pbDao.create( extractor.getPageBreaks() );

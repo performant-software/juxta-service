@@ -22,12 +22,13 @@ import org.juxtasoftware.dao.CacheDao;
 import org.juxtasoftware.dao.ComparisonSetDao;
 import org.juxtasoftware.dao.JuxtaAnnotationDao;
 import org.juxtasoftware.dao.NoteDao;
-import org.juxtasoftware.dao.PageBreakDao;
+import org.juxtasoftware.dao.PageMarkDao;
 import org.juxtasoftware.dao.WitnessDao;
 import org.juxtasoftware.model.Alignment;
 import org.juxtasoftware.model.Alignment.AlignedAnnotation;
 import org.juxtasoftware.model.AlignmentConstraint;
 import org.juxtasoftware.model.ComparisonSet;
+import org.juxtasoftware.model.PageMark;
 import org.juxtasoftware.model.QNameFilter;
 import org.juxtasoftware.model.VisualizationInfo;
 import org.juxtasoftware.model.Witness;
@@ -58,7 +59,7 @@ public class HeatmapView  {
     @Autowired private AlignmentDao alignmentDao;
     @Autowired private ComparisonSetDao setDao;    
     @Autowired private NoteDao noteDao;
-    @Autowired private PageBreakDao pbDao;
+    @Autowired private PageMarkDao pbDao;
     @Autowired private WitnessDao witnessDao;
     @Autowired private QNameFilters filters;
     @Autowired private HeatmapStreamDirective heatmapDirective;
@@ -248,7 +249,7 @@ public class HeatmapView  {
         noteInjector.initialize( this.noteDao.find(base.getId()) );
         
         final BreakInjector pbInjector = this.context.getBean(BreakInjector.class);
-        pbInjector.initialize( this.pbDao.find(base.getId()) );
+        pbInjector.initialize( this.pbDao.find(base.getId(), PageMark.Type.PAGE_BREAK) );
         
         final RevisionInjector revisionInjector = this.context.getBean(RevisionInjector.class);
         revisionInjector.initialize( this.witnessDao.getRevisions(base) );

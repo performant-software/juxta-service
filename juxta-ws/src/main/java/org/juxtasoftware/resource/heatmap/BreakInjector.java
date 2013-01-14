@@ -3,7 +3,7 @@ package org.juxtasoftware.resource.heatmap;
 import java.util.Iterator;
 import java.util.List;
 
-import org.juxtasoftware.model.PageBreak;
+import org.juxtasoftware.model.PageMark;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -17,15 +17,15 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
-public class BreakInjector implements StreamInjector<PageBreak> {
+public class BreakInjector implements StreamInjector<PageMark> {
 
-    private List<PageBreak> breaks;
-    private Iterator<PageBreak> breakItr;
-    private PageBreak currBreak;
+    private List<PageMark> breaks;
+    private Iterator<PageMark> breakItr;
+    private PageMark currBreak;
     private final String BREAK_MARKER = "&nbsp;|&nbsp;";
     
     @Override
-    public void initialize( List<PageBreak> data) {
+    public void initialize( List<PageMark> data) {
         this.breaks = data;
         this.breakItr = this.breaks.iterator();
         if ( this.breakItr.hasNext() ) {
@@ -34,7 +34,7 @@ public class BreakInjector implements StreamInjector<PageBreak> {
     }
     
     @Override
-    public List<PageBreak> getData() {
+    public List<PageMark> getData() {
         return this.breaks;
     }
     

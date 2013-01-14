@@ -14,7 +14,7 @@ import org.juxtasoftware.Constants;
 import org.juxtasoftware.dao.ComparisonSetDao;
 import org.juxtasoftware.dao.JuxtaXsltDao;
 import org.juxtasoftware.dao.NoteDao;
-import org.juxtasoftware.dao.PageBreakDao;
+import org.juxtasoftware.dao.PageMarkDao;
 import org.juxtasoftware.dao.SourceDao;
 import org.juxtasoftware.dao.WitnessDao;
 import org.juxtasoftware.dao.WorkspaceDao;
@@ -22,7 +22,7 @@ import org.juxtasoftware.model.CollatorConfig;
 import org.juxtasoftware.model.ComparisonSet;
 import org.juxtasoftware.model.JuxtaXslt;
 import org.juxtasoftware.model.Note;
-import org.juxtasoftware.model.PageBreak;
+import org.juxtasoftware.model.PageMark;
 import org.juxtasoftware.model.RevisionInfo;
 import org.juxtasoftware.model.Source;
 import org.juxtasoftware.model.Witness;
@@ -64,7 +64,7 @@ public class ParallelSegmentationImportImpl implements ImportService<Source> {
     @Autowired private SourceDao sourceDao;
     @Autowired private WitnessDao witnessDao;
     @Autowired private NoteDao noteDao;
-    @Autowired private PageBreakDao pageBreakDao;
+    @Autowired private PageMarkDao pageBreakDao;
     @Autowired private ComparisonSetDao setDao;
     @Autowired private WorkspaceDao workspaceDao;
     @Autowired private TextRepository textRepository;
@@ -251,7 +251,7 @@ public class ParallelSegmentationImportImpl implements ImportService<Source> {
             }
             this.noteDao.create(extractor.getNotes());
             
-            for (PageBreak pb : extractor.getPageBreaks()  ) {
+            for (PageMark pb : extractor.getPageBreaks()  ) {
                 pb.setWitnessId(witness.getId());
             }
             this.pageBreakDao.create(extractor.getPageBreaks());

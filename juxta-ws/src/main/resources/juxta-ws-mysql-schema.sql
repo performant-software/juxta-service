@@ -139,11 +139,12 @@ CREATE TABLE IF NOT EXISTS juxta_note (
     FOREIGN KEY (witness_id) REFERENCES juxta_witness (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE IF NOT EXISTS juxta_page_break (
+CREATE TABLE IF NOT EXISTS juxta_page_mark (
     id BIGINT NOT NULL AUTO_INCREMENT,
     witness_id BIGINT NOT NULL,
     offset BIGINT NOT NULL,
     label TEXT,
+    mark_type enum('PAGE_BREAK','LINE_NUMBER') not null,
     PRIMARY KEY (id),
     FOREIGN KEY (witness_id) REFERENCES juxta_witness (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;

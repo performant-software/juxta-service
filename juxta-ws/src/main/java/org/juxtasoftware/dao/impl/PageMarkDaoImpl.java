@@ -5,8 +5,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 
-import org.juxtasoftware.dao.PageBreakDao;
-import org.juxtasoftware.model.PageBreak;
+import org.juxtasoftware.dao.PageMarkDao;
+import org.juxtasoftware.model.PageMark;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -14,17 +14,17 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public class PageBreakDaoImpl implements PageBreakDao {
-    private static final String TABLE_NAME = "juxta_page_break";
+public class PageMarkDaoImpl implements PageMarkDao {
+    private static final String TABLE_NAME = "juxta_page_mark";
     @Autowired private JdbcTemplate jdbcTemplate;
 
     @Override
-    public void create(final List<PageBreak> pbs) {
+    public void create(final List<PageMark> pbs) {
         if ( pbs.isEmpty() ) {
             return;
         }
         this.jdbcTemplate.batchUpdate(
-            "insert into "+TABLE_NAME+" (witness_id, offset, label) values (?,?,?)",
+            "insert into "+TABLE_NAME+" (witness_id, offset, label, mark_type) values (?,?,?,?)",
             new BatchPreparedStatementSetter() {
 
                 @Override
@@ -32,6 +32,7 @@ public class PageBreakDaoImpl implements PageBreakDao {
                     ps.setLong(1, pbs.get(i).getWitnessId());
                     ps.setLong(2, pbs.get(i).getOffset());
                     ps.setString(3, pbs.get(i).getLabel());
+                    ps.setString(4, pbs.get(i).getType().toString());
                     
                 }
 
@@ -46,9 +47,21 @@ public class PageBreakDaoImpl implements PageBreakDao {
     @Override
     public boolean hasBreaks(Long witnessId) {
         final String sql = "select count(*) as cnt from "+TABLE_NAME+
-            " where witness_id=?";
+            " where witness_id=? and mark_type=?";
         try {
-            int cnt = this.jdbcTemplate.queryForInt(sql, witnessId);
+            int cnt = this.jdbcTemplate.queryForInt(sql, witnessId, PageMark.Type.PAGE_BREAK.toString());
+            return (cnt > 0);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+    
+    @Override
+    public boolean hasLineNumbers(Long witnessId) {
+        final String sql = "select count(*) as cnt from "+TABLE_NAME+
+            " where witness_id=? and mark_type=?";
+        try {
+            int cnt = this.jdbcTemplate.queryForInt(sql, witnessId, PageMark.Type.LINE_NUMBER.toString());
             return (cnt > 0);
         } catch (Exception e) {
             return false;
@@ -62,24 +75,25 @@ public class PageBreakDaoImpl implements PageBreakDao {
     }
 
     @Override
-    public List<PageBreak> find(Long witnessId) {
+    public List<PageMark> find(final Long witnessId, final PageMark.Type type) {
         final StringBuilder sql = new StringBuilder();
         sql.append( "select id,witness_id,offset,label");
         sql.append(" from ").append(TABLE_NAME);
-        sql.append(" where witness_id=? order by offset asc");
-        return this.jdbcTemplate.query(sql.toString(), new RowMapper<PageBreak>(){
+        sql.append(" where witness_id=? and mark_type = ? order by offset asc");
+        return this.jdbcTemplate.query(sql.toString(), new RowMapper<PageMark>(){
 
             @Override
-            public PageBreak mapRow(ResultSet rs, int rowNum) throws SQLException {
-                PageBreak pb  = new PageBreak();
-                pb.setId( rs.getLong("id"));
-                pb.setWitnessId( rs.getLong("witness_id"));
-                pb.setOffset( rs.getLong("offset"));
-                pb.setLabel( rs.getString("label"));
-                return pb;
+            public PageMark mapRow(ResultSet rs, int rowNum) throws SQLException {
+                PageMark mark  = new PageMark();
+                mark.setId( rs.getLong("id"));
+                mark.setWitnessId( rs.getLong("witness_id"));
+                mark.setOffset( rs.getLong("offset"));
+                mark.setLabel( rs.getString("label"));
+                mark.setType( type );
+                return mark;
             }
             
-        }, witnessId);
+        }, witnessId, type.toString());
     }
 
 }
