@@ -243,10 +243,10 @@ public class SourceTransformer {
         }
         this.noteDao.create(extractor.getNotes());
         
-        for (PageMark pb : extractor.getPageBreaks()  ) {
+        for (PageMark pb : extractor.getPageMarks()  ) {
             pb.setWitnessId(w.getId());
         }
-        this.pbDao.create( extractor.getPageBreaks() );
+        this.pbDao.create( extractor.getPageMarks() );
         
         for (RevisionInfo rev : extractor.getRevisions()  ) {
             rev.setWitnessId(w.getId());

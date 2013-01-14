@@ -28,7 +28,6 @@ import org.juxtasoftware.model.Alignment;
 import org.juxtasoftware.model.Alignment.AlignedAnnotation;
 import org.juxtasoftware.model.AlignmentConstraint;
 import org.juxtasoftware.model.ComparisonSet;
-import org.juxtasoftware.model.PageMark;
 import org.juxtasoftware.model.QNameFilter;
 import org.juxtasoftware.model.VisualizationInfo;
 import org.juxtasoftware.model.Witness;
@@ -176,11 +175,13 @@ public class HeatmapView  {
             Map<String, Object> map = new HashMap<String, Object>();
             map.put("hasNotes", false);
             map.put("hasBreaks", false);
+            map.put("hasLineNumbers", false);
             
             // Last, wrap the body with ui (title, comparison set details)
             map.put("condensed", condensed );
             map.put("hasNotes", this.noteDao.hasNotes( base.getId() ) );
             map.put("hasBreaks", this.pbDao.hasBreaks( base.getId() ) );
+            map.put("hasLineNumbers", this.pbDao.hasLineNumbers( base.getId() ) );
             map.put("hasRevisions", this.witnessDao.hasRevisions(base) );
             map.put("setId", set.getId());
             map.put("setTitle", set.getName());
@@ -249,7 +250,7 @@ public class HeatmapView  {
         noteInjector.initialize( this.noteDao.find(base.getId()) );
         
         final BreakInjector pbInjector = this.context.getBean(BreakInjector.class);
-        pbInjector.initialize( this.pbDao.find(base.getId(), PageMark.Type.PAGE_BREAK) );
+        pbInjector.initialize( this.pbDao.find(base.getId()) );
         
         final RevisionInjector revisionInjector = this.context.getBean(RevisionInjector.class);
         revisionInjector.initialize( this.witnessDao.getRevisions(base) );

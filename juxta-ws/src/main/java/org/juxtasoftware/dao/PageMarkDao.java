@@ -22,9 +22,10 @@ public interface PageMarkDao {
      * Get the set of all page marks for <code>witnessId</code>
      * 
      * @param witnessId The identifier for a witness
-     * @param type The type of marks to find
+     * @param type The type of marks to find (optional; if omitted, all marks on the page are returned)
      * @return Set of all PBs associated with witness <code>witnessId</code> 
      */
+    List<PageMark> find( final Long witnessId);
     List<PageMark> find( final Long witnessId, PageMark.Type type);
     
     /**

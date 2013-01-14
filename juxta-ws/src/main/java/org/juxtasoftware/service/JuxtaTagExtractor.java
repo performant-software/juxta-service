@@ -35,7 +35,7 @@ public class JuxtaTagExtractor extends DefaultHandler  {
     private Note currNote = null;
     private StringBuilder currNoteContent;
     private List<Note> notes = new ArrayList<Note>();
-    private List<PageMark> breaks = new ArrayList<PageMark>();
+    private List<PageMark> marks = new ArrayList<PageMark>();
     private Map<String, Range> identifiedRanges = Maps.newHashMap();
     private Map<String,Integer> tagOccurences = Maps.newHashMap();
     private JuxtaXslt xslt;     
@@ -71,8 +71,8 @@ public class JuxtaTagExtractor extends DefaultHandler  {
     public List<Note> getNotes() {
         return this.notes;
     }
-    public List<PageMark> getPageBreaks() {
-        return this.breaks;
+    public List<PageMark> getPageMarks() {
+        return this.marks;
     }
     public String getPsWitnessContent() {
         return this.psWitnessContent.toString();
@@ -94,6 +94,10 @@ public class JuxtaTagExtractor extends DefaultHandler  {
     private boolean isPageBreak( final String qName ) {
         final String localName = stripNamespace(qName);
         return ( localName.equals("pb") );
+    }
+    private boolean isLineNumber( final String qName ) {
+        final String localName = stripNamespace(qName);
+        return ( localName.equals("l") );
     }
     private boolean isPsWitnessContent( final String qName ) {
         final String localName = stripNamespace(qName);
@@ -165,7 +169,9 @@ public class JuxtaTagExtractor extends DefaultHandler  {
             handleNote(attributes);
         } else if ( isPageBreak(qName) ) {
             handlePageBreak(attributes);
-        } else {
+        } else if ( isLineNumber(qName) ) {
+            handleLineNumber(attributes);
+        }else {
             // default handling for all other tags
             if ( isExcluded ) {
                 this.isExcluding = true;
@@ -252,7 +258,25 @@ public class JuxtaTagExtractor extends DefaultHandler  {
                 pb.setLabel( attributes.getValue(idx) );
             } 
         }
-        this.breaks.add(pb);
+        this.marks.add(pb);
+    }
+    
+    private void handleLineNumber(Attributes attributes) {
+        PageMark mark = new PageMark();
+        mark.setOffset(this.currPos);
+        mark.setType(PageMark.Type.LINE_NUMBER);
+        //System.err.println("======> LINE NUMBER "+this.currPos);
+        
+        for (int idx = 0; idx<attributes.getLength(); idx++) {  
+            String name = attributes.getQName(idx);
+            if ( name.contains(":")) {
+                name = name.split(":")[1];
+            }
+            if ("n".equals(name)) {
+                mark.setLabel( attributes.getValue(idx) );
+            } 
+        }
+        this.marks.add(mark);
     }
 
     private String getAttributeValue( final String name, final Attributes attributes ){

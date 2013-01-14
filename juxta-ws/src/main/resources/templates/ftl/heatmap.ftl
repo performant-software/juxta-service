@@ -53,6 +53,9 @@
                 <#if hasBreaks>
                     <a class="juxta-button" id="pb-button" title="Toggle page break visibility">Page Breaks</a>
                 </#if>
+                <#if hasLineNumbers>
+                    <a class="juxta-button" id="line-num-button" title="Toggle line number visibility">Line Numbers</a>
+                </#if>
                 <#if !embedded>
                     <a class="juxta-button" id="refresh-button" title="Refresh heatmap view">Refresh</a>
                 </#if>

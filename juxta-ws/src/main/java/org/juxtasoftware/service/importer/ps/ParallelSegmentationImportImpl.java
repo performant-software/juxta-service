@@ -251,10 +251,10 @@ public class ParallelSegmentationImportImpl implements ImportService<Source> {
             }
             this.noteDao.create(extractor.getNotes());
             
-            for (PageMark pb : extractor.getPageBreaks()  ) {
+            for (PageMark pb : extractor.getPageMarks()  ) {
                 pb.setWitnessId(witness.getId());
             }
-            this.pageBreakDao.create(extractor.getPageBreaks());
+            this.pageBreakDao.create(extractor.getPageMarks());
             
             for (RevisionInfo rev : extractor.getRevisions()  ) {
                 rev.setWitnessId(witness.getId());

@@ -187,6 +187,17 @@ $(function() {
          revTags.addClass("plain-revs");
       }
    };
+   
+   var toggleLineNumbers = function() {
+      var lineNumTags = $(".line-number");
+      if ($("#line-num-button").hasClass("pushed") === false) {
+         $("#line-num-button").addClass("pushed");
+         lineNumTags.show();
+      } else {
+         $("#line-num-button").removeClass("pushed");
+         lineNumTags.hide();
+      }
+   };
 
    /**
     * Togggle view of page breaks
@@ -398,6 +409,7 @@ $(function() {
          // initially, notes and pagebreaks are displayed. set buttons to pushed
          $("#notes-button").addClass("pushed");
          $("#pb-button").addClass("pushed");
+         $("#line-num-button").addClass("pushed");
 
          // create a bunch of raphael canvases
          // for the non-base witnesses. Render the colored
@@ -497,6 +509,9 @@ $(function() {
       });
       $("#pb-button").on("click", function() {
          togglePbTags();
+      });
+      $("#line-num-button").on("click", function() {
+         toggleLineNumbers();
       });
       $("#notes-button").on("click", function() {
          toggleNotes();

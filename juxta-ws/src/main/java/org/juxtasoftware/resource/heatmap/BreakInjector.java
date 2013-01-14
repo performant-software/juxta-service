@@ -19,45 +19,51 @@ import org.springframework.stereotype.Component;
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
 public class BreakInjector implements StreamInjector<PageMark> {
 
-    private List<PageMark> breaks;
-    private Iterator<PageMark> breakItr;
-    private PageMark currBreak;
+    private List<PageMark> marks;
+    private Iterator<PageMark> markItr;
+    private PageMark currMark;
     private final String BREAK_MARKER = "&nbsp;|&nbsp;";
     
     @Override
     public void initialize( List<PageMark> data) {
-        this.breaks = data;
-        this.breakItr = this.breaks.iterator();
-        if ( this.breakItr.hasNext() ) {
-            this.currBreak = this.breakItr.next();
+        this.marks = data;
+        this.markItr = this.marks.iterator();
+        if ( this.markItr.hasNext() ) {
+            this.currMark = this.markItr.next();
         }
     }
     
     @Override
     public List<PageMark> getData() {
-        return this.breaks;
+        return this.marks;
     }
     
     @Override
     public boolean hasContent(long pos) {
-        if ( this.currBreak == null) {
+        if ( this.currMark == null) {
             return false;
         }
         
-        return ( this.currBreak.getOffset()== pos);
+        return ( this.currMark.getOffset()== pos);
     }
     
     @Override
     public void injectContentStart(StringBuilder line, final long currPositon) {
-        if ( this.currBreak != null ) {
-            if ( this.currBreak.getOffset() == currPositon) { // x25ae x25c6
-                line.append( "<span title=\"").append(currBreak.getLabel());
-                line.append("\" class=\"page-break\" id=\"break-");
-                line.append(this.currBreak.getId()).append("\">");
-                line.append(BREAK_MARKER).append("</span>" );
-                this.currBreak = null;
-                if ( this.breakItr.hasNext() ) {
-                    this.currBreak = this.breakItr.next();
+        if ( this.currMark != null ) {
+            if ( this.currMark.getOffset() == currPositon) { // x25ae x25c6
+                if ( this.currMark.getType().equals(PageMark.Type.PAGE_BREAK)) {
+                    line.append( "<span title=\"").append(this.currMark.getLabel());
+                    line.append("\" class=\"page-break\" id=\"break-");
+                    line.append(this.currMark.getId()).append("\">");
+                    line.append(BREAK_MARKER).append("</span>" );
+                } else if ( this.currMark.getType().equals(PageMark.Type.LINE_NUMBER)) {
+                    line.append( "<span class=\"line-number\" id=\"line-num-");
+                    line.append(this.currMark.getId()).append("\">");
+                    line.append( this.currMark.getLabel() ).append("</span>" );
+                }
+                this.currMark = null;
+                if ( this.markItr.hasNext() ) {
+                    this.currMark = this.markItr.next();
                 }
             } 
         }
@@ -65,7 +71,7 @@ public class BreakInjector implements StreamInjector<PageMark> {
     
     @Override
     public void injectContentEnd(StringBuilder line, final long currPosition) {
-        // PB content atomic (all injected at start). No need
+        // Page mark content atomic (all injected at start). No need
         // for anything to be injected to end it.
     }
 

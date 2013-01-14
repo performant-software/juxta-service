@@ -73,14 +73,23 @@ public class PageMarkDaoImpl implements PageMarkDao {
         final String sql = "delete from "+TABLE_NAME+" where witness_id = ?";
         this.jdbcTemplate.update(sql, witnessId);
     }
+    
+    @Override
+    public List<PageMark> find(final Long witnessId ) {
+        return find(witnessId, null);
+    }
 
     @Override
     public List<PageMark> find(final Long witnessId, final PageMark.Type type) {
         final StringBuilder sql = new StringBuilder();
-        sql.append( "select id,witness_id,offset,label");
+        sql.append( "select id,witness_id,offset,label,mark_type");
         sql.append(" from ").append(TABLE_NAME);
-        sql.append(" where witness_id=? and mark_type = ? order by offset asc");
-        return this.jdbcTemplate.query(sql.toString(), new RowMapper<PageMark>(){
+        sql.append(" where witness_id=?");
+        if ( type != null ) {
+            sql.append(" and mark_type = ?");
+        }
+        sql.append(" order by offset asc");
+        RowMapper<PageMark> rm = new RowMapper<PageMark>(){
 
             @Override
             public PageMark mapRow(ResultSet rs, int rowNum) throws SQLException {
@@ -89,11 +98,16 @@ public class PageMarkDaoImpl implements PageMarkDao {
                 mark.setWitnessId( rs.getLong("witness_id"));
                 mark.setOffset( rs.getLong("offset"));
                 mark.setLabel( rs.getString("label"));
-                mark.setType( type );
+                mark.setType( PageMark.Type.valueOf(rs.getString("mark_type"))  );
                 return mark;
             }
             
-        }, witnessId, type.toString());
+        };
+        if  ( type != null ) {
+            return this.jdbcTemplate.query(sql.toString(), rm, witnessId, type.toString());
+        } else {
+            return this.jdbcTemplate.query(sql.toString(), rm, witnessId);
+        }
     }
 
 }
