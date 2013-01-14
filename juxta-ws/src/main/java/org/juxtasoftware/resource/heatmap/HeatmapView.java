@@ -249,7 +249,7 @@ public class HeatmapView  {
         final NoteInjector noteInjector = this.context.getBean(NoteInjector.class);
         noteInjector.initialize( this.noteDao.find(base.getId()) );
         
-        final BreakInjector pbInjector = this.context.getBean(BreakInjector.class);
+        final PageMarkInjector pbInjector = this.context.getBean(PageMarkInjector.class);
         pbInjector.initialize( this.pbDao.find(base.getId()) );
         
         final RevisionInjector revisionInjector = this.context.getBean(RevisionInjector.class);

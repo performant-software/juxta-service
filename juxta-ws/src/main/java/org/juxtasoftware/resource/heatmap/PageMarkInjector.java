@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
-public class BreakInjector implements StreamInjector<PageMark> {
+public class PageMarkInjector implements StreamInjector<PageMark> {
 
     private List<PageMark> marks;
     private Iterator<PageMark> markItr;
