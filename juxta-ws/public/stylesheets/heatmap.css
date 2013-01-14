@@ -39,6 +39,15 @@ p.base-name {
    overflow: hidden;
    white-space: nowrap;
 }
+p.set-title {
+   display: inline-block;
+   margin: 0 4px;
+   width: 95%;
+   text-overflow: ellipsis;
+   overflow: hidden;
+   white-space: nowrap;
+}
+
 
 #set-title {
    font-weight: 400;

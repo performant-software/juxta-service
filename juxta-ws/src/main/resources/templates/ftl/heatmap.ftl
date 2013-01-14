@@ -34,7 +34,7 @@
 <div class="heatmap-div <#if condensed>condensed</#if>">
 <#if condensed>
    <div id="condensed-header">
-      <div id="set-title">${setTitle}</div> 
+      <div id="set-title"><p class="set-title" title="${setTitle}">${setTitle}</p></div> 
       <div id="condensed-base-name">Viewing:<p class="base-name" title="${baseName}">${baseName}</p></div> 
    </div>
 <#else>
