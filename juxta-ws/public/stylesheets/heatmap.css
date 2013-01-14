@@ -1,4 +1,51 @@
 
+/* condensed header stuff */
+#condensed-base-name  {
+   font-size: 0.8em;
+   font-weight:200;
+}
+
+.condensed-witnesses-popup {
+    display: none;
+    position: fixed;
+    width:350px;
+    height: auto;
+    text-align:center;
+    z-index: 1000;
+    font-size: 0.9em;
+    font-weight: 300;
+    background-color: #eee;
+    border: 1px solid #666;
+    -moz-box-shadow: 5px 5px 5px #999;
+    -webkit-box-shadow: 5px 5px 5px #999;
+    box-shadow: 5px 5px 5px #999;
+    -mox-border-radius: 5px;
+    -webkit-border-radius: 5px;
+    border-radius: 5px;
+    padding: 0px 0px 5px 0px;
+}
+
+#witness-select {
+   margin: 10px 9px 4px 10px;
+   width: 95%;
+}
+
+
+p.base-name {
+   display: inline-block;
+   margin: 0 4px;
+   width: 85%;
+   text-overflow: ellipsis;
+   overflow: hidden;
+   white-space: nowrap;
+}
+
+#set-title {
+   font-weight: 400;
+   text-align: center;
+   margin-bottom: 5px;
+}
+
 /* div containing al files in the comparison set */ 
 div.files {
     border-radius: 5px 5px 0 0;

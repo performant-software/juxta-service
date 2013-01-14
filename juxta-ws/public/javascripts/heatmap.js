@@ -17,7 +17,11 @@ $(function() {
     */
    var getMaxNonScrollHeight = function() {
       var maxH = $("#juxta-ws-content").parent().height();
-      var extraH = $(".header").outerHeight() + $(".heatmap-toolbar").outerHeight();
+      var headerH = $(".header").outerHeight();
+      if ( $("#condensed-header").exists() ) {
+         headerH = $("#condensed-header").outerHeight();   
+      }
+      var extraH = headerH + $(".heatmap-toolbar").outerHeight();
       if ($("#condensed").text() === "true") {
          extraH = extraH + $("#condensed-heatmap-footer").outerHeight();
       }
@@ -440,7 +444,7 @@ $(function() {
                }
             });
 
-            $('.witnesses-popup').css({
+            $('.condensed-witnesses-popup').css({
                "top" : $(this).position().top + $(this).outerHeight() - $('#pick-base-popup').outerHeight() + "px",
                "left" : $(this).position().left + "px"
             });

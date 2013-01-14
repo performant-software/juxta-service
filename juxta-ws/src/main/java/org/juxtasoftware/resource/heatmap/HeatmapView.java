@@ -182,6 +182,7 @@ public class HeatmapView  {
             map.put("hasBreaks", this.pbDao.hasBreaks( base.getId() ) );
             map.put("hasRevisions", this.witnessDao.hasRevisions(base) );
             map.put("setId", set.getId());
+            map.put("setTitle", set.getName());
             map.put("baseId", base.getId());
             map.put("visualizationKey", this.visualizationInfo.getKey());
             map.put("baseName", base.getName() );

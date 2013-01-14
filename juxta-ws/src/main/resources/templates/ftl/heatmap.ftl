@@ -32,7 +32,14 @@
 </#if>
 
 <div class="heatmap-div <#if condensed>condensed</#if>">
-    <div class="header">${baseName}</div>  
+<#if condensed>
+   <div id="condensed-header">
+      <div id="set-title">${setTitle}</div> 
+      <div id="condensed-base-name">Viewing:<p class="base-name" title="${baseName}">${baseName}</p></div> 
+   </div>
+<#else>
+      <div class="header">${baseName}</div> 
+</#if> 
     
     <#if ( !condensed )>
         <#if (embedded && ( hasRevisions || hasNotes || hasBreaks)) || !embedded >
@@ -65,7 +72,7 @@
         </div>
         
         <!-- popup for selecting a new base witness -->
-        <div id="pick-base-popup" class="witnesses-popup">
+        <div id="pick-base-popup" class="condensed-witnesses-popup">
             <div class="header">Select Base Witness</div>
             <select id="witness-select" class="witness-select" size="${witnessCount}">
                 <#list witnesses as witness> 
