@@ -73,5 +73,20 @@ public class PageMark {
         return "PageMark [id=" + id + ", type=" + type + ", witnessId=" + witnessId + ", offset=" + offset + ", label=" + label + "]";
     }
     
+    public String toHtml() {
+        StringBuilder out = new StringBuilder();
+        if (this.type.equals(Type.LINE_NUMBER)) {
+            out.append("<span class=\"line-number\" id=\"line-num-");
+            out.append( getId()).append("\">");
+            out.append( getLabel()).append("</span>");
+        } else {
+            out.append( "<span class=\"page-break\" title=\"").append(getLabel()).append("\" >");
+            out.append("&para;");
+            out.append("</span>");
+            out.append( "<div class=\"page-break\" ></div>");
+        }
+        return out.toString();
+    }
+    
     
 }

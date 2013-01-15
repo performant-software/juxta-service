@@ -1,11 +1,12 @@
 package org.juxtasoftware.resource;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.io.Reader;
 import java.io.StringReader;
 import java.util.HashMap;
 import java.util.List;
@@ -19,9 +20,9 @@ import javax.xml.transform.sax.SAXSource;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 
-import org.apache.commons.io.IOUtils;
 import org.juxtasoftware.dao.ComparisonSetDao;
 import org.juxtasoftware.dao.JuxtaXsltDao;
+import org.juxtasoftware.dao.PageMarkDao;
 import org.juxtasoftware.dao.SourceDao;
 import org.juxtasoftware.dao.WitnessDao;
 import org.juxtasoftware.model.ComparisonSet;
@@ -32,8 +33,11 @@ import org.juxtasoftware.model.Witness;
 import org.juxtasoftware.service.SourceTransformer;
 import org.juxtasoftware.service.importer.JuxtaXsltFactory;
 import org.juxtasoftware.service.importer.ps.ParallelSegmentationImportImpl;
+import org.juxtasoftware.util.ConversionUtils;
 import org.juxtasoftware.util.RangedTextReader;
+import org.restlet.data.MediaType;
 import org.restlet.data.Status;
+import org.restlet.representation.FileRepresentation;
 import org.restlet.representation.Representation;
 import org.restlet.resource.Delete;
 import org.restlet.resource.Get;
@@ -71,6 +75,7 @@ public class XsltResource extends BaseResource  {
     @Autowired private SourceTransformer transformer;
     @Autowired private ComparisonSetDao setDao;
     @Autowired private ApplicationContext context;
+    @Autowired private PageMarkDao pageMarkDao;
     
     private Long xsltId = null;
     private Long witnessId = null;
@@ -190,11 +195,12 @@ public class XsltResource extends BaseResource  {
         if (src.getType().equals(Source.Type.XML)) {
             try {
                 final File out = doTransform(src, xslt);
-                FileInputStream fis = new FileInputStream(out);
-                Representation r = toJsonRepresentation(IOUtils.toString(fis));
-                IOUtils.closeQuietly(fis);
+                Reader r = new FileReader(out);
+                File html = ConversionUtils.witnessToHtml(r, null, this.pageMarkDao.find(this.witnessId));
                 out.delete();
-                return r;
+                FileRepresentation rep = new FileRepresentation(html, MediaType.TEXT_HTML);
+                rep.setAutoDeleting(true);
+                return rep;
             } catch (Exception e) {
                 LOG.error("Unable to preview XML witness", e);
                 setStatus(Status.SERVER_ERROR_INTERNAL);

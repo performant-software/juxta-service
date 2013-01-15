@@ -22,7 +22,6 @@ public class PageMarkInjector implements StreamInjector<PageMark> {
     private List<PageMark> marks;
     private Iterator<PageMark> markItr;
     private PageMark currMark;
-    private final String BREAK_MARKER = "&nbsp;|&nbsp;";
     
     @Override
     public void initialize( List<PageMark> data) {
@@ -51,16 +50,7 @@ public class PageMarkInjector implements StreamInjector<PageMark> {
     public void injectContentStart(StringBuilder line, final long currPositon) {
         if ( this.currMark != null ) {
             if ( this.currMark.getOffset() == currPositon) { // x25ae x25c6
-                if ( this.currMark.getType().equals(PageMark.Type.PAGE_BREAK)) {
-                    line.append( "<span title=\"").append(this.currMark.getLabel());
-                    line.append("\" class=\"page-break\" id=\"break-");
-                    line.append(this.currMark.getId()).append("\">");
-                    line.append(BREAK_MARKER).append("</span>" );
-                } else if ( this.currMark.getType().equals(PageMark.Type.LINE_NUMBER)) {
-                    line.append( "<span class=\"line-number\" id=\"line-num-");
-                    line.append(this.currMark.getId()).append("\">");
-                    line.append( this.currMark.getLabel() ).append("</span>" );
-                }
+                line.append( this.currMark.toHtml());
                 this.currMark = null;
                 if ( this.markItr.hasNext() ) {
                     this.currMark = this.markItr.next();

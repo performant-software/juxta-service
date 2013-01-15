@@ -1,18 +1,26 @@
 package org.juxtasoftware.resource;
 
+import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
+import java.io.Reader;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.lang.StringEscapeUtils;
+import org.apache.commons.io.IOUtils;
 import org.juxtasoftware.dao.JuxtaXsltDao;
+import org.juxtasoftware.dao.PageMarkDao;
 import org.juxtasoftware.dao.WitnessDao;
 import org.juxtasoftware.model.JuxtaXslt;
+import org.juxtasoftware.model.PageMark;
 import org.juxtasoftware.model.Usage;
 import org.juxtasoftware.model.Witness;
 import org.juxtasoftware.service.WitnessRemover;
+import org.juxtasoftware.util.ConversionUtils;
 import org.juxtasoftware.util.RangedTextReader;
+import org.juxtasoftware.util.ftl.FileDirective;
+import org.juxtasoftware.util.ftl.FileDirectiveListener;
 import org.restlet.data.Status;
 import org.restlet.representation.Representation;
 import org.restlet.resource.Delete;
@@ -46,6 +54,7 @@ public class WitnessResource extends BaseResource {
     @Autowired private WitnessDao witnessDao;
     @Autowired private WitnessRemover remover;
     @Autowired private JuxtaXsltDao xsltDao;
+    @Autowired private PageMarkDao pageMarkDao;
 
     /**
      * Extract the text ID and range info from the request attributes
@@ -75,6 +84,8 @@ public class WitnessResource extends BaseResource {
             } else {
                 getResponse().setStatus(Status.CLIENT_ERROR_BAD_REQUEST, "Invalid Range specified");
             }
+        } else {
+            this.range = new Range(0, this.witness.getText().getLength());
         }
     }
     
@@ -94,14 +105,15 @@ public class WitnessResource extends BaseResource {
     @Get("json")
     public Representation toJson() {   
         try {
-            final RangedTextReader reader = new RangedTextReader();
-            reader.read( this.witnessDao.getContentStream(this.witness), this.range );
+            final File wit = witnessToHtml();
+            FileReader fr = new FileReader(wit);
+            
             JsonObject obj = new JsonObject();
             obj.addProperty("id", this.witness.getId());
             obj.addProperty("name", this.witness.getName());
             obj.addProperty("sourceId", this.witness.getSourceId());
             obj.addProperty("xsltId", this.witness.getXsltId());
-            obj.addProperty("content", reader.toString());
+            obj.addProperty("content", IOUtils.toString(fr));
             if ( this.witness.getUpdated() != null && this.witness.getUpdated().after(this.witness.getCreated() ) ) {
                 obj.addProperty("xmlTemplate", "Custom");
             } else {
@@ -118,6 +130,7 @@ public class WitnessResource extends BaseResource {
                     }
                 }
             }
+            wit.delete();
             Gson gson = new Gson();
             return toTextRepresentation(gson.toJson(obj));
         } catch (IOException e) {
@@ -129,18 +142,33 @@ public class WitnessResource extends BaseResource {
     @Get("html")
     public Representation toHtml() {   
         try {
-            final RangedTextReader reader = new RangedTextReader();
-            reader.read( this.witnessDao.getContentStream(this.witness), this.range );
+            final File wit = witnessToHtml();
+            FileDirective fd = new FileDirective();
+            fd.setListener( new FileDirectiveListener() {
+                @Override
+                public void fileReadComplete(File file) {
+                    wit.delete();
+                }
+            });
+            
             Map<String,Object> map = new HashMap<String,Object>();
             map.put("name", witness.getName());
-            map.put("text", StringEscapeUtils.escapeHtml( reader.toString()).replaceAll("\n", "<br/>"));
+            map.put("witnessFile", wit);
+            map.put("fileReader", fd); 
             map.put("page", "witness");
             map.put("title", "Juxta Witness: "+witness.getName());
+            
             return toHtmlRepresentation("witness.ftl", map);
         } catch (IOException e) {
             setStatus(Status.SERVER_ERROR_INTERNAL);
             return toTextRepresentation("Error retrieving witness: "+e.getMessage());
         }
+    }
+    
+    private File witnessToHtml() throws IOException {
+        Reader reader = this.witnessDao.getContentStream(this.witness);
+        List<PageMark> marks = this.pageMarkDao.find(this.witness.getId() );
+        return ConversionUtils.witnessToHtml(reader, this.range, marks);
     }
     
     /**

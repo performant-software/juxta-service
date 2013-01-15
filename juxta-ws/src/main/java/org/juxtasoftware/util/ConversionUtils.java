@@ -6,10 +6,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
+import java.util.Iterator;
+import java.util.List;
 
 import javax.xml.bind.JAXBException;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.tika.detect.DefaultDetector;
 import org.apache.tika.exception.TikaException;
 import org.apache.tika.io.TikaInputStream;
@@ -23,10 +26,13 @@ import org.docx4j.convert.in.xhtml.XHTMLImporter;
 import org.docx4j.openpackaging.exceptions.Docx4JException;
 import org.docx4j.openpackaging.packages.WordprocessingMLPackage;
 import org.docx4j.openpackaging.parts.WordprocessingML.NumberingDefinitionsPart;
+import org.juxtasoftware.model.PageMark;
 import org.restlet.data.MediaType;
 import org.restlet.engine.header.ContentType;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
+
+import eu.interedition.text.Range;
 
 
 /**
@@ -54,6 +60,70 @@ public class ConversionUtils {
                  type.getName().equalsIgnoreCase("text/rtf") ||
                  type.equals(MediaType.APPLICATION_RTF) ||
                  type.equals(MediaType.APPLICATION_OPENOFFICE_ODT) );
+    }
+    
+    /**
+     * Convert the plain text witness stream to HTML, including markup for page breaks and line numbers
+     * @param reader
+     * @param range
+     * @param marks
+     * @return
+     * @throws IOException
+     */
+    public static File witnessToHtml(Reader reader, Range range, List<PageMark> marks) throws IOException {
+        File out = File.createTempFile("wit", "dat");
+        out.deleteOnExit();
+        OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(out), "UTF-8");
+        
+        if ( range == null ) {
+            range = new Range(0, Integer.MAX_VALUE);
+        }
+
+        // get the page number marks and select the first one that is
+        // within the requested range. 
+        Iterator<PageMark> markItr = marks.iterator();
+        PageMark currMark = null;
+        if (markItr.hasNext()) {
+            currMark = markItr.next();
+            while (currMark.getOffset() < range.getStart()) {
+                if (markItr.hasNext()) {
+                    currMark = markItr.next();
+                }
+            }
+        }
+
+        // stream witness text from db into file incuding line num/page break markup
+        long pos = 0;
+        StringBuilder line = new StringBuilder();
+        while (pos <= range.getEnd()) {
+            int data = reader.read();
+            if (data == -1) {
+                break;
+            } else {
+                if (pos >= range.getStart() && (pos + 1) <= range.getEnd()) {
+                    if (currMark != null && currMark.getOffset() == pos) {
+                        line.append(currMark.toHtml());
+                        currMark = null;
+                        if (markItr.hasNext()) {
+                            currMark = markItr.next();
+                        }
+                    }
+
+                    if (data == '\n') {
+                        line.append("<br/>");
+                        osw.write(line.toString());
+                        line = new StringBuilder();
+                    } else {
+                        line.append(StringEscapeUtils.escapeHtml(Character.toString((char) data)));
+                    }
+                }
+                pos++;
+            }
+        }
+
+        IOUtils.closeQuietly(osw);
+        IOUtils.closeQuietly(reader);
+        return out;
     }
     
     public static MediaType determineMediaType( File f ) {

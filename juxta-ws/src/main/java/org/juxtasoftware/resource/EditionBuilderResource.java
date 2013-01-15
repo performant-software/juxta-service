@@ -135,7 +135,9 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
     private Representation convertHtmlToRtf(Reader reader) {
         try {
             File out = ConversionUtils.convertHtmlToDocx(reader);
-            return new FileRepresentation(out, MediaType.APPLICATION_MSOFFICE_DOCX);
+            FileRepresentation rep =  new FileRepresentation(out, MediaType.APPLICATION_MSOFFICE_DOCX);
+            rep.setAutoDeleting(true);
+            return rep;
         } catch (Exception e) {
             setStatus(Status.SERVER_ERROR_INTERNAL);
             return toTextRepresentation("Unable to create docx version of Edition. Try HTML");

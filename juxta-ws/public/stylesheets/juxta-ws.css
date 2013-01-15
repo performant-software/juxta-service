@@ -20,6 +20,30 @@ body {
     font-size: 0.8em;
     font-weight: 300;
 }
+.line-number {
+   font-size: 0.8em;
+   color: #aaa;
+   margin: 2px 8px 0px 0px;
+   float: left;
+   text-align: right;
+   width: 25px;
+}
+div.page-break {
+   margin: 0px;
+   width: 95%;
+   outline: 0;
+   border: 0;
+   border-bottom: 1px dashed #ddd;
+   position: relative;
+   top: -8px;
+   left: 13px;
+}
+span.page-break {
+   color: #ccc;
+   font-size: 0.75em;
+   cursor: pointer;
+}
+
 
 .overlay-body {
     width:200px;

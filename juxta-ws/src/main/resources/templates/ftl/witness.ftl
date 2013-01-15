@@ -1,2 +1,2 @@
 
-${text}
+<@fileReader src="${witnessFile}"/> 
