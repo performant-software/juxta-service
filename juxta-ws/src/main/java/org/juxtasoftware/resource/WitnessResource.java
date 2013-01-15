@@ -114,6 +114,8 @@ public class WitnessResource extends BaseResource {
             obj.addProperty("sourceId", this.witness.getSourceId());
             obj.addProperty("xsltId", this.witness.getXsltId());
             obj.addProperty("content", IOUtils.toString(fr));
+            obj.addProperty("hasLineNumbers", this.pageMarkDao.hasLineNumbers(this.witness.getId()) );
+            obj.addProperty("hasPageBreaks",  this.pageMarkDao.hasBreaks(this.witness.getId()) );
             if ( this.witness.getUpdated() != null && this.witness.getUpdated().after(this.witness.getCreated() ) ) {
                 obj.addProperty("xmlTemplate", "Custom");
             } else {
