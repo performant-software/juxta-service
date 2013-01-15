@@ -99,6 +99,10 @@ public class JuxtaTagExtractor extends DefaultHandler  {
         final String localName = stripNamespace(qName);
         return ( localName.equals("l") );
     }
+    private boolean isParagraph( final String qName ) {
+        final String localName = stripNamespace(qName);
+        return ( localName.equals("p") );
+    }
     private boolean isPsWitnessContent( final String qName ) {
         final String localName = stripNamespace(qName);
         return ( localName.equals("rdg") ||  localName.equals("lem"));
@@ -177,6 +181,9 @@ public class JuxtaTagExtractor extends DefaultHandler  {
                 this.isExcluding = true;
                 this.exclusionContext.push(qName);
             } else {
+                if ( isParagraph(qName)) {
+                    extractParagraphNumber(attributes);
+                }
                 final String idVal = getAttributeValue("id", attributes);
                 if ( idVal != null ) {
                     this.identifiedRanges.put(idVal, new Range(this.currPos, this.currPos));
@@ -273,7 +280,24 @@ public class JuxtaTagExtractor extends DefaultHandler  {
                 name = name.split(":")[1];
             }
             if ("n".equals(name)) {
-                mark.setLabel( attributes.getValue(idx) );
+                mark.setLabel( "L"+attributes.getValue(idx) );
+            } 
+        }
+        this.marks.add(mark);
+    }
+    
+    private void extractParagraphNumber(Attributes attributes) {
+        PageMark mark = new PageMark();
+        mark.setOffset(this.currPos);
+        mark.setType(PageMark.Type.LINE_NUMBER);
+        
+        for (int idx = 0; idx<attributes.getLength(); idx++) {  
+            String name = attributes.getQName(idx);
+            if ( name.contains(":")) {
+                name = name.split(":")[1];
+            }
+            if ("n".equals(name)) {
+                mark.setLabel( "P"+attributes.getValue(idx) );
             } 
         }
         this.marks.add(mark);

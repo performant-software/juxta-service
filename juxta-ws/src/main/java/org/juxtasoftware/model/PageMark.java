@@ -12,7 +12,7 @@ public class PageMark {
     private Long id;
     private Long witnessId;
     private long offset;
-    private String label;
+    private String label = "";
     private Type type;
     
     public final Long getId() {
