@@ -1,6 +1,5 @@
 package org.juxtasoftware.resource;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -17,14 +16,17 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.StringEscapeUtils;
 import org.juxtasoftware.dao.AlignmentDao;
 import org.juxtasoftware.dao.CacheDao;
 import org.juxtasoftware.dao.ComparisonSetDao;
+import org.juxtasoftware.dao.PageMarkDao;
 import org.juxtasoftware.dao.WitnessDao;
 import org.juxtasoftware.model.Alignment;
 import org.juxtasoftware.model.Alignment.AlignedAnnotation;
 import org.juxtasoftware.model.AlignmentConstraint;
 import org.juxtasoftware.model.ComparisonSet;
+import org.juxtasoftware.model.PageMark;
 import org.juxtasoftware.model.QNameFilter;
 import org.juxtasoftware.model.Witness;
 import org.juxtasoftware.util.BackgroundTask;
@@ -68,7 +70,7 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
 
     private enum Format { HTML, DOCX };
 
-    
+    @Autowired private PageMarkDao pageMarkDao;
     @Autowired private ComparisonSetDao setDao;
     @Autowired private QNameFilters filters;
     @Autowired private AlignmentDao alignmentDao;
@@ -231,40 +233,77 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
     }
 
     private void render( final long token ) throws IOException {
-        // stream contents to text file. this will be read into the template below
-        // during this process, convert the lines into a table and append
-        // line numbering as needed. Further, track the range of each line.
-        // This will be used to get correct line numbering info on the apparatus
+        // setup: create a tmp file to hold output and get a reader for base witness content
         File baseTxt = File.createTempFile("base", "txt");
         baseTxt.deleteOnExit();
         Witness base = this.witnessDao.find(this.baseWitnessId);
-        BufferedReader rdr = new BufferedReader( this.witnessDao.getContentStream(base));
+        Reader reader = this.witnessDao.getContentStream(base);
         OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(baseTxt), "UTF-8");
+        
+        // get the page number marks and select the first one (if available
+        List<PageMark> lineNums = this.pageMarkDao.find(this.baseWitnessId, PageMark.Type.LINE_NUMBER);
+        Iterator<PageMark> numItr = lineNums.iterator();
+        PageMark currNum = null;
+        if (numItr.hasNext()) {
+            currNum = numItr.next();
+        }
+        
+        // stream witness text from db into file incuding line num markup
+        // and the line counts based on the line frequency setting. Track the
+        // range associated with each line number so it can be used to record the
+        // location of each variant report in the textual apparatus
+        int pos = 0;
+        int lineStartPos = 0;
         int lineNum = 1;
-        int currPos = 0;
-        List<Range> lineRanges = new ArrayList<Range>();
-        while ( true ) {
-            String line = rdr.readLine();
-            if ( line == null ) {
+        StringBuilder line = new StringBuilder("");
+        Map<Range, String> lineRanges = new HashMap<Range, String>();
+        String lineLabel = "";
+        while ( true) {
+            int data = reader.read();
+            if (data == -1) {
                 break;
             } else {
-                lineRanges.add( new Range(currPos, currPos+line.length()) );
-                currPos += line.length()+1;
-                StringBuilder lb = new StringBuilder("<tr><td class=\"num-col\">");
-                    
-                if ( lineNum % this.lineFrequency == 0 ) {
-                    lb.append(lineNum);
-                } 
-                lb.append("</td><td>").append(line).append("</td></tr>\n");
+                
+                // save off any line number markup found at this psition.
+                // it will be handled when the full line has been read
+                if (currNum != null && currNum.getOffset() == pos) {
+                    lineLabel = currNum.getLabel();
+                    currNum = null;
+                    if (numItr.hasNext()) {
+                        currNum = numItr.next();
+                    }
+                }
 
-                lineNum++;
-                osw.write(lb.toString());
+                // now handle the actual content read...
+                if (data == '\n') {
+                    boolean hasNumberMarkup = true;
+                    if ( lineLabel.length() == 0 ) {
+                        hasNumberMarkup = false;
+                        lineLabel = ""+lineNum;
+                    }
+                    lineRanges.put(new Range(lineStartPos, pos), lineLabel);
+                    
+                    
+                    if (hasNumberMarkup == false && !(lineNum % this.lineFrequency == 0) ) {
+                        // make sure something is here or blank rows collapse
+                        lineLabel = "&nbsp;";   
+                    }
+                    osw.write("<tr><td class=\"num-col\">"+lineLabel+"</td><td>"+line.toString()+"</td></tr>\n");
+                    line = new StringBuilder("");
+                    lineNum++;
+                    lineStartPos = pos+1;
+                    lineLabel = "";
+                } else {
+                    line.append(StringEscapeUtils.escapeHtml(Character.toString((char) data)));
+                }
+                pos++;
             }
         }
+
         IOUtils.closeQuietly(osw);
-        IOUtils.closeQuietly(rdr);
+        IOUtils.closeQuietly(reader);
         
-        // do all the heay liftign required to create the textual apparatus
+        // do all the heavy lifting required to create the textual apparatus
         // results will be an html table rendered to the file
         File appFile = generateApparatus(lineRanges);
         
@@ -282,7 +321,7 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
         this.cacheDao.cacheEdition(this.set.getId(), token, rep.getReader());
     }
     
-    private File generateApparatus(List<Range> lineRanges) throws IOException {
+    private File generateApparatus(Map<Range, String> lineRanges) throws IOException {
         File appFile = File.createTempFile("app", "txt");
         appFile.deleteOnExit();
         OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(appFile), "UTF-8");
@@ -519,38 +558,24 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
         return witTxt;
     }
     
-    private String findLineNumber(Range tgtRange, List<Range> lineRanges) {
-        int lineStart = -1;
-        int lineEnd = -1;
-        int lineNum = 1;
-        for ( Range r : lineRanges ) {
-            if ( r.getStart() > tgtRange.getEnd() ) {
-                return "";
-            }
-            
-            if ( lineStart == -1 ) {
+    private String findLineNumber(Range tgtRange, Map<Range, String> lineRanges) {
+        String startLine = "";
+        for ( Entry<Range, String> entry : lineRanges.entrySet() ) {
+            Range r = entry.getKey();
+            if ( startLine.length() == 0 ) {
                 if ( tgtRange.getStart() >= r.getStart() && tgtRange.getStart() < r.getEnd() ) {
-                    lineStart = lineNum;
+                    startLine = entry.getValue();
                     if ( tgtRange.getEnd() <= r.getEnd() ) {
-                        lineEnd = lineNum;
-                        break;
+                        return startLine;
                     }
                 }
             } else {
                 if ( tgtRange.getEnd() <= r.getEnd() ) {
-                    lineEnd = lineNum;
-                    break;
+                    return startLine +"-"+entry.getValue();
                 }
             }
-            lineNum++;
         }
-        
-        if ( lineStart == lineEnd ) {
-            return ""+lineStart;
-        }
-        else {
-            return lineStart+" - "+lineEnd;
-        }
+        return startLine;
     }
 
     private String getSiglum( final Long witId ) {
