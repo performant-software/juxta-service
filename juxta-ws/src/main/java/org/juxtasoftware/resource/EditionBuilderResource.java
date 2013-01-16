@@ -83,6 +83,7 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
     private Long baseWitnessId;
     private String editionTitle;
     private Integer lineFrequency;
+    private boolean numberBlankLines;
     private List<TaWitness> witnesses = new ArrayList<TaWitness>();   
     
     @Override
@@ -170,6 +171,7 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
         JsonObject jsonObj = p.parse(jsonData).getAsJsonObject();
         this.editionTitle = jsonObj.get("title").getAsString();
         this.lineFrequency = jsonObj.get("lineFrequency").getAsInt();
+        this.numberBlankLines = jsonObj.get("numberBlankLines").getAsBoolean();
         
         JsonArray jsonWits = jsonObj.get("witnesses").getAsJsonArray();
         for ( Iterator<JsonElement>  itr = jsonWits.iterator(); itr.hasNext(); ) {
@@ -276,21 +278,29 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
 
                 // now handle the actual content read...
                 if (data == '\n') {
+                    final int lineLen = line.toString().trim().length();
                     boolean hasNumberMarkup = true;
                     if ( lineLabel.length() == 0 ) {
                         hasNumberMarkup = false;
                         lineLabel = ""+lineNum;
+                        if ( lineLen == 0 && this.numberBlankLines == false ) {
+                            lineLabel = "&nbsp;";
+                        }
                     }
-                    lineRanges.put(new Range(lineStartPos, pos), lineLabel);
                     
-                    
+                    if ( lineLabel.length() > 0 ) {
+                        lineRanges.put(new Range(lineStartPos, pos), lineLabel);
+                    }
+
                     if (hasNumberMarkup == false && !(lineNum % this.lineFrequency == 0) ) {
                         // make sure something is here or blank rows collapse
                         lineLabel = "&nbsp;";   
                     }
                     osw.write("<tr><td class=\"num-col\">"+lineLabel+"</td><td>"+line.toString()+"</td></tr>\n");
+                    if ( lineLen > 0 || (lineLen == 0 && this.numberBlankLines) ) {
+                        lineNum++;
+                    }
                     line = new StringBuilder("");
-                    lineNum++;
                     lineStartPos = pos+1;
                     lineLabel = "";
                 } else {
