@@ -81,7 +81,7 @@ public class PageMark {
             out.append( getLabel()).append("</span>");
         } else {
             out.append( "<span class=\"page-break\" title=\"").append(getLabel()).append("\" >");
-            out.append("&para;");
+            out.append("Page Break");
             out.append("</span>");
             out.append( "<div class=\"page-break\" ></div>");
         }

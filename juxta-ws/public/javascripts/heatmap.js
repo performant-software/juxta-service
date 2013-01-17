@@ -206,10 +206,10 @@ $(function() {
       var pbTags = $(".page-break");
       if ($("#pb-button").hasClass("pushed") === false) {
          $("#pb-button").addClass("pushed");
-         pbTags.show();
+         pbTags.css('visibility', 'visible');
       } else {
          $("#pb-button").removeClass("pushed");
-         pbTags.hide();
+         pbTags.css('visibility', 'hidden');
       }
    };
 
