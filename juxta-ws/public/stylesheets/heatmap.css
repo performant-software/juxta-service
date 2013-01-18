@@ -30,14 +30,21 @@
    width: 95%;
 }
 
-
+#condensed-header span {
+   float: left;
+   font-size:0.85em;
+   font-weight: 200;
+}
 p.base-name {
+   font-size:0.85em;
    display: inline-block;
    margin: 0 4px;
    width: 85%;
    text-overflow: ellipsis;
    overflow: hidden;
    white-space: nowrap;
+   float:right;
+   font-weight: 200;
 }
 p.set-title {
    display: inline-block;
