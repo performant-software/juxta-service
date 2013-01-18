@@ -284,7 +284,7 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
                         hasNumberMarkup = false;
                         lineLabel = ""+lineNum;
                         if ( lineLen == 0 && this.numberBlankLines == false ) {
-                            lineLabel = "&nbsp;";
+                            lineLabel = " ";
                         }
                     }
                     
@@ -294,7 +294,7 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
 
                     if (hasNumberMarkup == false && !(lineNum % this.lineFrequency == 0) ) {
                         // make sure something is here or blank rows collapse
-                        lineLabel = "&nbsp;";   
+                        lineLabel = " ";   
                     }
                     osw.write("<tr><td class=\"num-col\">"+lineLabel+"</td><td>"+line.toString()+"</td></tr>\n");
                     if ( lineLen > 0 || (lineLen == 0 && this.numberBlankLines) ) {
@@ -304,7 +304,7 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
                     lineStartPos = pos+1;
                     lineLabel = "";
                 } else {
-                    line.append(StringEscapeUtils.escapeHtml(Character.toString((char) data)));
+                    line.append(StringEscapeUtils.escapeXml(Character.toString((char) data)));
                 }
                 pos++;
             }

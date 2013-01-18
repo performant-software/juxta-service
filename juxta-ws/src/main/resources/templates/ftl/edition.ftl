@@ -19,6 +19,7 @@
                font-size: 0.8em;
                text-align: right;
                padding-right: 10px;
+               height: 17px;
             }
          </style>
     </head>
