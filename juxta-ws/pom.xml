@@ -9,7 +9,7 @@
     
     <artifactId>juxta-ws</artifactId>
     <packaging>jar</packaging>
-    <version>1.7.4-BETA</version>
+    <version>1.7.5-BETA</version>
     <name>Juxta :: Web Service</name>
 
     <!-- project property settings -->
