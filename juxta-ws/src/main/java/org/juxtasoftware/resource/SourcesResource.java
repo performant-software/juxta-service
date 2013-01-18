@@ -450,7 +450,8 @@ public class SourcesResource extends BaseResource {
 
         // Convert media type to Source Type
         Source.Type srcType = Source.Type.TXT;
-        if (MediaType.TEXT_XML.isCompatible(mediaType)) {
+        if (MediaType.TEXT_XML.isCompatible(mediaType) ||
+            MediaType.APPLICATION_XML.isCompatible(mediaType) ) {
             srcType = Source.Type.XML;
         } else if (MediaType.TEXT_HTML.isCompatible(mediaType)) {
             srcType = Source.Type.HTML;
