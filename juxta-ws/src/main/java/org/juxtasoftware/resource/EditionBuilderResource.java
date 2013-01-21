@@ -549,7 +549,7 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
     }
 
     private String getAdditionContext(final Long witId, final long addPos) {
-        final int defaultSize = 20;
+        final int defaultSize = 40;
         int contextSize = defaultSize;
         if ( addPos == 0 ) {
             String witTxt = getWitnessText(witId, new Range(0, contextSize)).trim();
