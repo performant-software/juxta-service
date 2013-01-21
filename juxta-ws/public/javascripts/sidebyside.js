@@ -420,8 +420,17 @@ $(function() {
       imgSrc = imgSrc.substring(0, pos);
       var isLocked = $("#scroll-mode-img").data("locked");
       isLocked = !isLocked;
+            
+      $("#right-witness-text").data("action","lock-change");
+      $("#left-witness-text").data("action","lock-change");
+      
       $("#scroll-mode-img").data("locked", isLocked);
 
+      // grab current scroll pos and convert to percent
+      var top = $("#left-witness-text").scrollTop();
+      var full = $("#left-witness-text")[0].scrollHeight;
+      var percent = top / full;
+      
       if (isLocked === true) {
          $("#scroll-mode-img").attr("src", imgSrc + "/lock.gif");
          $("#left-witness-text").css("overflow-y", "hidden");
@@ -429,9 +438,11 @@ $(function() {
          $("#scroll-mode-img").attr("src", imgSrc + "/unlock.gif");
          $("#left-witness-text").css("overflow-y", "auto");
       }
-      
-      $("#right-witness-text").data("action","lock-change");
-      $("#left-witness-text").data("action","lock-change");
+              
+      // reset the scroll position to match the one calculated above
+      full = $("#left-witness-text")[0].scrollHeight;
+      top = full*percent;
+      $("#left-witness-text").scrollTop( top);
 
       setTimeout(function() {
          initDocumentHeight();
