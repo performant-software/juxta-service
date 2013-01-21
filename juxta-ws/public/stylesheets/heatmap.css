@@ -235,6 +235,14 @@ div.margin-boxes.condensed {
     color: #999;
 }
 
+#condensed-overlay {
+   z-index: 1000;
+   width: 100%;
+   height: 100%;
+   position: fixed;
+   background-color: rgba(255,255,255,0.7);
+}
+
 
 /* Div for headmap, notes and margin boxes */
 /* This version is when the SIMPLE UI is used */

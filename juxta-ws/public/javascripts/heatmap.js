@@ -233,6 +233,10 @@ $(function() {
     * Clear out all margin boxes and replace with note boxes
     */
    var clearBoxes = function() {
+      if ( $("#condensed-overlay").exists() ) {
+         $("#condensed-overlay").remove();
+      }
+      
       $("#margin-boxes").fadeOut(250, function() {
          var priorActive = $(".active");
          priorActive.removeClass("active");
@@ -327,7 +331,20 @@ $(function() {
             }
 
             if ($("#condensed").text() === 'true') {
-               $("#heatmap-text").addClass("dimmed");
+               $('#heatmap-scroller').append("<div id='condensed-overlay'></div>");
+               $("#condensed-overlay").height( $("#heatmap-scroller").height());
+               $("#condensed-overlay").css( "top", $('#heatmap-scroller').offset().top+"px");
+               var help = $("<div/>");
+               $("#heatmap-scroller").append(help);
+               var w  = help.width();
+               help.remove();
+               $("#condensed-overlay").width(w);
+               
+               $("#condensed-overlay").css("z-index", "1");
+               $("#margin-boxes").css("z-index", "1000");
+               
+               
+               //$("#heatmap-text").addClass("dimmed");
                var x = $("#heatmap-text").position().top + $("#heatmap-text").outerHeight();
                $("#margin-boxes").css("left", ($("#heatmap-text").width() - $("#margin-boxes").width()) / 2);
                $("#margin-boxes").css("top", boxTop - x + 40 - $("#heatmap-scroller").scrollTop());
