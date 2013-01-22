@@ -555,13 +555,25 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
     }
 
     private String getAdditionContext(final Long witId, final long addPos) {
+        Witness w = this.witnessDao.find(witId);
         final int defaultSize = 40;
         int contextSize = defaultSize;
         if ( addPos == 0 ) {
             String witTxt = getWitnessText(witId, new Range(0, contextSize)).trim();
             return witTxt.substring(0, witTxt.indexOf(' '));
         }
+
+        // don't extend less < 0
         contextSize = Math.min( defaultSize, (int)addPos);
+
+        // don't extend past end of doc
+        long endPos = addPos+contextSize;
+        long maxLen = w.getText().getLength()-1;
+        if ( endPos >= maxLen) {
+            long delta = endPos - maxLen;
+            contextSize -= delta;
+        }
+        
         String witTxt = getWitnessText(witId, new Range(addPos-contextSize, addPos+contextSize)).trim();
         String before = witTxt.substring(0,contextSize).trim();
         String wb = before.substring(before.lastIndexOf(' ')).trim();
