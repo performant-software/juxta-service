@@ -142,6 +142,7 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
             rep.setAutoDeleting(true);
             return rep;
         } catch (Exception e) {
+            LOG.error("Convert to DOCX failed", e);
             setStatus(Status.SERVER_ERROR_INTERNAL);
             return toTextRepresentation("Unable to create docx version of Edition. Try HTML");
         }
@@ -349,7 +350,6 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
             boolean additionToBase = false;
             if ( v.getRange().length() > 0 ) {
                 baseTxt = getWitnessText(this.baseWitnessId, v.getRange());
-                baseTxt = baseTxt.replaceAll("\\n+", " ").replaceAll("\\s+", " ").trim();
             } else {
                 // if base len is 0, this means that a witness added text relative to
                 // the base. grab the two words from the base text to the left and right of
@@ -362,8 +362,11 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
                 // sigla that are the same as base, this prior info will be consulted.
                 additionToBase = true;
                 baseTxt = getAdditionContext(this.baseWitnessId, v.getRange().getStart());
-                baseTxt = baseTxt.replaceAll("\\n+", " ").replaceAll("\\s+", " ").trim();
             }
+            
+            // normalize the text and make it safe
+            baseTxt = baseTxt.replaceAll("\\n+", " ").replaceAll("\\s+", " ").trim();
+            baseTxt = StringEscapeUtils.escapeXml( baseTxt );
             
             // Start the variant string. It is the base text followed by ]. 
             StringBuilder sb = new StringBuilder(baseTxt).append("] ");
@@ -378,6 +381,9 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
                 String witTxt = "";
                 if ( witRng.length() > 0 ) {
                     witTxt = getWitnessText(witId, witRng);
+                    witTxt = witTxt.replaceAll("\\n+", " ").replaceAll("\\s+", " ").trim();
+                    witTxt = StringEscapeUtils.escapeXml( witTxt );
+                    
                     if ( additionToBase ) {
                         // Since this is an addition relative to the base, bookend the
                         // witness text with the two words from the base. this makes
@@ -395,7 +401,7 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
                                 nestedChange = true;
                             }
                         }
-                    }
+                    } 
                 } else {
                     witTxt = "<i>not in </i>";
                 }
@@ -442,7 +448,7 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
   
             // shove the whole thing into a table row and wroite it out to disk
             final String out = "<tr><td class=\"num-col\">"+lineRange+"</td><td>"+sb.toString()+"</td></tr>\n";
-            osw.write(out);
+            osw.write( out );
             
             // save priors to detect special cases
             priorBaseTxt = baseTxt;
@@ -727,7 +733,7 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
         
         @Override
         public Type getType() {
-            return BackgroundTask.Type.VISUALIZE;
+            return BackgroundTask.Type.EDITION;
         }
         
         @Override

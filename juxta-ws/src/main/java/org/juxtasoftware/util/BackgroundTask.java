@@ -11,7 +11,7 @@ import org.juxtasoftware.util.BackgroundTaskStatus.Status;
  *
  */
 public interface BackgroundTask extends Runnable {
-    public enum Type {TOKENIZE, COLLATE, IMPORT, UPDATE, VISUALIZE};
+    public enum Type {TOKENIZE, COLLATE, IMPORT, UPDATE, VISUALIZE, EDITION};
     public Status getStatus();
     public String getName();
     public void cancel();
