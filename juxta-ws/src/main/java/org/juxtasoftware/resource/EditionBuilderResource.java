@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.TreeMap;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringEscapeUtils;
@@ -259,7 +260,7 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
         int lineStartPos = 0;
         int lineNum = 1;
         StringBuilder line = new StringBuilder("");
-        Map<Range, String> lineRanges = new HashMap<Range, String>();
+        Map<Range, String> lineRanges = new TreeMap<Range, String>();
         String lineLabel = "";
         while ( true) {
             int data = reader.read();
@@ -343,13 +344,15 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
         // build the variant table one line at a time and stream it out to a file
         String priorBaseTxt = null;
         Set<String> priorWitsWithChange = new HashSet<String>();
-        for (Variant v : variants) {
+        for (Variant variant : variants) {
             
             // First, grab the base witness fragment and add it to the variant string
             String baseTxt = "";
             boolean additionToBase = false;
-            if ( v.getRange().length() > 0 ) {
-                baseTxt = getWitnessText(this.baseWitnessId, v.getRange());
+            Range baseRange = new Range( variant.getRange() );
+            if ( baseRange.length() > 0 ) {
+                baseTxt = getWitnessText(this.baseWitnessId, variant.getRange());
+                baseTxt = baseTxt.replaceAll("\\n+", " ").replaceAll("\\s+", " ").trim();
             } else {
                 // if base len is 0, this means that a witness added text relative to
                 // the base. grab the two words from the base text to the left and right of
@@ -361,11 +364,17 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
                 // set of base text and witnesses with diffs. When building the list of
                 // sigla that are the same as base, this prior info will be consulted.
                 additionToBase = true;
-                baseTxt = getAdditionContext(this.baseWitnessId, v.getRange().getStart());
+                baseTxt = getAdditionContext(this.baseWitnessId, baseRange.getStart());
+                baseTxt = baseTxt.replaceAll("\\n+", " ").replaceAll("\\s+", " ").trim();
+                String[] parts = baseTxt.split(" ");
+                if ( parts.length == 2 ) {
+                    baseRange = new Range(baseRange.getStart()-parts[0].length(), baseRange.getStart()+parts[1].length()+1);
+                } else {
+                    baseRange = new Range(baseRange.getStart(), baseRange.getStart()+parts[0].length());
+                }
             }
             
-            // normalize the text and make it safe
-            baseTxt = baseTxt.replaceAll("\\n+", " ").replaceAll("\\s+", " ").trim();
+            // make it safe
             baseTxt = StringEscapeUtils.escapeXml( baseTxt );
             
             // Start the variant string. It is the base text followed by ]. 
@@ -375,7 +384,7 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
             // the base at this particular range. Extract the variant text.
             boolean nestedChange = false;
             Map<String,Set<String>> txtSiglumMap = new HashMap<String,Set<String>>();
-            for (Entry<Long, Range> ent : v.getWitnessRangeMap().entrySet()) {
+            for (Entry<Long, Range> ent : variant.getWitnessRangeMap().entrySet()) {
                 Long witId = ent.getKey();
                 Range witRng = ent.getValue();
                 String witTxt = "";
@@ -444,7 +453,7 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
             }
             
             // find line num for range
-            String lineRange = findLineNumber(v.getRange(), lineRanges);
+            String lineRange = findLineNumber(baseRange, lineRanges);
   
             // shove the whole thing into a table row and wroite it out to disk
             final String out = "<tr><td class=\"num-col\">"+lineRange+"</td><td>"+sb.toString()+"</td></tr>\n";
@@ -559,7 +568,8 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
         final int defaultSize = 40;
         int contextSize = defaultSize;
         if ( addPos == 0 ) {
-            String witTxt = getWitnessText(witId, new Range(0, contextSize)).trim();
+            Range r = new Range(0, contextSize);
+            String witTxt = getWitnessText(witId, r).trim();
             return witTxt.substring(0, witTxt.indexOf(' '));
         }
 
