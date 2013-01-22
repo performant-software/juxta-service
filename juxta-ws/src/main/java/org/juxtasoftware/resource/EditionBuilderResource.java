@@ -298,7 +298,7 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
                         lineLabel = " ";   
                     }
                     osw.write("<tr><td class=\"num-col\">"+lineLabel+"</td><td>"+line.toString()+"</td></tr>\n");
-                    if ( lineLen > 0 || (lineLen == 0 && this.numberBlankLines) ) {
+                    if ( hasNumberMarkup == false && (lineLen > 0 || (lineLen == 0 && this.numberBlankLines)) ) {
                         lineNum++;
                     }
                     line = new StringBuilder("");
