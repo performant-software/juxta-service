@@ -13,6 +13,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.regex.Pattern;
 import java.util.Set;
 import java.util.TreeMap;
 
@@ -86,6 +87,8 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
     private Integer lineFrequency;
     private boolean numberBlankLines;
     private List<TaWitness> witnesses = new ArrayList<TaWitness>();   
+    
+    private static final Pattern PUNCTUATION = Pattern.compile("[^a-zA-Z0-9\\-]");
     
     @Override
     protected void doInit() throws ResourceException {
@@ -364,7 +367,7 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
                 // set of base text and witnesses with diffs. When building the list of
                 // sigla that are the same as base, this prior info will be consulted.
                 additionToBase = true;
-                baseTxt = getAdditionContext(this.baseWitnessId, baseRange.getStart());
+                baseTxt = getBaseAdditionContext( baseRange.getStart());
                 baseTxt = baseTxt.replaceAll("\\n+", " ").replaceAll("\\s+", " ").trim();
                 String[] parts = baseTxt.split(" ");
                 if ( parts.length == 2 ) {
@@ -394,22 +397,16 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
                     witTxt = StringEscapeUtils.escapeXml( witTxt );
                     
                     if ( additionToBase ) {
-                        // Since this is an addition relative to the base, bookend the
-                        // witness text with the two words from the base. this makes
-                        // it clear that base and witness share those 2 words, but witness
-                        // added the content in the middle.
-                        String[] bits = baseTxt.split(" ");
-                        if ( bits.length < 2 ) {
-                            witTxt = baseTxt+" "+witTxt;
-                        } else {
-                            witTxt = bits[0] + " " + witTxt + " "+bits[1];
-                            if ( bits[0].equals(priorBaseTxt)) {
-                                // the first part of the bookend text was already
-                                // handled by the prior line of the apparatus. flag
-                                // it here so the witnesss wont get double counted. maybe
-                                nestedChange = true;
-                            }
-                        }
+                        // grab the added witness text plus extend out to include
+                        // the prior and next words that book end the change. these
+                        // extra 2 words should match the base text, and serve as bookends
+                        // to delimit the addition
+                        witTxt = getWitnessAdditionWithContext(witId, witRng);
+                        
+                        // if the first part of the bookend text was already
+                        // handled by the prior line of the apparatus. flag
+                        // it here so the witnesss wont get double counted.
+                        nestedChange = witTxt.split(" ")[0].equals(priorBaseTxt);
                     } 
                 } else {
                     witTxt = "<i>not in </i>";
@@ -562,37 +559,141 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
         }
         return variants;
     }
-
-    private String getAdditionContext(final Long witId, final long addPos) {
-        Witness w = this.witnessDao.find(witId);
+    
+    private String getWitnessAdditionWithContext(final Long witId, final Range witRange ) {
         final int defaultSize = 40;
+        Witness w = this.witnessDao.find(witId);
+        long maxLen = w.getText().getLength() - 1;
+        int start = (int)witRange.getStart();
+        int end = (int)witRange.getEnd();
         int contextSize = defaultSize;
-        if ( addPos == 0 ) {
-            Range r = new Range(0, contextSize);
+        
+        // special case: added at start of doc
+        if (start == 0) {
+            Range r = new Range(start, end+contextSize);
             String witTxt = getWitnessText(witId, r).trim();
-            return witTxt.substring(0, witTxt.indexOf(' '));
+            int spacePos = witTxt.indexOf(' ', end);
+            String added = witTxt.substring(0, end);
+            return added+witTxt.substring(end, spacePos);
+        }
+        
+        // special case: added at end of doc
+        if ( end == maxLen ) {
+            Range r = new Range(start-contextSize, end);
+            String witTxt = getWitnessText(witId, r).trim();
+            int startAdd = witTxt.length()-( end-start);
+            String added = witTxt.substring( startAdd );
+            int p = startAdd-1;
+            int spcCnt = 0;
+            while (true) {
+                if ( witTxt.charAt(p) == ' ') {
+                    spcCnt++;
+                    if (spcCnt == 2 ) {
+                        break;
+                    }
+                }
+                p--;
+                if ( p == 0 ) {
+                    break;
+                }
+            }
+            String out= witTxt.substring(p,startAdd)+added;
+            return out.trim();
         }
 
         // don't extend less < 0
-        contextSize = Math.min( defaultSize, (int)addPos);
+        contextSize = Math.min(defaultSize, start);
 
         // don't extend past end of doc
-        long endPos = addPos+contextSize;
-        long maxLen = w.getText().getLength()-1;
-        if ( endPos >= maxLen) {
+        long endPos = end + contextSize;
+        if (endPos >= maxLen) {
             long delta = endPos - maxLen;
             contextSize -= delta;
         }
         
-        String witTxt = getWitnessText(witId, new Range(addPos-contextSize, addPos+contextSize)).trim();
-        String before = witTxt.substring(0,contextSize).trim();
+        // get the fragment (including the central word in the witness)
+        String witTxt = getWitnessText(witId, new Range(start - contextSize, end + contextSize)).trim();
+        int fragStart = contextSize;
+        int spcCnt = 0;
+        while ( fragStart > 0 ) {
+            if ( witTxt.charAt(fragStart) == ' ') {
+                spcCnt++;
+                if (spcCnt == 2 ) {
+                    break;
+                }
+            }
+            fragStart--;
+        }
+        
+        int fragEnd = contextSize+(end-start);
+        spcCnt = 0;
+        while ( fragEnd < maxLen) {
+            if ( witTxt.charAt(fragEnd) == ' ') {
+                spcCnt++;
+                if (spcCnt == 2 ) {
+                    break;
+                }
+            }
+            fragEnd++;
+        }
+        String xxx = witTxt.substring(fragStart, fragEnd);
+        return xxx.trim();
+    }
+
+    private String getBaseAdditionContext(final long pos) {
+        Witness w = this.witnessDao.find(this.baseWitnessId);
+        long maxLen = w.getText().getLength() - 1;
+        
+        final int defaultSize = 40;
+        int contextSize = defaultSize;
+        if (pos == 0) {
+            Range r = new Range(0, contextSize);
+            String witTxt = getWitnessText(this.baseWitnessId, r).trim();
+            return witTxt.substring(0, witTxt.indexOf(' '));
+        }
+        
+        if ( pos == maxLen ) {
+            Range r = new Range(pos-contextSize, pos);
+            String witTxt = getWitnessText(this.baseWitnessId, r).trim();
+            return witTxt.substring(witTxt.lastIndexOf(' '));
+        }
+
+        // don't extend less < 0
+        contextSize = Math.min(defaultSize, (int) pos);
+
+        // don't extend past end of doc
+        long endPos = pos + contextSize;
+        if (endPos >= maxLen) {
+            long delta = endPos - maxLen;
+            contextSize -= delta;
+        }
+
+        String witTxt = getWitnessText(this.baseWitnessId, new Range(pos - contextSize, pos + contextSize)).trim();
+        String before = witTxt.substring(0, contextSize).trim();
         String wb = before.substring(before.lastIndexOf(' ')).trim();
         String after = witTxt.substring(contextSize).trim();
         String wa = after;
-        if ( after.indexOf(' ') > -1 ) {
-            wa = after.substring(0, after.indexOf(' ')).trim();
+        int start = 0;
+        while (true) {
+            int spacePos = after.indexOf(' ', start);
+            if (spacePos > -1) {
+                wa = after.substring(start, spacePos).trim();
+                if (wa.length() == 1 && PUNCTUATION.matcher(wa).find()) {
+                    if ( wa.equals("&") ) {
+                        wb = wb + " "+ wa;
+                    } else {
+                        wb = wb+wa;
+                    }
+                    start = spacePos + 1;
+                } else {
+                    break;
+                }
+            } else {
+                break;
+            }
         }
-        witTxt = wb+" "+wa;
+
+        witTxt = wb + " " + wa;
         return witTxt;
     }
     
