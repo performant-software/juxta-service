@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -354,7 +355,7 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
             boolean additionToBase = false;
             Range baseRange = new Range( variant.getRange() );
             if ( baseRange.length() > 0 ) {
-                baseTxt = getWitnessText(this.baseWitnessId, variant.getRange());
+                baseTxt = getWitnessText(this.baseWitnessId, baseRange);
                 baseTxt = baseTxt.replaceAll("\\n+", " ").replaceAll("\\s+", " ").trim();
             } else {
                 // if base len is 0, this means that a witness added text relative to
@@ -450,7 +451,7 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
             }
             
             // find line num for range
-            String lineRange = findLineNumber(baseRange, lineRanges);
+            String lineRange = findLineNumber(baseRange, lineRanges);            
   
             // shove the whole thing into a table row and wroite it out to disk
             final String out = "<tr><td class=\"num-col\">"+lineRange+"</td><td>"+sb.toString()+"</td></tr>\n";
@@ -557,6 +558,20 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
                 prior = variant;
             }
         }
+        
+        Collections.sort(variants);
+        Variant p = null;
+        for ( Iterator<Variant> vitr = variants.iterator(); vitr.hasNext(); ) {
+            Variant v = vitr.next();
+            if ( p != null ) {
+                if ( p.getRange().equals(v.getRange())) {
+                    p.merge(v);
+                    vitr.remove();
+                }
+            }
+            p = v;
+        }
+        
         return variants;
     }
     
@@ -569,10 +584,10 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
         int contextSize = defaultSize;
         
         // special case: added at start of doc
-        if (start == 0) {
+        if (start < 2) {
             Range r = new Range(start, end+contextSize);
             String witTxt = getWitnessText(witId, r).trim();
-            int spacePos = witTxt.indexOf(' ', end);
+            int spacePos = witTxt.indexOf(' ', end+1);
             String added = witTxt.substring(0, end);
             return added+witTxt.substring(end, spacePos);
         }
@@ -627,7 +642,7 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
         
         int fragEnd = contextSize+(end-start);
         spcCnt = 0;
-        while ( fragEnd < maxLen) {
+        while ( fragEnd < witTxt.length()) {
             if ( witTxt.charAt(fragEnd) == ' ') {
                 spcCnt++;
                 if (spcCnt == 2 ) {
@@ -636,8 +651,8 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
             }
             fragEnd++;
         }
-        String xxx = witTxt.substring(fragStart, fragEnd);
-        return xxx.trim();
+
+        return witTxt.substring(fragStart, fragEnd).trim();
     }
 
     private String getBaseAdditionContext(final long pos) {
@@ -702,7 +717,7 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
         for ( Entry<Range, String> entry : lineRanges.entrySet() ) {
             Range r = entry.getKey();
             if ( startLine.length() == 0 ) {
-                if ( tgtRange.getStart() >= r.getStart() && tgtRange.getStart() < r.getEnd() ) {
+                if ( tgtRange.getStart() >= r.getStart() && tgtRange.getStart() <= r.getEnd() ) {
                     startLine = entry.getValue();
                     if ( tgtRange.getEnd() <= r.getEnd() ) {
                         return startLine;
@@ -710,6 +725,9 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
                 }
             } else {
                 if ( tgtRange.getEnd() <= r.getEnd() ) {
+                    if ( startLine.trim().length() == 0) {
+                        return entry.getValue();
+                    }
                     return startLine +"-"+entry.getValue();
                 }
             }
@@ -756,7 +774,7 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
         }
     }
     
-    private static class Variant {
+    private static class Variant implements Comparable<Variant> {
         private Set<Integer> groups = new HashSet<Integer>();
         private Range range;
         private Map<Long, Range> witnessRangeMap = new HashMap<Long, Range>();
@@ -834,6 +852,24 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
                     this.witnessRangeMap.put(witId, expanded);
                 }
             }
+        }
+
+        @Override
+        public int compareTo(Variant that) {
+            Range r1 = this.range;
+            Range r2 = that.range;
+            if (r1.getStart() < r2.getStart()) {
+                return -1;
+            } else if (r1.getStart() > r2.getStart()) {
+                return 1;
+            } else {
+                if (r1.getEnd() < r2.getEnd()) {
+                    return -1;
+                } else if (r1.getEnd() > r2.getEnd()) {
+                    return 1;
+                }
+            }
+            return 0;
         }
     }
     
