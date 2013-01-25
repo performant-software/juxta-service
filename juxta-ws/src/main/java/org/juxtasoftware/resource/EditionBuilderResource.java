@@ -266,10 +266,13 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
         StringBuilder line = new StringBuilder("");
         Map<Range, String> lineRanges = new TreeMap<Range, String>();
         String lineLabel = "";
-        while ( true) {
+        boolean done = false;
+        boolean lineComplete = false;
+        while ( !done) {
             int data = reader.read();
             if (data == -1) {
-                break;
+                done = true;
+                lineComplete = true;
             } else {
                 
                 // save off any line number markup found at this psition.
@@ -284,36 +287,44 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
 
                 // now handle the actual content read...
                 if (data == '\n') {
-                    final int lineLen = line.toString().trim().length();
-                    boolean hasNumberMarkup = true;
-                    if ( lineLabel.length() == 0 ) {
-                        hasNumberMarkup = false;
-                        lineLabel = ""+lineNum;
-                        if ( lineLen == 0 && this.numberBlankLines == false ) {
-                            lineLabel = " ";
-                        }
-                    }
-                    
-                    if ( lineLabel.length() > 0 ) {
-                        lineRanges.put(new Range(lineStartPos, pos), lineLabel);
-                    }
-
-                    if (hasNumberMarkup == false && !(lineNum % this.lineFrequency == 0) ) {
-                        // make sure something is here or blank rows collapse
-                        lineLabel = " ";   
-                    }
-                    osw.write("<tr><td class=\"num-col\">"+lineLabel+"</td><td>"+line.toString()+"</td></tr>\n");
-                    if ( hasNumberMarkup == false && (lineLen > 0 || (lineLen == 0 && this.numberBlankLines)) ) {
-                        lineNum++;
-                    }
-                    line = new StringBuilder("");
-                    lineStartPos = pos+1;
-                    lineLabel = "";
+                    lineComplete = true;
                 } else {
                     line.append(StringEscapeUtils.escapeXml(Character.toString((char) data)));
                 }
-                pos++;
             }
+            
+            if ( lineComplete ) {
+                lineComplete = false;
+                
+                final int lineLen = line.toString().trim().length();
+                boolean hasNumberMarkup = true;
+                if ( lineLabel.length() == 0 ) {
+                    hasNumberMarkup = false;
+                    lineLabel = ""+lineNum;
+                    if ( lineLen == 0 && this.numberBlankLines == false ) {
+                        lineLabel = " ";
+                    }
+                }
+                
+                if ( lineLabel.length() > 0 ) {
+                    lineRanges.put(new Range(lineStartPos, pos), lineLabel);
+                }
+
+                if (hasNumberMarkup == false && !(lineNum % this.lineFrequency == 0) ) {
+                    // make sure something is here or blank rows collapse
+                    lineLabel = " ";   
+                }
+                osw.write("<tr><td class=\"num-col\">"+lineLabel+"</td><td>"+line.toString()+"</td></tr>\n");
+                if ( hasNumberMarkup == false && (lineLen > 0 || (lineLen == 0 && this.numberBlankLines)) ) {
+                    lineNum++;
+                }
+                line = new StringBuilder("");
+                lineStartPos = pos+1;
+                lineLabel = "";
+            }
+            
+            pos++;
+
         }
 
         IOUtils.closeQuietly(osw);
@@ -393,9 +404,6 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
                 Range witRng = ent.getValue();
                 String witTxt = "";
                 if ( witRng.length() > 0 ) {
-                    witTxt = getWitnessText(witId, witRng);
-                    witTxt = witTxt.replaceAll("\\n+", " ").replaceAll("\\s+", " ").trim();
-                    witTxt = StringEscapeUtils.escapeXml( witTxt );
                     
                     if ( additionToBase ) {
                         // grab the added witness text plus extend out to include
@@ -408,7 +416,13 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
                         // handled by the prior line of the apparatus. flag
                         // it here so the witnesss wont get double counted.
                         nestedChange = witTxt.split(" ")[0].equals(priorBaseTxt);
-                    } 
+                    } else {
+                        witTxt = getWitnessText(witId, witRng);
+                        witTxt = witTxt.replaceAll("\\n+", " ").replaceAll("\\s+", " ").trim();
+                    }
+                    
+                    // clean up for XML
+                    witTxt = StringEscapeUtils.escapeXml( witTxt ); 
                 } else {
                     witTxt = "<i>not in </i>";
                 }
@@ -541,7 +555,7 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
                 // add the witness info
                 variant.addWitnessDetail(witAnno.getWitnessId(), witAnno.getRange(), align.getGroup());
             }
-            
+                        
             // merge related variants
             Variant prior = null;
             for (Iterator<Variant> itr = variants.iterator(); itr.hasNext();) {
@@ -571,6 +585,7 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
             }
             p = v;
         }
+
         
         return variants;
     }
@@ -578,13 +593,13 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
     private String getWitnessAdditionWithContext(final Long witId, final Range witRange ) {
         final int defaultSize = 40;
         Witness w = this.witnessDao.find(witId);
-        long maxLen = w.getText().getLength() - 1;
+        long maxLen = w.getText().getLength();
         int start = (int)witRange.getStart();
         int end = (int)witRange.getEnd();
         int contextSize = defaultSize;
         
         // special case: added at start of doc
-        if (start < 2) {
+        if (start <= 8) {
             Range r = new Range(start, end+contextSize);
             String witTxt = getWitnessText(witId, r).trim();
             int spacePos = witTxt.indexOf(' ', end+1);
@@ -593,7 +608,7 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
         }
         
         // special case: added at end of doc
-        if ( end == maxLen ) {
+        if ( end >= (maxLen-8) ) {
             Range r = new Range(start-contextSize, end);
             String witTxt = getWitnessText(witId, r).trim();
             int startAdd = witTxt.length()-( end-start);
@@ -657,17 +672,17 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
 
     private String getBaseAdditionContext(final long pos) {
         Witness w = this.witnessDao.find(this.baseWitnessId);
-        long maxLen = w.getText().getLength() - 1;
+        long maxLen = w.getText().getLength();
         
         final int defaultSize = 40;
         int contextSize = defaultSize;
-        if (pos == 0) {
+        if (pos <= 8) {
             Range r = new Range(0, contextSize);
             String witTxt = getWitnessText(this.baseWitnessId, r).trim();
             return witTxt.substring(0, witTxt.indexOf(' '));
         }
         
-        if ( pos == maxLen ) {
+        if ( pos >= (maxLen-8) ) {
             Range r = new Range(pos-contextSize, pos);
             String witTxt = getWitnessText(this.baseWitnessId, r).trim();
             return witTxt.substring(witTxt.lastIndexOf(' '));
