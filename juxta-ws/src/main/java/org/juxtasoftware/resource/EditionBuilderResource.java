@@ -604,18 +604,20 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
             String witTxt = getWitnessText(witId, r).trim();
             int spacePos = witTxt.indexOf(' ', end+1);
             String added = witTxt.substring(0, end);
-            return added+witTxt.substring(end, spacePos);
+            String out =  added+witTxt.substring(end, spacePos);
+            out = out.replaceAll("\\n+", " / ");
+            return out.trim();
         }
         
         // special case: added at end of doc
         if ( end >= (maxLen-8) ) {
             Range r = new Range(start-contextSize, end);
             String witTxt = getWitnessText(witId, r).trim();
-            int startAdd = witTxt.length()-( end-start);
+            int startAdd = contextSize;
             String added = witTxt.substring( startAdd );
-            int p = startAdd-1;
+            int p = startAdd;
             int spcCnt = 0;
-            while (true) {
+            while (p > 0) {
                 if ( witTxt.charAt(p) == ' ') {
                     spcCnt++;
                     if (spcCnt == 2 ) {
@@ -623,11 +625,9 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
                     }
                 }
                 p--;
-                if ( p == 0 ) {
-                    break;
-                }
             }
             String out= witTxt.substring(p,startAdd)+added;
+            out = out.replaceAll("\\n+", " / ");
             return out.trim();
         }
 
@@ -667,7 +667,7 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
             fragEnd++;
         }
 
-        return witTxt.substring(fragStart, fragEnd).trim();
+        return witTxt.substring(fragStart, fragEnd).trim().replaceAll("\\n+", " / ");
     }
 
     private String getBaseAdditionContext(final long pos) {
@@ -679,13 +679,13 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
         if (pos <= 8) {
             Range r = new Range(0, contextSize);
             String witTxt = getWitnessText(this.baseWitnessId, r).trim();
-            return witTxt.substring(0, witTxt.indexOf(' '));
+            return witTxt.substring(0, witTxt.indexOf(' ')).replaceAll("\\n+", " / ");
         }
         
         if ( pos >= (maxLen-8) ) {
             Range r = new Range(pos-contextSize, pos);
             String witTxt = getWitnessText(this.baseWitnessId, r).trim();
-            return witTxt.substring(witTxt.lastIndexOf(' '));
+            return witTxt.substring(witTxt.lastIndexOf(' ')).replaceAll("\\n+", " / ");
         }
 
         // don't extend less < 0
@@ -724,7 +724,7 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
         }
 
         witTxt = wb + " " + wa;
-        return witTxt;
+        return witTxt.replaceAll("\\n+", " / ");
     }
     
     private String findLineNumber(Range tgtRange, Map<Range, String> lineRanges) {
@@ -781,7 +781,6 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
             final RangedTextReader reader = new RangedTextReader();
             reader.read( this.witnessDao.getContentStream(w), range );
             String out = reader.toString();
-            out = out.replaceAll("\\n+", " ").replaceAll("\\s+", " ");
             return out;
         } catch (Exception e) {
             LOG.error("Unable to get text for witness "+witId +", "+range, e);
