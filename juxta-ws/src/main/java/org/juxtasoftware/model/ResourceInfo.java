@@ -1,20 +1,22 @@
 package org.juxtasoftware.model;
 
-import java.util.Date;
+import java.sql.Timestamp;
+
+
 
 public class ResourceInfo {
     private final Long id;
     private final String workspace;
     private final String name;
-    private final Date dateCreated;
-    private final Date dateModified;
+    private final Timestamp dateCreated;
+    private final Timestamp dateModified;
     
-    public ResourceInfo(final Long id, final String ws, final String name, final Date create, final Date mod) {
+    public ResourceInfo(final Long id, final String ws, final String name, final Timestamp timestamp, final Timestamp timestamp2) {
         this.id = id;
         this.workspace = ws;
         this.name = name;
-        this.dateCreated = create;
-        this.dateModified = mod;
+        this.dateCreated = timestamp;
+        this.dateModified = timestamp2;
     }
     public Long getId() {
         return id;
@@ -25,10 +27,10 @@ public class ResourceInfo {
     public String getWorkspace() {
         return workspace;
     }
-    public Date getDateCreated() {
+    public Timestamp getDateCreated() {
         return dateCreated;
     }
-    public Date getDateModified() {
+    public Timestamp getDateModified() {
         return dateModified;
     }
     @Override

@@ -1,5 +1,9 @@
 package org.juxtasoftware.resource;
 
+import java.lang.reflect.Type;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+
 import org.juxtasoftware.dao.ComparisonSetDao;
 import org.juxtasoftware.dao.SourceDao;
 import org.juxtasoftware.dao.WitnessDao;
@@ -11,6 +15,12 @@ import org.restlet.resource.ResourceException;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
 
 public class InfoResource extends BaseResource {
     private String type;
@@ -50,7 +60,23 @@ public class InfoResource extends BaseResource {
             return toTextRepresentation("Invaid resource identifer specified");
         }
         
-        Gson gson = new  Gson();
-        return toJsonRepresentation( gson.toJson(info)); 
+        Gson gson = new GsonBuilder().registerTypeAdapter(ResourceInfo.class, new InfoSerializer()).create();
+        return toJsonRepresentation(gson.toJson(info));
+    }
+    
+    private class InfoSerializer implements JsonSerializer<ResourceInfo> {
+        private final DateFormat format = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
+
+        @Override
+        public JsonElement serialize(ResourceInfo inf, Type typeOfSrc, JsonSerializationContext context) {
+
+            JsonObject obj = new JsonObject();
+            obj.add("id", new JsonPrimitive(inf.getId()));
+            obj.add("workspace", new JsonPrimitive(inf.getWorkspace()));
+            obj.add("name", new JsonPrimitive(inf.getName()));
+            obj.add("created", new JsonPrimitive(this.format.format(inf.getDateCreated())));
+            return obj;
+        }
+
     }
 }

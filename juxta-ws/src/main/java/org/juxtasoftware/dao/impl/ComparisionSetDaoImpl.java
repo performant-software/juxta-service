@@ -73,7 +73,7 @@ public class ComparisionSetDaoImpl extends JuxtaDaoImpl<ComparisonSet> implement
 
             @Override
             public ResourceInfo mapRow(ResultSet rs, int rowNum) throws SQLException {
-                return new ResourceInfo(rs.getLong("id"), rs.getString("workspace"), rs.getString("name"), rs.getDate("created"), rs.getDate("updated"));
+                return new ResourceInfo(rs.getLong("id"), rs.getString("workspace"), rs.getString("name"), rs.getTimestamp("created"), rs.getTimestamp("updated"));
             }}, setId));
     }
     
