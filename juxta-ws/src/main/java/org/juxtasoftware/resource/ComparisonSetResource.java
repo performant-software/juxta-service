@@ -3,6 +3,7 @@ package org.juxtasoftware.resource;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -74,7 +75,7 @@ public class ComparisonSetResource extends BaseResource {
     
     @Get("html")
     public Representation toHtml() {
-        Set<Witness> witnesses = this.comparionSetDao.getWitnesses(this.set);
+        List<Witness> witnesses = this.comparionSetDao.getWitnesses(this.set);
         Map<String,Object> map = new HashMap<String,Object>();
         map.put("set", set);
         map.put("witnesses", witnesses);
@@ -85,7 +86,7 @@ public class ComparisonSetResource extends BaseResource {
     
     @Get("json")
     public Representation toJson() {
-        Set<Witness> witnesses = this.comparionSetDao.getWitnesses(this.set);
+        List<Witness> witnesses = this.comparionSetDao.getWitnesses(this.set);
         Gson gson = new GsonBuilder()
             .setExclusionStrategies( new SourceExclusion() )
             .create();
@@ -171,7 +172,7 @@ public class ComparisonSetResource extends BaseResource {
         }
         JsonParser parser = new JsonParser();
         JsonArray jsonArray = parser.parse(jsonWitnesses).getAsJsonArray();
-        Set<Witness> currWits = this.comparionSetDao.getWitnesses(this.set);
+        List<Witness> currWits = this.comparionSetDao.getWitnesses(this.set);
         for ( Iterator<JsonElement>  itr = jsonArray.iterator(); itr.hasNext(); ) {
             Long witId = itr.next().getAsLong();
             Witness delWitness = null;
@@ -202,7 +203,7 @@ public class ComparisonSetResource extends BaseResource {
         }
         JsonParser parser = new JsonParser();
         JsonArray jsonArray = parser.parse(jsonWitnesses).getAsJsonArray();
-        Set<Witness> currWits = this.comparionSetDao.getWitnesses(this.set);
+        List<Witness> currWits = this.comparionSetDao.getWitnesses(this.set);
         
         int newWitnessTotal =  currWits.size() + jsonArray.size();
         if ( newWitnessTotal > this.maxSetWitnesses ) {

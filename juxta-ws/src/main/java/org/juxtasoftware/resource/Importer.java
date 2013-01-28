@@ -5,7 +5,6 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Set;
 
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
@@ -207,7 +206,7 @@ public class Importer extends BaseResource  {
     private void cleanupCanceledImport( ComparisonSet set ) {
         // first, grab the set info so we can have a list of all witnesses
         // and their associated metadata.
-        Set<Witness> witnesses = this.setDao.getWitnesses(set);
+        List<Witness> witnesses = this.setDao.getWitnesses(set);
         
         // kill the set first
         this.setDao.delete(set);

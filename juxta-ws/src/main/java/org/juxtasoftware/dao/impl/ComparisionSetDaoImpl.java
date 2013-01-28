@@ -106,7 +106,7 @@ public class ComparisionSetDaoImpl extends JuxtaDaoImpl<ComparisonSet> implement
     
     @Override
     public List<Usage> getUsage(ComparisonSet set) {
-        Set<Witness> witnesses = getWitnesses(set);
+        List<Witness> witnesses = getWitnesses(set);
         List<Usage> usage = new ArrayList<Usage>();
         String nmSql = "select name from juxta_source where id=?";
         Set<Long> srcIds = new HashSet<Long>();
@@ -171,7 +171,7 @@ public class ComparisionSetDaoImpl extends JuxtaDaoImpl<ComparisonSet> implement
     }
 
     @Override
-    public Set<Witness> getWitnesses( final ComparisonSet set ) {
+    public List<Witness> getWitnesses( final ComparisonSet set ) {
         return this.witnessDao.find( set );
     }
 

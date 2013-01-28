@@ -2,7 +2,7 @@ package org.juxtasoftware.resource;
 
 import java.io.IOException;
 import java.util.Date;
-import java.util.Set;
+import java.util.List;
 
 import org.juxtasoftware.dao.ComparisonSetDao;
 import org.juxtasoftware.model.CollatorConfig;
@@ -89,7 +89,7 @@ public class CollatorResource extends BaseResource {
             setStatus(Status.CLIENT_ERROR_CONFLICT);
             return toTextRepresentation("Set " + this.set.getId() + " is currently collating");
         }
-        Set<Witness> witnesses = this.setDao.getWitnesses(this.set);
+        List<Witness> witnesses = this.setDao.getWitnesses(this.set);
         if (witnesses.size() < 2) {
             setStatus(Status.CLIENT_ERROR_FAILED_DEPENDENCY);
             return toTextRepresentation("Set " + this.set.getId()

@@ -61,7 +61,7 @@ public class ComparisonSetCollator extends DiffCollator {
     @Autowired private NameRepository nameRepository;
     @Autowired private Integer collationBatchSize;
     
-    private Set<Witness> witnessList;
+    private List<Witness> witnessList;
     private ComparisonSet comparisonSet;
     
     private static final Logger LOG = LoggerFactory.getLogger( Constants.WS_LOGGER_NAME );

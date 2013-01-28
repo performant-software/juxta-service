@@ -3,7 +3,6 @@ package org.juxtasoftware.service;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.List;
-import java.util.Set;
 
 import org.juxtasoftware.Constants;
 import org.juxtasoftware.dao.ComparisonSetDao;
@@ -58,7 +57,7 @@ public class Tokenizer {
      * @throws IOException
      */
     public void tokenize(ComparisonSet comparisonSet, CollatorConfig config, BackgroundTaskStatus taskStatus) throws IOException {
-        final Set<Witness> witnesses = comparisonSetDao.getWitnesses(comparisonSet);
+        final List<Witness> witnesses = comparisonSetDao.getWitnesses(comparisonSet);
         final BackgroundTaskSegment ts = taskStatus.add(1, new BackgroundTaskSegment(witnesses.size()));
         
         this.set = comparisonSet;

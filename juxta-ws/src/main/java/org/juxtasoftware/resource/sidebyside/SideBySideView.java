@@ -93,7 +93,7 @@ public class SideBySideView implements FileDirectiveListener  {
             try {
                 witnessIds[0] = Long.parseLong(docsList[0]);
                 if ( docsList[1].equals("*") ) {
-                    Set<Witness> witnesses = this.setDao.getWitnesses(set);
+                    List<Witness> witnesses = this.setDao.getWitnesses(set);
                     for ( Witness w : witnesses ) {
                         if ( w.getId().equals(witnessIds[0]) == false ) {
                             witnessIds[1] = w.getId();
@@ -178,7 +178,7 @@ public class SideBySideView implements FileDirectiveListener  {
         // get all of the witnesses in this set. It will be used
         // by the front end to present the user with a list
         // of witnesses when chaning comparands
-        Set<Witness> witnesses = this.setDao.getWitnesses(set);
+        List<Witness> witnesses = this.setDao.getWitnesses(set);
         
         // stuff this info into a map for freemarker
         FileDirective fileDirective = new FileDirective();

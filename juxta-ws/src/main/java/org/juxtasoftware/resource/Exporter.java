@@ -18,7 +18,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringEscapeUtils;
@@ -176,7 +175,7 @@ public class Exporter extends BaseResource {
         template = template.replace("$TITLE", this.set.getName());
         
         // add listWit
-        Set<Witness> witnesses = this.setDao.getWitnesses(this.set);
+        List<Witness> witnesses = this.setDao.getWitnesses(this.set);
         final String listWit = generateListWitContent(witnesses);
         template = template.replace("$LISTWIT", listWit);
          
@@ -209,7 +208,7 @@ public class Exporter extends BaseResource {
         return "export-"+result;
     }
 
-    private File generateApparatus(Set<Witness> witnesses) throws IOException {
+    private File generateApparatus(List<Witness> witnesses) throws IOException {
         // Algo: stream text from the pase witness until a diff is found
         // at that point, inject an <app>. Each witness content will be
         // added in <rdg> tags.
@@ -348,7 +347,7 @@ public class Exporter extends BaseResource {
         return out;
     }
     
-    private String generateRdgTag(Set<Witness> witnesses, AppData currApp) {
+    private String generateRdgTag(List<Witness> witnesses, AppData currApp) {
         
         // any wit ids that are NOT present in the app data are the
         // same as the base text. be sure to add them to the rdg below
@@ -481,7 +480,7 @@ public class Exporter extends BaseResource {
         return data;
     }
 
-    private String generateListWitContent(Set<Witness> witnesses) throws IOException {
+    private String generateListWitContent(List<Witness> witnesses) throws IOException {
         StringBuilder listWit = new StringBuilder();
         for (Witness w : witnesses ) {
             if ( listWit.length() > 0 ) {

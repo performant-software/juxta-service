@@ -24,7 +24,7 @@ public interface ComparisonSetDao extends JuxtaDao<ComparisonSet> {
     ResourceInfo getInfo(final Long setId);
     
     // witness management
-    Set<Witness> getWitnesses( final ComparisonSet set );
+    List<Witness> getWitnesses( final ComparisonSet set );
     void addWitnesses( final ComparisonSet set, final Set<Witness> witnesses);
     void deleteAllWitnesses( final ComparisonSet set );
     void deleteWitness( final ComparisonSet set, final Witness witness );

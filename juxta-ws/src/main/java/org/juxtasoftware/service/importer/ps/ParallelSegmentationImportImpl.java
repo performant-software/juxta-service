@@ -137,7 +137,7 @@ public class ParallelSegmentationImportImpl implements ImportService<Source> {
     private void prepareSet() {
         // grab all witnesses associated with this set.
         // If there are none, there is nothing more to do
-        Set<Witness> witnesses = this.setDao.getWitnesses(this.set);
+        List<Witness> witnesses = this.setDao.getWitnesses(this.set);
         if ( witnesses.size() == 0) {
             return;
         }

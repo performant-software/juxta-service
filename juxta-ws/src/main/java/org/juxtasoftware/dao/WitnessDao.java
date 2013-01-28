@@ -3,7 +3,6 @@ package org.juxtasoftware.dao;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.List;
-import java.util.Set;
 
 import org.juxtasoftware.model.ComparisonSet;
 import org.juxtasoftware.model.ResourceInfo;
@@ -61,7 +60,7 @@ public interface WitnessDao  {
      * @param set
      * @return
      */
-    Set<Witness> find(final ComparisonSet set);
+    List<Witness> find(final ComparisonSet set);
     
     /**
      * Rename an existing witness

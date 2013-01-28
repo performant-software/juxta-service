@@ -9,9 +9,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import org.apache.lucene.index.CorruptIndexException;
 import org.juxtasoftware.dao.ComparisonSetDao;
@@ -191,11 +189,11 @@ public class WitnessDaoImpl implements WitnessDao, InitializingBean {
     }
     
     @Override
-    public Set<Witness> find(ComparisonSet set) {
+    public List<Witness> find(ComparisonSet set) {
         StringBuilder sql = getSqlBuilder();
         sql.append(" join juxta_comparison_set_member csm on csm.witness_id = w.id");
-        sql.append(" where csm.set_id = ?");
-        return new HashSet<Witness>( 
+        sql.append(" where csm.set_id = ? order by w_created asc");
+        return new ArrayList<Witness>( 
             this.jdbcTemplate.query(sql.toString(), new WitnessMapper(), set.getId()));
     }
     
