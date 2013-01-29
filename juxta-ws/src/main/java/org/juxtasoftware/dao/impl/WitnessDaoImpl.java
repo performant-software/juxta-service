@@ -192,7 +192,7 @@ public class WitnessDaoImpl implements WitnessDao, InitializingBean {
     public List<Witness> find(ComparisonSet set) {
         StringBuilder sql = getSqlBuilder();
         sql.append(" join juxta_comparison_set_member csm on csm.witness_id = w.id");
-        sql.append(" where csm.set_id = ? order by w_created asc");
+        sql.append(" where csm.set_id = ? order by w_created desc");
         return new ArrayList<Witness>( 
             this.jdbcTemplate.query(sql.toString(), new WitnessMapper(), set.getId()));
     }

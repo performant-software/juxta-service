@@ -14,6 +14,7 @@
         <!-- javascripts -->
         <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
         <script type="text/javascript" src="${baseUrl}/javascripts/jquery.mousewheel.min.js"></script>   
+        <script type="text/javascript" src="${baseUrl}/javascripts/jquery.tinysort.min.js"></script>   
         <script type="text/javascript" src="${baseUrl}/javascripts/raphael-min.js"></script>    
         <script type="text/javascript" src="${baseUrl}/javascripts/juxta-ws-common.js"></script>
         <script type="text/javascript" src="${baseUrl}/javascripts/juxta-ws.js"></script>

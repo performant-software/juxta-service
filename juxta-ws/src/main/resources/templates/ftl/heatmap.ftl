@@ -12,17 +12,39 @@
 
 <#if !condensed>
     <div id="files" class="files">
-        <div class="header">Witness List</div>
+        <div class="header">
+           Witness List<span id="sort-header">Sort by</span>
+                      
+           <ul class="dropdown" >
+               <li>
+                  <input type="radio" class="sort-radio sort-by" name="hm-sort-by" 
+                     <#if sortBy=="date">checked="checked"</#if> value="date"/>Date added
+               </li>
+               <li>
+                  <input type="radio" class="sort-radio sort-by" name="hm-sort-by" 
+                     <#if sortBy=="name">checked="checked"</#if> value="name"/>Name 
+               </li>
+               <li id="divider-row"><hr/></li>
+               <li>
+                  <input type="radio" class="sort-radio" name="hm-sort" 
+                     <#if sortOrder=="asc">checked="checked"</#if> value="asc"/>Ascending
+               </li>
+               <li>
+                  <input type="radio" class="sort-radio" name="hm-sort" 
+                     <#if sortOrder=="desc">checked="checked"</#if> value="desc"/>Descending
+               </li>
+           </ul>
+        </div>
         <#list witnesses as witness>
             <#if witness.id == baseId>
-                <div class="base set-file" title="${witness.name}">
+                <div class="base set-file" title="${witness.name}"  juxta:date="${witness.date}">
                   <div id="toggle-${witness.id}" class="visibility-toggle base-visibility"></div>${witness.name}
                      <span id="base-tag">[base]</span>
                   </div>
             <#else>
-                <div class="set-witnesss set-file">
+                <div class="set-witnesss set-file" title="${witness.name}" juxta:date="${witness.date}">
                     <div id="toggle-${witness.id}" class="visibility-toggle" title="Hide witness"></div>
-                    <div id="witness-${witness.id}" class="witness" title="${witness.name}">${witness.name}</div>
+                    <div id="witness-${witness.id}" class="witness">${witness.name}</div>
                     <div id="change-index-${witness.id}" class="change-index"></div>
                     <div style="clear: both;"></div>
                 </div>

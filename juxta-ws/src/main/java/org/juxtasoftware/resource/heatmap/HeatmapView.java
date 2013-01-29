@@ -109,6 +109,16 @@ public class HeatmapView  {
             baseWitnessId = Long.parseLong(baseId);
         }
         
+        // pick out sorting settings
+        String sortBy = "date";
+        if (this.parent.getQuery().getValuesMap().containsKey("by")  ) {
+            sortBy = this.parent.getQuery().getValues("by");
+        }
+        String sortOrder = "desc";
+        if (this.parent.getQuery().getValuesMap().containsKey("order")  ) {
+            sortOrder = this.parent.getQuery().getValues("order");
+        }
+        
         // Check if this visualization should be the condensed version
         boolean condensed = false;
         if (this.parent.getQuery().getValuesMap().containsKey("condensed")  ) {
@@ -188,12 +198,14 @@ public class HeatmapView  {
             map.put("baseId", base.getId());
             map.put("visualizationKey", this.visualizationInfo.getKey());
             map.put("baseName", base.getName() );
-            map.put("witnessCount", witnesses.size() );
-            map.put("witnesses", witnesses );
+            map.put("witnessCount", this.witnesses.size() );
+            map.put("witnesses", this.witnesses );
             map.put("heatmapStreamer", this.heatmapDirective);  // stream the cached content into template
             map.put("witnessFilter", witFilterList.toString());
             map.put("page", "set");
             map.put("title", "Juxta Heatmap View: "+set.getName());
+            map.put("sortBy", sortBy);
+            map.put("sortOrder", sortOrder);
             
             // fill in the hidden spans with segments of urls so the
             // javascript can piece together URLs for all of
@@ -509,12 +521,14 @@ public class HeatmapView  {
         private long totalDiffLen;
         private final long baseLen;
         private final boolean isBase;
+        private final long createTimestamp;
         
         public SetWitness( Witness w, long baseLen, boolean isBase) {
             super(w);
             this.isBase = isBase;
             this.baseLen = baseLen;
             this.totalDiffLen = 0;
+            this.createTimestamp = w.getCreated().getTime();
         }
         void addDiffLen( long longestDiff ) {
             this.totalDiffLen += longestDiff;
@@ -524,6 +538,9 @@ public class HeatmapView  {
         }
         public boolean isBase() {
             return this.isBase;
+        }
+        public long getDate() {
+            return this.createTimestamp;
         }
     }
     

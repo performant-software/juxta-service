@@ -385,8 +385,10 @@ $(function() {
          $("#toggle-"+witnessId).attr("title", "Hide Witness");
       }
 
+      var by = $("input[name=hm-sort-by]:radio:checked").val();
+      var dir = $("input[name=hm-sort]:radio:checked").val();
       var setId = $('#setId').text();
-      var csUrl = $('#ajax-base-url').text() + setId + $('#view-heatmap-segment').text() + "base=" + $("#baseId").text();
+      var csUrl = $('#ajax-base-url').text() + setId + $('#view-heatmap-segment').text() + "base=" + $("#baseId").text()+"&by="+by+"&order="+dir;
       csUrl = csUrl + "&top="+percent.toFixed(5);
       var filter = "";
       $(".visibility-toggle").each(function() {
@@ -409,6 +411,30 @@ $(function() {
     * Initialize heatmap size, layout and events
     */
    window.Juxta.Heatmap.initialize = function() {
+      
+      var reloadSet = function( baseId ) {
+         var by = $("input[name=hm-sort-by]:radio:checked").val();
+         var dir = $("input[name=hm-sort]:radio:checked").val();
+         var setId = $('#setId').text();
+         var csUrl = $('#ajax-base-url').text() + setId + $('#view-heatmap-segment').text() + "base=" + baseId+"&by="+by+"&order="+dir;
+         window.location = csUrl;
+      };
+      
+      var setSortOrder  = function() {
+         var by = $("input[name=hm-sort-by]:radio:checked").val();
+         var dir = $("input[name=hm-sort]:radio:checked").val();
+         if (by === 'name') {
+            $("#files").find(".set-file").tsort({
+               order : dir,
+               attr : 'title'
+            });
+         } else {
+            $("#files").find(".set-file").tsort({
+               order : dir,
+               attr : 'juxta:date'
+            });
+         }
+      };
 
       $("#juxta-ws-content").parent().css("overflow-y", "hidden");
 
@@ -459,9 +485,7 @@ $(function() {
             if ( $(this).hasClass("hidden-witness") ) {
                window.Juxta.Heatmap.toggleVisibility( $("#toggle-"+witnessId) );
             } else {
-               var setId = $('#setId').text();
-               var csUrl = $('#ajax-base-url').text() + setId + $('#view-heatmap-segment').text() + "base=" + witnessId;
-               window.location = csUrl;
+               reloadSet(witnessId);
             }
          });
       } else {
@@ -488,9 +512,7 @@ $(function() {
                   newBaseId = $(this).attr("id");
                }
             });
-            var setId = $('#setId').text();
-            var csUrl = $('#ajax-base-url').text() + setId + $('#view-heatmap-segment').text() + "base=" + newBaseId;
-            window.location = csUrl;
+            reloadSet(newBaseId);
          });
          $("#base-cancel-button").on("click", function() {
             $('#pick-base-popup').hide();
@@ -536,6 +558,30 @@ $(function() {
       $("#revisions-button").on("click", function() {
          toggleRevisionStyle();
       });
+      
+      // set initial sort order
+      setSortOrder();
+
+      // sort dropdown goodness
+      $("body").on("click", function() {
+         $(".dropdown").hide();
+      });
+      $("#sort-header").on("click", function(event) {
+         event.stopPropagation();
+         var dd = $("#files").find(".dropdown");
+         if ($(dd).is(":visible")) {
+            $(dd).hide();
+         } else {
+            $(dd).show();
+         }
+      }); 
+      
+      // sort options
+       $("#files").on("click", ".sort-radio", function(event) {
+         event.stopPropagation();
+         $(".dropdown").hide();
+         setSortOrder();
+      }); 
    };
 
    // Let the world know that the heatmap code is now loaded and can be initialized
