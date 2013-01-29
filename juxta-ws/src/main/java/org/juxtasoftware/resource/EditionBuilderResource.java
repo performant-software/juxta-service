@@ -367,7 +367,10 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
             Range baseRange = new Range( variant.getRange() );
             if ( baseRange.length() > 0 ) {
                 baseTxt = getWitnessText(this.baseWitnessId, baseRange);
-                baseTxt = baseTxt.replaceAll("\\n+", " ").replaceAll("\\s+", " ").trim();
+                if ( baseTxt.contains("_")) {
+                    System.err.println("fv");
+                }
+                baseTxt = baseTxt.replaceAll("\\n+", " / ").replaceAll("\\s+", " ").trim();
             } else {
                 // if base len is 0, this means that a witness added text relative to
                 // the base. grab the two words from the base text to the left and right of
@@ -380,13 +383,13 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
                 // sigla that are the same as base, this prior info will be consulted.
                 additionToBase = true;
                 baseTxt = getBaseAdditionContext( baseRange.getStart());
-                baseTxt = baseTxt.replaceAll("\\n+", " ").replaceAll("\\s+", " ").trim();
                 String[] parts = baseTxt.split(" ");
                 if ( parts.length == 2 ) {
                     baseRange = new Range(baseRange.getStart()-parts[0].length(), baseRange.getStart()+parts[1].length()+1);
                 } else {
                     baseRange = new Range(baseRange.getStart(), baseRange.getStart()+parts[0].length());
                 }
+                baseTxt = baseTxt.replaceAll("\\n+", " / ").replaceAll("\\s+", " ").trim();
             }
             
             // make it safe
@@ -416,6 +419,9 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
                         // handled by the prior line of the apparatus. flag
                         // it here so the witnesss wont get double counted.
                         nestedChange = witTxt.split(" ")[0].equals(priorBaseTxt);
+                        if ( nestedChange == false && baseTxt.contains(priorBaseTxt)) {
+                            nestedChange = true;
+                        }
                     } else {
                         witTxt = getWitnessText(witId, witRng);
                         witTxt = witTxt.replaceAll("\\n+", " ").replaceAll("\\s+", " ").trim();
@@ -441,7 +447,8 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
             
             // add any witnesses that are NOT accounted for in the txtSiglumMap
             // these are witnesses that are the same as the base. add their siglum
-            // to the witness list following the base fragment
+            // to the witness list following the base fragment. TODO ONLY DO THIS if the wi wan;r mar
+            // 
             addWitnessesMatchingBase(sb, txtSiglumMap, nestedChange, priorWitsWithChange);
             
             // end the base portion of the variant report
@@ -674,18 +681,22 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
         Witness w = this.witnessDao.find(this.baseWitnessId);
         long maxLen = w.getText().getLength();
         
+        if (pos == 397 ) {
+            System.err.println("fdb");
+        }
+        
         final int defaultSize = 40;
         int contextSize = defaultSize;
         if (pos <= 8) {
             Range r = new Range(0, contextSize);
             String witTxt = getWitnessText(this.baseWitnessId, r).trim();
-            return witTxt.substring(0, witTxt.indexOf(' ')).replaceAll("\\n+", " / ");
+            return witTxt.substring(0, witTxt.indexOf(' '));
         }
         
         if ( pos >= (maxLen-8) ) {
             Range r = new Range(pos-contextSize, pos);
             String witTxt = getWitnessText(this.baseWitnessId, r).trim();
-            return witTxt.substring(witTxt.lastIndexOf(' ')).replaceAll("\\n+", " / ");
+            return witTxt.substring(witTxt.lastIndexOf(' '));
         }
 
         // don't extend less < 0
@@ -724,7 +735,7 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
         }
 
         witTxt = wb + " " + wa;
-        return witTxt.replaceAll("\\n+", " / ");
+        return witTxt;
     }
     
     private String findLineNumber(Range tgtRange, Map<Range, String> lineRanges) {
