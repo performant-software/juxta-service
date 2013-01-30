@@ -580,21 +580,12 @@ $(function() {
          if ( $(this).attr("id") !== "divider-row") {
             $(".dropdown").hide();
             var btn =  $(this).children(".sort-radio");
-            if ( btn.is(':checked') ) {
-               btn.attr('checked', false);
-            } else {
+            if ( !btn.is(':checked') ) {
                btn.attr('checked', true);
-            }
+            } 
             setSortOrder();
          }
       });
-      
-      // sort options
-       $("#files").on("click", ".sort-radio", function(event) {
-         event.stopPropagation();
-         $(".dropdown").hide();
-         setSortOrder();
-      }); 
       
       var r = $("#files").position().left + $("#files").outerWidth(true);
       $(dd).css("left", (r - $(dd).outerWidth()) + "px");
