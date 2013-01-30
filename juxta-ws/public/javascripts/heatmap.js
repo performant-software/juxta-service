@@ -563,12 +563,12 @@ $(function() {
       setSortOrder();
 
       // sort dropdown goodness
+      var dd = $("#files").find(".dropdown");
       $("body").on("click", function() {
          $(".dropdown").hide();
       });
       $("#sort-header").on("click", function(event) {
          event.stopPropagation();
-         var dd = $("#files").find(".dropdown");
          if ($(dd).is(":visible")) {
             $(dd).hide();
          } else {
@@ -582,6 +582,9 @@ $(function() {
          $(".dropdown").hide();
          setSortOrder();
       }); 
+      
+      var r = $("#files").position().left + $("#files").outerWidth(true);
+      $(dd).css("left", (r - $(dd).outerWidth()) + "px");
    };
 
    // Let the world know that the heatmap code is now loaded and can be initialized
@@ -604,6 +607,10 @@ $(function() {
          // easiest to just clear boxes and reset notes on a resize
          clearBoxes();
          layoutNotes();
+         
+         var dd = $("#files").find(".dropdown");
+         var r = $("#files").position().left + $("#files").outerWidth(true);
+         $(dd).css("left", (r - $(dd).outerWidth()) + "px");
       }
    });
 
