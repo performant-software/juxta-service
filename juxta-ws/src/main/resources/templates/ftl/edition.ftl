@@ -4,11 +4,7 @@
         <title>${title}</title>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
         <style>
-            table {
-               border: 0;
-               border-collapse: collapse;
-               border-top-style: none;
-            }
+            
             ul {
                list-style: none;
             }
@@ -28,7 +24,7 @@
     <body>
       <h3>${title}</h3>
        
-       <table>
+       <table style="border-top: none; border-top-style: none;">
          <@fileReader src="${baseWitnessText}"/>   
        </table>
        
@@ -41,7 +37,7 @@
           </#list>
        </ul>
        
-       <table>
+       <table style="border-top: none; border-top-style: none;">
          <@fileReader src="${apparatusFile}"/>    
        </table>
     </body>

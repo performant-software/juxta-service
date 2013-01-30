@@ -448,6 +448,37 @@ $(function() {
 
       // Setup the full heatmap UI as long as we are not in condensed mode
       if ($("#condensed").text() === 'false') {
+         
+         // set initial sort order
+         setSortOrder();
+   
+         // sort dropdown goodness
+         var dd = $("#files").find(".dropdown");
+         $("body").on("click", function() {
+            $(".dropdown").hide();
+         });
+         $("#sort-header").on("click", function(event) {
+            event.stopPropagation();
+            if ($(dd).is(":visible")) {
+               $(dd).hide();
+            } else {
+               $(dd).show();
+            }
+         }); 
+         $("#files .dropdown li").on("click", function(event) {
+            event.stopPropagation();
+            if ( $(this).attr("id") !== "divider-row") {
+               $(".dropdown").hide();
+               var btn =  $(this).children(".sort-radio");
+               if ( !btn.is(':checked') ) {
+                  btn.attr('checked', true);
+               } 
+               setSortOrder();
+            }
+         });
+         
+         var r = $("#files").position().left + $("#files").outerWidth(true);
+         $(dd).css("left", (r - $(dd).outerWidth()) + "px");
 
          // initially, notes and pagebreaks are displayed. set buttons to pushed
          $("#notes-button").addClass("pushed");
@@ -558,37 +589,6 @@ $(function() {
       $("#revisions-button").on("click", function() {
          toggleRevisionStyle();
       });
-      
-      // set initial sort order
-      setSortOrder();
-
-      // sort dropdown goodness
-      var dd = $("#files").find(".dropdown");
-      $("body").on("click", function() {
-         $(".dropdown").hide();
-      });
-      $("#sort-header").on("click", function(event) {
-         event.stopPropagation();
-         if ($(dd).is(":visible")) {
-            $(dd).hide();
-         } else {
-            $(dd).show();
-         }
-      }); 
-      $("#files .dropdown li").on("click", function(event) {
-         event.stopPropagation();
-         if ( $(this).attr("id") !== "divider-row") {
-            $(".dropdown").hide();
-            var btn =  $(this).children(".sort-radio");
-            if ( !btn.is(':checked') ) {
-               btn.attr('checked', true);
-            } 
-            setSortOrder();
-         }
-      });
-      
-      var r = $("#files").position().left + $("#files").outerWidth(true);
-      $(dd).css("left", (r - $(dd).outerWidth()) + "px");
    };
 
    // Let the world know that the heatmap code is now loaded and can be initialized
