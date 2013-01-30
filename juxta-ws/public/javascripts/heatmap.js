@@ -577,14 +577,16 @@ $(function() {
       }); 
       $("#files .dropdown li").on("click", function(event) {
          event.stopPropagation();
-         $(".dropdown").hide();
-         var btn =  $(this).children(".sort-radio");
-         if ( btn.is(':checked') ) {
-            btn.attr('checked', false);
-         } else {
-            btn.attr('checked', true);
+         if ( $(this).attr("id") !== "divider-row") {
+            $(".dropdown").hide();
+            var btn =  $(this).children(".sort-radio");
+            if ( btn.is(':checked') ) {
+               btn.attr('checked', false);
+            } else {
+               btn.attr('checked', true);
+            }
+            setSortOrder();
          }
-         setSortOrder();
       });
       
       // sort options

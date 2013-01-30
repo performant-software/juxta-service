@@ -51,7 +51,9 @@
    position: relative;
    top: -3px;
 }
-
+#divider-row {
+   cursor: default;
+}
 .dropdown li {
    list-style-type: none;
    padding: 0px 3px 2px 3px;
