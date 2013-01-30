@@ -575,6 +575,17 @@ $(function() {
             $(dd).show();
          }
       }); 
+      $("#files .dropdown li").on("click", function(event) {
+         event.stopPropagation();
+         $(".dropdown").hide();
+         var btn =  $(this).children(".sort-radio");
+         if ( btn.is(':checked') ) {
+            btn.attr('checked', false);
+         } else {
+            btn.attr('checked', true);
+         }
+         setSortOrder();
+      });
       
       // sort options
        $("#files").on("click", ".sort-radio", function(event) {
