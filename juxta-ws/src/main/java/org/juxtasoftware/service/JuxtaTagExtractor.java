@@ -283,7 +283,9 @@ public class JuxtaTagExtractor extends DefaultHandler  {
                 mark.setLabel( "L"+attributes.getValue(idx) );
             } 
         }
-        this.marks.add(mark);
+        if ( mark.getLabel().trim().length() > 0 ) {
+            this.marks.add(mark);
+        }
     }
     
     private void extractParagraphNumber(Attributes attributes) {
