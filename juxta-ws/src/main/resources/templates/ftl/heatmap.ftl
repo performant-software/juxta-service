@@ -35,28 +35,32 @@
                </li>
            </ul>
         </div>
-        <#list witnesses as witness>
-            <#if witness.id == baseId>
-                <div class="base set-file" title="${witness.name}"  juxta:date="${witness.date}">
-                  <div id="toggle-${witness.id}" class="visibility-toggle base-visibility"></div>
-                  <div id="witness-${witness.id}" class="witness">${witness.name}</div>
-                  <div id="base-tag">[base]</div>
-                </div>
-            <#else>
-                <div class="set-witnesss set-file" title="${witness.name}" juxta:date="${witness.date}">
-                    <div id="toggle-${witness.id}" class="visibility-toggle" title="Hide witness"></div>
-                    <div id="witness-${witness.id}" class="witness">${witness.name}</div>
-                    <table>
-                        <tr>
-                           <td class="chart-label">Difference from base</td>
-                           <td id="change-index-${witness.id}" class="change-index"></td>
-                        </tr>
-                    </table>
-                    <div style="clear: both;"></div>
-                </div>
-            </#if>
-            
-        </#list>
+        <div id="files-scroller" style="overflow: hidden">
+           <div id="files-content">
+              <#list witnesses as witness>
+                  <#if witness.id == baseId>
+                      <div class="base set-file" title="${witness.name}"  juxta:date="${witness.date}">
+                        <div id="toggle-${witness.id}" class="visibility-toggle base-visibility"></div>
+                        <div id="witness-${witness.id}" class="witness">${witness.name}</div>
+                        <div id="base-tag">[base]</div>
+                      </div>
+                  <#else>
+                      <div class="set-witnesss set-file" title="${witness.name}" juxta:date="${witness.date}">
+                          <div id="toggle-${witness.id}" class="visibility-toggle" title="Hide witness"></div>
+                          <div id="witness-${witness.id}" class="witness">${witness.name}</div>
+                          <table>
+                              <tr>
+                                 <td class="chart-label">Difference from base</td>
+                                 <td id="change-index-${witness.id}" class="change-index"></td>
+                              </tr>
+                          </table>
+                          <div style="clear: both;"></div>
+                      </div>
+                  </#if>
+                  
+              </#list>
+           </div>
+        </div>
     </div>
 </#if>
 

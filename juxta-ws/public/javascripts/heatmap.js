@@ -398,6 +398,17 @@ $(function() {
       }
       window.location = csUrl;
    };
+   
+   var sizeWitnessList = function() {
+      var maxH = $("#juxta-ws-content").parent().height();
+      $("#files").height(maxH);
+      $("#files-scroller").height(maxH-$(".header").outerHeight(true) );
+      if ( $("#files-content").height() > (maxH-$(".header").outerHeight(true))) {
+          $("#files-scroller").css("overflow-y", "scroll");
+      } else {
+         $("#files-scroller").css("overflow-y", "hidden");
+      }
+   };
 
    /**
     * Initialize heatmap size, layout and events
@@ -432,6 +443,7 @@ $(function() {
 
       var h = getMaxNonScrollHeight();
       $(".heatmap-scroller").height(h);
+      sizeWitnessList();
 
       var fullHeight = $(".heatmap-text").outerHeight();
       if (fullHeight < h) {
@@ -600,6 +612,8 @@ $(function() {
             $(".heatmap-scroller").css("overflow-y", "hidden");
          }
 
+         sizeWitnessList();
+      
          // easiest to just clear boxes and reset notes on a resize
          clearBoxes();
          layoutNotes();
