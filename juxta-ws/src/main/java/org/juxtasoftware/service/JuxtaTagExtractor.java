@@ -302,7 +302,9 @@ public class JuxtaTagExtractor extends DefaultHandler  {
                 mark.setLabel( "P"+attributes.getValue(idx) );
             } 
         }
-        this.marks.add(mark);
+        if (  mark.getLabel().length() > 0 ) {
+            this.marks.add(mark);
+        }
     }
 
     private String getAttributeValue( final String name, final Attributes attributes ){
