@@ -141,6 +141,7 @@ div.files {
 .set-file {
     font: 14px "Helvetica Neue", Helvetica, Arial, sans-serif;
     font-weight: 300;
+    border-bottom: 1px solid #cccccc;
 }
 
 .visibility-toggle {
@@ -152,15 +153,14 @@ div.files {
    float: left;
    padding: 0px;
    position: relative;
-   top: 4px;
+   top: 2px;
    display: inline-block;
    background-image: url("/juxta/images/show_hide.png");
    background-position: 0 0;
 }
 
 .base-visibility {
-   top: 1px;
-   margin-right: 6px;
+   top: 3px;
    margin-left: 0px;
    cursor: default;
 }
@@ -194,31 +194,38 @@ div.files {
 
 /* Witness entry in comparison set div */
 div.witness {
-    margin-top: 0.3em;
-    margin-bottom: 0.3em;
-    padding-left: 0.2em;
+    margin-top: 2px;
+    padding-left: 2px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     cursor: pointer;
-    float: left;
-    width:51%;
+    width:90%;
 }
-
-div.change-index {
-    float: right;
-    width: 38%;
-    margin: 3px 3px 0 0;
+#files table {
+   border: none;
+   float: right;
+   margin-bottom: 2px;
+   margin-right: 2px;
+}
+#files td {
+   padding: 0px 5px;
+   border: 0;
+}
+#files .change-index {    
+    width: 58%;
+}
+#files  .chart-label{
+   text-align: right;
+   font-size: 0.8em;
+   font-style: italic;
+   color: #aab;
+   font-weight: 200;
 }
 
 /* Base document entry in comparison set div */
 div.base {
     background-color: #7ede7e;
-    margin-top: 0.35em;
-    margin-bottom: 0.35em;
-    margin-right: 0.15em;
-    margin-left: 0.15em;
-    outline: 1px solid #008000;
     padding-left: 0.2em;
     white-space: nowrap;
     overflow: hidden;
@@ -226,11 +233,10 @@ div.base {
     cursor: default;
 }
 #base-tag{
-   float: right;
    margin-right: 3px;
-   margin-bottom: 2px;
+   margin-bottom: 5px;
    font-size: 0.8em;
-   margin-top: 1px;
+   text-align: right;
 }
 
 

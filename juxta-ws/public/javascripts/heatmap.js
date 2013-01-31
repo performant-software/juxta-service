@@ -35,7 +35,11 @@ $(function() {
       var attribs = {
          stroke : '#000',
          'stroke-width' : 0.5,
-         'stroke-linejoin' : 'round'
+      };
+      var fill = {
+         stroke : '#BBC1FF',
+         'stroke-width' : 0,
+         fill: '#BBC1FF'
       };
       
       var idxJson = $.parseJSON( $("#witness-change-indexes").text() );      
@@ -53,24 +57,12 @@ $(function() {
             }
          });
          $(this).attr("title", changeIndex + " change index from base text");
-         var paper = new Raphael($(this).get(0), $(this).width(), 22);
+         var paper = new Raphael($(this).get(0), $(this).width(), 10);
          $(this).data("paper", paper);
-         var boxW = $(this).width() / 8 - 2;
-         var x = 1;
-         var i;
-         for ( i = 0; i < 8; i += 1) {
-            var box = paper.rect(x, 6, boxW, 10, 3);
-            var currentLevel = i / 8.0;
-            if (currentLevel <= changeIndex) {
-               attribs.stroke = dark;
-               attribs.fill = colors[i];
-            } else {
-               attribs.stroke = dim;
-               attribs.fill = colors[0];
-            }
-            box.attr(attribs);
-            x = x + boxW + 2;
-         }
+         var box = paper.rect(0, 0, $(this).width(), 10, 4);
+         box.attr(attribs);
+         var box = paper.rect(1, 1, $(this).width()*changeIndex, 8);
+         box.attr(fill);
       });
    };
 
