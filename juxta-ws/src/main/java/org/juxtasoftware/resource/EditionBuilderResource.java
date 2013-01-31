@@ -681,22 +681,23 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
         Witness w = this.witnessDao.find(this.baseWitnessId);
         long maxLen = w.getText().getLength();
         
-        if (pos == 397 ) {
-            System.err.println("fdb");
-        }
-        
         final int defaultSize = 40;
         int contextSize = defaultSize;
-        if (pos <= 8) {
+        if (pos <= contextSize) {
             Range r = new Range(0, contextSize);
             String witTxt = getWitnessText(this.baseWitnessId, r).trim();
             return witTxt.substring(0, witTxt.indexOf(' '));
         }
         
-        if ( pos >= (maxLen-8) ) {
+        if ( pos >= (maxLen-contextSize) ) {
             Range r = new Range(pos-contextSize, pos);
             String witTxt = getWitnessText(this.baseWitnessId, r).trim();
-            return witTxt.substring(witTxt.lastIndexOf(' '));
+            if ( witTxt.lastIndexOf(' ') > -1 ) {
+                return witTxt.substring(witTxt.lastIndexOf(' '));
+            } else {
+                return witTxt;
+            }
+            
         }
 
         // don't extend less < 0
