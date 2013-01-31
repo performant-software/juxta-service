@@ -59,7 +59,7 @@ $(function() {
          $(this).attr("title", changeIndex + " change index from base text");
          var paper = new Raphael($(this).get(0), $(this).width(), 10);
          $(this).data("paper", paper);
-         var box = paper.rect(0, 0, $(this).width(), 10, 4);
+         var box = paper.rect(0, 0, $(this).width(), 10);
          box.attr(attribs);
          var box = paper.rect(1, 1, $(this).width()*changeIndex, 8);
          box.attr(fill);
