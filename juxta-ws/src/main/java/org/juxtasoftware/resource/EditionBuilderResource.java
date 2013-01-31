@@ -606,7 +606,7 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
         int contextSize = defaultSize;
         
         // special case: added at start of doc
-        if (start <= 8) {
+        if (start <= contextSize) {
             Range r = new Range(start, end+contextSize);
             String witTxt = getWitnessText(witId, r).trim();
             int spacePos = witTxt.indexOf(' ', end+1);
@@ -617,7 +617,7 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
         }
         
         // special case: added at end of doc
-        if ( end >= (maxLen-8) ) {
+        if ( end >= (maxLen-contextSize) ) {
             Range r = new Range(start-contextSize, end);
             String witTxt = getWitnessText(witId, r).trim();
             int startAdd = contextSize;
@@ -686,7 +686,11 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
         if (pos <= contextSize) {
             Range r = new Range(0, contextSize);
             String witTxt = getWitnessText(this.baseWitnessId, r).trim();
-            return witTxt.substring(0, witTxt.indexOf(' '));
+            if ( witTxt.indexOf(' ') > -1 ) {
+                return witTxt.substring(0, witTxt.indexOf(' '));
+            } else {
+                return witTxt;
+            }
         }
         
         if ( pos >= (maxLen-contextSize) ) {
