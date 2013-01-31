@@ -59,7 +59,8 @@ public class DiffInjector implements OverlapInjector<Change> {
         if ( this.currChange != null && this.tagStarted == false ) {
             if ( this.currChange.getRange().getStart() <= currPositon) {
                 line.append("<span id=\"diff-").append(currChange.getId()).append("\"");
-                line.append(" class=\"diff\"");
+                String typeStr = currChange.getType().toString().toLowerCase();
+                line.append(" class=\"diff "+typeStr +"\"");
                 line.append(" juxta:connect-to=\"").append(currChange.getConnectedId()).append("\"").append("\">");
                 this.tagStarted = true;
                 return true;

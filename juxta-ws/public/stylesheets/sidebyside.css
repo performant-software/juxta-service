@@ -88,15 +88,30 @@ div.witness-text {
 /* DIFF span style */
 /* Note: bit after the comma means if a tag that has both diff and move */
 /* the diff style has priority */ 
+span.diff.change {
+    background-color: #d5d9ff;
+    color: black;
+    font-weight: 200;
+}
+span.diff.change.lit {
+   background-color: #6b7bff;
+   color: #eff0ff;
+}
+span.diff.add {
+   background-color: #beb;
+}
+span.diff.add.lit {
+   background-color: #383;
+   color: #efffef;
+}
+span.diff.del.lit {
+   background-color: #c44 !important;
+}
 span.diff, span.diff span.move  {
     background-color: #d5d9ff;
 }
 span.diff.lit, span.diff.lit span.move   {
-    background-color: #8792ff !important;
-}
-.lit  {
-    background-color: #6b7bff !important;
-    color: #eff0ff;
+    background-color: #8792ff ;
 }
 span.move  {
     background-color: #eeeeee;

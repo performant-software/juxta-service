@@ -165,14 +165,14 @@ $(function() {
                   ele.addClass("lit");
                }
                if (ele.width() === 0) {
-                  ele.html("&nbsp;");
+                  ele.html("&nbsp;&nbsp;");
                }
                ele = $("#" + conn.rightId);
                if (ele.hasClass() === false) {
                   ele.addClass("lit");
                }
                if (ele.width() === 0) {
-                  ele.html("&nbsp;");
+                  ele.html("&nbsp;&nbsp;");
                }
             }
          });
@@ -184,12 +184,12 @@ $(function() {
             if (conn.line == foo) {
                var ele = $("#" + conn.leftId);
                ele.removeClass("lit");
-               if (ele.html() === "&nbsp;") {
+               if (ele.html() === "&nbsp;&nbsp;") {
                   ele.html("");
                }
                ele = $("#" + conn.rightId);
                ele.removeClass("lit");
-               if (ele.html() === "&nbsp;") {
+               if (ele.html() === "&nbsp;&nbsp;") {
                   ele.html("");
                }
                $("#" + conn.rightId).removeClass("lit");
@@ -211,7 +211,7 @@ $(function() {
       var conn = diffEle.attr("juxta:connect-to");
       $("#diff-" + conn).addClass("lit");
       if ($("#diff-" + conn).width() === 0) {
-         $("#diff-" + conn).html("&nbsp;");
+         $("#diff-" + conn).html("&nbsp;&nbsp;");
       }
 
       var diffId = diffEle.attr("id");
@@ -227,7 +227,7 @@ $(function() {
 
    var clearDiffHighlight = function() {
       $(".lit").each(function(index) {
-         if ($(this).html() === "&nbsp;") {
+         if ($(this).html() === "&nbsp;&nbsp;") {
             $(this).html("");
          }
       });

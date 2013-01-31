@@ -225,7 +225,7 @@ div.witness {
 
 /* Base document entry in comparison set div */
 div.base {
-    background-color: #7ede7e;
+    background-color: #f8f8ff;
     padding-left: 0.2em;
     white-space: nowrap;
     overflow: hidden;

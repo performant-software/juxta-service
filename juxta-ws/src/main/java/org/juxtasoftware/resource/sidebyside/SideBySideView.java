@@ -242,7 +242,6 @@ public class SideBySideView implements FileDirectiveListener  {
     }
     
     void connectChanges() {
-        LOG.info("Make connections");
         // walk through each set of changes for the comparands.
         // changes are considered connected if they share an
         // alignment id
@@ -274,7 +273,6 @@ public class SideBySideView implements FileDirectiveListener  {
         // get all of the alignments that involve one of the 
         // witnesses in this comparison. Split the changes into
         // separate lists for each
-        LOG.info("Get diffs...");
         boolean done = false;
         int startIdx = 0;
         while (!done) {
@@ -461,6 +459,7 @@ public class SideBySideView implements FileDirectiveListener  {
         private final int group;
         private Long connectedToId;
         private Range range;
+        private final Type type;
         static long idGen = 0;
         
         public Change( Alignment align, Range witnessRange, int group) {
@@ -468,6 +467,19 @@ public class SideBySideView implements FileDirectiveListener  {
             this.group = group;
             this.alignIdList.add( align.getId() );
             this.range = witnessRange;
+            if ( align.getName().equals(Constants.CHANGE_NAME )) {
+                this.type = Type.CHANGE;
+            } else {
+                if ( witnessRange.length() == 0 ) {
+                    this.type = Type.DEL;
+                } else {
+                    this.type = Type.ADD;
+                }
+            }
+        }
+        
+        public Change.Type getType() {
+            return this.type;
         }
         
         public void connect(Change otherChange) {
