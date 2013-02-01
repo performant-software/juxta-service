@@ -367,9 +367,6 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
             Range baseRange = new Range( variant.getRange() );
             if ( baseRange.length() > 0 ) {
                 baseTxt = getWitnessText(this.baseWitnessId, baseRange);
-                if ( baseTxt.contains("_")) {
-                    System.err.println("fv");
-                }
                 baseTxt = baseTxt.replaceAll("\\n+", " / ").replaceAll("\\s+", " ").trim();
             } else {
                 // if base len is 0, this means that a witness added text relative to
@@ -383,7 +380,7 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
                 // sigla that are the same as base, this prior info will be consulted.
                 additionToBase = true;
                 baseTxt = getBaseAdditionContext( baseRange.getStart());
-                String[] parts = baseTxt.split(" ");
+                String[] parts = baseTxt.replaceAll("\\n+", " ").split(" ");
                 if ( parts.length == 2 ) {
                     baseRange = new Range(baseRange.getStart()-parts[0].length(), baseRange.getStart()+parts[1].length()+1);
                 } else {
@@ -393,7 +390,7 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
             }
             
             // make it safe
-            baseTxt = StringEscapeUtils.escapeXml( baseTxt );
+            baseTxt = StringEscapeUtils.escapeXml( baseTxt ); ///
             
             // Start the variant string. It is the base text followed by ]. 
             StringBuilder sb = new StringBuilder(baseTxt).append("] ");
@@ -415,12 +412,14 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
                         // to delimit the addition
                         witTxt = getWitnessAdditionWithContext(witId, witRng);
                         
-                        // if the first part of the bookend text was already
-                        // handled by the prior line of the apparatus. flag
-                        // it here so the witnesss wont get double counted.
-                        nestedChange = witTxt.split(" ")[0].equals(priorBaseTxt);
-                        if ( nestedChange == false && baseTxt.contains(priorBaseTxt)) {
-                            nestedChange = true;
+                        if ( priorBaseTxt != null ){
+                            // if the first part of the bookend text was already
+                            // handled by the prior line of the apparatus. flag
+                            // it here so the witnesss wont get double counted.
+                            nestedChange = witTxt.split(" ")[0].equals(priorBaseTxt);
+                            if ( nestedChange == false && baseTxt.contains(priorBaseTxt)) {
+                                nestedChange = true;
+                            }
                         }
                     } else {
                         witTxt = getWitnessText(witId, witRng);
@@ -447,8 +446,7 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
             
             // add any witnesses that are NOT accounted for in the txtSiglumMap
             // these are witnesses that are the same as the base. add their siglum
-            // to the witness list following the base fragment. TODO ONLY DO THIS if the wi wan;r mar
-            // 
+            // to the witness list following the base fragment. 
             addWitnessesMatchingBase(sb, txtSiglumMap, nestedChange, priorWitsWithChange);
             
             // end the base portion of the variant report
@@ -606,26 +604,31 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
         int contextSize = defaultSize;
         
         // special case: added at start of doc
-        if (start <= contextSize) {
-            Range r = new Range(start, end+contextSize);
-            String witTxt = getWitnessText(witId, r).trim();
-            int spacePos = witTxt.indexOf(' ', end+1);
-            String added = witTxt.substring(0, end);
-            String out =  added+witTxt.substring(end, spacePos);
-            out = out.replaceAll("\\n+", " / ");
-            return out.trim();
+        if ( start < 10 ) {
+            Range r = new Range(start, Math.min(maxLen,end+contextSize));
+            String witTxt = getWitnessText(witId, r);
+            int spacePos = witTxt.replaceAll("\\n+", " ").indexOf(' ', (end-start)+1);
+            if ( spacePos > -1 ) {
+                String added = witTxt.substring(0, (end-start));
+                String out =  added+witTxt.substring((end-start), spacePos);
+                out = out.replaceAll("\\n+", " / ");
+                return out.trim();
+            } else {
+                return witTxt.replaceAll("\\n+", " / ");
+            }
         }
         
         // special case: added at end of doc
-        if ( end >= (maxLen-contextSize) ) {
-            Range r = new Range(start-contextSize, end);
-            String witTxt = getWitnessText(witId, r).trim();
+        if ( end >= (maxLen-10) ) {
+            Range r = new Range( Math.max(0,start-contextSize), end);
+            String witTxt = getWitnessText(witId, r);
             int startAdd = contextSize;
             String added = witTxt.substring( startAdd );
             int p = startAdd;
             int spcCnt = 0;
+            String normalized = witTxt.replaceAll("\\n+", " ");
             while (p > 0) {
-                if ( witTxt.charAt(p) == ' ') {
+                if ( normalized.charAt(p) == ' ') {
                     spcCnt++;
                     if (spcCnt == 2 ) {
                         break;
@@ -634,8 +637,7 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
                 p--;
             }
             String out= witTxt.substring(p,startAdd)+added;
-            out = out.replaceAll("\\n+", " / ");
-            return out.trim();
+            return out.replaceAll("\\n+", " / ").trim();
         }
 
         // don't extend less < 0
@@ -649,11 +651,12 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
         }
         
         // get the fragment (including the central word in the witness)
-        String witTxt = getWitnessText(witId, new Range(start - contextSize, end + contextSize)).trim();
+        String witTxt = getWitnessText(witId, new Range(start - contextSize, end + contextSize));
+        String normalized = witTxt.replaceAll("\\n+", " ");
         int fragStart = contextSize;
         int spcCnt = 0;
         while ( fragStart > 0 ) {
-            if ( witTxt.charAt(fragStart) == ' ') {
+            if ( normalized.charAt(fragStart) == ' ') {
                 spcCnt++;
                 if (spcCnt == 2 ) {
                     break;
@@ -664,8 +667,8 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
         
         int fragEnd = contextSize+(end-start);
         spcCnt = 0;
-        while ( fragEnd < witTxt.length()) {
-            if ( witTxt.charAt(fragEnd) == ' ') {
+        while ( fragEnd < normalized.length()) {
+            if ( normalized.charAt(fragEnd) == ' ') {
                 spcCnt++;
                 if (spcCnt == 2 ) {
                     break;
@@ -683,25 +686,26 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
         
         final int defaultSize = 40;
         int contextSize = defaultSize;
-        if (pos <= contextSize) {
-            Range r = new Range(0, contextSize);
-            String witTxt = getWitnessText(this.baseWitnessId, r).trim();
-            if ( witTxt.indexOf(' ') > -1 ) {
-                return witTxt.substring(0, witTxt.indexOf(' '));
+        if (pos < 10 ) {
+            Range r = new Range(0, Math.min(maxLen,contextSize));
+            String witTxt = getWitnessText(this.baseWitnessId, r).trim();   
+            int spcPos = witTxt.replaceAll("\\n+", " ").indexOf(" ");
+            if ( spcPos > -1 ) {
+                return witTxt.substring(0, spcPos);
             } else {
                 return witTxt;
             }
         }
         
-        if ( pos >= (maxLen-contextSize) ) {
-            Range r = new Range(pos-contextSize, pos);
-            String witTxt = getWitnessText(this.baseWitnessId, r).trim();
-            if ( witTxt.lastIndexOf(' ') > -1 ) {
-                return witTxt.substring(witTxt.lastIndexOf(' '));
+        if ( pos >= (maxLen-10) ) {
+            Range r = new Range( Math.max(0, pos-contextSize), pos);
+            String witTxt = getWitnessText(this.baseWitnessId, r);
+            int spcPos = witTxt.replaceAll("\\n+", " ").lastIndexOf(' ');
+            if ( spcPos > -1 ) {
+                return witTxt.substring(spcPos);
             } else {
                 return witTxt;
             }
-            
         }
 
         // don't extend less < 0
@@ -714,21 +718,21 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
             contextSize -= delta;
         }
 
-        String witTxt = getWitnessText(this.baseWitnessId, new Range(pos - contextSize, pos + contextSize)).trim();
-        String before = witTxt.substring(0, contextSize).trim();
-        String wb = before.substring(before.lastIndexOf(' ')).trim();
-        String after = witTxt.substring(contextSize).trim();
+        String witTxt = getWitnessText(this.baseWitnessId, new Range(pos - contextSize, pos + contextSize));
+        String before = witTxt.substring(0, contextSize);
+        String wb = before.substring(before.replaceAll("\\n+"," ").lastIndexOf(' '));
+        String after = witTxt.substring(contextSize);
         String wa = after;
         int start = 0;
         while (true) {
-            int spacePos = after.indexOf(' ', start);
+            int spacePos = after.replaceAll("\\n+"," ").indexOf(' ', start);
             if (spacePos > -1) {
-                wa = after.substring(start, spacePos).trim();
+                wa = after.substring(start, spacePos);
                 if (wa.length() == 1 && PUNCTUATION.matcher(wa).find()) {
                     if ( wa.equals("&") ) {
-                        wb = wb + " "+ wa;
+                        wb = wb + " "+ wa+" ";
                     } else {
-                        wb = wb+wa;
+                        wb = wb+wa+" ";
                     }
                     start = spacePos + 1;
                 } else {
@@ -739,7 +743,7 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
             }
         }
 
-        witTxt = wb + " " + wa;
+        witTxt = wb + wa;
         return witTxt;
     }
     
