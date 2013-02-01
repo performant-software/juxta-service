@@ -16,6 +16,7 @@ public class DiffInjector implements OverlapInjector<Change> {
     private Iterator<Change> changeItr;
     private Change currChange = null;
     private boolean tagStarted = false;
+    private boolean useMultipleColors = false;
     
     @Override
     public void initialize(List<Change> data) {
@@ -60,6 +61,9 @@ public class DiffInjector implements OverlapInjector<Change> {
             if ( this.currChange.getRange().getStart() <= currPositon) {
                 line.append("<span id=\"diff-").append(currChange.getId()).append("\"");
                 String typeStr = currChange.getType().toString().toLowerCase();
+                if ( this.useMultipleColors == false ) {
+                    typeStr = "change";
+                }
                 line.append(" class=\"diff "+typeStr +"\"");
                 line.append(" juxta:connect-to=\"").append(currChange.getConnectedId()).append("\"").append("\">");
                 this.tagStarted = true;
@@ -83,6 +87,10 @@ public class DiffInjector implements OverlapInjector<Change> {
             }
         }
         return false;
+    }
+
+    public void useMultipleColors(Boolean multiColorSidebySide) {
+        this.useMultipleColors = multiColorSidebySide;
     }
 
 }

@@ -66,6 +66,7 @@ public class SideBySideView implements FileDirectiveListener  {
     @Autowired private ApplicationContext context;
     @Autowired private TaskManager taskManager;
     @Autowired private Integer visualizationBatchSize;
+    @Autowired private Boolean multiColorSidebySide;
 
     protected static final Logger LOG = LoggerFactory.getLogger( Constants.WS_LOGGER_NAME );
     
@@ -332,6 +333,7 @@ public class SideBySideView implements FileDirectiveListener  {
         // create content injectors
         final DiffInjector diffInjector = this.context.getBean(DiffInjector.class);
         diffInjector.initialize(  info.getChanges() );
+        diffInjector.useMultipleColors( this.multiColorSidebySide );
         final TranspositionInjector moveInjector = this.context.getBean(TranspositionInjector.class);
         moveInjector.initialize(info.getTranspositions());
         

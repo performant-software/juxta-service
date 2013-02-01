@@ -132,6 +132,12 @@
         <constructor-arg value="${juxta.visualization.batch}" />
     </bean>
     
+    <!-- multicolor side by side -->
+    <bean id="multiColorSidebySide" class="java.lang.Boolean" factory-method="valueOf">
+        <constructor-arg value="${juxta.sidebyside.multicolor}" />
+    </bean>
+    
+    
     <!-- Juxta WS version property -->
     <bean id="version" class="java.lang.String" factory-method="valueOf">
         <constructor-arg value="1.7.5-BETA"/>
