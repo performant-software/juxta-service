@@ -76,7 +76,7 @@
 </#if> 
     
     <#if ( !condensed )>
-        <#if (embedded && ( hasRevisions || hasNotes || hasBreaks)) || !embedded >
+        <#if (embedded && ( hasRevisions || hasNotes || hasBreaks || hasLineNumbers)) || !embedded >
             <div class="heatmap-toolbar">
                 <#if hasRevisions>
                     <a class="juxta-button" id="revisions-button" title="Toggle revision styling">Revisions</a>
