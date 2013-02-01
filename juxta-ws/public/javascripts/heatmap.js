@@ -331,16 +331,14 @@ $(function() {
                var w  = help.width();
                help.remove();
                $("#condensed-overlay").width(w);
-               
                $("#condensed-overlay").css("z-index", "1");
                $("#margin-boxes").css("z-index", "1000");
-               
-               
-               //$("#heatmap-text").addClass("dimmed");
-               var x = $("#heatmap-text").position().top + $("#heatmap-text").outerHeight();
+
+               var bottomY = $("#heatmap-text").position().top + $("#heatmap-text").outerHeight();
                $("#margin-boxes").css("left", ($("#heatmap-text").width() - $("#margin-boxes").width()) / 2);
-               $("#margin-boxes").css("top", boxTop - x + 40 - $("#heatmap-scroller").scrollTop());
-               // to to get it down a bit from src diff
+               // box container is below the text. move it up to alignt with clicked diff
+               var t = boxTop - bottomY + $("#condensed-header").outerHeight(true) - $("#heatmap-scroller").scrollTop();
+               $("#margin-boxes").css("top",  t);
             }
 
             $('#wait-popup').hide();
