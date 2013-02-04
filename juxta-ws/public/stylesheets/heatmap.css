@@ -510,3 +510,30 @@ span.heatmap {
 .heat9 {
     background-color: rgb(51,71,250);
 }
+
+/** Annotations popup */
+.edit-annotation-popup {
+    display: none;
+    position: fixed;
+    width:350px;
+    height: 200px;
+    text-align:center;
+    z-index: 1000;
+    font-size: 0.9em;
+    font-weight: 300;
+    background-color: #eee;
+    border: 1px solid #666;
+    -moz-box-shadow: 5px 5px 5px #999;
+    -webkit-box-shadow: 5px 5px 5px #999;
+    box-shadow: 5px 5px 5px #999;
+    -mox-border-radius: 5px;
+    -webkit-border-radius: 5px;
+    border-radius: 5px;
+    padding: 0px 0px 5px 0px;
+}
+#annotation-editor {
+   height: 146px;
+   width: 340px;
+   margin: 5px 5px 0px 5px;
+   resize: none;
+}

@@ -566,13 +566,34 @@ $(function() {
       // clicks on background clear boxes
       // and revert to note display
       $("body").click(function() {
-         clearBoxes();
+         if ( $(".edit-annotation-popup").is(":visible") === false ) {
+            clearBoxes();
+         }
       });
 
       // click heatmap to show margin box
       $("#heatmap-text").on("click", ".heatmap", function(event) {
          showMarginBoxes($(this).attr("id"));
          event.stopPropagation();
+      });
+      
+      // add annotation
+      $(".hm-anno").on("click", function(event) {
+         event.stopPropagation();
+         var b = $(this).closest(".margin-box");
+         $(".edit-annotation-popup").css("left", (b.position().left+b.outerWidth(true)-$(".edit-annotation-popup").outerWidth(true))+"px");
+         $(".edit-annotation-popup").css("top", (b.position().top+b.outerHeight(true)+10)+"px");
+         $(".edit-annotation-popup").show();
+         $("#annotation-editor").focus();
+      });
+      $("#anno-ok-button").on("click", function() {
+         event.stopPropagation();
+         $(".edit-annotation-popup").hide();
+      });
+      $("#anno-cancel-button").on("click", function() {
+         event.stopPropagation();
+         $(".edit-annotation-popup").hide();
+         $("#annotation-editor").val("");
       });
 
       // hook up event handlers for the heatmap toolbar buttons

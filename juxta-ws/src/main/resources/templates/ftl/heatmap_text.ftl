@@ -21,7 +21,7 @@
           <div class="margin-box<#if condensed> condensed</#if>" id="box-${i}">
               <div class="box-title-bar">
                   <p class="box-title" id="box-title-${i}"></p>
-                  <p class="hm-anno"/>
+                  <p class="hm-anno" title="Add annotation"/>
                   <div style="clear:both"></div>
               </div>
               <p class="box-content" id="box-txt-${i}"/>

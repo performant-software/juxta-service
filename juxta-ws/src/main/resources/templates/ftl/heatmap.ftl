@@ -125,5 +125,15 @@
         
 </div>
 
+<!-- popup for adding annotation -->
+<div class="edit-annotation-popup">
+    <div class="header">Enter annotation</div>
+    <textarea id="annotation-editor"></textarea>
+    <div class="popup-buttons">
+        <a id="anno-ok-button" class="juxta-button sbs-button">OK</a>
+        <a id="anno-cancel-button" class="juxta-button sbs-button">Cancel</a>
+    </div>
+</div>
+
 <div style="clear: both;"></div>
 
