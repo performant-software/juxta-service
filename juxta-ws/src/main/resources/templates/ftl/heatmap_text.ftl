@@ -19,7 +19,11 @@
      <#assign x=numWitnesses>
      <#list 1..x as i>     
           <div class="margin-box<#if condensed> condensed</#if>" id="box-${i}">
-              <p class="box-title" id="box-title-${i}"/>
+              <div class="box-title-bar">
+                  <p class="box-title" id="box-title-${i}"></p>
+                  <p class="hm-anno"/>
+                  <div style="clear:both"></div>
+              </div>
               <p class="box-content" id="box-txt-${i}"/>
           </div>
       </#list>
