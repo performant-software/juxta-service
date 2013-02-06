@@ -100,11 +100,11 @@ p.base-name {
    font-size:0.85em;
    display: inline-block;
    margin: 0 4px;
-   width: 85%;
+   width: 80%;
    text-overflow: ellipsis;
    overflow: hidden;
    white-space: nowrap;
-   float:right;
+   float:left;
    font-weight: 200;
 }
 p.set-title {

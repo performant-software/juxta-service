@@ -125,11 +125,13 @@
     <bean name="/juxta/{workspace}/set/{id}" class="org.juxtasoftware.resource.ComparisonSetResource" scope="prototype" autowire="byName" />
     <bean name="/juxta/{workspace}/set/{id}/add" class="org.juxtasoftware.resource.ComparisonSetResource" scope="prototype" autowire="byName" />
     <bean name="/juxta/{workspace}/set/{id}/delete" class="org.juxtasoftware.resource.ComparisonSetResource" scope="prototype" autowire="byName" />
+    <bean name="/juxta/{workspace}/set/{id}/annotate" class="org.juxtasoftware.resource.ComparisonSetResource" scope="prototype" autowire="byName" />
     <bean name="/juxta/set/delete" class="org.juxtasoftware.resource.ComparisonSetsResource" scope="prototype" autowire="byName" />
     <bean name="/juxta/set" class="org.juxtasoftware.resource.ComparisonSetsResource" scope="prototype" autowire="byName" />
     <bean name="/juxta/set/{id}" class="org.juxtasoftware.resource.ComparisonSetResource" scope="prototype" autowire="byName" />
     <bean name="/juxta/set/{id}/add" class="org.juxtasoftware.resource.ComparisonSetResource" scope="prototype" autowire="byName" />
     <bean name="/juxta/set/{id}/delete" class="org.juxtasoftware.resource.ComparisonSetResource" scope="prototype" autowire="byName" />
+    <bean name="/juxta/set/{id}/annotate" class="org.juxtasoftware.resource.ComparisonSetResource" scope="prototype" autowire="byName" />
     
     <!-- export -->
     <bean name="/juxta/{workspace}/set/{id}/export" class="org.juxtasoftware.resource.Exporter" scope="prototype" autowire="byName" />

@@ -82,14 +82,6 @@ public class Witness extends WorkspaceMember implements Comparand {
         this.text = text;
     }
 
-    public Range getFragment() {
-        return fragmentRange;
-    }
-
-    public void setFragment(Range fragment) {
-        this.fragmentRange = fragment;
-    }
-
     public final Long getXsltId() {
         return xsltId;
     }

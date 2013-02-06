@@ -140,82 +140,77 @@ public class Tokenizer {
                     }
                     break;
                 }
-
-                // make sure we are in bounds for the requested text fragment
-                Range frag = this.witness.getFragment();
-                if ( frag.equals(Range.NULL) || (offset >= frag.getStart() && offset < frag.getEnd()) ) {
                     
-                    // Token char (alphanumeric or hyphen)?
-                    if ( isTokenChar(read)) {
-                        // create a token with prior run of non-token characters
-                        if ( runType.equals(RunType.NON_TOKEN) ) {
-                            createToken(start, offset);
-                            start = -1;
+                // Token char (alphanumeric or hyphen)?
+                if ( isTokenChar(read)) {
+                    // create a token with prior run of non-token characters
+                    if ( runType.equals(RunType.NON_TOKEN) ) {
+                        createToken(start, offset);
+                        start = -1;
+                    }
+                    
+                    runType = RunType.TOKEN;
+                    if (start == -1 ) {
+                        start = offset;
+                    }
+                    
+                    // Special case handling for linebreak hyphen filtering
+                    if ( filterLinebreak ) {
+                        // If we have found a hyphen before (and possibly identified this as a linebreak),
+                        // the text text encountered is the continuation of the hyphenated word.
+                        if ( hyphenState.equals(HyphenState.FOUND_HYPHEN) || hyphenState.equals(HyphenState.LINEBREAK_HYPHEN) ) {
+                            hyphenState = HyphenState.IN_HYPHENATED_PART;
                         }
-                        
-                        runType = RunType.TOKEN;
-                        if (start == -1 ) {
-                            start = offset;
+                        else if ( read == '-' && filterLinebreak ) {
+                            hyphenState = HyphenState.FOUND_HYPHEN;
                         }
-                        
-                        // Special case handling for linebreak hyphen filtering
-                        if ( filterLinebreak ) {
-                            // If we have found a hyphen before (and possibly identified this as a linebreak),
-                            // the text text encountered is the continuation of the hyphenated word.
-                            if ( hyphenState.equals(HyphenState.FOUND_HYPHEN) || hyphenState.equals(HyphenState.LINEBREAK_HYPHEN) ) {
-                                hyphenState = HyphenState.IN_HYPHENATED_PART;
-                            }
-                            else if ( read == '-' && filterLinebreak ) {
-                                hyphenState = HyphenState.FOUND_HYPHEN;
-                            }
-                        }
-                    } else {
-                        
-                        if ( filterLinebreak ) {
-                            if ( hyphenState.equals( HyphenState.IN_HYPHENATED_PART) ) {
-                                createToken( start, offset );
-                                start = -1;
-                                runType = RunType.NONE;
-                                hyphenState = HyphenState.NONE;
-                            } else if ( hyphenState.equals(HyphenState.FOUND_HYPHEN) ) {
-                                // Special case for text that is a candidate for being a linebreak 
-                                // hyphenated word. We have a hyphen. Do nothing but wait if more whitespace
-                                // is encountered. If the whitespace is a linefeed, flag
-                                // this as a line break. In either case, do no more processing.
-                                if ( Character.isWhitespace(read) ) {
-                                    if (  read == 13 || read == 10 ) {
-                                        hyphenState = HyphenState.LINEBREAK_HYPHEN;
-                                    }
-                                    offset++;
-                                    continue;
-                                }
-                            }
-                        }
-
-                        // if this non-token char breaks up a prior token
-                        // run, create a new token with it
-                        if ( runType.equals(RunType.TOKEN) ) {
-                            createToken( start, offset);
+                    }
+                } else {
+                    
+                    if ( filterLinebreak ) {
+                        if ( hyphenState.equals( HyphenState.IN_HYPHENATED_PART) ) {
+                            createToken( start, offset );
                             start = -1;
                             runType = RunType.NONE;
                             hyphenState = HyphenState.NONE;
-                        } 
-                        
-                        // Start or continue a run of non-token characters?
-                        if ( Character.isWhitespace(read) == false ) {
-                            runType = RunType.NON_TOKEN;
-                            if (start == -1 ) {
-                                start = offset;
+                        } else if ( hyphenState.equals(HyphenState.FOUND_HYPHEN) ) {
+                            // Special case for text that is a candidate for being a linebreak 
+                            // hyphenated word. We have a hyphen. Do nothing but wait if more whitespace
+                            // is encountered. If the whitespace is a linefeed, flag
+                            // this as a line break. In either case, do no more processing.
+                            if ( Character.isWhitespace(read) ) {
+                                if (  read == 13 || read == 10 ) {
+                                    hyphenState = HyphenState.LINEBREAK_HYPHEN;
+                                }
+                                offset++;
+                                continue;
                             }
-                        } else {
-                            // This is whitespace. See if we need to end a non-token run.
-                            // other than that, do not track the whitespace
-                            if ( runType.equals(RunType.NON_TOKEN) ) {
-                                createToken(start, offset);
-                                runType = RunType.NONE;
-                                hyphenState = HyphenState.NONE;
-                                start = -1;
-                            }
+                        }
+                    }
+
+                    // if this non-token char breaks up a prior token
+                    // run, create a new token with it
+                    if ( runType.equals(RunType.TOKEN) ) {
+                        createToken( start, offset);
+                        start = -1;
+                        runType = RunType.NONE;
+                        hyphenState = HyphenState.NONE;
+                    } 
+                    
+                    // Start or continue a run of non-token characters?
+                    if ( Character.isWhitespace(read) == false ) {
+                        runType = RunType.NON_TOKEN;
+                        if (start == -1 ) {
+                            start = offset;
+                        }
+                    } else {
+                        // This is whitespace. See if we need to end a non-token run.
+                        // other than that, do not track the whitespace
+                        if ( runType.equals(RunType.NON_TOKEN) ) {
+                            createToken(start, offset);
+                            runType = RunType.NONE;
+                            hyphenState = HyphenState.NONE;
+                            start = -1;
                         }
                     }
                 }

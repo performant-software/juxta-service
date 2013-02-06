@@ -178,8 +178,6 @@ public class WitnessDaoImpl implements WitnessDao, InitializingBean {
     protected SqlParameterSource toInsertData(Witness object) {
         final MapSqlParameterSource ps = new MapSqlParameterSource();
         ps.addValue("name", object.getName());
-        ps.addValue("fragment_start", object.getFragment().getStart());
-        ps.addValue("fragment_end", object.getFragment().getEnd());
         ps.addValue("source_id", object.getSourceId());
         ps.addValue("xslt_id", object.getXsltId());
         ps.addValue("text_id", ((RelationalText) object.getText()).getId());
@@ -225,8 +223,6 @@ public class WitnessDaoImpl implements WitnessDao, InitializingBean {
         final StringBuilder sql = new StringBuilder();
         sql.append("select w.id as w_id, w.name as w_name, w.created as w_created, w.updated as w_updated, ");
         sql.append("       w.source_id as w_source_id, w.xslt_id as w_xslt_id,");
-        sql.append("       w.fragment_start as w_fragment_start, ");
-        sql.append("       w.fragment_end as w_fragment_end, ");
         sql.append("       w.workspace_id as w_workspace_id, ");
         sql.append( selectTextFrom("wt"));
         sql.append(" from juxta_witness w");
@@ -332,8 +328,6 @@ public class WitnessDaoImpl implements WitnessDao, InitializingBean {
             final Witness witness = new Witness();
             witness.setId(rs.getLong("w_id"));
             witness.setName(rs.getString("w_name"));
-            witness.setFragment(new Range(rs.getInt("w_fragment_start"), 
-                                          rs.getInt("w_fragment_end")));
             witness.setSourceId( rs.getLong("w_source_id"));
             Object templateIdObj = rs.getObject("w_xslt_id");
             if (templateIdObj != null ) {

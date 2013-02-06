@@ -1,3 +1,8 @@
+CREATE TABLE IF NOT EXISTS juxta_schema_version (
+   major tinyint unsigned not null,
+   minor tinyint unsigned not null
+)  ENGINE=InnoDB DEFAULT CHARSET=utf8;
+insert into juxta_schema_version (major,minor) values (1,7);
 
 CREATE TABLE IF NOT EXISTS juxta_workspace (
     id BIGINT NOT NULL AUTO_INCREMENT,
@@ -59,8 +64,6 @@ CREATE TABLE IF NOT EXISTS juxta_witness (
     source_id BIGINT NOT NULL,
     xslt_id BIGINT,
     text_id BIGINT NOT NULL,
-    fragment_start BIGINT NOT NULL,
-    fragment_end BIGINT NOT NULL,
     workspace_id BIGINT NOT NULL default 1,
     created DATETIME not null,
     updated DATETIME,
@@ -76,8 +79,8 @@ CREATE TABLE IF NOT EXISTS juxta_revision (
     id BIGINT NOT NULL AUTO_INCREMENT,
     witness_id BIGINT NOT NULL,
     revision_type ENUM('ADD','DELETE') not null,
-    start BIGINT NOT NULL,
-    end BIGINT NOT NULL,
+    start MEDIUMINT UNSIGNED NOT NULL,
+    end MEDIUMINT UNSIGNED NOT NULL,
     content TEXT,
     is_included BOOL NOT NULL,
     PRIMARY KEY (id),
@@ -121,8 +124,8 @@ CREATE TABLE IF NOT EXISTS juxta_collator_config (
 CREATE TABLE IF NOT EXISTS juxta_comparison_set_member (
     set_id BIGINT NOT NULL,
     witness_id BIGINT NOT NULL,
-    tokenized_length BIGINT default 0,
-	UNIQUE (set_id, witness_id),
+    tokenized_length MEDIUMINT UNSIGNED default 0,
+	 UNIQUE (set_id, witness_id),
     FOREIGN KEY (set_id) REFERENCES juxta_comparison_set (id) ON DELETE CASCADE,
     FOREIGN KEY (witness_id) REFERENCES juxta_witness (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -130,8 +133,8 @@ CREATE TABLE IF NOT EXISTS juxta_comparison_set_member (
 CREATE TABLE IF NOT EXISTS juxta_note (
     id BIGINT NOT NULL AUTO_INCREMENT,
     witness_id BIGINT NOT NULL,
-    anchor_start BIGINT NOT NULL,
-    anchor_end BIGINT NOT NULL,
+    anchor_start MEDIUMINT UNSIGNED NOT NULL,
+    anchor_end MEDIUMINT UNSIGNED NOT NULL,
     note_type VARCHAR(255),
     target_xml_id VARCHAR(255),
     content TEXT,
@@ -142,7 +145,7 @@ CREATE TABLE IF NOT EXISTS juxta_note (
 CREATE TABLE IF NOT EXISTS juxta_page_mark (
     id BIGINT NOT NULL AUTO_INCREMENT,
     witness_id BIGINT NOT NULL,
-    offset BIGINT NOT NULL,
+    offset MEDIUMINT UNSIGNED NOT NULL,
     label TEXT,
     mark_type enum('PAGE_BREAK','LINE_NUMBER') not null default 'PAGE_BREAK',
     PRIMARY KEY (id),
@@ -155,8 +158,8 @@ CREATE TABLE IF NOT EXISTS juxta_annotation (
   witness_id  BIGINT NOT NULL,
   text_id bigint(20) NOT NULL,
   qname_id bigint(20) NOT NULL,
-  range_start bigint(20) NOT NULL,
-  range_end bigint(20) NOT NULL,
+  range_start MEDIUMINT UNSIGNED NOT NULL,
+  range_end MEDIUMINT UNSIGNED NOT NULL,
   manual BOOL not null default 0,
   PRIMARY KEY (id),
   FOREIGN KEY (set_id) REFERENCES juxta_comparison_set (id) ON DELETE CASCADE,
@@ -171,15 +174,28 @@ CREATE TABLE IF NOT EXISTS juxta_alignment (
     id BIGINT NOT NULL AUTO_INCREMENT,
     set_id  BIGINT NOT NULL,
     qname_id  BIGINT NOT NULL,
-    group_num INT NOT NULL default 0,
+    group_num SMALLINT UNSIGNED NOT NULL default 0,
     manual BOOL not null default 0,
-    edit_distance INT NOT NULL DEFAULT -1,
+    edit_distance TINYINT NOT NULL DEFAULT -1,
     annotation_a_id BIGINT NOT NULL,
     annotation_b_id BIGINT NOT NULL,
     PRIMARY KEY (id),
     FOREIGN KEY (set_id) REFERENCES juxta_comparison_set (id) ON DELETE CASCADE,
     FOREIGN KEY (annotation_a_id) REFERENCES juxta_annotation (id) ON DELETE CASCADE,
     FOREIGN KEY (annotation_a_id) REFERENCES juxta_annotation (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE IF NOT EXISTS juxta_comparison_note (
+  id bigint(20) NOT NULL AUTO_INCREMENT,
+  set_id bigint(20) NOT NULL,
+  base_id bigint(20) NOT NULL,
+  witness_id bigint(20) NOT NULL,
+  range_start MEDIUMINT UNSIGNED NOT NULL,
+  range_end MEDIUMINT UNSIGNED NOT NULL,
+  note text NOT NULL,
+  PRIMARY KEY (id),
+  FOREIGN KEY (base_id) REFERENCES juxta_witness (id) ON DELETE CASCADE,
+  FOREIGN KEY (witness_id) REFERENCES juxta_witness (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS juxta_metrics (

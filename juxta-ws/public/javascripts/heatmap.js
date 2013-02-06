@@ -588,6 +588,7 @@ $(function() {
       });
       $("#anno-ok-button").on("click", function() {
          event.stopPropagation();
+         // TODO stopped here. annotation tables missing place to store content.
          $(".edit-annotation-popup").hide();
       });
       $("#anno-cancel-button").on("click", function() {

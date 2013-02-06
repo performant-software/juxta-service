@@ -15,6 +15,7 @@ import org.juxtasoftware.model.CollatorConfig.HyphenationFilter;
 import org.juxtasoftware.model.ComparisonSet;
 import org.juxtasoftware.model.ResourceInfo;
 import org.juxtasoftware.model.Usage;
+import org.juxtasoftware.model.UserAnnotation;
 import org.juxtasoftware.model.Witness;
 import org.juxtasoftware.model.Workspace;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +27,8 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.stereotype.Repository;
+
+import eu.interedition.text.Range;
 
 /**
  * @author <a href="http://gregor.middell.net/" title="Homepage">Gregor Middell</a>
@@ -39,10 +42,12 @@ public class ComparisionSetDaoImpl extends JuxtaDaoImpl<ComparisonSet> implement
     
     private SimpleJdbcInsert memberInsert;
     protected SimpleJdbcInsert configInsert;
+    protected SimpleJdbcInsert noteInsert;
     private static final SetRowMapper SET_ROW_MAPPER = new SetRowMapper();
     private static final CollatorConfigRowMapper CFG_ROW_MAPPER = new CollatorConfigRowMapper();
     private static final String CFG_TABLE = "juxta_collator_config";
     private static final String SET_MEMBER_TABLE = "juxta_comparison_set_member";
+    private static final String NOTE_TABLE = "juxta_comparison_note";
 
     public ComparisionSetDaoImpl() {
         super("juxta_comparison_set");
@@ -53,6 +58,7 @@ public class ComparisionSetDaoImpl extends JuxtaDaoImpl<ComparisonSet> implement
         super.afterPropertiesSet();
         this.memberInsert = new SimpleJdbcInsert(jt).withTableName( SET_MEMBER_TABLE );
         this.configInsert = new SimpleJdbcInsert(jt).withTableName( CFG_TABLE );
+        this.noteInsert = new SimpleJdbcInsert(jt).withTableName( NOTE_TABLE );
     }
     
     @Override
@@ -62,6 +68,36 @@ public class ComparisionSetDaoImpl extends JuxtaDaoImpl<ComparisonSet> implement
         CollatorConfig cfg = new CollatorConfig();
         createCollatorConfig(id, cfg);
         return id;
+    }
+    
+    @Override
+    public void createUserAnnotation(ComparisonSet set, Long baseId, Range r, Long witId, String note) {
+        final MapSqlParameterSource ps = new MapSqlParameterSource();
+        ps.addValue("set_id", set.getId());
+        ps.addValue("base_id", baseId);
+        ps.addValue("range_start", r.getStart());
+        ps.addValue("range_end", r.getEnd());
+        ps.addValue("witness_id", witId);
+        ps.addValue("note", note);
+        this.noteInsert.execute(ps);
+    }
+    
+    @Override
+    public List<UserAnnotation> listUserAnnotations(ComparisonSet set, Long baseId) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+    
+    @Override
+    public UserAnnotation findUserAnnotation(ComparisonSet set, Long baseId, Range r) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+    
+    @Override
+    public UserAnnotation deleteUserAnnotation(ComparisonSet set, Long baseId, Range r) {
+        final String sql = "delete from juxta_comparison_note where set_id=?, base_id=?, start=?, end=?";
+        return null;
     }
     
     @Override
