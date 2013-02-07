@@ -14,6 +14,7 @@ import org.juxtasoftware.model.Alignment;
 import org.juxtasoftware.model.Alignment.AlignedAnnotation;
 import org.juxtasoftware.model.AlignmentConstraint;
 import org.juxtasoftware.model.ComparisonSet;
+import org.juxtasoftware.model.UserAnnotation;
 import org.juxtasoftware.model.Witness;
 import org.juxtasoftware.util.FragmentFormatter;
 import org.juxtasoftware.util.QNameFilters;
@@ -113,6 +114,9 @@ public class FragmentResource extends BaseResource {
     
     @Get("json")
     public Representation toJson() {
+        // Get any user annotations on the range & base id combination
+        List<UserAnnotation> userAnnos = this.setDao.listUserAnnotations(this.set, this.baseWitnessId, this.range);
+        
         // get all of the diff alignments in the specified range
         AlignmentConstraint constraint = new AlignmentConstraint( this.set, this.baseWitnessId );
         constraint.setFilter( this.filters.getDifferencesFilter() );
@@ -176,11 +180,17 @@ public class FragmentResource extends BaseResource {
                 reader.read( this.witnessDao.getContentStream(w), fragRange );
                 info.fragment = FragmentFormatter.format(reader.toString(), info.range, fragRange, w.getText().getLength());
             } catch (Exception e) {
-                e.printStackTrace();
+                LOG.error("Error retrieving diff fragment for witness "+witnessId, e);
+            }
+            for ( UserAnnotation a : userAnnos ) {
+                if ( a.getWitnessId().equals(witnessId)) {
+                    info.note = a.getNote();
+                }
             }
         }
         Gson gson = new Gson();
-        return toJsonRepresentation( gson.toJson(witnessDiffMap.values()) );
+        String out = gson.toJson(witnessDiffMap.values());
+        return toJsonRepresentation( out );
     }
 
     @SuppressWarnings("unused")
@@ -190,6 +200,7 @@ public class FragmentResource extends BaseResource {
         @Expose private String witnessName;
         @Expose private final String typeSymbol;
         @Expose private String fragment;
+        @Expose private String note = "";
         
         public WitnessFragment( final Witness witness, final Range r, final int editDist) {
             this.witnessName = witness.getName();
