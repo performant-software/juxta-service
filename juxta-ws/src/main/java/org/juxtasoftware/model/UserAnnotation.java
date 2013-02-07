@@ -48,6 +48,10 @@ public class UserAnnotation {
     public void setNote(String note) {
         this.note = note;
     }
+    public boolean matches( UserAnnotation other ) {
+        return ( this.baseId.equals(other.baseId) && this.witnessId.equals(other.witnessId) &&
+                 this.baseRange.equals(other.baseRange) && this.setId.equals(other.setId));
+    }
 
     @Override
     public int hashCode() {

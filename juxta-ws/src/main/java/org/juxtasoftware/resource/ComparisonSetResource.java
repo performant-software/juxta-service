@@ -34,8 +34,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-import eu.interedition.text.Range;
-
 /**
  * Get/Delete/update a specific instances of a <code>ComparisonSet</code>
  * 
@@ -51,7 +49,7 @@ public class ComparisonSetResource extends BaseResource {
     @Autowired private MetricsHelper metrics;
     @Autowired private SetRemover remover;
     
-    private enum PostAction {INVALID, ADD_WITNESSES, DELETE_WITNESSES, ANNOTATE};
+    private enum PostAction {INVALID, ADD_WITNESSES, DELETE_WITNESSES};
     private ComparisonSet set;
     private PostAction postAction = PostAction.INVALID;
     
@@ -72,8 +70,6 @@ public class ComparisonSetResource extends BaseResource {
             this.postAction = PostAction.ADD_WITNESSES;
         } else if (lastSeg.equals("DELETE")) {
             this.postAction = PostAction.DELETE_WITNESSES;
-        } else if  (lastSeg.equals("ANNOTATE")) {
-            this.postAction = PostAction.ANNOTATE;
         }
     }
     
@@ -168,59 +164,9 @@ public class ComparisonSetResource extends BaseResource {
         
         if ( postAction.equals(PostAction.ADD_WITNESSES)) {
             return addWitnesses( jsonData);
-        } else if ( this.postAction.equals(PostAction.DELETE_WITNESSES)){
-            return deleteWitnesses( jsonData );
         } else {
-            return createUserNote(jsonData);
-        }
-    }
-    
-    /**
-     * Create a user annotation on a range of the comparison set.
-     * Expected JSON Format:
-     *      {base: id, start: range_start, end: range_end, witness: id, note: content }
-     * @param jsonData
-     * @return
-     */
-    private Representation createUserNote(String jsonData) {
-        JsonParser parser = new JsonParser();
-        JsonObject jsonObj = parser.parse(jsonData).getAsJsonObject();
-        if ( jsonObj.has("base") == false || jsonObj.has("start") == false || jsonObj.has("end") == false ||
-             jsonObj.has("witness") == false || jsonObj.has("note") == false  ) {
-            setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
-            return toTextRepresentation("Missing required data in json payload");
-        }
-        
-        Long baseId = jsonObj.get("base").getAsLong();
-        Range r = new Range( jsonObj.get("start").getAsLong(), jsonObj.get("end").getAsLong());
-        Long witnessId = jsonObj.get("witness").getAsLong();
-        String note = jsonObj.get("note").getAsString();
-        
-        // validate that witnesses are part of set
-        boolean foundBase = false;
-        boolean fountWit= false;
-        for (Witness w : this.comparionSetDao.getWitnesses(this.set) ) {
-            if ( w.getId().equals(baseId)) {
-                foundBase = true;
-            }
-            if ( w.getId().equals(witnessId)) {
-                fountWit = true;
-            }
-        }
-        
-        if ( foundBase == false ) {
-            setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
-            return toTextRepresentation("Invalid base identifier specified");
-        }
-        
-        if ( fountWit == false ) {
-            setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
-            return toTextRepresentation("Invalid witness identifier specified");
-        }
-        
-
-        this.comparionSetDao.createUserAnnotation(this.set, baseId, r, witnessId, note);
-        return toTextRepresentation("OK");
+            return deleteWitnesses( jsonData );
+        } 
     }
 
     private Representation deleteWitnesses(String jsonWitnesses) {

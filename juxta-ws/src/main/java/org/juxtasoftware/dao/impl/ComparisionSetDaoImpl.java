@@ -71,33 +71,69 @@ public class ComparisionSetDaoImpl extends JuxtaDaoImpl<ComparisonSet> implement
     }
     
     @Override
-    public void createUserAnnotation(ComparisonSet set, Long baseId, Range r, Long witId, String note) {
+    public void createUserAnnotation(UserAnnotation ua) {
         final MapSqlParameterSource ps = new MapSqlParameterSource();
-        ps.addValue("set_id", set.getId());
-        ps.addValue("base_id", baseId);
-        ps.addValue("range_start", r.getStart());
-        ps.addValue("range_end", r.getEnd());
-        ps.addValue("witness_id", witId);
-        ps.addValue("note", note);
+        ps.addValue("set_id", ua.getSetId() );
+        ps.addValue("base_id", ua.getBaseId() );
+        ps.addValue("range_start", ua.getBaseRange().getStart());
+        ps.addValue("range_end", ua.getBaseRange().getEnd());
+        ps.addValue("witness_id", ua.getWitnessId());
+        ps.addValue("note", ua.getNote());
         this.noteInsert.execute(ps);
     }
     
     @Override
     public List<UserAnnotation> listUserAnnotations(ComparisonSet set, Long baseId) {
-        // TODO Auto-generated method stub
-        return null;
+        return listUserAnnotations(set, baseId, null);
     }
     
     @Override
-    public UserAnnotation findUserAnnotation(ComparisonSet set, Long baseId, Range r) {
-        // TODO Auto-generated method stub
-        return null;
+    public List<UserAnnotation> listUserAnnotations(final ComparisonSet set, final Long baseId, final Range range) {
+        StringBuilder sql = new StringBuilder( 
+            "select id,set_id,base_id,witness_id,range_start,range_end,note from ");
+        sql.append(NOTE_TABLE);
+        sql.append(" where base_id=? and set_id=?");
+        if ( range != null ) {
+            sql.append(" and range_start=? and range_end=?");
+        }
+        
+        RowMapper<UserAnnotation> mapper = new RowMapper<UserAnnotation>(){
+            @Override
+            public UserAnnotation mapRow(ResultSet rs, int rowNum) throws SQLException {
+                UserAnnotation ua = new UserAnnotation();
+                ua.setId(rs.getLong("id"));
+                ua.setSetId(rs.getLong("set_id"));
+                ua.setBaseId(rs.getLong("base_id"));
+                ua.setWitnessId(rs.getLong("witness_id"));
+                ua.setBaseRange( new Range(rs.getLong("range_start"),rs.getLong("range_end")) );
+                ua.setNote( rs.getString("note"));
+                return ua;
+            }  
+        };
+        
+        if ( range == null ) {
+            return this.jt.query(sql.toString(), mapper, baseId, set.getId());
+        } else {
+            return this.jt.query(sql.toString(), mapper, baseId, set.getId(), range.getStart(), range.getEnd());
+        }
     }
     
     @Override
-    public UserAnnotation deleteUserAnnotation(ComparisonSet set, Long baseId, Range r) {
-        final String sql = "delete from juxta_comparison_note where set_id=?, base_id=?, start=?, end=?";
-        return null;
+    public void updateUserAnnotation(Long id, String note) {
+        String sql = "update "+NOTE_TABLE+" set note=? where id=?";
+        this.jt.update(sql, note, id);
+    }
+    
+    @Override
+    public void deleteUserAnnotation(UserAnnotation ua) {
+        if ( ua.getId() != null && ua.getId() > 0L ) {
+            final String sql = "delete from juxta_comparison_note where id=?";
+            this.jt.update(sql, ua.getId() );
+        } else {
+            final String sql = "delete from juxta_comparison_note where set_id=? and witness_id=? and base_id=? and range_start=? and range_end=?";
+            this.jt.update(sql, ua.getSetId(), ua.getWitnessId(),
+                ua.getBaseId(), ua.getBaseRange().getStart(), ua.getBaseRange().getEnd());
+        }
     }
     
     @Override

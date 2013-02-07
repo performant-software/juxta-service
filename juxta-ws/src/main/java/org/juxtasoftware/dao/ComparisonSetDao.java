@@ -49,8 +49,9 @@ public interface ComparisonSetDao extends JuxtaDao<ComparisonSet> {
     List<Usage> getUsage(ComparisonSet set);
     
     // Manage user annotations on this set
-    void createUserAnnotation(ComparisonSet set, Long baseId, Range r, Long witId, String note);
+    void createUserAnnotation(UserAnnotation ua);
     List<UserAnnotation> listUserAnnotations(ComparisonSet set, Long baseId);
-    UserAnnotation findUserAnnotation(ComparisonSet set, Long baseId, Range r);
-    UserAnnotation deleteUserAnnotation(ComparisonSet set, Long baseId, Range r);
+    List<UserAnnotation> listUserAnnotations(ComparisonSet set, Long baseId, Range r);
+    void updateUserAnnotation(Long id, String note);
+    void deleteUserAnnotation(UserAnnotation ua);
 }
