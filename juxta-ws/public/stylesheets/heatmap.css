@@ -412,6 +412,17 @@ p.hm-anno {
    background-repeat: no-repeat;
    background-position: 0;
 }
+p.hm-del-anno {
+   float: right;
+   padding: 3px;
+   cursor: pointer;
+   background-image: url("/juxta/images/del-anno.png");
+   margin: 0px 4px 0px 0px;
+   height: 9px;
+   width: 9px;
+   background-repeat: no-repeat;
+   background-position: 0;
+}
 p.box-annotation {
    border-top: 1px dashed #bbb;
    margin-top: 2px;

@@ -309,9 +309,13 @@ $(function() {
 
                if ( diff.note.length === 0) {
                   $('#box-anno-' + boxId).hide();  
+                  $('#del-anno-' + boxId).hide();  
+                  $('#add-anno-' + boxId).attr("Title", "Add annotation"); 
                } else {
                   $('#box-anno-' + boxId).text(diff.note);
                   $('#box-anno-' + boxId).show();
+                  $('#del-anno-' + boxId).show();  
+                  $('#add-anno-' + boxId).attr("Title", "Edit annotation"); 
                }
                
                // set title with witness name
