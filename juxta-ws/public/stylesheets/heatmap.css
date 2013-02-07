@@ -527,8 +527,8 @@ span.heatmap {
 .edit-annotation-popup {
    display: none;
    position: fixed;
-   width: 350px;
-   height: 200px;
+   width: 236px;
+   height: 130px;
    text-align: center;
    z-index: 1000;
    font-size: 0.9em;
@@ -544,8 +544,8 @@ span.heatmap {
    padding: 0px 0px 5px 0px;
 }
 #annotation-editor {
-   height: 146px;
-   width: 340px;
+   height: 65px;
+   width: 220px;
    margin: 5px 5px 0px 5px;
    resize: none;
 }

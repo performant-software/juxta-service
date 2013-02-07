@@ -321,7 +321,8 @@ $(function() {
                // set title with witness name
                var titleEle = $('#box-title-' + boxId);
                titleEle.html(diff.typeSymbol + diff.witnessName);
-
+               $("#mb-wit-id").text(diff.witnessId);
+               
                var txtEle = $('#box-txt-' + boxId);
                txtEle.html(diff.fragment);
 
@@ -599,7 +600,11 @@ $(function() {
       });
       $("#anno-ok-button").on("click", function() {
          event.stopPropagation();
-         // TODO stopped here. annotation tables missing place to store content.
+         // TODO stopped here. send all of this junk to the server!
+         var r = $("#heatmap-text .heatmap.active").attr("juxta:range");
+         var base = $("#baseId").text();
+         var wit = $("#mb-wit-id").text();
+
          $(".edit-annotation-popup").hide();
       });
       $("#anno-cancel-button").on("click", function() {

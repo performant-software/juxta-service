@@ -159,6 +159,7 @@ public class FragmentResource extends BaseResource {
                 // initialize a new fragment and add it to the fragments map
                 // these fragments have no initial content. will be populated below
                 info = new WitnessFragment( w, witnessAnno.getRange(), align.getEditDistance());
+                info.witnessId = witnessAnno.getWitnessId();
                 witnessDiffMap.put(witnessAnno.getWitnessId(), info);
             } else {
                 info.range = new Range(
