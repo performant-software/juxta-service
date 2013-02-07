@@ -307,6 +307,13 @@ $(function() {
                var diff = jsonData[idx];
                var boxId = idx + 1;
 
+               if ( diff.note.length === 0) {
+                  $('#box-anno-' + boxId).hide();  
+               } else {
+                  $('#box-anno-' + boxId).text(diff.note);
+                  $('#box-anno-' + boxId).show();
+               }
+               
                // set title with witness name
                var titleEle = $('#box-title-' + boxId);
                titleEle.html(diff.typeSymbol + diff.witnessName);

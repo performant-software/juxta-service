@@ -1,28 +1,27 @@
-
 /* condensed header stuff */
-#condensed-base-name  {
+#condensed-base-name {
    font-size: 0.8em;
-   font-weight:200;
+   font-weight: 200;
 }
 
 .condensed-witnesses-popup {
-    display: none;
-    position: fixed;
-    width:350px;
-    height: auto;
-    text-align:center;
-    z-index: 1000;
-    font-size: 0.9em;
-    font-weight: 300;
-    background-color: #eee;
-    border: 1px solid #666;
-    -moz-box-shadow: 5px 5px 5px #999;
-    -webkit-box-shadow: 5px 5px 5px #999;
-    box-shadow: 5px 5px 5px #999;
-    -mox-border-radius: 5px;
-    -webkit-border-radius: 5px;
-    border-radius: 5px;
-    padding: 0px 0px 5px 0px;
+   display: none;
+   position: fixed;
+   width: 350px;
+   height: auto;
+   text-align: center;
+   z-index: 1000;
+   font-size: 0.9em;
+   font-weight: 300;
+   background-color: #eee;
+   border: 1px solid #666;
+   -moz-box-shadow: 5px 5px 5px #999;
+   -webkit-box-shadow: 5px 5px 5px #999;
+   box-shadow: 5px 5px 5px #999;
+   -mox-border-radius: 5px;
+   -webkit-border-radius: 5px;
+   border-radius: 5px;
+   padding: 0px 0px 5px 0px;
 }
 
 #sort-header {
@@ -36,7 +35,6 @@
    width: 55px;
    cursor: pointer;
 }
-
 
 .dropdown hr {
    width: 100%;
@@ -70,8 +68,8 @@
    padding: 4px;
    border: 1px solid;
    -mox-border-radius: 0 0 5px 5px;
-    -webkit-border-radius: 0 0 5px 5px;
-    border-radius: 0 0 5px 5px;
+   -webkit-border-radius: 0 0 5px 5px;
+   border-radius: 0 0 5px 5px;
    -moz-box-shadow: 0px 3px 10px #777;
    -webkit-box-shadow: 0px 3px 10px #777;
    box-shadow: 0px 3px 10px #777;
@@ -93,18 +91,18 @@
 
 #condensed-header span {
    float: left;
-   font-size:0.85em;
+   font-size: 0.85em;
    font-weight: 200;
 }
 p.base-name {
-   font-size:0.85em;
+   font-size: 0.85em;
    display: inline-block;
    margin: 0 4px;
    width: 80%;
    text-overflow: ellipsis;
    overflow: hidden;
    white-space: nowrap;
-   float:left;
+   float: left;
    font-weight: 200;
 }
 p.set-title {
@@ -116,38 +114,37 @@ p.set-title {
    white-space: nowrap;
 }
 
-
 #set-title {
    font-weight: 400;
    text-align: center;
    margin-bottom: 5px;
 }
 
-/* div containing al files in the comparison set */ 
+/* div containing al files in the comparison set */
 div.files {
-    border-radius: 5px 5px 0 0;
-    -mox-border-radius: 5px 5px 0 0;
-    -webkit-border-radius: 5px 5px 0 0;
-    width: 25%;
-    float: left;
-    border: 1px solid #cccccc;  
-    overflow: hidden;
-    background-color: #ffffff;
-    margin:0;
-    padding:0;
-    line-height: 1.4;
+   border-radius: 5px 5px 0 0;
+   -mox-border-radius: 5px 5px 0 0;
+   -webkit-border-radius: 5px 5px 0 0;
+   width: 25%;
+   float: left;
+   border: 1px solid #cccccc;
+   overflow: hidden;
+   background-color: #ffffff;
+   margin: 0;
+   padding: 0;
+   line-height: 1.4;
 }
 
 .set-file {
-    font: 14px "Helvetica Neue", Helvetica, Arial, sans-serif;
-    font-weight: 300;
-    border-bottom: 1px solid #cccccc;
+   font: 14px "Helvetica Neue", Helvetica, Arial, sans-serif;
+   font-weight: 300;
+   border-bottom: 1px solid #cccccc;
 }
 
 .visibility-toggle {
    cursor: pointer;
-   width:16px;
-   height:16px;
+   width: 16px;
+   height: 16px;
    margin-left: 4px;
    margin-right: 3px;
    float: left;
@@ -171,36 +168,36 @@ div.files {
 
 /** TOOLBAR **/
 .heatmap-toolbar {
-    border-bottom: 1px solid #999;
-    border-top: 1px solid #999;
-    background-color: #f5f5f5;
-    top: -1px;
-    position: relative;
-    text-align: right;
-    padding: 0px 2px 3px 0px;
-    margin: 0;
+   border-bottom: 1px solid #999;
+   border-top: 1px solid #999;
+   background-color: #f5f5f5;
+   top: -1px;
+   position: relative;
+   text-align: right;
+   padding: 0px 2px 3px 0px;
+   margin: 0;
 }
 
 .heatmap-scroller {
-    overflow: scroll;
-    overflow-x: hidden;
+   overflow: scroll;
+   overflow-x: hidden;
 }
 
 .page-break {
-    color: #aaaaaa;
-    cursor: default;
-    font-weight: bolder;
+   color: #aaaaaa;
+   cursor: default;
+   font-weight: bolder;
 }
 
 /* Witness entry in comparison set div */
 div.witness {
-    margin-top: 2px;
-    padding-left: 2px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    cursor: pointer;
-    width:90%;
+   margin-top: 2px;
+   padding-left: 2px;
+   white-space: nowrap;
+   overflow: hidden;
+   text-overflow: ellipsis;
+   cursor: pointer;
+   width: 90%;
 }
 #files table {
    border: none;
@@ -212,10 +209,10 @@ div.witness {
    padding: 0px 5px;
    border: 0;
 }
-#files .change-index {    
-    width: 58%;
+#files .change-index {
+   width: 58%;
 }
-#files  .chart-label{
+#files  .chart-label {
    text-align: right;
    font-size: 0.8em;
    font-style: italic;
@@ -225,68 +222,67 @@ div.witness {
 
 /* Base document entry in comparison set div */
 div.base {
-    background-color: #f8f8ff;
-    padding-left: 0.2em;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    cursor: default;
+   background-color: #f8f8ff;
+   padding-left: 0.2em;
+   white-space: nowrap;
+   overflow: hidden;
+   text-overflow: ellipsis;
+   cursor: default;
 }
-#base-tag{
+#base-tag {
    margin-right: 3px;
    margin-bottom: 5px;
    font-size: 0.8em;
    text-align: right;
 }
 
-
 /* Div for headmap, notes and margin boxes */
 /* This version is when the full UI is used */
 div.heatmap-div {
-    border-radius: 5px 5px 0 0;
-    -mox-border-radius: 5px 5px 0 0;
-    -webkit-border-radius: 5px 5px 0 0;
-    border: 1px solid #cccccc;
-    float: right;
-    width: 74.5%;
-    height: auto;
-    margin:0;
-    padding:0;
-    background-color: #ffffff;
-    cursor: default;
+   border-radius: 5px 5px 0 0;
+   -mox-border-radius: 5px 5px 0 0;
+   -webkit-border-radius: 5px 5px 0 0;
+   border: 1px solid #cccccc;
+   float: right;
+   width: 74.5%;
+   height: auto;
+   margin: 0;
+   padding: 0;
+   background-color: #ffffff;
+   cursor: default;
 }
 
 .juxta-button.condensed {
-    font-size: 0.8em;
-    margin: 1px;
-    padding: 2px 6px;
+   font-size: 0.8em;
+   margin: 1px;
+   padding: 2px 6px;
 }
 .heatmap-div.condensed {
-    border: 0 !important;
-    float: none !important;
+   border: 0 !important;
+   float: none !important;
 }
 .heatmap-text.condensed {
-    float: none !important;
+   float: none !important;
 }
 .condensed {
-    width: auto !important;
-    font-size: 0.9em !important;
+   width: auto !important;
+   font-size: 0.9em !important;
 }
 .margin-box.condensed {
-    width: 300px !important;
-    background-color: #EFF1EF;
-    font-size: 0.9em !important;
+   width: 300px !important;
+   background-color: #EFF1EF;
+   font-size: 0.9em !important;
 }
 div.margin-boxes.condensed {
-    position: relative;
-    width: auto;
-    float: left !important;
+   position: relative;
+   width: auto;
+   float: left !important;
 }
 #condensed-list-button {
-    float: left;
+   float: left;
 }
 #full-size-link {
-    float: right;
+   float: right;
 }
 #condensed-heatmap-footer {
    background-color: #f5f5f5;
@@ -294,12 +290,12 @@ div.margin-boxes.condensed {
    font-weight: 400;
    padding: 2px;
    margin-bottom: 0;
-   border:0;
+   border: 0;
    color: #557;
 }
 .dimmed {
-    background-color: #fafafa;
-    color: #999;
+   background-color: #fafafa;
+   color: #999;
 }
 
 #condensed-overlay {
@@ -310,226 +306,231 @@ div.margin-boxes.condensed {
    background-color: rgba(255,255,255,0.7);
 }
 
-
 /* Div for headmap, notes and margin boxes */
 /* This version is when the SIMPLE UI is used */
 div.simple-heatmap-div {
-    margin: 0;
-    padding: 0;
-    width:auto;
-    height:auto;
+   margin: 0;
+   padding: 0;
+   width: auto;
+   height: auto;
 }
 
 /** Contains the text of the heatmap */
 div.heatmap-text {
-    padding: 0.5em;
-    float: left;
-    width: 70%;
-    font: 14px "Helvetica Neue", Helvetica, Arial, sans-serif;
-    font-weight: 300;
-    line-height: 1.4;
+   padding: 0.5em;
+   float: left;
+   width: 70%;
+   font: 14px "Helvetica Neue", Helvetica, Arial, sans-serif;
+   font-weight: 300;
+   line-height: 1.4;
 }
 
 /** Contains all of the NOTES */
 div.note-boxes {
-    padding: 0;
-    float: right;
-    width: 28%;
-    height: 100%;
+   padding: 0;
+   float: right;
+   width: 28%;
+   height: 100%;
 }
 
 /* The note box */
 div.note {
-    font: 12px  "Helvetica Neue", Helvetica, Arial, sans-serif;
-    font-weight: 300;
-    line-height: 1.2;
-    padding: 0.1em;
-    border-radius: 3px;
-    -mox-border-radius: 3px;
-    -webkit-border-radius: 3px;
-    border: 1.5px solid #bca902;
-    background-color: #fffcc8;
-    margin-bottom: 0.25em;
-    -moz-box-shadow: 2px 2px 2px #999;
-    -webkit-box-shadow: 2px 2px 2px #999;
-    box-shadow: 2px 2px 2px #999;
+   font: 12px "Helvetica Neue", Helvetica, Arial, sans-serif;
+   font-weight: 300;
+   line-height: 1.2;
+   padding: 0.1em;
+   border-radius: 3px;
+   -mox-border-radius: 3px;
+   -webkit-border-radius: 3px;
+   border: 1.5px solid #bca902;
+   background-color: #fffcc8;
+   margin-bottom: 0.25em;
+   -moz-box-shadow: 2px 2px 2px #999;
+   -webkit-box-shadow: 2px 2px 2px #999;
+   box-shadow: 2px 2px 2px #999;
 }
 div.highlighted {
-    background-color: #fffe38;
-    border: 1.5px solid #ff0000;
+   background-color: #fffe38;
+   border: 1.5px solid #ff0000;
 }
 span.note-anchor-highlighted {
-    background-color: #fffe38;
-    outline: 1px solid #ff0000;
-    padding: 0.1em;
-    font-size: 1em;
-    -moz-box-shadow: 2px 2px 2px #999;
-    -webkit-box-shadow: 2px 2px 2px #999;
-    box-shadow: 2px 2px 2px #999;
+   background-color: #fffe38;
+   outline: 1px solid #ff0000;
+   padding: 0.1em;
+   font-size: 1em;
+   -moz-box-shadow: 2px 2px 2px #999;
+   -webkit-box-shadow: 2px 2px 2px #999;
+   box-shadow: 2px 2px 2px #999;
 }
 
 /* Large box containing a group of note boxes */
 div.margin-boxes {
-    padding: 0;
-    float: right;
-    width: 28%;
-    height: 100%;
-    display: none;
+   padding: 0;
+   float: right;
+   width: 28%;
+   height: 100%;
+   display: none;
 }
 div.margin-box {
-    border-radius: 3px;
-    -mox-border-radius: 3px;
-    -webkit-border-radius: 3px;
-    border: 1px solid #008000;
-    font: 12px  "Helvetica Neue", Helvetica, Arial, sans-serif;
-    font-weight: 200;
-    line-height: 1.2;
-    margin-bottom: 0.35em;
-    -moz-box-shadow: 2px 2px 2px #999;
-    -webkit-box-shadow: 2px 2px 2px #999;
-    box-shadow: 2px 2px 2px #999;
+   border-radius: 3px;
+   -mox-border-radius: 3px;
+   -webkit-border-radius: 3px;
+   border: 1px solid #008000;
+   font: 12px "Helvetica Neue", Helvetica, Arial, sans-serif;
+   font-weight: 200;
+   line-height: 1.2;
+   margin-bottom: 0.35em;
+   -moz-box-shadow: 2px 2px 2px #999;
+   -webkit-box-shadow: 2px 2px 2px #999;
+   box-shadow: 2px 2px 2px #999;
 }
 div.box-title-bar {
-    border-radius: 3px 3px 0 0;
-    -mox-border-radius: 3px 3px 0 0;
-    -webkit-border-radius: 3px 3px 0 0;
-    margin: 0;
-    padding-top: 0;
-    padding-left: 0.25em;
-    padding-bottom: 0;
-    padding-right: 0;
-    background-color: #bae2ba;
-    border-bottom: 1px solid #008000;
-    font-weight: bold;
+   border-radius: 3px 3px 0 0;
+   -mox-border-radius: 3px 3px 0 0;
+   -webkit-border-radius: 3px 3px 0 0;
+   margin: 0;
+   padding-top: 0;
+   padding-left: 0.25em;
+   padding-bottom: 0;
+   padding-right: 0;
+   background-color: #bae2ba;
+   border-bottom: 1px solid #008000;
+   font-weight: bold;
 }
 p.box-title {
-    margin: 1px;
-    float: left;
+   margin: 1px;
+   float: left;
 }
 p.hm-anno {
-    float:right;
-    padding: 3px;
-    cursor: pointer;
-    background-image: url("/juxta/images/edit2.png");
-    margin: 0px 0px 0 0;
+   float: right;
+   padding: 3px;
+   cursor: pointer;
+   background-image: url("/juxta/images/edit2.png");
+   margin: 0px 0px 0 0;
    height: 9px;
    width: 9px;
    background-repeat: no-repeat;
    background-position: 0;
 }
+p.box-annotation {
+   border-top: 1px dashed #bbb;
+   margin-top: 2px;
+   margin-bottom: 0px;
+   padding: 5px;
+   font-style: italic;
+   color: #999;
+}
 p.box-content {
-    margin: 0;
-    padding: 0.3em 0.2em 0.4em 0.4em;
+   margin: 0;
+   padding: 0.3em 0.2em 0.4em 0.4em;
 }
 span.note-anchor {
-    background-color: #fffcc8;
-    outline: 1px solid #bca902;
-    padding: 0.1em;
-    font-size: 1em;
+   background-color: #fffcc8;
+   outline: 1px solid #bca902;
+   padding: 0.1em;
+   font-size: 1em;
 }
 span.note-anchor-hidden {
-    background-color: transparent;
-    outline: 0;
-    padding: 0em;
-    font-size: 1em;
+   background-color: transparent;
+   outline: 0;
+   padding: 0em;
+   font-size: 1em;
 }
 span.active {
-    background-color: #bae2ba;
-    outline: 1px solid #008000;
-    color: #050;
+   background-color: #bae2ba;
+   outline: 1px solid #008000;
+   color: #050;
 }
 
 /** TEI Revsion tag styles **/
 .rev.add {
-    font-weight: bold;
-    text-decoration: underline;
-    color: #008000;
+   font-weight: bold;
+   text-decoration: underline;
+   color: #008000;
 }
-.rev.show-rev{
-    display: inline;
+.rev.show-rev {
+   display: inline;
 }
-.rev.hide-rev{
-    display: none;
+.rev.hide-rev {
+   display: none;
 }
 .rev.reveal {
-    display:inline !important;
+   display: inline !important;
 }
 .rev.delete {
-    font-weight: bold;
-    text-decoration: line-through;
-    color: #800000;
-} 
+   font-weight: bold;
+   text-decoration: line-through;
+   color: #800000;
+}
 .plain-revs {
-    font-weight: 300 !important;
-    color: #000 !important;
-    text-decoration: none !important;
+   font-weight: 300 !important;
+   color: #000 !important;
+   text-decoration: none !important;
 }
 .show-all {
-    display: inline !important;
-}  
-
+   display: inline !important;
+}
 
 span.del {
-    color: #aa0000;
-    font-size: 0.8em;
+   color: #aa0000;
+   font-size: 0.8em;
 }
 span.change {
-    color: #0000bb;
-    font-weight: bolder;
+   color: #0000bb;
+   font-weight: bolder;
 }
-
 
 /** Heat map colors */
 span.heatmap {
-    cursor: pointer;
+   cursor: pointer;
 }
 .heat1 {
-    background-color: rgb(239,240,255);
+   background-color: rgb(239,240,255);
 }
 .heat2 {
-    background-color: rgb(213,217,255);
+   background-color: rgb(213,217,255);
 }
 .heat3 {
-    background-color: rgb(187,193,255);
+   background-color: rgb(187,193,255);
 }
 .heat4 {
-    background-color: rgb(161,170,255);
+   background-color: rgb(161,170,255);
 }
 .heat5 {
-    background-color: rgb(135,146,255);
+   background-color: rgb(135,146,255);
 }
 .heat6 {
-    background-color: rgb(109,123,255);
+   background-color: rgb(109,123,255);
 }
 .heat7 {
-    background-color: rgb(83,99,255);
+   background-color: rgb(83,99,255);
 }
 .heat8 {
-    background-color: rgb(57,76,255);
+   background-color: rgb(57,76,255);
 }
 .heat9 {
-    background-color: rgb(51,71,250);
+   background-color: rgb(51,71,250);
 }
 
 /** Annotations popup */
 .edit-annotation-popup {
-    display: none;
-    position: fixed;
-    width:350px;
-    height: 200px;
-    text-align:center;
-    z-index: 1000;
-    font-size: 0.9em;
-    font-weight: 300;
-    background-color: #eee;
-    border: 1px solid #666;
-    -moz-box-shadow: 5px 5px 5px #999;
-    -webkit-box-shadow: 5px 5px 5px #999;
-    box-shadow: 5px 5px 5px #999;
-    -mox-border-radius: 5px;
-    -webkit-border-radius: 5px;
-    border-radius: 5px;
-    padding: 0px 0px 5px 0px;
+   display: none;
+   position: fixed;
+   width: 350px;
+   height: 200px;
+   text-align: center;
+   z-index: 1000;
+   font-size: 0.9em;
+   font-weight: 300;
+   background-color: #eee;
+   border: 1px solid #666;
+   -moz-box-shadow: 5px 5px 5px #999;
+   -webkit-box-shadow: 5px 5px 5px #999;
+   box-shadow: 5px 5px 5px #999;
+   -mox-border-radius: 5px;
+   -webkit-border-radius: 5px;
+   border-radius: 5px;
+   padding: 0px 0px 5px 0px;
 }
 #annotation-editor {
    height: 146px;

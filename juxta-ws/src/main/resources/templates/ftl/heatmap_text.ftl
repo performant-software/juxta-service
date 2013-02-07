@@ -25,6 +25,7 @@
                   <div style="clear:both"></div>
               </div>
               <p class="box-content" id="box-txt-${i}"/>
+              <p class="box-annotation" id="box-anno-${i}"/>
           </div>
       </#list>
  </div>
