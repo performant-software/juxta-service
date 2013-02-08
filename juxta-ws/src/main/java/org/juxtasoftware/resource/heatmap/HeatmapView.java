@@ -215,6 +215,7 @@ public class HeatmapView  {
             map.put("ajaxBaseUrl", parent.getRequest().getHostRef().toString()+"/juxta/"+parent.getWorkspace()+"/set/");
             map.put("viewHeatmapSegment", "/view?mode=heatmap&");
             map.put("fragmentSegment", "/diff/fragment");
+            map.put("annotateSegment", "/annotation");
 
             return this.parent.toHtmlRepresentation("heatmap.ftl", map);
         } catch ( OutOfMemoryError e ) {

@@ -34,7 +34,7 @@ $(function() {
    var renderWitnessChangeIndexes = function() {
       var attribs = {
          stroke : '#000',
-         'stroke-width' : 0.5,
+         'stroke-width' : 0.5
       };
       var fill = {
          stroke : '#BBC1FF',
@@ -61,7 +61,7 @@ $(function() {
          $(this).data("paper", paper);
          var box = paper.rect(0, 0, $(this).width(), 10);
          box.attr(attribs);
-         var box = paper.rect(1, 1, $(this).width()*changeIndex, 8);
+         box = paper.rect(1, 1, $(this).width()*changeIndex, 8);
          box.attr(fill);
       });
    };
@@ -242,6 +242,13 @@ $(function() {
          }
       });
    };
+   
+   var showAnnotation = function(id, note) {
+      $('#box-anno-' + id).text(note);
+      $('#box-anno-' + id).show();
+      $('#del-anno-' + id).show();  
+      $('#add-anno-' + id).attr("Title", "Edit annotation"); 
+   };
 
    /**
     * Show all margin boxes for the specified alignment
@@ -312,10 +319,7 @@ $(function() {
                   $('#del-anno-' + boxId).hide();  
                   $('#add-anno-' + boxId).attr("Title", "Add annotation"); 
                } else {
-                  $('#box-anno-' + boxId).text(diff.note);
-                  $('#box-anno-' + boxId).show();
-                  $('#del-anno-' + boxId).show();  
-                  $('#add-anno-' + boxId).attr("Title", "Edit annotation"); 
+                  showAnnotation(boxId, diff.note);
                }
                
                // set title with witness name
@@ -592,22 +596,37 @@ $(function() {
       // add annotation
       $(".hm-anno").on("click", function(event) {
          event.stopPropagation();
+         $("#src-mb-id").text( $(this).attr("id").substring("add-anno-".length) );
          var b = $(this).closest(".margin-box");
+         $(".edit-annotation-popup").width( b.width() );
+         var w = $(".edit-annotation-popup").width();
+         var m = parseInt($("#annotation-editor").css("margin-left" ),10)*2;
+         $("#annotation-editor").width( w-m );
          $(".edit-annotation-popup").css("left", (b.position().left+b.outerWidth(true)-$(".edit-annotation-popup").outerWidth(true))+"px");
-         $(".edit-annotation-popup").css("top", (b.position().top+b.outerHeight(true)+10)+"px");
+         $(".edit-annotation-popup").css("top", (b.position().top+b.outerHeight(true)+5)+"px");
          $(".edit-annotation-popup").show();
          $("#annotation-editor").focus();
       });
-      $("#anno-ok-button").on("click", function() {
+      $("#anno-ok-button").on("click", function(event) {
          event.stopPropagation();
-         // TODO stopped here. send all of this junk to the server!
-         var r = $("#heatmap-text .heatmap.active").attr("juxta:range");
-         var base = $("#baseId").text();
-         var wit = $("#mb-wit-id").text();
-
-         $(".edit-annotation-popup").hide();
+         var data = {};
+         var r = $("#heatmap-text .heatmap.active").attr("juxta:range").split(",");
+         data.base = $("#baseId").text();
+         data.witness = $("#mb-wit-id").text();
+         data.note = $("#annotation-editor").val();
+         data.start = r[0];
+         data.end = r[1];
+         $.ajax({
+           type: "POST",
+           url: $('#ajax-base-url').text() + $('#setId').text() + $('#annotate-segment').text(),
+           data: JSON.stringify(data),
+           contentType : 'application/json',
+           success: function() {  
+              $(".edit-annotation-popup").hide();
+              showAnnotation($("#src-mb-id").text(), data.note); }
+         });         
       });
-      $("#anno-cancel-button").on("click", function() {
+      $("#anno-cancel-button").on("click", function(event) {
          event.stopPropagation();
          $(".edit-annotation-popup").hide();
          $("#annotation-editor").val("");

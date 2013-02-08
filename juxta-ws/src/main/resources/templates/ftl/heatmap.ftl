@@ -3,6 +3,7 @@
   <span id="ajax-base-url" style="display: none">${ajaxBaseUrl}</span>
   <span id="view-heatmap-segment" style="display: none">${viewHeatmapSegment}</span>
   <span id="fragment-segment" style="display: none">${fragmentSegment}</span>
+  <span id="annotate-segment" style="display: none">${annotateSegment}</span>
 </#if>
 
 <span id="setId" style="display: none">${setId}</span>
@@ -128,6 +129,7 @@
 <!-- popup for adding annotation -->
 <div class="edit-annotation-popup">
     <div class="header">Enter annotation</div>
+    <span id="src-mb-id" style="display:none"></span>
     <textarea id="annotation-editor"></textarea>
     <div class="popup-buttons">
         <a id="anno-ok-button" class="juxta-button sbs-button">OK</a>
