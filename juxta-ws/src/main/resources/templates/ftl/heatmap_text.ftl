@@ -20,7 +20,7 @@
      <#list 1..x as i>     
           <div class="margin-box<#if condensed> condensed</#if>" id="box-${i}">
               <div class="box-title-bar">
-                  <span id="mb-wit-id" style="display:none"></span>
+                  <span id="mb-wit-id-${i}" style="display:none"></span>
                   <p class="box-title" id="box-title-${i}"></p>
                   <#if !condensed>
                      <p class="hm-anno" id="add-anno-${i}" title="Add annotation"/>

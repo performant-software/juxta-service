@@ -128,7 +128,8 @@
 </div>
 
 <!-- popups for adding/deleting annotations -->
-<span id="src-mb-id" style="display:none"></span>
+<span id="src-mb-wit-id" style="display:none"></span>
+<span id="src-mb-num" style="display:none"></span>
 <div class="edit-annotation-popup">
     <div class="header">Enter annotation</div>
     <textarea id="annotation-editor"></textarea>

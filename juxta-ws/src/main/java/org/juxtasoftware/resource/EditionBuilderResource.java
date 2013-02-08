@@ -31,6 +31,7 @@ import org.juxtasoftware.model.AlignmentConstraint;
 import org.juxtasoftware.model.ComparisonSet;
 import org.juxtasoftware.model.PageMark;
 import org.juxtasoftware.model.QNameFilter;
+import org.juxtasoftware.model.UserAnnotation;
 import org.juxtasoftware.model.Witness;
 import org.juxtasoftware.util.BackgroundTask;
 import org.juxtasoftware.util.BackgroundTaskCanceledException;
@@ -390,7 +391,7 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
             }
             
             // make it safe
-            baseTxt = StringEscapeUtils.escapeXml( baseTxt ); ///
+            baseTxt = StringEscapeUtils.escapeXml( baseTxt ); 
             
             // Start the variant string. It is the base text followed by ]. 
             StringBuilder sb = new StringBuilder(baseTxt).append("] ");
@@ -466,7 +467,7 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
                 if  ( witTxt.equals("<i>not in </i>") == false ) {
                     sb.append(": ");
                 }
-                sb.append(ids).append("; ");
+                sb.append(ids).append(". ");
             }
             
             // find line num for range
@@ -475,6 +476,15 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
             // shove the whole thing into a table row and wroite it out to disk
             final String out = "<tr><td class=\"num-col\">"+lineRange+"</td><td>"+sb.toString()+"</td></tr>\n";
             osw.write( out );
+            
+            
+            for (UserAnnotation ua : this.setDao.listUserAnnotations(this.set, this.baseWitnessId, baseRange) ) {
+                StringBuilder a = new StringBuilder();
+                a.append("<tr><td class=\"num-col\"> </td><td><i>");
+                a.append(  getSiglum(ua.getWitnessId()) ).append(": ");
+                a.append(ua.getNote()).append("</i></td></tr>\n");
+                osw.write( a.toString() ); 
+            }
             
             // save priors to detect special cases
             priorBaseTxt = baseTxt;

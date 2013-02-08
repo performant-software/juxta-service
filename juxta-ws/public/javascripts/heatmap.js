@@ -334,7 +334,7 @@ $(function() {
                // set title with witness name
                var titleEle = $('#box-title-' + boxId);
                titleEle.html(diff.typeSymbol + diff.witnessName);
-               $("#mb-wit-id").text(diff.witnessId);
+               $("#mb-wit-id-" + boxId).text(diff.witnessId);
                
                var txtEle = $('#box-txt-' + boxId);
                txtEle.html(diff.fragment);
@@ -605,7 +605,9 @@ $(function() {
       // add annotation
       $(".hm-anno").on("click", function(event) {
          event.stopPropagation();
-         $("#src-mb-id").text( $(this).attr("id").substring("add-anno-".length) );
+         var diffNum =  $(this).attr("id").substring("add-anno-".length);
+         $("#src-mb-wit-id").text(  $("#mb-wit-id-"+diffNum).text() );
+         $("#src-mb-num").text( diffNum );
          var b = $(this).closest(".margin-box");
          $(".edit-annotation-popup").width( b.width() );
          var w = $(".edit-annotation-popup").width();
@@ -615,7 +617,7 @@ $(function() {
          $(".edit-annotation-popup").css("top", (b.position().top+b.outerHeight(true)+5)+"px");
          var txt = "";
          if ( $(this).attr("title").indexOf("Edit") > -1) {
-            txt = $("#box-anno-"+ $("#src-mb-id").text()).text();
+            txt = $("#box-anno-"+ $("#src-mb-num").text()).text();
          }
          $("#annotation-editor").val( $.trim(txt) );
          $(".edit-annotation-popup").show();
@@ -626,7 +628,7 @@ $(function() {
          var data = {};
          var r = $("#heatmap-text .heatmap.active").attr("juxta:range").split(",");
          data.base = $("#baseId").text();
-         data.witness = $("#mb-wit-id").text();
+         data.witness = $("#src-mb-wit-id").text();
          data.note = $("#annotation-editor").val();
          data.start = r[0];
          data.end = r[1];
@@ -637,7 +639,7 @@ $(function() {
            contentType : 'application/json',
            success: function() {  
               $(".edit-annotation-popup").hide();
-              showAnnotation($("#src-mb-id").text(), data.note); }
+              showAnnotation($("#src-mb-num").text(), data.note); }
          });         
       });
       $("#anno-cancel-button").on("click", function(event) {
@@ -648,7 +650,9 @@ $(function() {
       $(".hm-del-anno").on("click", function(event) {
          event.stopPropagation();  
          var b = $(this).closest(".margin-box");
-         $("#src-mb-id").text( $(this).attr("id").substring("add-anno-".length) );
+         var diffNum =  $(this).attr("id").substring("del-anno-".length);
+         $("#src-mb-wit-id").text(  $("#mb-wit-id-"+diffNum).text() );
+         $("#src-mb-num").text( diffNum );
          $("#delete-annotation-popup").width( b.width() );
          $("#delete-annotation-popup").css("left", (b.position().left+b.outerWidth(true)-$("#delete-annotation-popup").outerWidth(true))+"px");
          $("#delete-annotation-popup").css("top", (b.position().top+b.outerHeight(true)+5)+"px");
@@ -665,16 +669,16 @@ $(function() {
          var url = $('#ajax-base-url').text() + $('#setId').text() + $('#annotate-segment').text();
          url = url + "?base="+$("#baseId").text();
          url = url + "&range="+$("#heatmap-text .heatmap.active").attr("juxta:range");
-         url = url + "&witness="+$("#mb-wit-id").text();
+         url = url + "&witness="+$("#src-mb-wit-id").text();
          $.ajax({
            type: "DELETE",
            url: url,
            success: function() { 
               $("#delete-annotation-popup").hide();
               $("#confirm-overlay").hide();
-              $("#box-anno-"+ $("#src-mb-id").text() ).text("");
-              $("#box-anno-"+ $("#src-mb-id").text() ).hide();
-              $("#del-anno-"+ $("#src-mb-id").text() ).hide();
+              $("#box-anno-"+ $("#src-mb-num").text() ).text("");
+              $("#box-anno-"+ $("#src-mb-num").text() ).hide();
+              $("#del-anno-"+ $("#src-mb-num").text() ).hide();
            }
          });        
       });
