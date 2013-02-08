@@ -165,6 +165,7 @@ public class UserAnnotationResource extends BaseResource {
             ua.setBaseId(this.baseId);
             ua.setWitnessId(this.witnessId);
             ua.setBaseRange(this.range);
+            ua.setSetId(this.set.getId());
             this.comparionSetDao.deleteUserAnnotation(ua);
         } catch (ResourceException e) {
             setStatus(e.getStatus()  );
