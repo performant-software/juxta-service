@@ -36,6 +36,7 @@ public class UserAnnotationResource extends BaseResource {
     private ComparisonSet set;
     private Range range;
     private Long baseId;
+    private Long witnessId;
     
     @Override
     protected void doInit() throws ResourceException {
@@ -54,6 +55,16 @@ public class UserAnnotationResource extends BaseResource {
             String strVal = getQuery().getValues("base");
             try {
                 this.baseId = Long.parseLong(strVal);
+            } catch (NumberFormatException e) {
+                setStatus(Status.CLIENT_ERROR_BAD_REQUEST, "Invalid base identifier specified");
+            }
+        }
+        
+        // was a witness specified?
+        if ( getQuery().getValuesMap().containsKey("witness") ) {
+            String strVal = getQuery().getValues("witness");
+            try {
+                this.witnessId = Long.parseLong(strVal);
             } catch (NumberFormatException e) {
                 setStatus(Status.CLIENT_ERROR_BAD_REQUEST, "Invalid base identifier specified");
             }
@@ -150,7 +161,10 @@ public class UserAnnotationResource extends BaseResource {
     @Delete("json")
     public void deleteUserAnnotation( final String jsonData ) {
         try {
-            UserAnnotation ua = parseAnnotation(jsonData, false);
+            UserAnnotation ua = new UserAnnotation();
+            ua.setBaseId(this.baseId);
+            ua.setWitnessId(this.witnessId);
+            ua.setBaseRange(this.range);
             this.comparionSetDao.deleteUserAnnotation(ua);
         } catch (ResourceException e) {
             setStatus(e.getStatus()  );

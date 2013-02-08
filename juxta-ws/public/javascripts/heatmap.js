@@ -659,17 +659,13 @@ $(function() {
       });
       $("#del-anno-ok-button").on("click", function(event) {
          event.stopPropagation();
-         var data = {};
-         var r = $("#heatmap-text .heatmap.active").attr("juxta:range").split(",");
-         data.base = $("#baseId").text();
-         data.witness = $("#mb-wit-id").text();
-         data.start = r[0];
-         data.end = r[1];
+         var url = $('#ajax-base-url').text() + $('#setId').text() + $('#annotate-segment').text();
+         url = url + "?base="+$("#baseId").text();
+         url = url + "&range="+$("#heatmap-text .heatmap.active").attr("juxta:range");
+         url = url + "&witness="+$("#mb-wit-id").text();
          $.ajax({
            type: "DELETE",
-           url: $('#ajax-base-url').text() + $('#setId').text() + $('#annotate-segment').text(),
-           data: JSON.stringify(data),
-           contentType : 'application/json',
+           url: url,
            success: function() { 
               $("#delete-annotation-popup").hide();
               $("#confirm-overlay").hide();
