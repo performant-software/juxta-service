@@ -4,6 +4,7 @@
   <span id="view-heatmap-segment" style="display: none">${viewHeatmapSegment}</span>
   <span id="fragment-segment" style="display: none">${fragmentSegment}</span>
   <span id="annotate-segment" style="display: none">${annotateSegment}</span>
+  <span id="show-annotation-controls" style="display: none">yes</span>
 </#if>
 
 <span id="setId" style="display: none">${setId}</span>

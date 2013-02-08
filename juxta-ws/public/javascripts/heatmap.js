@@ -246,8 +246,13 @@ $(function() {
    var showAnnotation = function(id, note) {
       $('#box-anno-' + id).text(note);
       $('#box-anno-' + id).show();
-      $('#del-anno-' + id).show();  
-      $('#add-anno-' + id).attr("Title", "Edit annotation"); 
+      if ( $("#show-annotation-controls").text() === "yes") {
+         $('#del-anno-' + id).show();  
+         $('#add-anno-' + id).attr("Title", "Edit annotation"); 
+      } else {
+         $('#del-anno-' + id).hide();  
+         $('#add-anno-' + id).hide();
+      }
    };
 
    /**
@@ -317,7 +322,11 @@ $(function() {
                if ( diff.note.length === 0) {
                   $('#box-anno-' + boxId).hide();  
                   $('#del-anno-' + boxId).hide();  
-                  $('#add-anno-' + boxId).attr("Title", "Add annotation"); 
+                  if ( $("#show-annotation-controls").text() === "yes") {
+                     $('#add-anno-' + boxId).attr("Title", "Add annotation"); 
+                  } else {
+                      $('#add-anno-' + boxId).hide();
+                  }   
                } else {
                   showAnnotation(boxId, diff.note);
                }
