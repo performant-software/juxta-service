@@ -632,6 +632,9 @@ $(function() {
          $(".edit-annotation-popup").hide();
          $("#annotation-editor").val("");
       });
+      $(".hm-del-anno").on("click", function(event) {
+         // TODO
+      });
 
       // hook up event handlers for the heatmap toolbar buttons
       $("#refresh-button").on("click", function() {
