@@ -604,6 +604,7 @@ $(function() {
          $("#annotation-editor").width( w-m );
          $(".edit-annotation-popup").css("left", (b.position().left+b.outerWidth(true)-$(".edit-annotation-popup").outerWidth(true))+"px");
          $(".edit-annotation-popup").css("top", (b.position().top+b.outerHeight(true)+5)+"px");
+         $("#annotation-editor").val("");
          $(".edit-annotation-popup").show();
          $("#annotation-editor").focus();
       });
