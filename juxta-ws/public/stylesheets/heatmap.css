@@ -547,3 +547,33 @@ span.heatmap {
    margin: 5px 5px 0px 5px;
    resize: none;
 }
+#confirm-overlay {
+   z-index: 999;
+   cursor: wait;
+   display: none;
+   width: 100%;
+   height: 100%;
+   position: fixed;
+   background-color: rgba(128, 128, 128, 0.5);
+   top: 0%;
+   left: 0%;
+}
+#delete-annotation-popup {
+   display: none;
+   position: fixed;
+   z-index: 1000;
+   font-size: 0.85em;
+   background-color: #eee;
+   border: 1px solid #666;
+   -moz-box-shadow: 5px 5px 5px #999;
+   -webkit-box-shadow: 5px 5px 5px #999;
+   box-shadow: 5px 5px 5px #999;
+   -mox-border-radius: 5px;
+   -webkit-border-radius: 5px;
+   border-radius: 5px;
+   padding: 0 0 5px 0;
+}
+#delete-annotation-popup p {
+   padding: 10px 5px 5px 10px;
+   margin: 0;
+}

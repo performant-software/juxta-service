@@ -613,7 +613,8 @@ $(function() {
          $("#annotation-editor").width( w-m );
          $(".edit-annotation-popup").css("left", (b.position().left+b.outerWidth(true)-$(".edit-annotation-popup").outerWidth(true))+"px");
          $(".edit-annotation-popup").css("top", (b.position().top+b.outerHeight(true)+5)+"px");
-         $("#annotation-editor").val( $("#box-anno-"+ $("#src-mb-id").text()).text() );
+         var txt = $("#box-anno-"+ $("#src-mb-id").text()).text();
+         $("#annotation-editor").val( $.trim(txt) );
          $(".edit-annotation-popup").show();
          $("#annotation-editor").focus();
       });
@@ -642,7 +643,39 @@ $(function() {
          $("#annotation-editor").val("");
       });
       $(".hm-del-anno").on("click", function(event) {
-         // TODO
+         event.stopPropagation();  
+         var b = $(this).closest(".margin-box");
+         $("#src-mb-id").text( $(this).attr("id").substring("add-anno-".length) );
+         $("#delete-annotation-popup").width( b.width() );
+         $("#delete-annotation-popup").css("left", (b.position().left+b.outerWidth(true)-$("#delete-annotation-popup").outerWidth(true))+"px");
+         $("#delete-annotation-popup").css("top", (b.position().top+b.outerHeight(true)+5)+"px");
+         $("#delete-annotation-popup").show();
+         $("#confirm-overlay").show();
+      });
+      $("#del-anno-cancel-button").on("click", function(event) {
+         event.stopPropagation();
+         $("#delete-annotation-popup").hide();
+         $("#confirm-overlay").hide();
+      });
+      $("#del-anno-ok-button").on("click", function(event) {
+         event.stopPropagation();
+         var data = {};
+         var r = $("#heatmap-text .heatmap.active").attr("juxta:range").split(",");
+         data.base = $("#baseId").text();
+         data.witness = $("#mb-wit-id").text();
+         data.start = r[0];
+         data.end = r[1];
+         $.ajax({
+           type: "DELETE",
+           url: $('#ajax-base-url').text() + $('#setId').text() + $('#annotate-segment').text(),
+           data: JSON.stringify(data),
+           contentType : 'application/json',
+           success: function() { 
+              $("#delete-annotation-popup").hide();
+              $("#confirm-overlay").hide();
+              $("#box-anno-"+ $("#src-mb-id").text() ).hide();
+           }
+         });        
       });
 
       // hook up event handlers for the heatmap toolbar buttons
