@@ -88,6 +88,12 @@ public class ComparisionSetDaoImpl extends JuxtaDaoImpl<ComparisonSet> implement
     }
     
     @Override
+    public boolean hasUserAnnotations(ComparisonSet set, Long baseId) {
+        String sql = "select count(*) as cnt from "+NOTE_TABLE+" where base_id=? and set_id=?";
+        return (this.jt.queryForInt(sql, baseId, set.getId())>0);
+    }
+    
+    @Override
     public List<UserAnnotation> listUserAnnotations(final ComparisonSet set, final Long baseId, final Range range) {
         StringBuilder sql = new StringBuilder( 
             "select id,set_id,base_id,witness_id,range_start,range_end,note from ");

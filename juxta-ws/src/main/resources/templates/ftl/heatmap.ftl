@@ -78,8 +78,11 @@
 </#if> 
     
     <#if ( !condensed )>
-        <#if (embedded && ( hasRevisions || hasNotes || hasBreaks || hasLineNumbers)) || !embedded >
+        <#if (embedded && ( hasRevisions || hasNotes || hasBreaks || hasLineNumbers || hasUserAnnotations)) || !embedded >
             <div class="heatmap-toolbar">
+                <#if hasUserAnnotations>
+                    <a class="juxta-button" id="annotations-button" title="List user annotations">User Annotations</a>
+                </#if>
                 <#if hasRevisions>
                     <a class="juxta-button" id="revisions-button" title="Toggle revision styling">Revisions</a>
                 </#if>

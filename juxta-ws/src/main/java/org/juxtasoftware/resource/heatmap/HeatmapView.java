@@ -189,6 +189,7 @@ public class HeatmapView  {
             
             // Last, wrap the body with ui (title, comparison set details)
             map.put("condensed", condensed );
+            map.put("hasUserAnnotations", this.setDao.hasUserAnnotations(set, base.getId()) );
             map.put("hasNotes", this.noteDao.hasNotes( base.getId() ) );
             map.put("hasBreaks", this.pbDao.hasBreaks( base.getId() ) );
             map.put("hasLineNumbers", this.pbDao.hasLineNumbers( base.getId() ) );
