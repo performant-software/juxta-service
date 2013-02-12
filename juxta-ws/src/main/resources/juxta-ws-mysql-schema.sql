@@ -1,8 +1,8 @@
 CREATE TABLE IF NOT EXISTS juxta_schema_version (
    major tinyint unsigned not null,
-   minor tinyint unsigned not null
+   minor tinyint unsigned not null,
+   micro tinyint unsigned not null
 )  ENGINE=InnoDB DEFAULT CHARSET=utf8;
-insert into juxta_schema_version (major,minor) values (1,7);
 
 CREATE TABLE IF NOT EXISTS juxta_workspace (
     id BIGINT NOT NULL AUTO_INCREMENT,
@@ -185,16 +185,22 @@ CREATE TABLE IF NOT EXISTS juxta_alignment (
     FOREIGN KEY (annotation_a_id) REFERENCES juxta_annotation (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE IF NOT EXISTS juxta_comparison_note (
+CREATE TABLE IF NOT EXISTS juxta_user_note (
   id bigint(20) NOT NULL AUTO_INCREMENT,
   set_id bigint(20) NOT NULL,
   base_id bigint(20) NOT NULL,
-  witness_id bigint(20) NOT NULL,
-  range_start MEDIUMINT UNSIGNED NOT NULL,
-  range_end MEDIUMINT UNSIGNED NOT NULL,
-  note text NOT NULL,
+  range_start mediumint(8) unsigned NOT NULL,
+  range_end mediumint(8) unsigned NOT NULL,
   PRIMARY KEY (id),
-  FOREIGN KEY (base_id) REFERENCES juxta_witness (id) ON DELETE CASCADE,
+  FOREIGN KEY (base_id) REFERENCES juxta_witness (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE IF NOT EXISTS juxta_user_note_data (
+  note_id bigint(20) NOT NULL,
+  witness_id bigint(20) NOT NULL,
+  note text NOT NULL,
+  PRIMARY KEY (note_id, witness_id),
+  FOREIGN KEY (note_id) REFERENCES juxta_user_note (id) ON DELETE CASCADE,
   FOREIGN KEY (witness_id) REFERENCES juxta_witness (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 

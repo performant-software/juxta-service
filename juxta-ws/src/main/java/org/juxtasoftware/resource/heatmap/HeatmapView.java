@@ -23,6 +23,7 @@ import org.juxtasoftware.dao.ComparisonSetDao;
 import org.juxtasoftware.dao.JuxtaAnnotationDao;
 import org.juxtasoftware.dao.NoteDao;
 import org.juxtasoftware.dao.PageMarkDao;
+import org.juxtasoftware.dao.UserAnnotationDao;
 import org.juxtasoftware.dao.WitnessDao;
 import org.juxtasoftware.model.Alignment;
 import org.juxtasoftware.model.Alignment.AlignedAnnotation;
@@ -66,6 +67,7 @@ public class HeatmapView  {
     @Autowired private TaskManager taskManager;
     @Autowired private Integer visualizationBatchSize;
     @Autowired private JuxtaAnnotationDao annotationDao;
+    @Autowired private UserAnnotationDao userNoteDao;
     
     private BaseResource parent;
     private VisualizationInfo visualizationInfo;
@@ -189,7 +191,7 @@ public class HeatmapView  {
             
             // Last, wrap the body with ui (title, comparison set details)
             map.put("condensed", condensed );
-            map.put("hasUserAnnotations", this.setDao.hasUserAnnotations(set, base.getId()) );
+            map.put("hasUserAnnotations", this.userNoteDao.hasUserAnnotations(set, base.getId()) );
             map.put("hasNotes", this.noteDao.hasNotes( base.getId() ) );
             map.put("hasBreaks", this.pbDao.hasBreaks( base.getId() ) );
             map.put("hasLineNumbers", this.pbDao.hasLineNumbers( base.getId() ) );

@@ -7,11 +7,8 @@ import org.juxtasoftware.model.CollatorConfig;
 import org.juxtasoftware.model.ComparisonSet;
 import org.juxtasoftware.model.ResourceInfo;
 import org.juxtasoftware.model.Usage;
-import org.juxtasoftware.model.UserAnnotation;
 import org.juxtasoftware.model.Witness;
 import org.juxtasoftware.model.Workspace;
-
-import eu.interedition.text.Range;
 
 /**
  * Data access object for Comparison Set Objects
@@ -47,12 +44,4 @@ public interface ComparisonSetDao extends JuxtaDao<ComparisonSet> {
 
     // get the list of items used to populate this comparions set
     List<Usage> getUsage(ComparisonSet set);
-    
-    // Manage user annotations on this set
-    void createUserAnnotation(UserAnnotation ua);
-    boolean hasUserAnnotations(ComparisonSet set, Long baseId);
-    List<UserAnnotation> listUserAnnotations(ComparisonSet set, Long baseId);
-    List<UserAnnotation> listUserAnnotations(ComparisonSet set, Long baseId, Range r);
-    void updateUserAnnotation(Long id, String note);
-    void deleteUserAnnotation(UserAnnotation ua);
 }

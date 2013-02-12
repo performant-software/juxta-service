@@ -15,7 +15,6 @@ import org.juxtasoftware.model.CollatorConfig.HyphenationFilter;
 import org.juxtasoftware.model.ComparisonSet;
 import org.juxtasoftware.model.ResourceInfo;
 import org.juxtasoftware.model.Usage;
-import org.juxtasoftware.model.UserAnnotation;
 import org.juxtasoftware.model.Witness;
 import org.juxtasoftware.model.Workspace;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,8 +26,6 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.stereotype.Repository;
-
-import eu.interedition.text.Range;
 
 /**
  * @author <a href="http://gregor.middell.net/" title="Homepage">Gregor Middell</a>
@@ -68,78 +65,6 @@ public class ComparisionSetDaoImpl extends JuxtaDaoImpl<ComparisonSet> implement
         CollatorConfig cfg = new CollatorConfig();
         createCollatorConfig(id, cfg);
         return id;
-    }
-    
-    @Override
-    public void createUserAnnotation(UserAnnotation ua) {
-        final MapSqlParameterSource ps = new MapSqlParameterSource();
-        ps.addValue("set_id", ua.getSetId() );
-        ps.addValue("base_id", ua.getBaseId() );
-        ps.addValue("range_start", ua.getBaseRange().getStart());
-        ps.addValue("range_end", ua.getBaseRange().getEnd());
-        ps.addValue("witness_id", ua.getWitnessId());
-        ps.addValue("note", ua.getNote());
-        this.noteInsert.execute(ps);
-    }
-    
-    @Override
-    public List<UserAnnotation> listUserAnnotations(ComparisonSet set, Long baseId) {
-        return listUserAnnotations(set, baseId, null);
-    }
-    
-    @Override
-    public boolean hasUserAnnotations(ComparisonSet set, Long baseId) {
-        String sql = "select count(*) as cnt from "+NOTE_TABLE+" where base_id=? and set_id=?";
-        return (this.jt.queryForInt(sql, baseId, set.getId())>0);
-    }
-    
-    @Override
-    public List<UserAnnotation> listUserAnnotations(final ComparisonSet set, final Long baseId, final Range range) {
-        StringBuilder sql = new StringBuilder( 
-            "select id,set_id,base_id,witness_id,range_start,range_end,note from ");
-        sql.append(NOTE_TABLE);
-        sql.append(" where base_id=? and set_id=?");
-        if ( range != null ) {
-            sql.append(" and range_start=? and range_end=?");
-        }
-        
-        RowMapper<UserAnnotation> mapper = new RowMapper<UserAnnotation>(){
-            @Override
-            public UserAnnotation mapRow(ResultSet rs, int rowNum) throws SQLException {
-                UserAnnotation ua = new UserAnnotation();
-                ua.setId(rs.getLong("id"));
-                ua.setSetId(rs.getLong("set_id"));
-                ua.setBaseId(rs.getLong("base_id"));
-                ua.setWitnessId(rs.getLong("witness_id"));
-                ua.setBaseRange( new Range(rs.getLong("range_start"),rs.getLong("range_end")) );
-                ua.setNote( rs.getString("note"));
-                return ua;
-            }  
-        };
-        
-        if ( range == null ) {
-            return this.jt.query(sql.toString(), mapper, baseId, set.getId());
-        } else {
-            return this.jt.query(sql.toString(), mapper, baseId, set.getId(), range.getStart(), range.getEnd());
-        }
-    }
-    
-    @Override
-    public void updateUserAnnotation(Long id, String note) {
-        String sql = "update "+NOTE_TABLE+" set note=? where id=?";
-        this.jt.update(sql, note, id);
-    }
-    
-    @Override
-    public void deleteUserAnnotation(UserAnnotation ua) {
-        if ( ua.getId() != null && ua.getId() > 0L ) {
-            final String sql = "delete from juxta_comparison_note where id=?";
-            this.jt.update(sql, ua.getId() );
-        } else {
-            final String sql = "delete from juxta_comparison_note where set_id=? and witness_id=? and base_id=? and range_start=? and range_end=?";
-            this.jt.update(sql, ua.getSetId(), ua.getWitnessId(),
-                ua.getBaseId(), ua.getBaseRange().getStart(), ua.getBaseRange().getEnd());
-        }
     }
     
     @Override

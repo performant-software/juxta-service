@@ -578,3 +578,32 @@ span.heatmap {
    margin: 0;
    font-weight: 200;
 }
+#annotation-browser {
+   position: fixed;
+   background-color: white;
+   border: 1px solid #444;
+   width: 25%; 
+   box-shadow: 0 0 8px #555;
+   -moz-box-shadow: 0 0 8px #555;
+   -wek-kit-box-shadow: 0 0 8px #555;
+}
+#annotation-browser .header {
+   border-top: 1px solid #cccccc;
+}
+#frag-scroller {
+   height: 45%;
+   background-color: white;
+   overflow-y: scroll;
+   overflow-x: hidden;
+}
+#frag-scroller p {
+   margin: 2px 0 0 5px;
+   font-size: 0.85em;
+   font-weight: 200;
+}
+#ua-scroller {
+   height: 45%;
+   background-color: white;
+   overflow-y: scroll;
+   overflow-x: hidden;
+}

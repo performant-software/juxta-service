@@ -78,28 +78,25 @@
 </#if> 
     
     <#if ( !condensed )>
-        <#if (embedded && ( hasRevisions || hasNotes || hasBreaks || hasLineNumbers || hasUserAnnotations)) || !embedded >
-            <div class="heatmap-toolbar">
-                <#if hasUserAnnotations>
-                    <a class="juxta-button" id="annotations-button" title="List user annotations">User Annotations</a>
-                </#if>
-                <#if hasRevisions>
-                    <a class="juxta-button" id="revisions-button" title="Toggle revision styling">Revisions</a>
-                </#if>
-                <#if hasNotes >
-                    <a class="juxta-button" id="notes-button" title="Toggle notes visibiity">Notes</a>
-                </#if>
-                <#if hasBreaks>
-                    <a class="juxta-button" id="pb-button" title="Toggle page break visibility">Page Breaks</a>
-                </#if>
-                <#if hasLineNumbers>
-                    <a class="juxta-button" id="line-num-button" title="Toggle line number visibility">Line Numbers</a>
-                </#if>
-                <#if !embedded>
-                    <a class="juxta-button" id="refresh-button" title="Refresh heatmap view">Refresh</a>
-                </#if>
-            </div> 
-         </#if>
+        <div class="heatmap-toolbar">
+            <a class="juxta-button" id="annotations-button"  <#if !hasUserAnnotations>style="display:none"</#if>
+               title="List user annotations">User Annotations</a>
+            <#if hasRevisions>
+               <a class="juxta-button" id="revisions-button" title="Toggle revision styling">Revisions</a>
+            </#if>
+            <#if hasNotes >
+               <a class="juxta-button" id="notes-button" title="Toggle notes visibiity">Notes</a>
+            </#if>
+            <#if hasBreaks>
+               <a class="juxta-button" id="pb-button" title="Toggle page break visibility">Page Breaks</a>
+            </#if>
+            <#if hasLineNumbers>
+               <a class="juxta-button" id="line-num-button" title="Toggle line number visibility">Line Numbers</a>
+            </#if>
+            <#if !embedded>
+               <a class="juxta-button" id="refresh-button" title="Refresh heatmap view">Refresh</a>
+            </#if>
+        </div> 
     </#if>
     
     <div id="heatmap-scroller" class="heatmap-scroller" >
@@ -128,6 +125,16 @@
         </div>
     </#if>
         
+</div>
+
+<!-- overlay for browsing user annotations -->
+<div id="annotation-browser" style="display: none">
+   <div class="header">Base Witness Fragments</div>
+   <div id="frag-scroller">
+   </div>
+   <div class="header">Annotations</div>
+   <div id="ua-scroller">
+   </div>
 </div>
 
 <!-- popups for adding/deleting annotations -->

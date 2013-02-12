@@ -24,6 +24,7 @@ import org.juxtasoftware.dao.AlignmentDao;
 import org.juxtasoftware.dao.CacheDao;
 import org.juxtasoftware.dao.ComparisonSetDao;
 import org.juxtasoftware.dao.PageMarkDao;
+import org.juxtasoftware.dao.UserAnnotationDao;
 import org.juxtasoftware.dao.WitnessDao;
 import org.juxtasoftware.model.Alignment;
 import org.juxtasoftware.model.Alignment.AlignedAnnotation;
@@ -82,6 +83,7 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
     @Autowired private CacheDao cacheDao;
     @Autowired private TaskManager taskManager;
     @Autowired private Integer visualizationBatchSize;
+    @Autowired private UserAnnotationDao userNotesDao;
     
     private ComparisonSet set;
     private Long baseWitnessId;
@@ -477,13 +479,16 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
             final String out = "<tr><td class=\"num-col\">"+lineRange+"</td><td>"+sb.toString()+"</td></tr>\n";
             osw.write( out );
             
-            
-            for (UserAnnotation ua : this.setDao.listUserAnnotations(this.set, this.baseWitnessId, baseRange) ) {
-                StringBuilder a = new StringBuilder();
-                a.append("<tr><td class=\"num-col\"> </td><td><i>");
-                a.append(  getSiglum(ua.getWitnessId()) ).append(": ");
-                a.append(ua.getNote()).append("</i></td></tr>\n");
-                osw.write( a.toString() ); 
+            // Add any user annotations on this exact range/base combo
+            List<UserAnnotation> annos = this.userNotesDao.list(this.set, this.baseWitnessId, baseRange);
+            if ( annos.size() == 1 ) {
+                for ( UserAnnotation.Data noteData : annos.get(0).getNotes() ) {
+                    StringBuilder a = new StringBuilder();
+                    a.append("<tr><td class=\"num-col\"> </td><td><i>");
+                    a.append( getSiglum(noteData.getWitnessId()) ).append(": ");
+                    a.append(noteData.getNote()).append("</i></td></tr>\n");
+                    osw.write( a.toString() ); 
+                }
             }
             
             // save priors to detect special cases

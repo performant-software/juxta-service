@@ -1,11 +1,17 @@
 package org.juxtasoftware.resource;
 
+import java.io.IOException;
+import java.lang.reflect.Type;
+import java.util.Iterator;
 import java.util.List;
 
 import org.juxtasoftware.dao.ComparisonSetDao;
+import org.juxtasoftware.dao.UserAnnotationDao;
+import org.juxtasoftware.dao.WitnessDao;
 import org.juxtasoftware.model.ComparisonSet;
 import org.juxtasoftware.model.UserAnnotation;
 import org.juxtasoftware.model.Witness;
+import org.juxtasoftware.util.RangedTextReader;
 import org.restlet.data.Status;
 import org.restlet.representation.Representation;
 import org.restlet.resource.Delete;
@@ -20,6 +26,7 @@ import org.springframework.stereotype.Service;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.reflect.TypeToken;
 
 import eu.interedition.text.Range;
 
@@ -33,6 +40,9 @@ import eu.interedition.text.Range;
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
 public class UserAnnotationResource extends BaseResource {
     @Autowired private ComparisonSetDao comparionSetDao;
+    @Autowired private WitnessDao witnessDao;
+    @Autowired private UserAnnotationDao userNotesDao;
+    
     private ComparisonSet set;
     private Range range;
     private Long baseId;
@@ -84,91 +94,161 @@ public class UserAnnotationResource extends BaseResource {
     
     @Post("json")
     public Representation create( final String jsonData ) {
-        try {
-            UserAnnotation ua = parseAnnotation(jsonData, true);
-            
-            // see if an annotation already exists here. If it does, delete it and replace with current
-            for (UserAnnotation a : this.comparionSetDao.listUserAnnotations(this.set, ua.getBaseId(), ua.getBaseRange()) ) {
-                if ( a.matches(ua)) {
-                    this.comparionSetDao.updateUserAnnotation(a.getId(), ua.getNote());
-                    return toTextRepresentation("OK");
-                }
-            }
-            
-            this.comparionSetDao.createUserAnnotation(ua);
-            return toTextRepresentation("OK");
-        } catch (ResourceException e) {
-            setStatus(e.getStatus()  );
-            return toTextRepresentation(e.getStatus().getDescription());
+        Gson gson = new Gson();
+        UserAnnotation newAnno = gson.fromJson(jsonData, UserAnnotation.class);
+        if ( newAnno == null ) {
+            setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
+            return toTextRepresentation("Malformed json payload");
         }
-    }
-    
-    private UserAnnotation parseAnnotation( final String jsonData, boolean includeNote ) throws ResourceException {
-        JsonParser parser = new JsonParser();
-        JsonObject jsonObj = parser.parse(jsonData).getAsJsonObject();
-        if ( jsonObj.has("base") == false || jsonObj.has("start") == false || jsonObj.has("end") == false ||
-             jsonObj.has("witness") == false ) {
-           throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST, "Missing required data in json payload");
+        newAnno.setSetId(this.set.getId());
+        if ( newAnno.getBaseId() == null || newAnno.getNotes().size() == 0 || newAnno.getBaseRange() == null ) {
+            setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
+            return toTextRepresentation("Missing required data in json payload");
         }
         
-        Long baseId = jsonObj.get("base").getAsLong();
-        Range r = new Range( jsonObj.get("start").getAsLong(), jsonObj.get("end").getAsLong());
-        Long witnessId = jsonObj.get("witness").getAsLong();
-        String note = "";
-        if ( jsonObj.has("note")) {
-            note = jsonObj.get("note").getAsString();
-        }
-        if ( includeNote && note.length() == 0 ) {
-            throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST, "Missing required data in json payload");
-        }
-        
-        // validate that witnesses are part of set
-        boolean foundBase = false;
-        boolean fountWit= false;
-        for (Witness w : this.comparionSetDao.getWitnesses(this.set) ) {
-            if ( w.getId().equals(baseId)) {
-                foundBase = true;
-            }
-            if ( w.getId().equals(witnessId)) {
-                fountWit = true;
+        // see if an annotation already exists here. If it does, update with new witness & note info
+        List<UserAnnotation> annos = this.userNotesDao.list(this.set, newAnno.getBaseId(), newAnno.getBaseRange());
+        for ( UserAnnotation ua : annos ) {
+            if ( ua.getBaseRange().equals(newAnno.getBaseRange())) {
+                ua.updateNotes( newAnno.getNotes() );
+                this.userNotesDao.update(ua);
+                return toTextRepresentation("OK");
             }
         }
         
-        if ( foundBase == false ) {
-            throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST, "Invalid base identifier specified");
-        }
-        
-        if ( fountWit == false ) {
-            throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST, "Invalid witness identifier specified");
-        }
-        
-        UserAnnotation ua = new UserAnnotation();
-        ua.setBaseId(baseId);
-        ua.setBaseRange(r);
-        ua.setNote(note);
-        ua.setSetId(this.set.getId());
-        ua.setWitnessId(witnessId);
-        return ua;
+        this.userNotesDao.create(newAnno);
+        return toTextRepresentation("OK");
     }
     
     @Get("json")
-    public Representation get() {
-        List<UserAnnotation> ua = this.comparionSetDao.listUserAnnotations(this.set, this.baseId, this.range);
+    public Representation getJson() {
+        List<UserAnnotation> ua = getUserAnnotations();
         Gson gson = new Gson();
-        return toJsonRepresentation( gson.toJson(ua) );
+        String out = gson.toJson(ua);
+        return toJsonRepresentation( out );
+    }
+
+    private List<UserAnnotation> getUserAnnotations() {
+        List<UserAnnotation> ua = this.userNotesDao.list(this.set, this.baseId, this.range);
+        List<Witness> witnesses = this.comparionSetDao.getWitnesses(this.set);
+        for ( UserAnnotation a : ua ) {
+            a.setBaseFragment( getBaseFragment(a.getBaseId(), a.getBaseRange()) );
+            for (Iterator<UserAnnotation.Data> itr = a.getNotes().iterator(); itr.hasNext(); ) {
+                UserAnnotation.Data note = itr.next();
+                if ( this.witnessId != null ) { 
+                    if ( note.getWitnessId().equals(this.witnessId) == false) {
+                        itr.remove();
+                        continue;
+                    }
+                }
+                note.setWitnessName(findName(witnesses, note.getWitnessId()));
+            }
+        }
+        return ua;
+    }
+    
+    private String getBaseFragment(Long baseId, Range baseRange) {
+        final int contextSize=20;
+        Witness base = this.witnessDao.find(baseId);
+        Range tgtRange = new Range(
+            Math.max(0, baseRange.getStart()-contextSize),
+            Math.min(base.getText().getLength(), baseRange.getEnd()+contextSize));
+        try {
+            // read the full fragment
+            final RangedTextReader reader = new RangedTextReader();
+            reader.read( this.witnessDao.getContentStream(base), tgtRange );
+            String frag = reader.toString().trim();
+            int pos = frag.indexOf(' ');
+            if ( pos > -1 ) {
+                frag = "..."+frag.substring(pos+1);
+            }
+            pos = frag.lastIndexOf(' ');
+            if ( pos > -1 ) {
+                frag = frag.substring(0,pos)+"...";
+            }
+            frag = frag.replaceAll("\\n+", " / ").replaceAll("\\s+", " ").trim();
+            return frag;
+        } catch (IOException e) {
+            // couldn't get fragment. skip it for now
+            return "";
+        }
+    }
+
+    private String findName(List<Witness> wl, Long id) {
+        for ( Witness w : wl ) {
+            if (w.getId().equals(id) ) {
+                return w.getJsonName();
+            }
+        }
+        return "";
     }
     
     @Delete("json")
-    public void deleteUserAnnotation( final String jsonData ) {
-        try {
-            UserAnnotation ua = new UserAnnotation();
-            ua.setBaseId(this.baseId);
-            ua.setWitnessId(this.witnessId);
-            ua.setBaseRange(this.range);
-            ua.setSetId(this.set.getId());
-            this.comparionSetDao.deleteUserAnnotation(ua);
-        } catch (ResourceException e) {
-            setStatus(e.getStatus()  );
+    public Representation deleteUserAnnotation( final String jsonData ) { 
+        JsonParser parser = new JsonParser();
+        JsonObject jsonObj = parser.parse(jsonData).getAsJsonObject();
+        
+        Long baseId = null;
+        if ( jsonObj.has("baseId") ) {
+            baseId = jsonObj.get("baseId").getAsLong();
+        } else {
+            setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
+            return toTextRepresentation("Missing baseId in json payload");
+        }
+        
+        Range r = null;
+        if ( jsonObj.has("baseRange") ) {
+            JsonObject rngObj = jsonObj.get("baseRange").getAsJsonObject();
+            if ( rngObj.has("start") == false || rngObj.has("end") == false  ) {
+                setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
+                return toTextRepresentation("Invalid data in json payload");
+             }
+            r = new Range( rngObj.get("start").getAsLong(), rngObj.get("end").getAsLong());
+        }
+        
+        if ( baseId == null || r == null || jsonObj.has("witnesses") == false ) {
+            // mass delete all user annotations
+            this.userNotesDao.delete( this.set, baseId, r  );
+        } else {
+            Gson gson = new Gson();
+            Type collectionType = new TypeToken<List<Long>>(){}.getType();
+            List<Long> witIds = gson.fromJson(jsonObj.get("witnesses"), collectionType);
+            
+            // Just remove the specified notes from the base range.
+            // start by getting the existing data
+            for (UserAnnotation ua : this.userNotesDao.list(this.set, baseId, r) ) {
+                for ( Iterator<UserAnnotation.Data> itr=ua.getNotes().iterator(); itr.hasNext(); ) {
+                    UserAnnotation.Data note = itr.next();
+                    if ( witIds.contains(note.getWitnessId())) {
+                        itr.remove();
+                    }
+                }
+                
+                // if all notes are gone, kill the whole thing
+                if ( ua.getNotes().size() == 0) {
+                    this.userNotesDao.delete( this.set, ua.getBaseId(), ua.getBaseRange() );
+                } else {
+                    // just update it with newly shortened info
+                    this.userNotesDao.update(ua);
+                }
+            }
+        }
+        
+        return toTextRepresentation(""+this.userNotesDao.count(this.set, baseId));
+    }
+    
+    public static class FragmentInfo {
+        private final String frag;
+        private final Range r;
+        public FragmentInfo(Range r, String f) {
+            this.frag = f;
+            this.r = new Range(r.getStart(), r.getEnd());
+        }
+        public Range getRange() {
+            return this.r;
+        }
+        public String getFragment() {
+            return this.frag;
         }
     }
 }

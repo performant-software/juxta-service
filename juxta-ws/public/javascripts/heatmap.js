@@ -190,6 +190,29 @@ $(function() {
          lineNumTags.hide();
       }
    };
+   
+   var toggleUserAnnotations = function() {
+      if ($("#annotations-button").hasClass("pushed") === false) {
+         $("#annotations-button").addClass("pushed");
+         var url =  $('#ajax-base-url').text() + $('#setId').text() + $('#annotate-segment').text()+"?base="+$("#baseId").text();
+         $.get( url, function(data){
+            $("#frag-scroller").empty();
+            $.each(data, function(idx, inf) {
+               $("#frag-scroller").append("<p>"+inf.fragment+"</p>");
+            });
+            $("#annotation-browser").show();
+            $("#annotation-browser").animate({ 
+              left: "-="+ $("#annotation-browser").outerWidth() +"px"
+            }, 500 );   
+            
+         });
+      } else {
+         $("#annotations-button").removeClass("pushed");
+         $("#annotation-browser").animate({ 
+           left: "+="+ $("#annotation-browser").outerWidth() +"px"
+         }, 500 );
+      }
+   };
 
    /**
     * Togggle view of page breaks
@@ -627,11 +650,9 @@ $(function() {
          event.stopPropagation();
          var data = {};
          var r = $("#heatmap-text .heatmap.active").attr("juxta:range").split(",");
-         data.base = $("#baseId").text();
-         data.witness = $("#src-mb-wit-id").text();
-         data.note = $("#annotation-editor").val();
-         data.start = r[0];
-         data.end = r[1];
+         data.baseId = $("#baseId").text();
+         data.baseRange = { start: r[0], end: r[1]};
+         data.notes = [ { witnessId: $("#src-mb-wit-id").text(), note: $("#annotation-editor").val()} ];
          $.ajax({
            type: "POST",
            url: $('#ajax-base-url').text() + $('#setId').text() + $('#annotate-segment').text(),
@@ -639,7 +660,9 @@ $(function() {
            contentType : 'application/json',
            success: function() {  
               $(".edit-annotation-popup").hide();
-              showAnnotation($("#src-mb-num").text(), data.note); }
+              showAnnotation($("#src-mb-num").text(), $("#annotation-editor").val()); 
+              $("#annotations-button").show();
+           }
          });         
       });
       $("#anno-cancel-button").on("click", function(event) {
@@ -667,20 +690,37 @@ $(function() {
       $("#del-anno-ok-button").on("click", function(event) {
          event.stopPropagation();
          var url = $('#ajax-base-url').text() + $('#setId').text() + $('#annotate-segment').text();
-         url = url + "?base="+$("#baseId").text();
-         url = url + "&range="+$("#heatmap-text .heatmap.active").attr("juxta:range");
-         url = url + "&witness="+$("#src-mb-wit-id").text();
+         var data = {};
+         var r = $("#heatmap-text .heatmap.active").attr("juxta:range").split(",");
+         data.baseId = $("#baseId").text();
+         data.baseRange = { start: r[0], end: r[1]};
+         data.witnesses = [ $("#src-mb-wit-id").text() ];
          $.ajax({
            type: "DELETE",
            url: url,
-           success: function() { 
+           data: JSON.stringify(data),
+           contentType : 'application/json',
+           success: function( resp ) { 
               $("#delete-annotation-popup").hide();
               $("#confirm-overlay").hide();
               $("#box-anno-"+ $("#src-mb-num").text() ).text("");
               $("#box-anno-"+ $("#src-mb-num").text() ).hide();
               $("#del-anno-"+ $("#src-mb-num").text() ).hide();
+              if ( parseInt(resp,10) === 0) {
+                 $("#annotations-button").hide();
+              }
            }
          });        
+      });
+      $("#annotation-browser").height( $("#heatmap-scroller").height()-12);
+      $("#annotation-browser").css("top", ($("#heatmap-scroller").position().top+5)+"px");
+      var l = $("#heatmap-scroller").position().left + $("#heatmap-scroller").outerWidth(true)+10;
+      $("#annotation-browser").css("left",l+"px");
+      var sh =  $("#annotation-browser").innerHeight()/2 - $(".header").outerHeight(true)-2;
+      $("#frag-scroller").height(sh);
+      $("#ua-scroller").height( sh);
+      $("#annotations-button").on("click", function() {
+         toggleUserAnnotations();
       });
 
       // hook up event handlers for the heatmap toolbar buttons

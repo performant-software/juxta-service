@@ -9,6 +9,7 @@ import java.util.Set;
 
 import org.juxtasoftware.dao.AlignmentDao;
 import org.juxtasoftware.dao.ComparisonSetDao;
+import org.juxtasoftware.dao.UserAnnotationDao;
 import org.juxtasoftware.dao.WitnessDao;
 import org.juxtasoftware.model.Alignment;
 import org.juxtasoftware.model.Alignment.AlignedAnnotation;
@@ -40,6 +41,7 @@ public class FragmentResource extends BaseResource {
     @Autowired private AlignmentDao alignmentDao;
     @Autowired private WitnessDao witnessDao;
     @Autowired private QNameFilters filters;
+    @Autowired private UserAnnotationDao userNotesDao;
     
     private Long baseWitnessId;
     private ComparisonSet set;
@@ -113,10 +115,7 @@ public class FragmentResource extends BaseResource {
     }
     
     @Get("json")
-    public Representation toJson() {
-        // Get any user annotations on the range & base id combination
-        List<UserAnnotation> userAnnos = this.setDao.listUserAnnotations(this.set, this.baseWitnessId, this.range);
-        
+    public Representation toJson() {        
         // get all of the diff alignments in the specified range
         AlignmentConstraint constraint = new AlignmentConstraint( this.set, this.baseWitnessId );
         constraint.setFilter( this.filters.getDifferencesFilter() );
@@ -168,6 +167,13 @@ public class FragmentResource extends BaseResource {
             }
         }
         
+        // Get any user annotations on this range & base id combination
+        List<UserAnnotation> annos = this.userNotesDao.list(this.set, this.baseWitnessId, this.range);
+        UserAnnotation userAnno = null;
+        if ( annos.size() == 1 ) {
+            userAnno = annos.get(0);
+        }
+        
         // lookup a fragment for each witness
         for ( Entry<Long, WitnessFragment> entry : witnessDiffMap.entrySet()) {
             Long witnessId = entry.getKey();
@@ -183,9 +189,13 @@ public class FragmentResource extends BaseResource {
             } catch (Exception e) {
                 LOG.error("Error retrieving diff fragment for witness "+witnessId, e);
             }
-            for ( UserAnnotation a : userAnnos ) {
-                if ( a.getWitnessId().equals(witnessId)) {
-                    info.note = a.getNote();
+            
+            // see if this particular witness diff has been annotated
+            if ( userAnno != null ) {
+                for ( UserAnnotation.Data noteData : userAnno.getNotes() ) {
+                    if ( noteData.getWitnessId().equals(witnessId)) {
+                        info.note = noteData.getNote();
+                    }
                 }
             }
         }
