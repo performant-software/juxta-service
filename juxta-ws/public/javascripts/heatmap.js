@@ -708,16 +708,11 @@ $(function() {
       $("#del-anno-ok-button").on("click", function(event) {
          event.stopPropagation();
          var url = $('#ajax-base-url').text() + $('#setId').text() + $('#annotate-segment').text();
-         var data = {};
          var r = $("#heatmap-text .heatmap.active").attr("juxta:range").split(",");
-         data.baseId = $("#baseId").text();
-         data.baseRange = { start: r[0], end: r[1]};
-         data.witnesses = [ $("#src-mb-wit-id").text() ];
+         url = url + "?base="+$("#baseId").text()+"&range="+r+"&witness="+$("#src-mb-wit-id").text();
          $.ajax({
            type: "DELETE",
            url: url,
-           data: JSON.stringify(data),
-           contentType : 'application/json',
            success: function( resp ) { 
               $("#delete-annotation-popup").hide();
               $("#confirm-overlay").hide();

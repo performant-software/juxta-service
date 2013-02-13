@@ -1,7 +1,6 @@
 package org.juxtasoftware.resource;
 
 import java.io.IOException;
-import java.lang.reflect.Type;
 import java.util.Iterator;
 import java.util.List;
 
@@ -24,9 +23,6 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.google.gson.reflect.TypeToken;
 
 import eu.interedition.text.Range;
 
@@ -185,45 +181,20 @@ public class UserAnnotationResource extends BaseResource {
     
     @Delete("json")
     public Representation deleteUserAnnotation( final String jsonData ) { 
-        JsonParser parser = new JsonParser();
-        JsonObject jsonObj = parser.parse(jsonData).getAsJsonObject();
-        
-        Long baseId = null;
-        if ( jsonObj.has("baseId") ) {
-            baseId = jsonObj.get("baseId").getAsLong();
-        } else {
-            setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
-            return toTextRepresentation("Missing baseId in json payload");
-        }
-        
-        Range r = null;
-        if ( jsonObj.has("baseRange") ) {
-            JsonObject rngObj = jsonObj.get("baseRange").getAsJsonObject();
-            if ( rngObj.has("start") == false || rngObj.has("end") == false  ) {
-                setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
-                return toTextRepresentation("Invalid data in json payload");
-             }
-            r = new Range( rngObj.get("start").getAsLong(), rngObj.get("end").getAsLong());
-        }
-        
-        if ( baseId == null || r == null || jsonObj.has("witnesses") == false ) {
+
+        if ( this.witnessId == null ) {
             // mass delete all user annotations
-            this.userNotesDao.delete( this.set, baseId, r  );
-        } else {
-            Gson gson = new Gson();
-            Type collectionType = new TypeToken<List<Long>>(){}.getType();
-            List<Long> witIds = gson.fromJson(jsonObj.get("witnesses"), collectionType);
-            
-            // Just remove the specified notes from the base range.
-            // start by getting the existing data
-            for (UserAnnotation ua : this.userNotesDao.list(this.set, baseId, r) ) {
+            this.userNotesDao.delete( this.set, this.baseId, this.range   );
+        } else {            
+            // Just remove the specified note from the base range.
+            for (UserAnnotation ua : this.userNotesDao.list(this.set, baseId, this.range) ) {
                 for ( Iterator<UserAnnotation.Data> itr=ua.getNotes().iterator(); itr.hasNext(); ) {
                     UserAnnotation.Data note = itr.next();
-                    if ( witIds.contains(note.getWitnessId())) {
+                    if ( this.witnessId.equals(note.getWitnessId())) {
                         itr.remove();
                     }
                 }
-                
+
                 // if all notes are gone, kill the whole thing
                 if ( ua.getNotes().size() == 0) {
                     this.userNotesDao.delete( this.set, ua.getBaseId(), ua.getBaseRange() );
