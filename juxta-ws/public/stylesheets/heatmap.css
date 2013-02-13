@@ -591,7 +591,6 @@ span.heatmap {
 }
 #annotation-browser .header {
    border-top: 1px solid #cccccc;
-   font-size: 1.0em;
    font-weight: 600;
 }
 #frag-scroller {
@@ -599,6 +598,7 @@ span.heatmap {
    background-color: white;
    overflow-y: scroll;
    overflow-x: hidden;
+   font-size: 0.9em;
 }
 #frag-scroller p {
    margin: 2px 0 0 5px;
@@ -608,6 +608,7 @@ span.heatmap {
    background-color: white;
    overflow-y: scroll;
    overflow-x: hidden;
+   font-size: 0.9em;
 }
 .ua-text {
    margin: 0px 0 5px 15px;

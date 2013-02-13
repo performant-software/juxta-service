@@ -194,24 +194,27 @@ $(function() {
    var toggleUserAnnotations = function() {
       if ($("#annotations-button").hasClass("pushed") === false) {
          $("#annotations-button").addClass("pushed");
-         var url =  $('#ajax-base-url').text() + $('#setId').text() + $('#annotate-segment').text()+"?base="+$("#baseId").text();
-         $.get( url, function(data){
-            var rng;
-            $("#frag-scroller").empty();
-            $("#ua-scroller").empty();
-            $.each(data, function(idx, inf) {
-               rng = inf.baseRange.start+","+inf.baseRange.end;
-               $("#frag-scroller").append("<p id='frag-"+inf.id+"' juxta:range='"+rng+"' class='base-frag'>"+inf.fragment+"</p>");
-               $.each(inf.notes, function(ni,note) {
-                   $("#ua-scroller").append("<p class='ua-wit'>"+note.witnessName+"</p><p class='ua-text'>"+note.note+"</p>");
+         $.ajax({
+            url : $('#ajax-base-url').text() + $('#setId').text() + $('#annotate-segment').text() + "?base=" + $("#baseId").text(),
+            type : 'GET',
+            async : false,
+            success : function(data, textStatus, jqXHR) {
+               var rng;
+               $("#frag-scroller").empty();
+               $("#ua-scroller").empty();
+               $.each(data, function(idx, inf) {
+                  rng = inf.baseRange.start + "," + inf.baseRange.end;
+                  $("#frag-scroller").append("<p id='frag-" + inf.id + "' juxta:range='" + rng + "' class='base-frag'>" + inf.fragment + "</p>");
+                  $.each(inf.notes, function(ni, note) {
+                     $("#ua-scroller").append("<p class='ua-wit'>" + note.witnessName + "</p><p class='ua-text'>" + note.note + "</p>");
+                  });
                });
-            });
-            $("#annotation-browser").show();
-            $("#annotation-browser").animate({ 
-              left: "-="+ $("#annotation-browser").outerWidth() +"px"
-            }, 500 );   
-            
-         });
+               $("#annotation-browser").show();
+               $("#annotation-browser").animate({
+                  left : "-=" + $("#annotation-browser").outerWidth() + "px"
+               }, 500);
+            }
+         }); 
       } else {
          $("#annotations-button").removeClass("pushed");
          $("#annotation-browser").animate({ 
