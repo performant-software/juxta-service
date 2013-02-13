@@ -129,10 +129,6 @@
 
 <!-- overlay for browsing user annotations -->
 <div id="annotation-browser" style="display: none">
-   <div class="header">Base Witness Fragments</div>
-   <div id="frag-scroller">
-   </div>
-   <div class="header">Annotations</div>
    <div id="ua-scroller">
    </div>
 </div>

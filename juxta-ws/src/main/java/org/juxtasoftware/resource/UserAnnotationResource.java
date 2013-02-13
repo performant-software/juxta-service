@@ -1,8 +1,10 @@
 package org.juxtasoftware.resource;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import org.juxtasoftware.dao.ComparisonSetDao;
 import org.juxtasoftware.dao.UserAnnotationDao;
@@ -114,6 +116,14 @@ public class UserAnnotationResource extends BaseResource {
         
         this.userNotesDao.create(newAnno);
         return toTextRepresentation("OK");
+    }
+    
+    @Get("html")
+    public Representation getHtml() {
+        List<UserAnnotation> ua = getUserAnnotations();
+        Map<String,Object> map = new HashMap<String,Object>();
+        map.put("annotations", ua);
+        return toHtmlRepresentation("user_annotations.ftl", map,false);
     }
     
     @Get("json")

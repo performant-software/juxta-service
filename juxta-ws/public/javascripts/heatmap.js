@@ -198,20 +198,12 @@ $(function() {
             url : $('#ajax-base-url').text() + $('#setId').text() + $('#annotate-segment').text() + "?base=" + $("#baseId").text(),
             type : 'GET',
             async : false,
+            dataType: "html",
             success : function(data, textStatus, jqXHR) {
-               var rng;
-               $("#frag-scroller").empty();
-               $("#ua-scroller").empty();
-               $.each(data, function(idx, inf) {
-                  rng = inf.baseRange.start + "," + inf.baseRange.end;
-                  $("#frag-scroller").append("<p id='frag-" + inf.id + "' juxta:range='" + rng + "' class='base-frag'>" + inf.fragment + "</p>");
-                  $.each(inf.notes, function(ni, note) {
-                     $("#ua-scroller").append("<p class='ua-wit'>" + note.witnessName + "</p><p class='ua-text'>" + note.note + "</p>");
-                  });
-               });
+               $("#ua-scroller").html(data);
                $("#annotation-browser").show();
                $("#annotation-browser").animate({
-                  left : "-=" + $("#annotation-browser").outerWidth() + "px"
+                  left : "-=" + ($("#annotation-browser").outerWidth()+2) + "px"
                }, 500);
             }
          }); 
@@ -472,9 +464,6 @@ $(function() {
       $("#annotation-browser").css("top", ($("#heatmap-scroller").position().top+5)+"px");
       var l = $("#heatmap-scroller").position().left + $("#heatmap-scroller").outerWidth(true)+10;
       $("#annotation-browser").css("left",l+"px");
-      var sh =  $("#annotation-browser").innerHeight()/2 - $(".header").outerHeight(true)-2;
-      $("#frag-scroller").height(sh);
-      $("#ua-scroller").height( sh);
    };
 
    /**

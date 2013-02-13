@@ -586,34 +586,49 @@ span.heatmap {
    box-shadow: 0 0 8px #555;
    -moz-box-shadow: 0 0 8px #555;
    -wek-kit-box-shadow: 0 0 8px #555;
-   font-size: 0.85em;
    font-weight: 200;
 }
-#annotation-browser .header {
-   border-top: 1px solid #cccccc;
-   font-weight: 600;
-}
-#frag-scroller {
-   height: 45%;
-   background-color: white;
-   overflow-y: scroll;
-   overflow-x: hidden;
-   font-size: 0.9em;
-}
-#frag-scroller p {
-   margin: 2px 0 0 5px;
-}
 #ua-scroller {
-   height: 45%;
-   background-color: white;
-   overflow-y: scroll;
+   height: 100%;
+   background-color: #d5d5d5;
+   overflow-y: auto;
    overflow-x: hidden;
    font-size: 0.9em;
 }
-.ua-text {
-   margin: 0px 0 5px 15px;
+div.ua {
+   border-top: 1px solid #aaa;
+   border-bottom: 1px solid #aaa;
+   margin-bottom: 5px;
+   background-color:#eee;
 }
-.ua-wit {
-   margin: 2px 0 0 5px;
-   font-weight:400;
+p.ua {
+   margin: 0px;
+   padding:4px;
+   font-size: 0.85em;
 }
+table.ua {
+   width: 98.5%;
+   border-collapse: collapse;
+   border: 1px solid #aaa;
+   margin: 0 auto 3px auto;
+   background-color:#fefefe
+}
+table.ua td, th {
+   padding: 0 5px;
+   font-size: 0.85em;
+   border-right: 1px solid #aaa;
+   border-top: 1px solid #aaa;
+}
+table.ua th {
+   color: #888;
+   background-color:#fefefe
+}
+tr.ua-header {
+   border-bottom: 1px solid;
+   text-align: left; 
+}
+
+
+
+
+
