@@ -196,9 +196,15 @@ $(function() {
          $("#annotations-button").addClass("pushed");
          var url =  $('#ajax-base-url').text() + $('#setId').text() + $('#annotate-segment').text()+"?base="+$("#baseId").text();
          $.get( url, function(data){
+            var rng;
             $("#frag-scroller").empty();
+            $("#ua-scroller").empty();
             $.each(data, function(idx, inf) {
-               $("#frag-scroller").append("<p>"+inf.fragment+"</p>");
+               rng = inf.baseRange.start+","+inf.baseRange.end;
+               $("#frag-scroller").append("<p id='frag-"+inf.id+"' juxta:range='"+rng+"' class='base-frag'>"+inf.fragment+"</p>");
+               $.each(inf.notes, function(ni,note) {
+                   $("#ua-scroller").append("<p class='ua-wit'>"+note.witnessName+"</p><p class='ua-text'>"+note.note+"</p>");
+               });
             });
             $("#annotation-browser").show();
             $("#annotation-browser").animate({ 
@@ -454,6 +460,18 @@ $(function() {
       } else {
          $("#files-scroller").css("overflow-y", "hidden");
       }
+   };
+   
+   var sizeAnnotationBrowser = function() {
+      $("#annotation-browser").hide();
+      $("#annotations-button").removeClass("pushed");
+      $("#annotation-browser").height( $("#heatmap-scroller").height()-12);
+      $("#annotation-browser").css("top", ($("#heatmap-scroller").position().top+5)+"px");
+      var l = $("#heatmap-scroller").position().left + $("#heatmap-scroller").outerWidth(true)+10;
+      $("#annotation-browser").css("left",l+"px");
+      var sh =  $("#annotation-browser").innerHeight()/2 - $(".header").outerHeight(true)-2;
+      $("#frag-scroller").height(sh);
+      $("#ua-scroller").height( sh);
    };
 
    /**
@@ -712,13 +730,7 @@ $(function() {
            }
          });        
       });
-      $("#annotation-browser").height( $("#heatmap-scroller").height()-12);
-      $("#annotation-browser").css("top", ($("#heatmap-scroller").position().top+5)+"px");
-      var l = $("#heatmap-scroller").position().left + $("#heatmap-scroller").outerWidth(true)+10;
-      $("#annotation-browser").css("left",l+"px");
-      var sh =  $("#annotation-browser").innerHeight()/2 - $(".header").outerHeight(true)-2;
-      $("#frag-scroller").height(sh);
-      $("#ua-scroller").height( sh);
+      sizeAnnotationBrowser();
       $("#annotations-button").on("click", function() {
          toggleUserAnnotations();
       });
@@ -759,6 +771,7 @@ $(function() {
          }
 
          sizeWitnessList();
+         sizeAnnotationBrowser();
       
          // easiest to just clear boxes and reset notes on a resize
          clearBoxes();
