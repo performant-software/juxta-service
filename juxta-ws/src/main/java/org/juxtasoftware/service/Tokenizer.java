@@ -131,15 +131,18 @@ public class Tokenizer {
                 (this.hyphenFilter.equals(HyphenationFilter.FILTER_LINEBREAK) || 
                  this.hyphenFilter.equals(HyphenationFilter.FILTER_ALL) );
             
-
+            StringBuilder tokenTxt = new StringBuilder();
             do {
                 final int read = tokenText.read();
                 if (read < 0) {
                     if (start != -1) {
                         createToken( start, offset);
+                        tokenTxt = new StringBuilder();
                     }
                     break;
                 }
+                
+                tokenTxt.append((char)read);
                     
                 // Token char (alphanumeric or hyphen)?
                 if ( isTokenChar(read)) {
@@ -147,6 +150,7 @@ public class Tokenizer {
                     if ( runType.equals(RunType.NON_TOKEN) ) {
                         createToken(start, offset);
                         start = -1;
+                        tokenTxt = new StringBuilder();
                     }
                     
                     runType = RunType.TOKEN;
@@ -157,11 +161,14 @@ public class Tokenizer {
                     // Special case handling for linebreak hyphen filtering
                     if ( filterLinebreak ) {
                         // If we have found a hyphen before (and possibly identified this as a linebreak),
-                        // the text text encountered is the continuation of the hyphenated word.
+                        // the next text encountered is the continuation of the hyphenated word.
                         if ( hyphenState.equals(HyphenState.FOUND_HYPHEN) || hyphenState.equals(HyphenState.LINEBREAK_HYPHEN) ) {
                             hyphenState = HyphenState.IN_HYPHENATED_PART;
                         }
-                        else if ( read == '-' && filterLinebreak ) {
+                        else if ( read == '-' ) {
+                            if ( tokenTxt.toString().contains("substi")) {
+                                System.err.println("fb");
+                            }
                             hyphenState = HyphenState.FOUND_HYPHEN;
                         }
                     }
@@ -173,7 +180,8 @@ public class Tokenizer {
                             start = -1;
                             runType = RunType.NONE;
                             hyphenState = HyphenState.NONE;
-                        } else if ( hyphenState.equals(HyphenState.FOUND_HYPHEN) ) {
+                            tokenTxt = new StringBuilder();
+                        } else if ( hyphenState.equals(HyphenState.FOUND_HYPHEN) || hyphenState.equals(HyphenState.LINEBREAK_HYPHEN)) {
                             // Special case for text that is a candidate for being a linebreak 
                             // hyphenated word. We have a hyphen. Do nothing but wait if more whitespace
                             // is encountered. If the whitespace is a linefeed, flag
@@ -195,6 +203,7 @@ public class Tokenizer {
                         start = -1;
                         runType = RunType.NONE;
                         hyphenState = HyphenState.NONE;
+                        tokenTxt = new StringBuilder();
                     } 
                     
                     // Start or continue a run of non-token characters?
@@ -211,6 +220,7 @@ public class Tokenizer {
                             runType = RunType.NONE;
                             hyphenState = HyphenState.NONE;
                             start = -1;
+                            tokenTxt = new StringBuilder();
                         }
                     }
                 }

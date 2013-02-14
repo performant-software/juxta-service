@@ -58,7 +58,7 @@ public class RepositoryTokenSource implements TokenSource {
                     }
                 }
             } else if ( this.config.getHyphenationFilter().equals(HyphenationFilter.FILTER_LINEBREAK)  ) {
-                if ( tokenText.contains("-") && tokenText.contains("\n")) {
+                if ( tokenText.contains("-") && (tokenText.indexOf(10) > -1) || tokenText.indexOf(13) > -1) {
                     String[] bits = tokenText.split("-");
                     if (bits.length == 2) {
                         tokenText = bits[0].trim() + bits[1].trim();
