@@ -423,13 +423,27 @@ p.hm-del-anno {
    background-repeat: no-repeat;
    background-position: 0;
 }
+div.box-annotation {
+   margin-top: 2px;
+}
 p.box-annotation {
-   border-top: 1px dashed #bbb;
    margin-top: 2px;
    margin-bottom: 0px;
    padding: 5px;
    font-style: italic;
    color: #999;
+}
+div.ua-toolbar {
+   background-color: #eee;
+   border-top: 1px solid #ccc;
+   border-bottom: 1px solid #ccc;
+   padding: 1px 0;
+}
+.ua-toolbar span {
+   position: relative;
+top: 1px;
+left: 4px;
+color: #888;
 }
 p.box-content {
    margin: 0;
@@ -601,10 +615,19 @@ div.ua {
    margin-bottom: 5px;
    background-color:#eee;
 }
+.show-ua {
+   background-image: url("/juxta/images/find.png");
+   width: 16px;
+   height: 16px;
+   float: right;
+   margin: 4px 7px 0px 0px;
+   cursor: pointer;
+}
 p.ua {
    margin: 0px;
    padding:4px;
    font-size: 0.85em;
+   float:left;
 }
 table.ua {
    width: 98.5%;
@@ -626,6 +649,9 @@ table.ua th {
 tr.ua-header {
    border-bottom: 1px solid;
    text-align: left; 
+}
+.outlined {
+   outline: 3px solid #eb0;
 }
 
 

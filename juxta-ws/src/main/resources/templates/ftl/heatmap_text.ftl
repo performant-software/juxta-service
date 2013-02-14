@@ -23,13 +23,20 @@
                   <span id="mb-wit-id-${i}" style="display:none"></span>
                   <p class="box-title" id="box-title-${i}"></p>
                   <#if !condensed>
-                     <p class="hm-anno" id="add-anno-${i}" title="Add annotation"/>
-                     <p class="hm-del-anno" id="del-anno-${i}" title="Delete annotation"/>
+                     <p class="hm-anno add" id="add-anno-${i}" title="Add annotation"/>
                   </#if>
                   <div style="clear:both"></div>
               </div>
               <p class="box-content" id="box-txt-${i}"/>
-              <p class="box-annotation" id="box-anno-${i}"/>
+              <div class="box-annotation" id="box-annotation-${i}">
+                  <div class="ua-toolbar">
+                     <span>Annotation</span>
+                     <p class="hm-anno edit" id="edit-anno-${i}" title="Edit annotation"/>
+                     <p class="hm-del-anno" id="del-anno-${i}" title="Delete annotation"/>
+                     <div style="clear:both"></div>
+                  </div>
+                  <p class="box-annotation" id="box-anno-${i}"/>
+              </div>
           </div>
       </#list>
  </div>

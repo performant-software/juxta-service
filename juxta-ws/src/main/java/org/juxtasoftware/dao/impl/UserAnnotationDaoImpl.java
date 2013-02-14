@@ -3,6 +3,7 @@ package org.juxtasoftware.dao.impl;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -139,7 +140,9 @@ public class UserAnnotationDaoImpl implements UserAnnotationDao, InitializingBea
                 }
                 ua.addNote( rs.getLong("witness_id"), rs.getString("note"));
             }
-            return new ArrayList<UserAnnotation>(map.values());
+            List<UserAnnotation> out = new ArrayList<UserAnnotation>(map.values());
+            Collections.sort(out);
+            return out;
         }
     }
 

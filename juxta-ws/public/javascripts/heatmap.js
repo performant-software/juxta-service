@@ -269,13 +269,15 @@ $(function() {
    
    var showAnnotation = function(id, note) {
       $('#box-anno-' + id).text(note);
-      $('#box-anno-' + id).show();
+      $('#box-annotation-' + id).show();   
       if ( $("#show-annotation-controls").text() === "yes") {
          $('#del-anno-' + id).show();  
-         $('#add-anno-' + id).attr("Title", "Edit annotation"); 
+         $("#edit-anno-" + id).show();  
+         $("#add-anno-" + id).hide();  
       } else {
          $('#del-anno-' + id).hide();  
-         $('#add-anno-' + id).hide();
+         $("#edit-anno-" + id).hide();  
+         $("#add-anno-" + id).hide(); 
       }
    };
 
@@ -344,10 +346,9 @@ $(function() {
                var boxId = idx + 1;
 
                if ( diff.note.length === 0) {
-                  $('#box-anno-' + boxId).hide();  
-                  $('#del-anno-' + boxId).hide();  
+                  $('#box-annotation-' + boxId).hide();  
                   if ( $("#show-annotation-controls").text() === "yes") {
-                     $('#add-anno-' + boxId).attr("Title", "Add annotation"); 
+                     $('#add-anno-' + boxId).show(); 
                   } else {
                       $('#add-anno-' + boxId).hide();
                   }   
@@ -638,7 +639,8 @@ $(function() {
       // add annotation
       $(".hm-anno").on("click", function(event) {
          event.stopPropagation();
-         var diffNum =  $(this).attr("id").substring("add-anno-".length);
+         var diffNum =  $(this).attr("id");
+         diffNum = diffNum.substring( diffNum.lastIndexOf("-")+1);
          $("#src-mb-wit-id").text(  $("#mb-wit-id-"+diffNum).text() );
          $("#src-mb-num").text( diffNum );
          var b = $(this).closest(".margin-box");
@@ -649,8 +651,9 @@ $(function() {
          $(".edit-annotation-popup").css("left", (b.position().left+b.outerWidth(true)-$(".edit-annotation-popup").outerWidth(true))+"px");
          $(".edit-annotation-popup").css("top", (b.position().top+b.outerHeight(true)+5)+"px");
          var txt = "";
-         if ( $(this).attr("title").indexOf("Edit") > -1) {
-            txt = $("#box-anno-"+ $("#src-mb-num").text()).text();
+         if ( $(this).hasClass("edit") ) {
+            var srcNum = $("#src-mb-num").text();
+            txt = $("#box-anno-"+ srcNum).text();
          }
          $("#annotation-editor").val( $.trim(txt) );
          $(".edit-annotation-popup").show();
@@ -709,14 +712,30 @@ $(function() {
               $("#delete-annotation-popup").hide();
               $("#confirm-overlay").hide();
               $("#box-anno-"+ $("#src-mb-num").text() ).text("");
-              $("#box-anno-"+ $("#src-mb-num").text() ).hide();
-              $("#del-anno-"+ $("#src-mb-num").text() ).hide();
+              $("#box-annotation-"+ $("#src-mb-num").text() ).hide();
+              if ( $("#show-annotation-controls").text() === "yes") {
+                  $("#add-anno-"+ $("#src-mb-num").text() ).show();
+              }
               if ( parseInt(resp,10) === 0) {
                  $("#annotations-button").hide();
               }
            }
          });        
       });
+      
+      
+      $("#annotation-browser").on("click", ".show-ua", function() {
+         var r = $(this).closest("div.ua").attr("juxta:range");
+         $('.heatmap').removeClass("outlined");
+         var hit = $('.heatmap').filter(function() {
+            return ($(this).attr('juxta:range') === r);
+         });
+         $(hit).addClass("outlined");
+         $('#heatmap-scroller').animate({
+            scrollTop : $(hit).offset().top - $('#heatmap-scroller').offset().top + $('#heatmap-scroller').scrollTop()-10
+         });
+      });
+
       sizeAnnotationBrowser();
       $("#annotations-button").on("click", function() {
          toggleUserAnnotations();

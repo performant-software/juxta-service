@@ -5,7 +5,7 @@ import java.util.Set;
 
 import eu.interedition.text.Range;
 
-public class UserAnnotation {
+public class UserAnnotation implements Comparable<UserAnnotation> {
     private Long id;
     private Long setId;
     private Long baseId;
@@ -111,6 +111,24 @@ public class UserAnnotation {
     public String toString() {
         return "UserAnnotation [id=" + id + ", baseId=" + baseId + ", baseRange="
             + baseRange + ", witnessNotes=" + notes + "]";
+    }
+    
+    @Override
+    public int compareTo(UserAnnotation that) {
+        Range r1 = this.baseRange;
+        Range r2 = that.baseRange;
+        if ( r1.getStart() < r2.getStart() ) {
+            return -1;
+        } else if ( r1.getStart() > r2.getStart() ) {
+            return 1;
+        } else {
+            if ( r1.getEnd() < r2.getEnd() ) {
+                return -1;
+            } else if ( r1.getEnd() > r2.getEnd() ) {
+                return 1;
+            } 
+        }
+        return 0;
     }
     
     public static class Data {
