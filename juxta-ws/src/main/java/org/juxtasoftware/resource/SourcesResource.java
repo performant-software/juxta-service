@@ -7,6 +7,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.lang.reflect.Type;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -23,10 +24,14 @@ import javax.xml.stream.XMLStreamException;
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.FileUploadBase.FileSizeLimitExceededException;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.methods.GetMethod;
-import org.apache.commons.httpclient.params.HttpMethodParams;
 import org.apache.commons.io.IOUtils;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.HttpResponseException;
+import org.apache.http.client.ResponseHandler;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.BasicResponseHandler;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.params.HttpProtocolParams;
 import org.juxtasoftware.dao.SourceDao;
 import org.juxtasoftware.model.Source;
 import org.juxtasoftware.model.Usage;
@@ -218,6 +223,10 @@ public class SourcesResource extends BaseResource {
                     Source.Type contentType = Source.Type.valueOf(jsonObj.get("contentType").getAsString().toUpperCase());
                     ids.add( createSourceFromRawData(name, data, contentType) );
                 }
+            } catch (HttpResponseException e) {
+                LOG.error("Link to source "+data+" failed", e);
+                setStatus( Status.valueOf(e.getStatusCode()));
+                return toTextRepresentation("Link to "+data+" failed: "+e.getMessage());
             } catch (IOException e) {
                 setStatus(Status.SERVER_ERROR_INTERNAL);
                 return toTextRepresentation("Unable to create source "+name+": "+e.toString());
@@ -378,8 +387,7 @@ public class SourcesResource extends BaseResource {
      * @throws XMLStreamException
      * @throws DuplicateSourceException 
      */
-    private Long writeSourceData(File srcFile, final String name, final Source.Type type) throws IOException,
-        XMLStreamException, DuplicateSourceException {
+    private Long writeSourceData(File srcFile, final String name, final Source.Type type) throws DuplicateSourceException, IOException, XMLStreamException {
         if (this.maxSourceSize > 0 && srcFile.length() > this.maxSourceSize) {
             String err = "Source size is " + srcFile.length() / 1024 + "K.\nThis exceeds the Juxta size limit of "
                 + this.maxSourceSize / 1024 + "K.\n\n"
@@ -405,30 +413,18 @@ public class SourcesResource extends BaseResource {
         return id;
     }
 
-    private Long scrapeExternalUrl(final String name, final String url) throws IOException, XMLStreamException, DuplicateSourceException {
+    private Long scrapeExternalUrl(final String name, final String url) throws HttpResponseException, IOException, XMLStreamException, DuplicateSourceException {
         
         // get the contents of the URL and store them in rawFile
-        HttpClient httpClient = newHttpClient();
-        GetMethod get = new GetMethod(url);
-        File rawFile = null;
-        FileOutputStream fos = null;
-        try {
-            int result = httpClient.executeMethod(get);
-            if (result != 200) {
-                throw new IOException(result + " code returned for URL: " + url);
-            }
-
-            rawFile = File.createTempFile("url", "dat");
-            rawFile.deleteOnExit();
-            fos = new FileOutputStream(rawFile);
-            IOUtils.copy(get.getResponseBodyAsStream(), fos);
-            
-        } catch (IOException e) {
-            throw new IOException("Unable to retrieve content of URL", e);
-        } finally {
-            IOUtils.closeQuietly(fos);
-            get.releaseConnection();
-        }
+        HttpClient httpClient = new DefaultHttpClient();
+        HttpProtocolParams.setUserAgent(httpClient.getParams(), "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_7_5) AppleWebKit/537.17 (KHTML, like Gecko) Chrome/24.0.1312.57 Safari/537.17");
+        HttpGet get = new HttpGet(url);
+        ResponseHandler<String> responseHandler = new BasicResponseHandler();
+        String response = httpClient.execute(get, responseHandler);
+        File rawFile = File.createTempFile("url", "dat");
+        OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(rawFile), "UTF-8");
+        IOUtils.write(response, osw);
+        IOUtils.closeQuietly(osw);
 
         // prepare source for addition to library
         File srcFile = null;
@@ -470,15 +466,6 @@ public class SourcesResource extends BaseResource {
             finalName = name + "." +srcType.toString().toLowerCase();
         }
         return finalName;
-    }
-
-    private HttpClient newHttpClient() {
-        final int REQUEST_TIMEOUT = 2 * 60 * 1000; // 2 secs
-        HttpClient httpClient = new HttpClient();
-        httpClient.getHttpConnectionManager().getParams().setConnectionTimeout(REQUEST_TIMEOUT);
-        httpClient.getHttpConnectionManager().getParams()
-            .setIntParameter(HttpMethodParams.BUFFER_WARN_TRIGGER_LIMIT, 10000 * 1024);
-        return httpClient;
     }
 
     private class SourcesSerializer implements JsonSerializer<Source> {
