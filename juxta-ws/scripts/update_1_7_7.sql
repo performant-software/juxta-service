@@ -49,3 +49,6 @@ alter table juxta_revision
 alter table juxta_witness 
 	drop  fragment_start,
 	drop fragment_end;
+	
+alter table juxta_comparison_set 
+   modify column `status` enum('NOT_COLLATED','TOKENIZING','TOKENIZED','COLLATING','COLLATED','ERROR','DELETED') NOT NULL DEFAULT 'NOT_COLLATED';

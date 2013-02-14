@@ -11,7 +11,7 @@ import com.google.common.base.Objects;
  *
  */
 public class ComparisonSet extends WorkspaceMember {
-    public enum Status {NOT_COLLATED, TOKENIZING, TOKENIZED, COLLATING, COLLATED, ERROR};
+    public enum Status {NOT_COLLATED, TOKENIZING, TOKENIZED, COLLATING, COLLATED, ERROR, DELETED};
     private String name;
     private Status status = Status.NOT_COLLATED;
     private Date created;

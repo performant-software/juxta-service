@@ -240,6 +240,9 @@ public class ComparisionSetDaoImpl extends JuxtaDaoImpl<ComparisonSet> implement
 
     @Override
     public void delete(final ComparisonSet set) {
+        this.jt.update("update " + this.tableName + 
+            " set name = ?, status=? where id = ?", 
+            set.getName()+"-DELETED", ComparisonSet.Status.DELETED.toString(), set.getId());
         this.taskExecutor.execute(new Runnable() {
             @Override
             public void run() {
@@ -251,8 +254,8 @@ public class ComparisionSetDaoImpl extends JuxtaDaoImpl<ComparisonSet> implement
     @Override
     public List<ComparisonSet> list( final Workspace ws) {
         final String sql = "select id, name, status, workspace_id, created, updated from "
-            +this.tableName+" where workspace_id=? order by created desc";
-        return this.jt.query(sql, SET_ROW_MAPPER, ws.getId());
+            +this.tableName+" where workspace_id=? and status!=? order by created desc";
+        return this.jt.query(sql, SET_ROW_MAPPER, ws.getId(), ComparisonSet.Status.DELETED.toString());
     }
     
     @Override
