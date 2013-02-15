@@ -226,7 +226,13 @@ public class SourcesResource extends BaseResource {
             } catch (HttpResponseException e) {
                 LOG.error("Link to source "+data+" failed", e);
                 setStatus( Status.valueOf(e.getStatusCode()));
-                return toTextRepresentation("Link to "+data+" failed: "+e.getMessage());
+                if ( e.getStatusCode() == 403 ) {
+                    String msg = "The target web site is not allowing Juxta to access its content.\n"
+                        +"To work around this, download the content to your local system,\nthen upload it using option #1.";
+                    return toTextRepresentation(msg);
+                } else {
+                    return toTextRepresentation("Link to "+data+" failed: "+e.getMessage());
+                }
             } catch (IOException e) {
                 setStatus(Status.SERVER_ERROR_INTERNAL);
                 return toTextRepresentation("Unable to create source "+name+": "+e.toString());
