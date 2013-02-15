@@ -33,10 +33,24 @@ public class JuxtaWS {
         Component component = (Component) context.getBean("top");
         component.start();
         
+        String authUser = (String)context.getBean("authenticatorUser");
+        String authPass = (String)context.getBean("authenticatorPass");
+        if ( (Boolean)context.getBean("useAuthenticator") == true && (authPass.length()==0 || authUser.length()==0)) {
+            String msg = "Juxta WS is running in AUTHENTICATED mode, but credientials are not set";
+            LoggerFactory.getLogger(Constants.WS_LOGGER_NAME).error(msg);
+            System.exit(0);
+        }
+        
         // init all common filters and public workspace
         ((QNameFilters)context.getBean(QNameFilters.class)).initialize();   
         ((MetricsHelper)context.getBean(MetricsHelper.class)).init();  
         LoggerFactory.getLogger(Constants.WS_LOGGER_NAME).info("Juxta Web service started");
+        
+        if ( (Boolean)context.getBean("useAuthenticator") == false ) {
+            String msg = "Juxta WS is running in NON-AUTHENTICATED mode, and is viewable/editabe by anyone";
+            LoggerFactory.getLogger(Constants.WS_LOGGER_NAME).info(msg);
+            System.out.println(msg);
+        }
     }
 
     private static void initApplicationContext() {

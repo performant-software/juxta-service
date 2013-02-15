@@ -35,10 +35,8 @@
         <property name="statusService" ref="statusService" />
     </bean>
   
-    <!-- The filter forwards all of its requests off to the router. It is also responsible
-         for determining if cross domain requests are accepted -->
+    <!-- The filter forwards all of its requests off to the router -->
     <bean id="filter" class="org.juxtasoftware.RequestFilter">
-        <property name="accessList" ref="allowAccessList"/>
     </bean>
     
     <!-- The status service for displaying customized error pages-->

@@ -87,11 +87,6 @@
     <task:executor id="executor" pool-size="${juxta.concurrent.tasks}" queue-capacity="200" />
     <task:executor id="collate-executor" pool-size="${juxta.concurrent.collations}" queue-capacity="200" />
     
-    <!-- property containing the allow-access whitelist -->
-    <bean id="allowAccessList" class="java.lang.String" factory-method="valueOf">
-        <constructor-arg value="${juxta.allow.access}" />
-    </bean>
-    
     <!-- property to set usage ChallengeAuthenticator for all requests -->
     <bean id="useAuthenticator" class="java.lang.Boolean" factory-method="valueOf">
         <constructor-arg value="${juxta.enable.authenticator}" />
