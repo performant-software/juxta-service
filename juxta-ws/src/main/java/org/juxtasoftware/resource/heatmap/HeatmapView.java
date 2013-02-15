@@ -169,7 +169,9 @@ public class HeatmapView  {
             // this will be filled in from cache or during heatmap generation
             this.witnesses = new ArrayList<HeatmapView.SetWitness>();
             for (Witness w: setWitnesses ) {
-                this.witnesses.add( new SetWitness(w, baseLength, w.equals(base)));
+                SetWitness sw = new SetWitness(w, baseLength, w.equals(base));
+                sw.hasAnnotations = this.userNoteDao.hasUserAnnotations(set, sw.getId());
+                this.witnesses.add(sw);
             }
 
             // Asynchronously render heatmap main body (map, notes and margin boxes)
@@ -526,6 +528,7 @@ public class HeatmapView  {
         private final long baseLen;
         private final boolean isBase;
         private final long createTimestamp;
+        private boolean hasAnnotations = false;
         
         public SetWitness( Witness w, long baseLen, boolean isBase) {
             super(w);
@@ -545,6 +548,9 @@ public class HeatmapView  {
         }
         public long getDate() {
             return this.createTimestamp;
+        }
+        public boolean getHasAnnotations() {
+            return this.hasAnnotations;
         }
     }
     

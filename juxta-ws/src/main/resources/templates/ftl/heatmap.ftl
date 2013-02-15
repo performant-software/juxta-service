@@ -52,6 +52,8 @@
                           <div id="witness-${witness.id}" class="witness">${witness.name}</div>
                           <table>
                               <tr>
+                                 <td class="chart-icon <#if witness.hasAnnotations>annotated</#if>" 
+                                    <#if witness.hasAnnotations>title="Has annotations"</#if> ></td>
                                  <td class="chart-label">Difference from base</td>
                                  <td id="change-index-${witness.id}" class="change-index"></td>
                               </tr>

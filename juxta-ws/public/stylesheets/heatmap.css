@@ -202,15 +202,15 @@ div.witness {
 #files table {
    border: none;
    float: right;
-   margin-bottom: 2px;
-   margin-right: 2px;
+   margin: 4px 2px 2px 0;
+   width: 100%;
 }
 #files td {
    padding: 0px 5px;
    border: 0;
 }
 #files .change-index {
-   width: 58%;
+   width: 50%;
 }
 #files  .chart-label {
    text-align: right;
@@ -218,6 +218,14 @@ div.witness {
    font-style: italic;
    color: #aab;
    font-weight: 200;
+}
+td.chart-icon {
+   width: 15px;
+}
+.annotated {
+   background-image: url("/juxta/images/has-annotations.png");
+   background-repeat: no-repeat;
+   background-position: 4px 1px;
 }
 
 /* Base document entry in comparison set div */
