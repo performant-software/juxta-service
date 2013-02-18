@@ -306,7 +306,7 @@ div.margin-boxes.condensed {
    color: #999;
 }
 
-#condensed-overlay {
+#hm-overlay {
    z-index: 1000;
    width: 100%;
    height: 100%;
@@ -391,6 +391,7 @@ div.margin-box {
    -moz-box-shadow: 2px 2px 2px #999;
    -webkit-box-shadow: 2px 2px 2px #999;
    box-shadow: 2px 2px 2px #999;
+   display:none;
 }
 div.box-title-bar {
    border-radius: 3px 3px 0 0;
@@ -548,8 +549,8 @@ span.heatmap {
 /** Annotations popup */
 .edit-annotation-popup {
    display: none;
-   position: fixed;
    text-align: center;
+   position: fixed;
    z-index: 1000;
    font-size: 0.9em;
    font-weight: 300;
@@ -561,7 +562,7 @@ span.heatmap {
    -mox-border-radius: 5px;
    -webkit-border-radius: 5px;
    border-radius: 5px;
-   padding: 0px 0px 5px 0px;
+   padding: 0px;
 }
 #annotation-editor {
    height: 65px;
@@ -593,7 +594,8 @@ span.heatmap {
    -mox-border-radius: 5px;
    -webkit-border-radius: 5px;
    border-radius: 5px;
-   padding: 0 0 5px 0;
+   padding: 0;
+   width: 180px;
 }
 #delete-annotation-popup p {
    padding: 10px 5px 5px 10px;

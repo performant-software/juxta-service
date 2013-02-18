@@ -250,8 +250,8 @@ $(function() {
     * Clear out all margin boxes and replace with note boxes
     */
    var clearBoxes = function() {
-      if ( $("#condensed-overlay").exists() ) {
-         $("#condensed-overlay").remove();
+      if ( $("#hm-overlay").exists() ) {
+         $("#hm-overlay").remove();
       }
       
       $("#margin-boxes").fadeOut(250, function() {
@@ -280,6 +280,17 @@ $(function() {
          $("#edit-anno-" + id).hide();  
          $("#add-anno-" + id).hide(); 
       }
+   };
+   
+   var addOverlay = function() {
+      $('#heatmap-scroller').append("<div id='hm-overlay'></div>");
+      $("#hm-overlay").height( $("#heatmap-scroller").height());
+      $("#hm-overlay").css( "top", $('#heatmap-scroller').offset().top+"px");
+      var help = $("<div/>");
+      $("#heatmap-scroller").append(help);
+      var w  = help.width();
+      help.remove();
+      $("#hm-overlay").width(w);
    };
 
    /**
@@ -374,15 +385,8 @@ $(function() {
             }
 
             if ($("#condensed").text() === 'true') {
-               $('#heatmap-scroller').append("<div id='condensed-overlay'></div>");
-               $("#condensed-overlay").height( $("#heatmap-scroller").height());
-               $("#condensed-overlay").css( "top", $('#heatmap-scroller').offset().top+"px");
-               var help = $("<div/>");
-               $("#heatmap-scroller").append(help);
-               var w  = help.width();
-               help.remove();
-               $("#condensed-overlay").width(w);
-               $("#condensed-overlay").css("z-index", "1");
+               addOverlay();
+               $("#hm-overlay").css("z-index", "1");
                $("#margin-boxes").css("z-index", "1000");
 
                var bottomY = $("#heatmap-text").position().top + $("#heatmap-text").outerHeight();
@@ -644,13 +648,10 @@ $(function() {
          diffNum = diffNum.substring( diffNum.lastIndexOf("-")+1);
          $("#src-mb-wit-id").text(  $("#mb-wit-id-"+diffNum).text() );
          $("#src-mb-num").text( diffNum );
-         var b = $(this).closest(".margin-box");
-         $(".edit-annotation-popup").width( b.width() );
-         var w = $(".edit-annotation-popup").width();
-         var m = parseInt($("#annotation-editor").css("margin-left" ),10)*2;
-         $("#annotation-editor").width( w-m );
-         $(".edit-annotation-popup").css("left", (b.position().left+b.outerWidth(true)-$(".edit-annotation-popup").outerWidth(true))+"px");
-         $(".edit-annotation-popup").css("top", (b.position().top+b.outerHeight(true)+5)+"px");
+         $(".edit-annotation-popup").css("left", $("#heatmap-scroller").position().left+($("#heatmap-scroller").width() - $(".edit-annotation-popup").width()) / 2);
+         $(".edit-annotation-popup").css("top", ($("#heatmap-text").height()-$(".edit-annotation-popup").outerHeight(true)) / 2);
+         addOverlay();
+
          var txt = "";
          if ( $(this).hasClass("edit") ) {
             var srcNum = $("#src-mb-num").text();
@@ -673,6 +674,7 @@ $(function() {
            data: JSON.stringify(data),
            contentType : 'application/json',
            success: function() {  
+              $("#hm-overlay").remove();
               $(".edit-annotation-popup").hide();
               showAnnotation($("#src-mb-num").text(), $("#annotation-editor").val()); 
               $("#annotations-button").show();
@@ -681,6 +683,7 @@ $(function() {
       });
       $("#anno-cancel-button").on("click", function(event) {
          event.stopPropagation();
+         $("#hm-overlay").remove();
          $(".edit-annotation-popup").hide();
          $("#annotation-editor").val("");
       });
@@ -690,16 +693,15 @@ $(function() {
          var diffNum =  $(this).attr("id").substring("del-anno-".length);
          $("#src-mb-wit-id").text(  $("#mb-wit-id-"+diffNum).text() );
          $("#src-mb-num").text( diffNum );
-         $("#delete-annotation-popup").width( b.width() );
-         $("#delete-annotation-popup").css("left", (b.position().left+b.outerWidth(true)-$("#delete-annotation-popup").outerWidth(true))+"px");
-         $("#delete-annotation-popup").css("top", (b.position().top+b.outerHeight(true)+5)+"px");
+         $("#delete-annotation-popup").css("left", $("#heatmap-scroller").position().left+($("#heatmap-scroller").width() - $("#delete-annotation-popup").width()) / 2);
+         $("#delete-annotation-popup").css("top", ($("#heatmap-text").height()-$("#delete-annotation-popup").outerHeight(true)) / 2);
+         addOverlay();
          $("#delete-annotation-popup").show();
-         $("#confirm-overlay").show();
       });
       $("#del-anno-cancel-button").on("click", function(event) {
          event.stopPropagation();
          $("#delete-annotation-popup").hide();
-         $("#confirm-overlay").hide();
+         $("#hm-overlay").remove();
       });
       $("#del-anno-ok-button").on("click", function(event) {
          event.stopPropagation();
@@ -712,7 +714,7 @@ $(function() {
            success: function( resp ) { 
               $(".edit-annotation-popup").hide();
               $("#delete-annotation-popup").hide();
-              $("#confirm-overlay").hide();
+              $("#hm-overlay").remove();
               $("#box-anno-"+ $("#src-mb-num").text() ).text("");
               $("#box-annotation-"+ $("#src-mb-num").text() ).hide();
               if ( $("#show-annotation-controls").text() === "yes") {

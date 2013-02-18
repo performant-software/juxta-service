@@ -38,5 +38,5 @@
                   <p class="box-annotation" id="box-anno-${i}"/>
               </div>
           </div>
-      </#list>
+      </#list>      
  </div>
