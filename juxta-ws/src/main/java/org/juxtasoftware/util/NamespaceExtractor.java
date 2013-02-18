@@ -27,14 +27,42 @@ public final class NamespaceExtractor {
     public static Set<NamespaceInfo> extract( final Reader sourceReader ) throws IOException {
         BufferedReader br = new BufferedReader( sourceReader );
         Set<NamespaceInfo> namespaces = new HashSet<NamespaceInfo>();
+        try {
         final String defaultNs = "xmlns=\"";
         final String noNamespace = ":noNamespaceSchemaLocation=\"";
         final String ns = "xmlns:";
+        final String commentStart = "<!--";
+        final String commentEnd = "-->";
+        boolean inComment = false;
         while (true) {
             String line = br.readLine();
             if ( line == null ) {
                 break;
             } else {
+                line = line.trim();
+                if ( inComment ) {
+                    if ( line.contains(commentEnd)) {
+                        line = line.substring(line.indexOf(commentEnd)+3).trim();
+                        inComment = false;
+                    } else {
+                        continue;
+                    }
+                }
+                
+                if ( line.contains(commentStart) ) {
+                    if ( line.contains(commentEnd)) {
+                        String end =  line.substring(line.indexOf(commentEnd)+3).trim();
+                        line = line.substring(0, line.indexOf(commentStart)) + end;
+                    } else {
+                        line = line.substring(0, line.indexOf(commentStart));
+                        inComment = true;
+                    }
+                }
+                
+                if (line.length() == 0 ) {
+                    continue;
+                }
+                
                 // default namespace?
                 if ( line.contains(defaultNs) ) {
                     int pos = line.indexOf(defaultNs)+defaultNs.length();
@@ -73,7 +101,9 @@ public final class NamespaceExtractor {
                 }
             }
         }
-        
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return namespaces;
     }
     
