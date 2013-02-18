@@ -209,6 +209,7 @@ $(function() {
          }); 
       } else {
          $("#annotations-button").removeClass("pushed");
+         $(".heatmap").removeClass("outlined");
          $("#annotation-browser").animate({ 
            left: "+="+ $("#annotation-browser").outerWidth() +"px"
          }, 500 );
@@ -709,6 +710,7 @@ $(function() {
            type: "DELETE",
            url: url,
            success: function( resp ) { 
+              $(".edit-annotation-popup").hide();
               $("#delete-annotation-popup").hide();
               $("#confirm-overlay").hide();
               $("#box-anno-"+ $("#src-mb-num").text() ).text("");

@@ -95,9 +95,10 @@ public class JuxtaAnnotationDaoImpl implements JuxtaAnnotationDao, InitializingB
             "select range_start from juxta_annotation" +
             " where witness_id=? and range_start > ?  order by range_start asc limit 1";
         try {
-            return this.jdbcTemplate.queryForLong(sql, witnessId, fromPos);
+            long pos = this.jdbcTemplate.queryForLong(sql, witnessId, fromPos);
+            return pos;
         } catch (Exception e) {
-            return fromPos;
+            return -1;
         }
     }
     

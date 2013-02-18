@@ -498,7 +498,17 @@ public class HeatmapView  {
                 if ( adjPos+1 >= base.getText().getLength() ) {
                     c.adjustRange(adjPos-1, adjPos);
                 } else {
-                    c.adjustRange(adjPos, adjPos+1);
+                    // first, see if there are any more tokens after this point
+                    int nextPos = (int)this.annotationDao.findNextTokenStart(base.getId(), adjPos);
+                    if ( nextPos == -1 ) {
+                        // this was the last token. Don't highlight past it, just up to it.
+                        // this fixes a special case: punct is not ignored and last non-whitespace char
+                        // in witness is punct and there is an add relative to this position. This code
+                        // makes sure the last punctuation gets highlighted as a change
+                        c.adjustRange(pos, adjPos);
+                    } else {
+                        c.adjustRange(adjPos, adjPos+1);
+                    }
                 }
                 changes.add(c );
                 Collections.sort(changes);
