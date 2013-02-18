@@ -495,8 +495,8 @@ public class HeatmapView  {
             if ( handled == false ) {
                 Change c =  new Change(changeId++, new Range(pos, pos), 1);
                 int adjPos = (int)this.annotationDao.findNextTokenStart(base.getId(), pos);
-                if ( adjPos+1 >= base.getText().getLength() ) {
-                    c.adjustRange(adjPos-1, adjPos);
+                if ( adjPos == -1 || adjPos+1 >= base.getText().getLength() ) {
+                    c.adjustRange(pos-1, pos);
                 } else {
                     // first, see if there are any more tokens after this point
                     int nextPos = (int)this.annotationDao.findNextTokenStart(base.getId(), adjPos);

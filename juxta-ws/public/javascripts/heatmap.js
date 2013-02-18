@@ -649,7 +649,7 @@ $(function() {
          $("#src-mb-wit-id").text(  $("#mb-wit-id-"+diffNum).text() );
          $("#src-mb-num").text( diffNum );
          $(".edit-annotation-popup").css("left", $("#heatmap-scroller").position().left+($("#heatmap-scroller").width() - $(".edit-annotation-popup").width()) / 2);
-         $(".edit-annotation-popup").css("top", ($("#heatmap-text").height()-$(".edit-annotation-popup").outerHeight(true)) / 2);
+         $(".edit-annotation-popup").css("top",  $("#heatmap-scroller").position().top+($("#heatmap-scroller").height()-$(".edit-annotation-popup").outerHeight(true)) / 2);
          addOverlay();
 
          var txt = "";
@@ -694,7 +694,7 @@ $(function() {
          $("#src-mb-wit-id").text(  $("#mb-wit-id-"+diffNum).text() );
          $("#src-mb-num").text( diffNum );
          $("#delete-annotation-popup").css("left", $("#heatmap-scroller").position().left+($("#heatmap-scroller").width() - $("#delete-annotation-popup").width()) / 2);
-         $("#delete-annotation-popup").css("top", ($("#heatmap-text").height()-$("#delete-annotation-popup").outerHeight(true)) / 2);
+         $("#delete-annotation-popup").css("top",  $("#heatmap-scroller").position().top+($("#heatmap-scroller").height()-$("#delete-annotation-popup").outerHeight(true)) / 2);
          addOverlay();
          $("#delete-annotation-popup").show();
       });
