@@ -13,6 +13,7 @@ import org.juxtasoftware.dao.WitnessDao;
 import org.juxtasoftware.model.CollatorConfig;
 import org.juxtasoftware.model.CollatorConfig.HyphenationFilter;
 import org.juxtasoftware.model.ComparisonSet;
+import org.juxtasoftware.model.ComparisonSet.Status;
 import org.juxtasoftware.model.ResourceInfo;
 import org.juxtasoftware.model.Usage;
 import org.juxtasoftware.model.Witness;
@@ -82,17 +83,28 @@ public class ComparisionSetDaoImpl extends JuxtaDaoImpl<ComparisonSet> implement
     
     @Override
     public void clearCollationData( ComparisonSet set) {
-        // flag set as uncollated
-        set.setStatus(ComparisonSet.Status.NOT_COLLATED);
-        update(set);
+        // flag set as uncollated if necessary
+        if ( !(set.getStatus().equals(Status.DELETED) || set.getStatus().equals(Status.NOT_COLLATED)) ) {
+            set.setStatus(ComparisonSet.Status.NOT_COLLATED);
+            update(set);
+        }
         
         // clear alignments, annotations and cached visualization data
         this.cacheDao.deleteAll(set.getId());
 
-        // NOTE: the alignments will cascade delete with the annotations
-        // Also note: don't delete the manually created annotations
-        final String sql = "delete from juxta_annotation where set_id=? and manual=?";
-        this.jt.update(sql, set.getId(), 0);
+        while ( true ) {
+            // NOTE: the alignments will cascade delete with the annotations
+            // Also note: don't delete the manually created annotations
+            final int maxDel = 5000;
+            final String sql = "delete from juxta_annotation where set_id=? and manual=? order by id limit "+maxDel;
+            int cnt = this.jt.update(sql, set.getId(), 0);
+            if (cnt < maxDel ) {
+                break;
+            }
+            try {
+                Thread.sleep(50);
+            } catch (InterruptedException e) {}
+        }
     }
     
     @Override
@@ -179,10 +191,17 @@ public class ComparisionSetDaoImpl extends JuxtaDaoImpl<ComparisonSet> implement
     }
 
     @Override
-    public void deleteAllWitnesses(ComparisonSet set) {
-        // ALL collation data must be purged first, then remove witnesss
-        clearCollationData(set);
+    public void deleteAllWitnesses(final ComparisonSet set) {
         this.jt.update("delete from "+SET_MEMBER_TABLE+" where set_id=?", set.getId());
+        set.setStatus(Status.NOT_COLLATED);
+        update( set );
+        
+        this.taskExecutor.execute(new Runnable() {
+            @Override
+            public void run() {
+                clearCollationData(set); 
+            }
+        });
     }
     
     @Override
@@ -240,12 +259,13 @@ public class ComparisionSetDaoImpl extends JuxtaDaoImpl<ComparisonSet> implement
 
     @Override
     public void delete(final ComparisonSet set) {
-        this.jt.update("update " + this.tableName + 
-            " set name = ?, status=? where id = ?", 
-            set.getName()+"-DELETED", ComparisonSet.Status.DELETED.toString(), set.getId());
+        set.setName(set.getName()+"-DELETED");
+        set.setStatus(Status.DELETED);
+        update(set);
         this.taskExecutor.execute(new Runnable() {
             @Override
             public void run() {
+                clearCollationData(set);
                 jt.update("delete from " + tableName + " where id = ?", set.getId());
             }
         });
