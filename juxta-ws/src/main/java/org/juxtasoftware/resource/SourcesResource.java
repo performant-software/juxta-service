@@ -351,12 +351,15 @@ public class SourcesResource extends BaseResource {
             }
             
         }
-        else if ( ConversionUtils.canConvert( mediaType )) {
+        else {
             // General case: auto transform to TXT
-            srcFile = ConversionUtils.convertToText(srcInputStream);
-        } else {
-            throw new IOException("Unsupported file type");   
-        }
+            try {
+                srcFile = ConversionUtils.convertToText(srcInputStream);
+            } catch (Exception e) {
+                LOG.error("Unable to convert "+sourceName+" "+mediaType+" to text", e);
+                throw new IOException(e.getMessage());
+            }
+        } 
    
         return writeSourceData(srcFile, sourceName, contentType);
     }
@@ -440,15 +443,24 @@ public class SourcesResource extends BaseResource {
             MediaType.TEXT_HTML.isCompatible(mediaType) || 
             MediaType.TEXT_PLAIN.isCompatible(mediaType)) {
             
-            srcFile = EncodingUtils.fixEncoding(new FileInputStream(rawFile));
-            if (MediaType.TEXT_HTML.isCompatible(mediaType)) {
-                HtmlUtils.strip(srcFile);
+            try {
+                srcFile = EncodingUtils.fixEncoding(new FileInputStream(rawFile));
+                if (MediaType.TEXT_HTML.isCompatible(mediaType)) {
+                    HtmlUtils.strip(srcFile);
+                }
+            } finally {
+                rawFile.delete();
             }
         } else {
             mediaType = MediaType.TEXT_PLAIN;
-            srcFile = ConversionUtils.convertToText(new FileInputStream(rawFile));
+            try {
+                srcFile = ConversionUtils.convertToText(new FileInputStream(rawFile));
+            } catch (Exception e) {
+                throw new IOException(e.getMessage());
+            } finally {
+                rawFile.delete();
+            }
         }
-        rawFile.delete();
 
         // Convert media type to Source Type
         Source.Type srcType = Source.Type.TXT;

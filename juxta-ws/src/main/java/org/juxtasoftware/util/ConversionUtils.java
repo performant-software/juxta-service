@@ -26,9 +26,12 @@ import org.docx4j.convert.in.xhtml.XHTMLImporter;
 import org.docx4j.openpackaging.exceptions.Docx4JException;
 import org.docx4j.openpackaging.packages.WordprocessingMLPackage;
 import org.docx4j.openpackaging.parts.WordprocessingML.NumberingDefinitionsPart;
+import org.juxtasoftware.Constants;
 import org.juxtasoftware.model.PageMark;
 import org.restlet.data.MediaType;
 import org.restlet.engine.header.ContentType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
@@ -44,23 +47,7 @@ import eu.interedition.text.Range;
  *
  */
 public class ConversionUtils {
-
-    /**
-     * Check if this is one of the file types Juxta will handle
-     * @param type
-     * @return
-     */
-    public static boolean canConvert(MediaType type ) {
-    
-        return ( type.equals(MediaType.TEXT_HTML) || 
-                 type.equals(MediaType.APPLICATION_PDF) ||
-                 type.equals(MediaType.APPLICATION_MSOFFICE_DOCX) ||
-                 type.equals(MediaType.APPLICATION_WORD) ||
-                 type.getName().equalsIgnoreCase("application/epub+zip") ||
-                 type.getName().equalsIgnoreCase("text/rtf") ||
-                 type.equals(MediaType.APPLICATION_RTF) ||
-                 type.equals(MediaType.APPLICATION_OPENOFFICE_ODT) );
-    }
+    protected static final Logger LOG = LoggerFactory.getLogger( Constants.WS_LOGGER_NAME );
     
     /**
      * Convert the plain text witness stream to HTML, including markup for page breaks and line numbers
@@ -172,8 +159,11 @@ public class ConversionUtils {
      * 
      * @param srcInoutStream
      * @return
+     * @throws IOException 
+     * @throws TikaException 
+     * @throws SAXException 
      */
-    public static File convertToText( InputStream srcInputStream ) throws IOException {
+    public static File convertToText( InputStream srcInputStream ) throws IOException, SAXException, TikaException {
         
         File txtFile = null;
         OutputStreamWriter osw = null;
@@ -196,15 +186,15 @@ public class ConversionUtils {
             // results will wind up in the temp file
             TikaInputStream tis = TikaInputStream.get(srcInputStream);
             parser.parse(tis, handler, md, context);
-            
-            EncodingUtils.stripUnknownUTF8(txtFile);
 
-        } catch (SAXException e) {
-            throw new IOException( e );
-        } catch (TikaException e) {
-            throw new IOException( e );
-        } finally {
+        }  finally {
             IOUtils.closeQuietly(osw);
+        }
+               
+        try {
+            EncodingUtils.stripUnknownUTF8(txtFile);
+        } catch (IOException e) {
+            LOG.warn("Unable to strip unknown UTF8 characters from auto-transformed source",e);
         }
         
         return txtFile; 
