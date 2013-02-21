@@ -134,7 +134,7 @@ public class WitnessResource extends BaseResource {
             }
             wit.delete();
             Gson gson = new Gson();
-            return toTextRepresentation(gson.toJson(obj));
+            return toJsonRepresentation(gson.toJson(obj));
         } catch (IOException e) {
             setStatus(Status.SERVER_ERROR_INTERNAL);
             return toTextRepresentation("Error retrieving witness: "+e.getMessage());
