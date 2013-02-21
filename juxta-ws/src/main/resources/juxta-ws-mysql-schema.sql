@@ -176,7 +176,7 @@ CREATE TABLE IF NOT EXISTS juxta_alignment (
     qname_id  BIGINT NOT NULL,
     group_num SMALLINT UNSIGNED NOT NULL default 0,
     manual BOOL not null default 0,
-    edit_distance TINYINT NOT NULL DEFAULT -1,
+    edit_distance SMALLINT NOT NULL DEFAULT -1,
     annotation_a_id BIGINT NOT NULL,
     annotation_b_id BIGINT NOT NULL,
     PRIMARY KEY (id),

@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS juxta_user_note_data (
 
 alter table juxta_alignment  
 	modify column group_num SMALLINT UNSIGNED NOT NULL default 0,
-	modify column edit_distance TINYINT NOT NULL DEFAULT -1;
+	modify column edit_distance SMALLINT NOT NULL DEFAULT -1;
 	
 alter table juxta_annotation  
 	modify column range_start MEDIUMINT UNSIGNED NOT NULL,
