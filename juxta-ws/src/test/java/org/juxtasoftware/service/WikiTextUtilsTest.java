@@ -25,6 +25,18 @@ public class WikiTextUtilsTest {
         txt.delete();
         Assert.assertEquals("This is a Hello World example", content);
     }
+    
+    @Test
+    public void testMultilineFileStrip() throws Exception {
+        InputStream is = getClass().getResourceAsStream("/multiline_file.wiki");
+        File txt = WikiTextUtils.toTxt(is);
+        FileInputStream fis = new FileInputStream(txt);
+        final String content = IOUtils.toString(fis).trim();
+        IOUtils.closeQuietly(fis);
+        System.out.println(content);
+        txt.delete();
+        Assert.assertEquals("Start Text\n\nHeader\nEnd Text", content);
+    }
 
     @Test
     public void testImageStrip() throws Exception {
@@ -63,6 +75,21 @@ public class WikiTextUtilsTest {
         Assert.assertFalse(content.contains("first4"));
         Assert.assertTrue(content.contains("The end."));
         Assert.assertTrue(content.contains("cancer."));
+    }
+    
+    @Test
+    public void testRefStrip2() throws Exception {
+        InputStream is = getClass().getResourceAsStream("/ref2.wiki");
+        File txt = WikiTextUtils.toTxt(is);
+        FileInputStream fis = new FileInputStream(txt);
+        final String content = IOUtils.toString(fis).trim();
+        IOUtils.closeQuietly(fis);
+        System.out.println(content);
+        txt.delete();
+        Assert.assertFalse(content.contains("</ref>"));
+        Assert.assertFalse(content.contains("<ref>"));
+        Assert.assertFalse(content.contains("{{"));
+        Assert.assertFalse(content.contains("}}"));
     }
     
     @Test

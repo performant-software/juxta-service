@@ -14,10 +14,6 @@ import org.apache.commons.io.output.FileWriterWithEncoding;
 import org.eclipse.mylyn.wikitext.core.parser.MarkupParser;
 import org.eclipse.mylyn.wikitext.core.parser.builder.HtmlDocumentBuilder;
 import org.eclipse.mylyn.wikitext.mediawiki.core.MediaWikiLanguage;
-//import org.eclipse.mylyn.wikitext.core.parser.MarkupParser;
-//import org.eclipse.mylyn.wikitext.core.parser.builder.HtmlDocumentBuilder;
-//import org.eclipse.mylyn.wikitext.mediawiki.core.MediaWikiLanguage;
-//import org.sweble.wikitext.engine.utils.SimpleWikiConfiguration;
 
 public class WikiTextUtils {
     
@@ -36,17 +32,66 @@ public class WikiTextUtils {
         OutputStreamWriter osw = new OutputStreamWriter(fos, "UTF-8");
         
         boolean strippingRef = false;
+        boolean strippingTag = false;
+        String endMarker = "";
+        String startMarker = "";
+        int depth = 0;
         while (true) {
             String line = r.readLine();
             if ( line == null ) {
                 break;
             } else {
+                line = line.trim();
+                if ( strippingTag ) {
+                    StringBuilder buf= new StringBuilder();
+                    for (int i=0; i<line.length(); i++) {
+                        buf.append( line.charAt(i));
+                        if ( buf.indexOf(startMarker) > -1 ) {
+                            depth++;
+                            buf = new StringBuilder();
+                        } else if ( buf.indexOf(endMarker) > -1 ) {
+                            depth--;
+                            if ( depth == 0) {
+                                line = line.substring(i+1);
+                                strippingTag = false;
+                                break;
+                            } else {
+                                buf = new StringBuilder();
+                            }
+                        }
+                    }
+                    if ( strippingTag ) {
+                        continue;
+                    }
+                }
+                
+                if (line.length() == 0) {
+                    continue;
+                }
                 
                 line = stripCitationNeeded(line);
-                line = stripTag("[[", "File:", "]]", line);
-                line = stripTag("[[", "Image:", "]]", line);
-                line = line.replaceAll("\\{\\{.*\\}\\}","");
-
+                
+                StripResult sr = stripTag("[[", "File:", "]]", line);
+                if ( sr.depth != 0 ) {
+                    depth = sr.depth;
+                    endMarker = "]]";
+                    startMarker = "[[";
+                    strippingTag = true;
+                    continue;
+                } else {
+                    line = sr.strippedLine;
+                }
+                
+                sr = stripTag("[[", "Image:", "]]", line);
+                if ( sr.depth != 0 ) {
+                    depth = sr.depth;
+                    endMarker = "]]";
+                    startMarker = "[[";
+                    strippingTag = true;
+                    continue;
+                } else {
+                    line = sr.strippedLine;
+                }
 
                 if ( strippingRef ) {
                     if ( line.contains("</ref>") ) {
@@ -64,7 +109,6 @@ public class WikiTextUtils {
                         break;
                     }
                     while ( line.contains("<ref") ) {
-                        
                         int start = line.indexOf("<ref");
                         int end = line.indexOf("</ref>", start);
                         int singleEnd = line.indexOf("/>", start);
@@ -95,6 +139,7 @@ public class WikiTextUtils {
                     }
                     
                     if ( line.trim().length() > 0 ) {
+                        line = line.replaceAll("\\{\\{.*\\}\\}","");
                         line += "\n";
                         osw.write(line);
                     }
@@ -121,7 +166,7 @@ public class WikiTextUtils {
 
     }
 
-    private static String stripTag(final String tagStart, final String tag, final String tagEnd, String line) {
+    private static StripResult stripTag(final String tagStart, final String tag, final String tagEnd, String line) {
         final String fullStart = tagStart+tag;
         while ( line.contains(fullStart) ) {
             int start = line.indexOf(fullStart);
@@ -142,15 +187,31 @@ public class WikiTextUtils {
                     }
                 }
             }
+            if ( depth > 0 ) {
+                return new StripResult(line.substring(0, start), depth);
+            }
         }
-        return line;
+        return new StripResult(line,0);
+    }
+    
+    static final class StripResult {
+        public final String strippedLine;
+        public final int depth;
+        public StripResult(String line, int depth) {
+            this.strippedLine = line;
+            this.depth = depth;
+        }
     }
 
     private static String stripCitationNeeded(String line) {
         while ( line.contains("{{Citation needed")) {
             int start = line.indexOf("{{Citation needed");
             int end = line.indexOf("}}", start);
-            line = line.substring(0, start) + line.substring(end+2);
+            if ( end == -1 ) {
+                break;
+            } else {
+                line = line.substring(0, start) + line.substring(end+2);
+            }
         }
         return line;
     }

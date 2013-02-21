@@ -1,0 +1,11 @@
+Start Text
+
+====Header====
+{{Main|Public image of George W. Bush}}
+{{See also|Efforts to impeach George W. Bush}}
+[[File:George W Bush approval ratings.svg|thumb|right|{{legend|#4A7EBB|approve}}
+{{legend|#BE4B48|disapprove}}
+{{legend|#98B954|unsure}}
+[[Gallup poll|Gallup]]/''[[USA Today]]'' Bush public opinion polling from February 2001 to January 2009. Blue denotes approve, red disapprove and green unsure.]]
+
+End Text
