@@ -218,8 +218,12 @@ public class MetricsHelper {
             DEBUG_LOG.info("Timestamp "+this.collationStartTimes.get(set.getId()));
             this.collationStartTimes.remove(set.getId());
             
-            long deltaMs = System.currentTimeMillis() - startTime;
-            m.setTotalTimeCollating( m.getTotalTimeCollating()+deltaMs );
+            if  (startTime != null ) {
+                long deltaMs = System.currentTimeMillis() - startTime;
+                m.setTotalTimeCollating( m.getTotalTimeCollating()+deltaMs );
+            } else {
+                DEBUG_LOG.error("No start time for collating "+set+". Can't track timing metrics");
+            }
             
             this.metricsDao.update(m);
         } catch ( Exception e ) {

@@ -85,12 +85,15 @@ public class CollatorResource extends BaseResource {
 
     private Representation doCollation() {
 
-        if (this.set.getStatus().equals(ComparisonSet.Status.COLLATING) || this.set.getStatus().equals(ComparisonSet.Status.TOKENIZING)) {
+        if (this.set.getStatus().equals(ComparisonSet.Status.COLLATING) || 
+            this.set.getStatus().equals(ComparisonSet.Status.TOKENIZING)  ) {
+            LOG.error("Attempt to collate "+this.set+" when it is aalready collating");
             setStatus(Status.CLIENT_ERROR_CONFLICT);
             return toTextRepresentation("Set " + this.set.getId() + " is currently collating");
         }
         List<Witness> witnesses = this.setDao.getWitnesses(this.set);
         if (witnesses.size() < 2) {
+            LOG.error("Attempt to collate "+this.set+" that has less than 2 witnesses");
             setStatus(Status.CLIENT_ERROR_FAILED_DEPENDENCY);
             return toTextRepresentation("Set " + this.set.getId()
                 + " has fewer than 2 witnesses; cannot collate");
