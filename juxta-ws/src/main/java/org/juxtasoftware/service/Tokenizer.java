@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.List;
 
+import org.json.simple.JSONObject;
 import org.juxtasoftware.Constants;
 import org.juxtasoftware.dao.ComparisonSetDao;
 import org.juxtasoftware.dao.JuxtaAnnotationDao;
@@ -72,7 +73,7 @@ public class Tokenizer {
         
         this.tokenQName = this.qnameRepo.get(Constants.TOKEN_NAME);
         
-        taskStatus.setNote("Tokenizing " + comparisonSet);
+        taskStatus.setNote("Tokenizing " + JSONObject.escape(comparisonSet.getName()));
         for (Witness witness : witnesses) {
             taskStatus.setNote("Tokenizing '" + witness.getJsonName() + "'");
             LOG.info("Tokenizing " + witness.getName());

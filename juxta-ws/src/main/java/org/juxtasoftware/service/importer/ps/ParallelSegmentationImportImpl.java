@@ -10,6 +10,7 @@ import java.util.Set;
 
 import javax.xml.parsers.ParserConfigurationException;
 
+import org.json.simple.JSONObject;
 import org.juxtasoftware.Constants;
 import org.juxtasoftware.dao.ComparisonSetDao;
 import org.juxtasoftware.dao.JuxtaXsltDao;
@@ -165,7 +166,7 @@ public class ParallelSegmentationImportImpl implements ImportService<Source> {
     
     private void setStatusMsg( final String msg ) {
         if (this.taskStatus != null ) {
-            this.taskStatus.setNote(msg);
+            this.taskStatus.setNote( JSONObject.escape(msg) );
         }
     }
     

@@ -20,6 +20,7 @@ import java.util.zip.ZipInputStream;
 import javax.xml.stream.XMLStreamException;
 
 import org.apache.commons.io.IOUtils;
+import org.json.simple.JSONObject;
 import org.juxtasoftware.Constants;
 import org.juxtasoftware.dao.AlignmentDao;
 import org.juxtasoftware.dao.CacheDao;
@@ -294,7 +295,7 @@ public class JxtImportServiceImpl implements ImportService<InputStream> {
         for ( SourceInfo srcInfo : sources ) {
 
             // determine type of source
-            String srcName = srcInfo.getSrcFile().getName();
+            String srcName = JSONObject.escape(srcInfo.getSrcFile().getName());
             this.taskStatus.setNote("Adding raw source document: "+srcName); 
             int extPos = srcName.lastIndexOf('.');
             String ext = ".txt";

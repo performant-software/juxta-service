@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.json.simple.JSONObject;
 import org.juxtasoftware.Constants;
 import org.juxtasoftware.dao.AlignmentDao;
 import org.juxtasoftware.dao.ComparisonSetDao;
@@ -79,7 +80,7 @@ public class ComparisonSetCollator extends DiffCollator {
         final CollatorConfigAdapter configAdapter = new CollatorConfigAdapter(config);
 
         final BackgroundTaskSegment ts = taskStatus.add(1, new BackgroundTaskSegment((witnesses.size() * (witnesses.size() - 1)) / 2));
-        taskStatus.setNote("Collating SET " + comparisonSet);
+        taskStatus.setNote("Collating SET " + JSONObject.escape(comparisonSet.getName()));
         LOG.info("Collating " + comparisonSet);
 
         try {

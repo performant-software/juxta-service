@@ -8,6 +8,8 @@ import java.util.Map;
 import javax.swing.BoundedRangeModel;
 import javax.swing.DefaultBoundedRangeModel;
 
+import org.json.simple.JSONObject;
+
 import com.google.common.base.Objects;
 import com.google.common.collect.Maps;
 
@@ -59,7 +61,7 @@ public class BackgroundTaskStatus {
     public void fail( final String reason ) {
         if ( isActive() ) {
             this.status = Status.FAILED;
-            setNote(reason);
+            setNote( JSONObject.escape(reason) );
         }
     }
 
