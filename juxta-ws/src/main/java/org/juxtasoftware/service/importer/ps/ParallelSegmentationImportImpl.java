@@ -295,6 +295,12 @@ public class ParallelSegmentationImportImpl implements ImportService<Source> {
         }
         
         if ( witness == null ) {
+            
+            // prevent duplicate witnesses from being created
+            if ( this.witnessDao.exists(ws, info.getName()) ) {
+                throw new Exception("Witness '"+info.getName()+"' already exists");
+            }
+            
             witness = new Witness();
             witness.setName( info.getName() );
             witness.setSourceId( source.getId());
