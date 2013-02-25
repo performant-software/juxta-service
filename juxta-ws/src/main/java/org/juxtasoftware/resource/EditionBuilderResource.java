@@ -426,7 +426,7 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
                         }
                     } else {
                         witTxt = getWitnessText(witId, witRng);
-                        witTxt = witTxt.replaceAll("\\n+", " ").replaceAll("\\s+", " ").trim();
+                        witTxt = witTxt.replaceAll("\\n+", " / ").replaceAll("\\s+", " ").trim();
                     }
                     
                     // clean up for XML
@@ -450,32 +450,38 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
             // add any witnesses that are NOT accounted for in the txtSiglumMap
             // these are witnesses that are the same as the base. add their siglum
             // to the witness list following the base fragment. 
+            sb.append("<b>");
             addWitnessesMatchingBase(sb, txtSiglumMap, nestedChange, priorWitsWithChange);
             
             // end the base portion of the variant report
-            sb.append("; ");
+            sb.append(";</b> ");
             
             // Lastly, use the merged data from above to create the witness variants
+            boolean first = true;
             for (Entry<String, Set<String>> ent : txtSiglumMap.entrySet() ) {
+                if ( first )  {
+                    first = false;
+                } else {
+                    sb.append("; ");
+                }
                 String witTxt = ent.getKey();
                 StringBuilder ids = new StringBuilder();
                 for ( String siglum: ent.getValue() ) {
                     if ( ids.length() > 0 ) {
                         ids.append(", ");
+                    } else {
+                        ids.append(" <b>");
                     }
                     ids.append(siglum);
                 }
-                sb.append(witTxt);
-                if  ( witTxt.equals("<i>not in </i>") == false ) {
-                    sb.append(": ");
-                }
-                sb.append(ids).append(". ");
+                ids.append("</b>");
+                sb.append(witTxt).append(ids);
             }
             
             // find line num for range
             String lineRange = findLineNumber(baseRange, lineRanges);            
   
-            // shove the whole thing into a table row and wroite it out to disk
+            // shove the whole thing into a table row and write it out to disk
             final String out = "<tr><td class=\"num-col\">"+lineRange+"</td><td>"+sb.toString()+"</td></tr>\n";
             osw.write( out );
             

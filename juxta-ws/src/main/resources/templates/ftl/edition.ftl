@@ -32,7 +32,7 @@
        <ul>
           <#list witnesses as witness>
              <#if witness.isIncluded>
-                <li>${witness.siglum}: ${witness.title}<#if witness.isBase> - This is the base text.</#if></li>
+                <li><b>${witness.siglum}: </b>${witness.title}<#if witness.isBase> - This is the base text.</#if></li>
              </#if>
           </#list>
        </ul>
