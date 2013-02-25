@@ -101,6 +101,7 @@ public class ChangeInjector implements StreamInjector<Change> {
            range = change.getOrignialRange();
         }
         sb.append(range.getStart()).append(",").append(range.getEnd()).append("\"");
+        sb.append(" juxta:diff-freq=\"").append(change.getDifferenceFrequency()).append("\"");
         sb.append(" class=\"heatmap heat").append(idx).append("\" id=\"").append(change.getId()).append("\">");
        
         return sb.toString();

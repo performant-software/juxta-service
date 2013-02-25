@@ -147,10 +147,6 @@
     <bean name="/juxta/set/{id}/collate" class="org.juxtasoftware.resource.CollatorResource" scope="prototype" autowire="byName" />
     <bean name="/juxta/set/{id}/collator" class="org.juxtasoftware.resource.CollatorResource" scope="prototype" autowire="byName" />
     
-    <!-- histogram -->
-    <bean name="/juxta/{workspace}/set/{id}/histogram" class="org.juxtasoftware.resource.HistogramResource" scope="prototype" autowire="byName" />
-    <bean name="/juxta/set/{id}/histogram" class="org.juxtasoftware.resource.HistogramResource" scope="prototype" autowire="byName" />
-    
     <!-- fragments -->
     <bean name="/juxta/{workspace}/set/{id}/diff/fragment" class="org.juxtasoftware.resource.FragmentResource" scope="prototype" autowire="byName" />
     <bean name="/juxta/set/{id}/diff/fragment" class="org.juxtasoftware.resource.FragmentResource" scope="prototype" autowire="byName" />
