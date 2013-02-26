@@ -153,7 +153,7 @@ public class SideBySideView implements FileDirectiveListener  {
         return "sidebyside-"+result;
     }
 
-    private void render(final ComparisonSet set ) throws IOException {
+    private void render(BackgroundTaskStatus status, final ComparisonSet set ) throws IOException {
         // special case! Only attempt to get and connect
         // differences if the comparands are different.
         Long leftWitId = this.witnessDetails.get(0).getId();
@@ -161,13 +161,16 @@ public class SideBySideView implements FileDirectiveListener  {
         if ( leftWitId.equals(rightWitId ) == false ) {
             // generate the change lists for each witness and
             // update the changes map with this data
-            generateWitnessChangeLists(set);
+            status.setNote("Generating witness change lists");
+            generateWitnessChangeLists(status, set);
     
             // find connections between changes in each witness
+            status.setNote("Aligning differences");
             connectChanges();
             
             // find any marked transpositions, connect them and
             // add them to the witness info
+            status.setNote("Adding transpositions");
             connectTranspositions(set);
         }
         
@@ -194,6 +197,7 @@ public class SideBySideView implements FileDirectiveListener  {
         map.put("witnesses", witnesses);
         
         // IMPORTANT: the last FALSE param tells the base not to GZIP the results.
+        status.setNote("Rendering results");
         Representation sbsFtl =  this.parent.toHtmlRepresentation("side_by_side.ftl", map, true, false);
         
         // Stream data into cache DB (this invalidates the reader), then stream it back out of
@@ -270,7 +274,7 @@ public class SideBySideView implements FileDirectiveListener  {
         }
     }
     
-    private void generateWitnessChangeLists(final ComparisonSet set) {
+    private void generateWitnessChangeLists(BackgroundTaskStatus status, final ComparisonSet set) {
         // get all of the alignments that involve one of the 
         // witnesses in this comparison. Split the changes into
         // separate lists for each
@@ -289,6 +293,7 @@ public class SideBySideView implements FileDirectiveListener  {
                 done = true;
             } else {
                 startIdx += this.visualizationBatchSize;
+                status.setNote("Processing "+this.visualizationBatchSize+" differences");
             }
             
             // copy small subset of alignment data into sbs witness info
@@ -581,7 +586,7 @@ public class SideBySideView implements FileDirectiveListener  {
             try {
                 LOG.info("Begin task "+this.name);
                 this.status.begin();
-                SideBySideView.this.render(set);
+                SideBySideView.this.render(this.status, set);
                 LOG.info("Task "+this.name+" COMPLETE");
                 this.endDate = new Date();   
                 this.status.finish();

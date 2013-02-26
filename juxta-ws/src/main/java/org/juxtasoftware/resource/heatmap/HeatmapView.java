@@ -253,7 +253,7 @@ public class HeatmapView  {
         return "heatmap-"+result;
     }
     
-    private void renderHeatMap(ComparisonSet set, Witness base, boolean condensed) throws IOException {
+    private void renderHeatMap(BackgroundTaskStatus status, ComparisonSet set, Witness base, boolean condensed) throws IOException {
                
         LOG.info("Rendering heatmap for "+set);
         
@@ -262,7 +262,7 @@ public class HeatmapView  {
         // supporting markup into the witness heatmap stream
         final ChangeInjector changeInjector = this.context.getBean(ChangeInjector.class);
         changeInjector.setWitnessCount( this.witnesses.size() );
-        changeInjector.initialize( generateHeatmapChangelist( set, base ) );
+        changeInjector.initialize( generateHeatmapChangelist(status, set, base ) );
 
         final NoteInjector noteInjector = this.context.getBean(NoteInjector.class);
         noteInjector.initialize( this.noteDao.find(base.getId()) );
@@ -289,6 +289,7 @@ public class HeatmapView  {
         StringBuilder line = new StringBuilder();
         boolean done = false;
         while ( done == false ) {
+            status.setNote("Writing results: "+Math.round(pos/base.getText().getLength()*100)+"% Complete");
             int data = reader.read();
             if ( data == -1 ) {
                 done = true;
@@ -376,7 +377,7 @@ public class HeatmapView  {
         return sb.toString();
     }
 
-    private List<Change> generateHeatmapChangelist(final ComparisonSet set, final Witness base) throws IOException {
+    private List<Change> generateHeatmapChangelist(BackgroundTaskStatus status, final ComparisonSet set, final Witness base) throws IOException {
         
         // init 
         List<Integer> zeroLen = new ArrayList<Integer>();
@@ -397,6 +398,7 @@ public class HeatmapView  {
             }
             
             LOG.info("Generate heatmap data for " + base + " vs " + wit);
+            status.setNote("Rendering  "+ base + " vs " + wit);
             boolean done = false;
             int startIdx = 0;
             while ( !done ) {
@@ -595,7 +597,7 @@ public class HeatmapView  {
             try {
                 LOG.info("Begin task "+this.name);
                 this.status.begin();
-                HeatmapView.this.renderHeatMap(set, base, condensed);
+                HeatmapView.this.renderHeatMap(this.status, set, base, condensed);
                 LOG.info("Task "+this.name+" COMPLETE");
                 this.endDate = new Date();   
                 this.status.finish();
