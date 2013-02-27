@@ -331,6 +331,10 @@ public class CacheDaoImpl implements CacheDao {
     
     @Override
     public void purgeExpired() {
+        if ( this.cacheLifespan < 0 ) {
+            LOG.info("Cache set to never expire; not purging");
+            return;
+        }
         try {
             final String sql = "delete from juxta_collation_cache where created < ( NOW() - INTERVAL "+this.cacheLifespan+" HOUR)";
             this.jdbcTemplate.update(sql);
