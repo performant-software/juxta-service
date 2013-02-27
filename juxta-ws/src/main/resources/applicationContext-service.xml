@@ -135,6 +135,6 @@
     
     <!-- Juxta WS version property -->
     <bean id="version" class="java.lang.String" factory-method="valueOf">
-        <constructor-arg value="1.7.8-BETA"/>
+        <constructor-arg value="1.7.9-BETA"/>
     </bean>
 </beans>

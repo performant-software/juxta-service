@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <xsl:stylesheet version="2.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" {NAMESPACE}>
     <xsl:output method="text" indent="no"/>
-    <xsl:strip-space elements="*"/>
     <xsl:variable name="new-line" select="'&#10;'" />
     <xsl:variable name="display-linebreak" select="'{LINEBREAK}'" />
     

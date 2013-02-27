@@ -395,34 +395,11 @@ public class JuxtaTagExtractor extends DefaultHandler  {
         if ( txt.length() == 0 ) {
             return;
         }
-        
-        // Mimic XSLT 1.0 logic for normalizing and preserving 1 leading/trailing space:
-        // remove last newline and trailing space (right trim formatting space)
+
         txt = txt.replaceAll("[\\n]\\s*$", "");
-        
-        // remove first newline and traiing whitespace (left trim formatting spaces)
-        txt = txt.replaceAll("^[\\n]\\s*", "");
-        
-        // Now throw away any other
+        txt = txt.replaceAll("^[\\n]\\s*$", "");
         txt = txt.replaceAll("\\n+", "");
-        if ( txt.length() > 0  ) {    
-            // see if the raw content has leading or trailing spaces
-            String leading = "";
-            if ( Character.isWhitespace(txt.charAt(0))) {
-                leading = " ";
-            }
-            String trailing = "";
-            if ( Character.isWhitespace(txt.charAt(txt.length()-1))) {
-                trailing = " ";
-            }
-            
-            // Do the equivalent of an XSLT 1.0 normalize space: trim
-            // all leading and trailing whitespace and all whitespace
-            // runs are cut to one space. If anything remains, append
-            // the leading and/or trailing space saved from above
-            txt = txt.trim().replaceAll("\\s+", " ");
-            txt = leading+txt+trailing;
-        }
+        txt = txt.replaceAll("\\s+", " ");
         
 //        if ( txt.length() > 0 ) {
 //            System.err.println("["+txt+"]");
