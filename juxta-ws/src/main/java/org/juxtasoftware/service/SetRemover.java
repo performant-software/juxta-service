@@ -20,7 +20,9 @@ public class SetRemover {
     @Autowired private MetricsHelper metrics;
     
     public void remove(Workspace ws, ComparisonSet set) throws ResourceException  {
-        if ( set.getStatus().equals(ComparisonSet.Status.COLLATING)) {
+        if ( set.getStatus().equals(ComparisonSet.Status.COLLATING) ||
+             set.getStatus().equals(ComparisonSet.Status.TOKENIZED) ||
+             set.getStatus().equals(ComparisonSet.Status.TOKENIZING) ) {
             throw new ResourceException(
                 Status.CLIENT_ERROR_CONFLICT,
                 "Cannot delete set; collation is in progress");
