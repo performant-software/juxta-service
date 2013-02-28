@@ -36,6 +36,8 @@ public class WikiTextUtils {
         String endMarker = "";
         String startMarker = "";
         int depth = 0;
+        boolean extractingCquote = false;
+        
         while (true) {
             String line = r.readLine();
             if ( line == null ) {
@@ -71,7 +73,18 @@ public class WikiTextUtils {
                 
                 line = stripCitationNeeded(line);
                 
-                StripResult sr = stripTag("[[", "File:", "]]", line);
+                StripResult sr = stripTag("{{", "cite", "}}", line);
+                if ( sr.depth != 0 ) {
+                    depth = sr.depth;
+                    endMarker = "}}";
+                    startMarker = "{{";
+                    strippingTag = true;
+                    continue;
+                } else {
+                    line = sr.strippedLine;
+                }
+                
+                sr = stripTag("[[", "File:", "]]", line);
                 if ( sr.depth != 0 ) {
                     depth = sr.depth;
                     endMarker = "]]";
@@ -91,6 +104,27 @@ public class WikiTextUtils {
                     continue;
                 } else {
                     line = sr.strippedLine;
+                }
+                
+                // cquotes
+                if ( extractingCquote ) {
+                    if ( line.indexOf("}}") > -1 ) {
+                        int pos = line.indexOf("}}");
+                        extractingCquote = false;
+                        line = line.substring(0,pos)+line.substring(pos+2);
+                    }
+                }
+                if ( line.contains("{{cquote")) {
+                    int pos = line.indexOf("{{cquote");
+                    int p2 = line.indexOf("|", pos);
+                    String front = line.substring(0, pos);
+                    String back = line.substring(p2+1);
+                    if ( back.indexOf("}}") > -1 ) {
+                        line = front+"\n\n"+ back.substring(0, back.indexOf("}}"))+"\n\n";
+                    } else {
+                        extractingCquote = true;
+                        line = front+"\n\n"+back;
+                    }
                 }
 
                 if ( strippingRef ) {
@@ -139,6 +173,8 @@ public class WikiTextUtils {
                     }
                     
                     if ( line.trim().length() > 0 ) {
+                        line = line.replaceAll("<br\\/>", "\n");
+                        line = line.replaceAll("<br \\/>", "\n");
                         line = line.replaceAll("\\{\\{.*\\}\\}","");
                         line += "\n";
                         osw.write(line);
@@ -160,10 +196,40 @@ public class WikiTextUtils {
         IOUtils.closeQuietly(fw);
         stripped.delete();
         
-        // Finally, turn the html into plain text
+        // Next, turn the html into plain text
         HtmlUtils.strip(html);
-        return HtmlUtils.toTxt( new FileInputStream(html) );
+        File txtFile = HtmlUtils.toTxt( new FileInputStream(html) );
+        
+        // Last, strip junk
+        return stripStrayJunk(txtFile);
+    }
 
+    private static File stripStrayJunk(File txtFile) throws IOException {
+        
+        File out = File.createTempFile("cleaned", "dat");
+        FileOutputStream fos = new FileOutputStream(out);
+        final  OutputStreamWriter osw = new OutputStreamWriter(fos, "UTF-8");
+        FileInputStream fis = new FileInputStream(txtFile);
+        InputStreamReader isr = new InputStreamReader(fis, "UTF-8");
+        BufferedReader r = new BufferedReader( isr );
+        while (true) {
+            String line = r.readLine();
+            if ( line == null ) {
+                break;
+            } else {
+                line = line.replaceAll("\\[.*\\|\\[", "");
+                line = line.replaceAll("\\[\\[", "");
+                line = line.replaceAll("\\]\\]", "");
+                line = line.replaceAll("<\\/ref>", "");
+                line = line.replaceAll("}}", "");
+                line += "\n";
+                osw.write(line);
+            }
+        }
+        IOUtils.closeQuietly( r );
+        IOUtils.closeQuietly( osw );
+        
+        return out;
     }
 
     private static StripResult stripTag(final String tagStart, final String tag, final String tagEnd, String line) {

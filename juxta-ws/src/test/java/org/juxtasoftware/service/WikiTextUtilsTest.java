@@ -27,6 +27,31 @@ public class WikiTextUtilsTest {
     }
     
     @Test
+    public void testBrStrip() throws Exception {
+        InputStream is = getClass().getResourceAsStream("/br.wiki");
+        File txt = WikiTextUtils.toTxt(is);
+        FileInputStream fis = new FileInputStream(txt);
+        final String content = IOUtils.toString(fis).trim();
+        IOUtils.closeQuietly(fis);
+        System.out.println(content);
+        txt.delete();
+        Assert.assertFalse(content.contains("<br"));
+    }
+    
+    @Test
+    public void testCQuote() throws Exception {
+        InputStream is = getClass().getResourceAsStream("/cquote.wiki");
+        File txt = WikiTextUtils.toTxt(is);
+        FileInputStream fis = new FileInputStream(txt);
+        final String content = IOUtils.toString(fis).trim();
+        IOUtils.closeQuietly(fis);
+        System.out.println(content);
+        txt.delete();
+        Assert.assertFalse(content.contains("{{cquote"));
+        Assert.assertTrue(content.contains("lush orchestration"));
+    }
+    
+    @Test
     public void testMultilineFileStrip() throws Exception {
         InputStream is = getClass().getResourceAsStream("/multiline_file.wiki");
         File txt = WikiTextUtils.toTxt(is);
