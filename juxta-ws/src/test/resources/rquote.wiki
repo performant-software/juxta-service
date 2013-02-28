@@ -1,0 +1,5 @@
+
+{{rquote|right|
+Right quote|
+[[Anonymity|Anonymous]]|''Rquote template page''}}
+{{rquote|left|Left quote|[[Anonymity|Anonymous]]|''Rquote template page''}}

@@ -36,7 +36,8 @@ public class WikiTextUtils {
         String endMarker = "";
         String startMarker = "";
         int depth = 0;
-        boolean extractingCquote = false;
+        boolean extractingQuote = false;
+        boolean discardQuoteData = false;
         
         while (true) {
             String line = r.readLine();
@@ -107,23 +108,49 @@ public class WikiTextUtils {
                 }
                 
                 // cquotes
-                if ( extractingCquote ) {
+                if ( discardQuoteData ) {
                     if ( line.indexOf("}}") > -1 ) {
                         int pos = line.indexOf("}}");
-                        extractingCquote = false;
+                        discardQuoteData = false;
+                        line = line.substring(pos+2);
+                    }
+                } else if ( extractingQuote ) {
+                    if ( line.indexOf("|") > -1 )  {
+                        extractingQuote = false;
+                        int p = line.indexOf("|");
+                        String before = line.substring(0, p);
+                        String after = line.substring(p+1);
+                        if ( after.indexOf("}}") > -1 ) {
+                            line = after.substring(after.indexOf("}}")+2);
+                        } else {
+                            discardQuoteData = true;
+                            line = before;
+                        }
+                    } else if ( line.indexOf("}}") > -1 ) {
+                        int pos = line.indexOf("}}");
+                        extractingQuote = false;
                         line = line.substring(0,pos)+line.substring(pos+2);
                     }
-                }
-                if ( line.contains("{{cquote")) {
-                    int pos = line.indexOf("{{cquote");
-                    int p2 = line.indexOf("|", pos);
-                    String front = line.substring(0, pos);
-                    String back = line.substring(p2+1);
-                    if ( back.indexOf("}}") > -1 ) {
-                        line = front+"\n\n"+ back.substring(0, back.indexOf("}}"))+"\n\n";
-                    } else {
-                        extractingCquote = true;
-                        line = front+"\n\n"+back;
+                } else {
+                    String quoteType = hasQuote(line);
+                    if ( quoteType != null) {
+                        int pos = line.indexOf("{{"+quoteType);
+                        int p2 = line.indexOf("|", pos);
+                        String front = line.substring(0, pos);
+                        String back = line.substring(p2+1);
+                        if ( quoteType.equals("rquote")) {
+                            p2 = back.indexOf("|");
+                            if ( p2 > -1 ) {
+                                back = back.substring(p2+1);
+                            }
+                        }
+
+                        if ( back.indexOf("}}") > -1 ) {
+                            line = front+"\n\n"+ cleanQuoteText(back)+"\n\n";
+                        } else {
+                            extractingQuote = true;
+                            line = front+"\n\n"+back;
+                        }
                     }
                 }
 
@@ -202,6 +229,24 @@ public class WikiTextUtils {
         
         // Last, strip junk
         return stripStrayJunk(txtFile);
+    }
+
+    private static String cleanQuoteText(String back) {
+        String clean = back.substring(0, back.indexOf("}}"));
+        if ( clean.indexOf("|") > -1) {
+            return clean.substring(0, clean.indexOf("|"));
+        }
+        return clean;
+    }
+
+    private static String hasQuote(String line) {
+        String[] quotes = {"cquote", "rquote", "quote"};
+        for ( int i=0; i<quotes.length; i++) {
+            if ( line.contains(quotes[i])) {
+                return quotes[i];
+            }
+        }
+        return null;
     }
 
     private static File stripStrayJunk(File txtFile) throws IOException {

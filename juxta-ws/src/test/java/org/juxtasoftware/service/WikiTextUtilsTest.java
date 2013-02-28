@@ -12,30 +12,42 @@ import org.juxtasoftware.util.WikiTextUtils;
 
 public class WikiTextUtilsTest {
 
-    @Test
-    public void simpleTextTransform() throws Exception {
-        InputStream is = getClass().getResourceAsStream("/simple.wiki");
-
-        File txt = WikiTextUtils.toTxt(is);
-
-        FileInputStream fis = new FileInputStream(txt);
-        final String content = IOUtils.toString(fis).trim();
-        IOUtils.closeQuietly(fis);
-        System.out.println(content);
-        txt.delete();
-        Assert.assertEquals("This is a Hello World example", content);
-    }
+//    @Test
+//    public void simpleTextTransform() throws Exception {
+//        InputStream is = getClass().getResourceAsStream("/simple.wiki");
+//
+//        File txt = WikiTextUtils.toTxt(is);
+//
+//        FileInputStream fis = new FileInputStream(txt);
+//        final String content = IOUtils.toString(fis).trim();
+//        IOUtils.closeQuietly(fis);
+//        System.out.println(content);
+//        txt.delete();
+//        Assert.assertEquals("This is a Hello World example", content);
+//    }
+//    
+//    @Test
+//    public void testBrStrip() throws Exception {
+//        InputStream is = getClass().getResourceAsStream("/br.wiki");
+//        File txt = WikiTextUtils.toTxt(is);
+//        FileInputStream fis = new FileInputStream(txt);
+//        final String content = IOUtils.toString(fis).trim();
+//        IOUtils.closeQuietly(fis);
+//        System.out.println(content);
+//        txt.delete();
+//        Assert.assertFalse(content.contains("<br"));
+//    }
     
     @Test
-    public void testBrStrip() throws Exception {
-        InputStream is = getClass().getResourceAsStream("/br.wiki");
+    public void testRQuote() throws Exception {
+        InputStream is = getClass().getResourceAsStream("/rquote.wiki");
         File txt = WikiTextUtils.toTxt(is);
         FileInputStream fis = new FileInputStream(txt);
         final String content = IOUtils.toString(fis).trim();
         IOUtils.closeQuietly(fis);
         System.out.println(content);
         txt.delete();
-        Assert.assertFalse(content.contains("<br"));
+        Assert.assertTrue(content.equals("Right quote\n\nLeft quote"));
     }
     
     @Test
@@ -49,6 +61,18 @@ public class WikiTextUtilsTest {
         txt.delete();
         Assert.assertFalse(content.contains("{{cquote"));
         Assert.assertTrue(content.contains("lush orchestration"));
+    }
+    
+    @Test
+    public void testQuote() throws Exception {
+        InputStream is = getClass().getResourceAsStream("/quote.wiki");
+        File txt = WikiTextUtils.toTxt(is);
+        FileInputStream fis = new FileInputStream(txt);
+        final String content = IOUtils.toString(fis).trim();
+        IOUtils.closeQuietly(fis);
+        System.out.println(content);
+        txt.delete();
+        Assert.assertTrue(content.equals("Cry Havoc and let slip the dogs of war."));
     }
     
     @Test
