@@ -61,13 +61,13 @@ public class UserAnnotationDaoImpl implements UserAnnotationDao, InitializingBea
         Extractor rse = new Extractor();
 
         StringBuilder sql = getFindSql();
-        sql.append(" where base_id=?");
+        sql.append(" where set_id=? and base_id=?");
         if ( r == null ) {
-            return this.jdbcTemplate.query(sql.toString(), rse, baseId );
+            return this.jdbcTemplate.query(sql.toString(), rse, set.getId(), baseId );
         }
         
         sql.append(" and range_start>=? and range_end<=?");
-        return this.jdbcTemplate.query(sql.toString(), rse, baseId, r.getStart(), r.getEnd() );
+        return this.jdbcTemplate.query(sql.toString(), rse, set.getId(), baseId, r.getStart(), r.getEnd() );
     }
     
     private StringBuilder getFindSql() {
