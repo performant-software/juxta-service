@@ -4,6 +4,14 @@
    font-weight: 200;
 }
 
+.wit-click-area {
+   cursor: pointer;
+}
+
+.base {
+   cursor: default;
+}
+
 .condensed-witnesses-popup {
    display: none;
    position: fixed;

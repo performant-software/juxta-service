@@ -577,9 +577,9 @@ $(function() {
          });
 
          // change base witness by clicking on name in witness list on left
-         $(".witness").on("click", function() {
-            var witnessId = $(this).attr("id").substring("witness-".length);
-            if ( $(this).hasClass("hidden-witness") ) {
+         $(".wit-click-area").on("click", function() {
+            var witnessId = $(this).find(".witness").attr("id").substring("witness-".length);
+            if ( $(this).find(".witness").hasClass("hidden-witness") ) {
                window.Juxta.Heatmap.toggleVisibility( $("#toggle-"+witnessId) );
             } else {
                reloadSet(witnessId);
