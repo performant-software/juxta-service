@@ -259,7 +259,7 @@ public class ComparisionSetDaoImpl extends JuxtaDaoImpl<ComparisonSet> implement
 
     @Override
     public void delete(final ComparisonSet set) {
-        set.setName(set.getName()+"-DELETED");
+        set.setName(set.getName()+"-DELETED-"+System.currentTimeMillis());
         set.setStatus(Status.DELETED);
         update(set);
         this.taskExecutor.execute(new Runnable() {

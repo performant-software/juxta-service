@@ -134,11 +134,11 @@ public class WikiTextUtils {
                 } else {
                     String quoteType = hasQuote(line);
                     if ( quoteType != null) {
-                        int pos = line.indexOf("{{"+quoteType);
+                        int pos = line.indexOf(quoteType);
                         int p2 = line.indexOf("|", pos);
                         String front = line.substring(0, pos);
                         String back = line.substring(p2+1);
-                        if ( quoteType.equals("rquote")) {
+                        if ( quoteType.equals("{{rquote")) {
                             p2 = back.indexOf("|");
                             if ( p2 > -1 ) {
                                 back = back.substring(p2+1);
@@ -240,7 +240,7 @@ public class WikiTextUtils {
     }
 
     private static String hasQuote(String line) {
-        String[] quotes = {"cquote", "rquote", "quote"};
+        String[] quotes = {"{{cquote", "{{rquote", "{{quote"};
         for ( int i=0; i<quotes.length; i++) {
             if ( line.contains(quotes[i])) {
                 return quotes[i];
