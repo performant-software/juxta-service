@@ -436,7 +436,56 @@ p.box-title {
    margin: 1px;
    float: left;
 }
-.add {
+.group-annotation {
+   font-size: 0.75em;
+   font-weight: 500;
+   background-color: white;
+   border-radius: 3px;
+   -mox-border-radius: 3px;
+   -webkit-border-radius: 3px;
+   border: 1px solid #999;
+   display:none;
+}
+.group-annotation .ua-toolbar {
+   text-align: center;
+   text-align: center;
+   background-color: #ccc;
+   border-radius: 3px 3px 0 0;
+   -mox-border-radius: 3px 3px 0 0;
+   -webkit-border-radius: 3px 3px 0 0;
+   border-bottom: 1px solid #999;
+}
+.group-edit-annotation {
+   border: 1px solid #999;
+   background-color: white;
+   border-radius: 3px;
+   -mox-border-radius: 3px;
+   -webkit-border-radius: 3px;
+   display:none;
+}
+.group-edit-annotation .ua-toolbar {
+   background-color: #ccc;
+   font-weight:500;
+   text-align: center;
+   border-bottom: 1px solid #999;
+   font-size: 0.65em;
+   color: #444;
+   -webkit-border-radius: 3px 3px 0 0;
+   border-radius: 3px 3px 0 0;
+   -mox-border-radius: 3px 3px 0 0;
+}
+div.group-del-annotation {
+   font-weight: 400;
+   background-color: #dfdfdf;
+   -webkit-border-radius: 0 3px;
+   -mox-border-radius: 0 3px;
+   border-radius: 0 3px;
+   border-top: 1px solid #999;
+   color: #444;
+   padding: 2px 2px 2px 5px;
+   display:none;
+}
+.add, .edit {
    float: right;
    padding: 3px;
    cursor: pointer;
@@ -447,7 +496,7 @@ p.box-title {
    background-repeat: no-repeat;
    background-position: 0;
 }
-p.hm-del-anno {
+.del {
    float: right;
    padding: 3px;
    cursor: pointer;
@@ -490,9 +539,9 @@ div.ua-toolbar {
 }
 .ua-toolbar span {
    position: relative;
-top: 1px;
-left: 4px;
-color: #888;
+      top: 1px;
+      left: 4px;
+      color: #888;
 }
 p.box-content {
    margin: 0;

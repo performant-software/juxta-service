@@ -34,7 +34,7 @@
             <div class="ua-toolbar">
                <span>Annotation</span>
                <p class="hm-anno edit" id="edit-anno-${i}" title="Edit annotation"/>
-               <p class="hm-del-anno" id="del-anno-${i}" title="Delete annotation"/>
+               <p class="hm-del-anno del" id="del-anno-${i}" title="Delete annotation"/>
                <div style="clear:both"></div>
             </div>
             <p class="box-annotation" id="box-anno-${i}"/>
@@ -62,7 +62,7 @@
    
    <div class="group-edit-annotation">
       <div class="ua-toolbar">
-         <span>Add Annotation</span>
+         Add Group Annotation
       </div>
       <textarea class="annotation-editor group"></textarea>
       <div class="anno-buttons">
@@ -71,11 +71,19 @@
          <div style="clear:both"></div>
       </div>
    </div>
-   <div class="group-del-annotation">
-      <span>Delete annotation?</span>
-      <a class="del-anno-ok-button juxta-button sbs-button">Yes</a>
-      <a class="del-anno-cancel-button juxta-button sbs-button">No</a>
-      <div style="clear:both"></div>
+   <div class="group-annotation">
+      <div class="ua-toolbar">Group Annotation
+         <p class="group-anno edit" title="Edit annotation"/>
+         <p class="group-del-anno del" title="Delete annotation"/>
+         <div style="clear:both"></div>
+      </div>
+      <p class="box-annotation">This is a fake group annotation!</p>
+      <div class="group-del-annotation">
+         Delete annotation?
+         <a class="del-anno-ok-button juxta-button sbs-button">Yes</a>
+         <a class="del-anno-cancel-button juxta-button sbs-button">No</a>
+         <div style="clear:both"></div>
+      </div>
    </div>
    
 </div>

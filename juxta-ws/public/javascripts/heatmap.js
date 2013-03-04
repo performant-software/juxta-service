@@ -645,6 +645,15 @@ $(function() {
          event.stopPropagation();
          var diffNum =  $(this).attr("id");
          diffNum = diffNum.substring( diffNum.lastIndexOf("-")+1);
+         if ( $(this).hasClass("edit") ) {
+            $("#box-annotation-"+diffNum).hide();
+            $("#box-edit-annotation-"+diffNum+" .ua-toolbar span").text("Edit Annotation");
+            $("#annotation-editor-"+diffNum).val($("#box-anno-"+diffNum).text());
+         } else {
+            $("#box-edit-annotation-"+diffNum+" .ua-toolbar span").text("Add Annotation");
+            $("#box-anno-"+diffNum).text("");
+            $("#annotation-editor-"+diffNum).val("");
+         }
          $("#box-edit-annotation-"+diffNum).show();
          $("#annotation-editor-"+diffNum).focus();
          var bot = $("#box-edit-annotation-"+diffNum).position().top + $("#box-edit-annotation-"+diffNum).outerHeight();
@@ -675,7 +684,12 @@ $(function() {
       });
       $(".anno-cancel-button").on("click", function(event) {
          event.stopPropagation();
-         $(this).closest(".box-edit-annotation").hide();
+         var p = $(this).closest(".box-edit-annotation");
+         var diffNum = p.attr("id").substring("box-edit-annotation-".length);
+         if ( p.find("span").text().indexOf("Edit ") > -1 ) {
+            $("#box-annotation-"+diffNum).show();  
+         }
+         p.hide();
       });
       
       // del anno
