@@ -17,7 +17,7 @@
 </#if>
 
 <div class="margin-boxes<#if condensed> condensed</#if>" id="margin-boxes">
-   <p class="diffs-title">Witness Differences</p>
+   <p class="diffs-title">Witness Differences <span class="group-anno add" id="group-add-anno" title="Add annotation to all"/> </p>
    <#assign x=numWitnesses>
    <#list 1..x as i>
       <div class="margin-box<#if condensed> condensed</#if>" id="box-${i}">
@@ -59,4 +59,23 @@
       </div>
    </#list>
    <div style="clear:both"></div>
+   
+   <div class="group-edit-annotation">
+      <div class="ua-toolbar">
+         <span>Add Annotation</span>
+      </div>
+      <textarea class="annotation-editor group"></textarea>
+      <div class="anno-buttons">
+         <a class="anno-ok-button juxta-button sbs-button">OK</a>
+         <a class="anno-cancel-button juxta-button sbs-button">Cancel</a>
+         <div style="clear:both"></div>
+      </div>
+   </div>
+   <div class="group-del-annotation">
+      <span>Delete annotation?</span>
+      <a class="del-anno-ok-button juxta-button sbs-button">Yes</a>
+      <a class="del-anno-cancel-button juxta-button sbs-button">No</a>
+      <div style="clear:both"></div>
+   </div>
+   
 </div>

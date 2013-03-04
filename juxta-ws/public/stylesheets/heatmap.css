@@ -436,7 +436,7 @@ p.box-title {
    margin: 1px;
    float: left;
 }
-p.hm-anno {
+.add {
    float: right;
    padding: 3px;
    cursor: pointer;
