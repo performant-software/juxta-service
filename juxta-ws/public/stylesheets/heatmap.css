@@ -381,13 +381,35 @@ span.note-anchor-highlighted {
 
 /* Large box containing a group of note boxes */
 div.margin-boxes {
-   padding: 0;
+   padding: 6px 3px 3px 3px;
    float: right;
-   width: 28%;
-   height: 100%;
+   width: 26%;
    display: none;
+   background-color: #eee;
+   border-radius: 5px;
+   -mox-border-radius: 5px;
+   -webkit-border-radius: 5px;
+   margin-right: 2px;
+   border: 1px solid #999;
+}
+p.diffs-title {
+   margin: 0 0 3px 0;
+   font-size: 0.75em;
+   position: relative;
+   top: -3px;
+   text-align: center;
+   font-weight: 500;
+   background-color: #ccc;
+   color: #444;
+   padding: 0;
+   border: 1px solid #999;
+   border-radius: 5px 5px 0 0;
+   -mox-border-radius: 5px 5px 0 0;
+   -webkit-border-radius: 5px 5px 0 0;
 }
 div.margin-box {
+   margin: 0px auto 5px auto;
+   background-color: white;
    border-radius: 3px;
    -mox-border-radius: 3px;
    -webkit-border-radius: 3px;
@@ -395,10 +417,6 @@ div.margin-box {
    font: 12px "Helvetica Neue", Helvetica, Arial, sans-serif;
    font-weight: 200;
    line-height: 1.2;
-   margin-bottom: 0.35em;
-   -moz-box-shadow: 2px 2px 2px #999;
-   -webkit-box-shadow: 2px 2px 2px #999;
-   box-shadow: 2px 2px 2px #999;
    display:none;
 }
 div.box-title-bar {
@@ -586,11 +604,14 @@ span.heatmap {
    border-radius: 5px;
    padding: 0px;
 }
-#annotation-editor {
+.annotation-editor {
    height: 65px;
-   width: 93.5%;
-   margin: 5px 5px 0px 5px;
+   margin: 0;
+   border: 1px solid #ccc;
    resize: none;
+   outline: 0;
+   width: 93%;
+   margin: 5px 2% 0 2%;
 }
 #confirm-overlay {
    z-index: 999;

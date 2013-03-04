@@ -350,6 +350,10 @@ $(function() {
             var scrollPos = $(".heatmap-scroller").position().top;
             var scrollTop = $(".heatmap-scroller").scrollTop();
             var boxTop = src.position().top - scrollPos + scrollTop;
+            $("#margin-boxes").css({
+               position : "relative",
+               top : boxTop
+            });
 
             // fill boxes with change data
             var idx;
@@ -375,13 +379,8 @@ $(function() {
                
                var txtEle = $('#box-txt-' + boxId);
                txtEle.html(diff.fragment);
-
-               if ($("#condensed").text() === 'false') {
-                  showAndAlign(boxTop, $("#box-" + boxId), 'margin-box', $("#margin-boxes"));
-                  boxTop = boxTop + 5;
-               } else {
-                  $("#box-" + boxId).show();
-               }
+   
+               $("#box-" + boxId).show();
             }
 
             if ($("#condensed").text() === 'true') {
@@ -647,13 +646,13 @@ $(function() {
          var diffNum =  $(this).attr("id");
          diffNum = diffNum.substring( diffNum.lastIndexOf("-")+1);
          $("#box-edit-annotation-"+diffNum).show();
-         $("#annotation-editor").focus();
+         $("#annotation-editor-"+diffNum).focus();
          var bot = $("#box-edit-annotation-"+diffNum).position().top + $("#box-edit-annotation-"+diffNum).outerHeight();
          if (bot > $("#heatmap-scroller").height()) {
             $("#heatmap-scroller").height(bot);
          }
       });
-      $("#anno-ok-button").on("click", function(event) {
+      $(".anno-ok-button").on("click", function(event) {
          event.stopPropagation();
          var owner = $(this).closest(".box-edit-annotation");
          var diffId = owner.attr("id").substring("box-edit-annotation-".length);
@@ -661,7 +660,7 @@ $(function() {
          var r = $("#heatmap-text .heatmap.active").attr("juxta:range").split(",");
          data.baseId = $("#baseId").text();
          data.baseRange = { start: r[0], end: r[1]};
-         data.notes = [ { witnessId: $("#mb-wit-id-"+diffId).text(), note: $("#annotation-editor").val()} ];
+         data.notes = [ { witnessId: $("#mb-wit-id-"+diffId).text(), note: $("#annotation-editor-"+diffId).val()} ];
          $.ajax({
            type: "POST",
            url: $('#ajax-base-url').text() + $('#setId').text() + $('#annotate-segment').text(),
@@ -669,12 +668,12 @@ $(function() {
            contentType : 'application/json',
            success: function() {  
               owner.hide();
-              showAnnotation(diffId, $("#annotation-editor").val()); 
+              showAnnotation(diffId, $("#annotation-editor-"+diffId).val()); 
               $("#annotations-button").show();
            }
          });         
       });
-      $("#anno-cancel-button").on("click", function(event) {
+      $(".anno-cancel-button").on("click", function(event) {
          event.stopPropagation();
          $(this).closest(".box-edit-annotation").hide();
       });
@@ -688,11 +687,11 @@ $(function() {
          $("#src-mb-num").text( diffNum );
          $("#box-del-annotation-"+diffNum).show();
       });
-      $("#del-anno-cancel-button").on("click", function(event) {
+      $(".del-anno-cancel-button").on("click", function(event) {
          event.stopPropagation();
          $(this).closest(".box-del-annotation").hide();
       });
-      $("#del-anno-ok-button").on("click", function(event) {
+      $(".del-anno-ok-button").on("click", function(event) {
          event.stopPropagation();
          var owner = $(this).closest(".box-del-annotation");
          var diffId = owner.attr("id").substring("box-del-annotation-".length);
