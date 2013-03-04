@@ -131,35 +131,11 @@
         
 </div>
 
-      
-<!-- popups for adding/deleting annotations -->
-<span id="src-mb-wit-id" style="display:none"></span>
-<span id="src-mb-num" style="display:none"></span>
-<div class="edit-annotation-popup">
-    <div class="header">Enter annotation</div>
-    <textarea id="annotation-editor"></textarea>
-    <div class="popup-buttons">
-        <a id="anno-ok-button" class="juxta-button sbs-button">OK</a>
-        <a id="anno-cancel-button" class="juxta-button sbs-button">Cancel</a>
-        <div style="clear:both"></div>
-    </div>
-</div>
-<div id="delete-annotation-popup">
-   <div class="header">Confirm</div>
-   <p>Delete this annotation?</p>
-   <div class="popup-buttons">
-      <a id="del-anno-ok-button" class="juxta-button sbs-button">Yes</a>
-      <a id="del-anno-cancel-button" class="juxta-button sbs-button">No</a>
-      <div style="clear:both"></div>
-   </div>
-</div>
 <!-- overlay for browsing user annotations -->
 <div id="annotation-browser" style="display: none">
    <div id="ua-scroller">
    </div>
 </div>
-
-
 
 <div style="clear: both;"></div>
 

@@ -630,7 +630,7 @@ $(function() {
       // clicks on background clear boxes
       // and revert to note display
       $("body").click(function() {
-         if ( $(".edit-annotation-popup").is(":visible") === false ) {
+         if ( $(".box-edit-annotation").is(":visible") === false && $(".box-del-annotation").is(":visible") === false) {
             clearBoxes();
          }
       });
@@ -646,79 +646,68 @@ $(function() {
          event.stopPropagation();
          var diffNum =  $(this).attr("id");
          diffNum = diffNum.substring( diffNum.lastIndexOf("-")+1);
-         $("#src-mb-wit-id").text(  $("#mb-wit-id-"+diffNum).text() );
-         $("#src-mb-num").text( diffNum );
-         $(".edit-annotation-popup").css("left", $("#heatmap-scroller").position().left+($("#heatmap-scroller").width() - $(".edit-annotation-popup").width()) / 2);
-         $(".edit-annotation-popup").css("top",  $("#heatmap-scroller").position().top+($("#heatmap-scroller").height()-$(".edit-annotation-popup").outerHeight(true)) / 2);
-         addOverlay();
-
-         var txt = "";
-         if ( $(this).hasClass("edit") ) {
-            var srcNum = $("#src-mb-num").text();
-            txt = $("#box-anno-"+ srcNum).text();
-         }
-         $("#annotation-editor").val( $.trim(txt) );
-         $(".edit-annotation-popup").show();
+         $("#box-edit-annotation-"+diffNum).show();
          $("#annotation-editor").focus();
+         var bot = $("#box-edit-annotation-"+diffNum).position().top + $("#box-edit-annotation-"+diffNum).outerHeight();
+         if (bot > $("#heatmap-scroller").height()) {
+            $("#heatmap-scroller").height(bot);
+         }
       });
       $("#anno-ok-button").on("click", function(event) {
          event.stopPropagation();
+         var owner = $(this).closest(".box-edit-annotation");
+         var diffId = owner.attr("id").substring("box-edit-annotation-".length);
          var data = {};
          var r = $("#heatmap-text .heatmap.active").attr("juxta:range").split(",");
          data.baseId = $("#baseId").text();
          data.baseRange = { start: r[0], end: r[1]};
-         data.notes = [ { witnessId: $("#src-mb-wit-id").text(), note: $("#annotation-editor").val()} ];
+         data.notes = [ { witnessId: $("#mb-wit-id-"+diffId).text(), note: $("#annotation-editor").val()} ];
          $.ajax({
            type: "POST",
            url: $('#ajax-base-url').text() + $('#setId').text() + $('#annotate-segment').text(),
            data: JSON.stringify(data),
            contentType : 'application/json',
            success: function() {  
-              $("#hm-overlay").remove();
-              $(".edit-annotation-popup").hide();
-              showAnnotation($("#src-mb-num").text(), $("#annotation-editor").val()); 
+              owner.hide();
+              showAnnotation(diffId, $("#annotation-editor").val()); 
               $("#annotations-button").show();
            }
          });         
       });
       $("#anno-cancel-button").on("click", function(event) {
          event.stopPropagation();
-         $("#hm-overlay").remove();
-         $(".edit-annotation-popup").hide();
-         $("#annotation-editor").val("");
+         $(this).closest(".box-edit-annotation").hide();
       });
+      
+      // del anno
       $(".hm-del-anno").on("click", function(event) {
          event.stopPropagation();  
-         var b = $(this).closest(".margin-box");
-         var diffNum =  $(this).attr("id").substring("del-anno-".length);
+         var diffNum =  $(this).attr("id");
+         diffNum = diffNum.substring( diffNum.lastIndexOf("-")+1);
          $("#src-mb-wit-id").text(  $("#mb-wit-id-"+diffNum).text() );
          $("#src-mb-num").text( diffNum );
-         $("#delete-annotation-popup").css("left", $("#heatmap-scroller").position().left+($("#heatmap-scroller").width() - $("#delete-annotation-popup").width()) / 2);
-         $("#delete-annotation-popup").css("top",  $("#heatmap-scroller").position().top+($("#heatmap-scroller").height()-$("#delete-annotation-popup").outerHeight(true)) / 2);
-         addOverlay();
-         $("#delete-annotation-popup").show();
+         $("#box-del-annotation-"+diffNum).show();
       });
       $("#del-anno-cancel-button").on("click", function(event) {
          event.stopPropagation();
-         $("#delete-annotation-popup").hide();
-         $("#hm-overlay").remove();
+         $(this).closest(".box-del-annotation").hide();
       });
       $("#del-anno-ok-button").on("click", function(event) {
          event.stopPropagation();
+         var owner = $(this).closest(".box-del-annotation");
+         var diffId = owner.attr("id").substring("box-del-annotation-".length);
          var url = $('#ajax-base-url').text() + $('#setId').text() + $('#annotate-segment').text();
          var r = $("#heatmap-text .heatmap.active").attr("juxta:range").split(",");
-         url = url + "?base="+$("#baseId").text()+"&range="+r+"&witness="+$("#src-mb-wit-id").text();
+         url = url + "?base="+$("#baseId").text()+"&range="+r+"&witness="+$("#mb-wit-id-"+diffId).text();
          $.ajax({
            type: "DELETE",
            url: url,
            success: function( resp ) { 
-              $(".edit-annotation-popup").hide();
-              $("#delete-annotation-popup").hide();
-              $("#hm-overlay").remove();
-              $("#box-anno-"+ $("#src-mb-num").text() ).text("");
-              $("#box-annotation-"+ $("#src-mb-num").text() ).hide();
+              $("#box-anno-"+ diffId ).text("");
+              $("#box-annotation-"+diffId).hide();
+              $(owner).hide();
               if ( $("#show-annotation-controls").text() === "yes") {
-                  $("#add-anno-"+ $("#src-mb-num").text() ).show();
+                  $("#add-anno-"+ diffId).show();
               }
               if ( parseInt(resp,10) === 0) {
                  $("#annotations-button").hide();
