@@ -506,6 +506,9 @@ $(function() {
       $(".anno-ok-button").on("click", function(event) {
          event.stopPropagation();
          var owner = $(this).closest(".box-edit-annotation");
+         // TODO detect owner doesn't exist. this means its a group add/edit
+         // set the witness id to 0 (or add some flag to indicate that this is for all witnesses)
+         // update server to handle it
          var diffId = owner.attr("id").substring("box-edit-annotation-".length);
          var data = {};
          var r = $("#heatmap-text .heatmap.active").attr("juxta:range").split(",");
