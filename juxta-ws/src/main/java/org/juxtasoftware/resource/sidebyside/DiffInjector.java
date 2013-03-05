@@ -51,6 +51,8 @@ public class DiffInjector implements OverlapInjector<Change> {
             line.append("</span>");
             line.append("<span id=\"diff-").append(this.currChange.getId()).append("-continued\"");
             line.append(" class=\"diff\"");
+            line.append(" juxta:range=\"").append(this.currChange.getRange().getStart());
+            line.append(",").append(this.currChange.getRange().getEnd()).append("\"");
             line.append(" juxta:connect-to=\"").append(this.currChange.getConnectedId()).append("\"").append("\">");
         }
     }
@@ -65,6 +67,10 @@ public class DiffInjector implements OverlapInjector<Change> {
                     typeStr = "change";
                 }
                 line.append(" class=\"diff "+typeStr +"\"");
+                
+                line.append(" juxta:range=\"").append(this.currChange.getRange().getStart());
+                line.append(",").append(this.currChange.getRange().getEnd()).append("\"");
+                
                 line.append(" juxta:connect-to=\"").append(currChange.getConnectedId()).append("\"").append("\">");
                 this.tagStarted = true;
                 return true;
