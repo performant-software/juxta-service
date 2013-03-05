@@ -271,7 +271,7 @@ $(function() {
    var showAnnotation = function(id, note) {
       if ( id === null ) {
          $('.box-annotation.group').text(note);
-         $('.box-annotation.group').show(); 
+         $('.group-annotation').show(); 
          if ( $("#show-annotation-controls").text() === "yes") {
             $(".group-del-anno").show();  
             $(".group-anno.anno-edit").show();  
@@ -364,6 +364,10 @@ $(function() {
             if ( jsonData.groupAnnotation.length > 0) {
                $(".box-annotation.group").text( jsonData.groupAnnotation );
                $(".group-annotation").show();
+               $("#group-add-anno").hide();
+            } else {
+               $(".group-annotation").hide();
+               $("#group-add-anno").show();
             }
 
             // figure out the top pos of the clicked diff within the scroll div
@@ -495,8 +499,11 @@ $(function() {
       $(".group-anno").on("click", function(event) {
          event.stopPropagation();
          if ( $(this).hasClass("anno-edit") ) {
+            $(".group-annotation").hide();
+            $(".group-edit-annotation .ua-toolbar").text("Edit Group Annotation");
+            $(".annotation-editor.group").val($(".box-annotation.group").text());
          } else {
-            $(".group-edit-annotation .ua-toolbar span").text("Add Group Annotation");
+            $(".group-edit-annotation .ua-toolbar").text("Add Group Annotation");
             $(".annotation-editor.group").val("");
          }
          $(".group-edit-annotation").show();
@@ -536,6 +543,7 @@ $(function() {
             diffId = owner.attr("id").substring("box-edit-annotation-".length);
             data.notes = [ { witnessId: $("#mb-wit-id-"+diffId).text(), note: $("#annotation-editor-"+diffId).val()} ];
          } else {
+            owner = $(this).closest(".group-edit-annotation");
             data.notes = [ { witnessId: "0", note: $(".annotation-editor.group").val()} ];    
          }
          
@@ -546,7 +554,7 @@ $(function() {
            contentType : 'application/json',
            success: function() {  
               owner.hide();
-              showAnnotation(diffId, $("#annotation-editor-"+diffId).val());
+              showAnnotation(diffId, data.notes[0].note);
               $("#annotations-button").show();
            }
          });         
@@ -562,43 +570,70 @@ $(function() {
             p.hide();
          } else { 
              p = $(this).closest(".group-edit-annotation");
+             if ( p.find(".ua-toolbar").text().indexOf("Edit ") > -1 ) {
+               $(".group-annotation").show(); 
+             }
              p.hide();
          }
       });
    };
    
    var initDelAnnotation = function() {
+      $(".group-del-anno").on("click", function(event) {
+         event.stopPropagation();  
+         $(".group-del-annotation").show();
+      });
+      
       $(".hm-del-anno").on("click", function(event) {
          event.stopPropagation();  
          var diffNum =  $(this).attr("id");
          diffNum = diffNum.substring( diffNum.lastIndexOf("-")+1);
-         $("#src-mb-wit-id").text(  $("#mb-wit-id-"+diffNum).text() );
-         $("#src-mb-num").text( diffNum );
          $("#box-del-annotation-"+diffNum).show();
       });
+      
       $(".del-anno-cancel-button").on("click", function(event) {
          event.stopPropagation();
-         $(this).closest(".box-del-annotation").hide();
+         var p = $(this).closest(".box-del-annotation").hide();
+         if ( p.exists()) {
+            p.hide();
+         } else {
+            $(this).closest(".group-del-annotation").hide();
+         }
       });
+      
       $(".del-anno-ok-button").on("click", function(event) {
          event.stopPropagation();
          var owner = $(this).closest(".box-del-annotation");
-         var diffId = owner.attr("id").substring("box-del-annotation-".length);
          var url = $('#ajax-base-url').text() + $('#setId').text() + $('#annotate-segment').text();
          var r = $("#heatmap-text .heatmap.active").attr("juxta:range").split(",");
-         url = url + "?base="+$("#baseId").text()+"&range="+r+"&witness="+$("#mb-wit-id-"+diffId).text();
+         url = url + "?base="+$("#baseId").text()+"&range="+r;
+         var diffId = null;
+         if ( owner.exists() ) {
+            diffId = owner.attr("id").substring("box-del-annotation-".length);
+            url = url + "&witness="+$("#mb-wit-id-"+diffId).text();
+         } else {
+            owner = $(this).closest(".group-del-annotation");
+            url = url + "&witness=0";
+         }
+         
          $.ajax({
            type: "DELETE",
            url: url,
            success: function( resp ) { 
-              $("#box-anno-"+ diffId ).text("");
-              $("#box-annotation-"+diffId).hide();
-              $(owner).hide();
-              if ( $("#show-annotation-controls").text() === "yes") {
-                  $("#add-anno-"+ diffId).show();
-              }
               if ( parseInt(resp,10) === 0) {
                  $("#annotations-button").hide();
+              }
+              $(owner).hide();
+              if ( diffId !== null ) {
+                 $("#box-annotation-"+diffId).hide();
+                 if ( $("#show-annotation-controls").text() === "yes") {
+                     $("#add-anno-"+ diffId).show();
+                 }
+              } else {
+                 $(".group-annotation").hide();
+                 if ( $("#show-annotation-controls").text() === "yes") {
+                     $("#group-add-anno").show();
+                 }
               }
            }
          });        
@@ -763,7 +798,8 @@ $(function() {
       // clicks on background clear boxes
       // and revert to note display
       $("body").click(function() {
-         if ( $(".box-edit-annotation").is(":visible") === false && $(".box-del-annotation").is(":visible") === false && $(".group-edit-annotation").is(":visible")===false) {
+         if ( $(".box-edit-annotation").is(":visible") === false && $(".box-del-annotation").is(":visible") === false && 
+              $(".group-edit-annotation").is(":visible")===false && $(".group-del-annotation").is(":visible")===false)  {
             clearBoxes();
          }
       });
