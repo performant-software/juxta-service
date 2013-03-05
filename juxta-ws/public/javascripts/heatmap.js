@@ -269,16 +269,30 @@ $(function() {
    };
    
    var showAnnotation = function(id, note) {
-      $('#box-anno-' + id).text(note);
-      $('#box-annotation-' + id).show();   
-      if ( $("#show-annotation-controls").text() === "yes") {
-         $('#del-anno-' + id).show();  
-         $("#edit-anno-" + id).show();  
-         $("#add-anno-" + id).hide();  
+      if ( id === null ) {
+         $('.box-annotation.group').text(note);
+         $('.box-annotation.group').show(); 
+         if ( $("#show-annotation-controls").text() === "yes") {
+            $(".group-del-anno").show();  
+            $(".group-anno.anno-edit").show();  
+            $("#group-add-anno").hide();  
+         } else {
+            $(".group-del-anno").hide();  
+            $(".group-anno.anno-edit").hide();  
+            $("#group-add-anno").show(); 
+         }    
       } else {
-         $('#del-anno-' + id).hide();  
-         $("#edit-anno-" + id).hide();  
-         $("#add-anno-" + id).hide(); 
+         $('#box-anno-' + id).text(note);
+         $('#box-annotation-' + id).show();   
+         if ( $("#show-annotation-controls").text() === "yes") {
+            $('#del-anno-' + id).show();  
+            $("#edit-anno-" + id).show();  
+            $("#add-anno-" + id).hide();  
+         } else {
+            $('#del-anno-' + id).hide();  
+            $("#edit-anno-" + id).hide();  
+            $("#add-anno-" + id).show(); 
+         }
       }
    };
    
@@ -474,7 +488,7 @@ $(function() {
    var initAddAnnotation = function() {
       $(".group-anno").on("click", function(event) {
          event.stopPropagation();
-         if ( $(this).hasClass("edit") ) {
+         if ( $(this).hasClass("anno-edit") ) {
          } else {
             $(".group-edit-annotation .ua-toolbar span").text("Add Group Annotation");
             $(".annotation-editor.group").val("");
@@ -487,7 +501,7 @@ $(function() {
          event.stopPropagation();
          var diffNum =  $(this).attr("id");
          diffNum = diffNum.substring( diffNum.lastIndexOf("-")+1);
-         if ( $(this).hasClass("edit") ) {
+         if ( $(this).hasClass("anno-edit") ) {
             $("#box-annotation-"+diffNum).hide();
             $("#box-edit-annotation-"+diffNum+" .ua-toolbar span").text("Edit Annotation");
             $("#annotation-editor-"+diffNum).val($("#box-anno-"+diffNum).text());
@@ -506,15 +520,19 @@ $(function() {
       $(".anno-ok-button").on("click", function(event) {
          event.stopPropagation();
          var owner = $(this).closest(".box-edit-annotation");
-         // TODO detect owner doesn't exist. this means its a group add/edit
-         // set the witness id to 0 (or add some flag to indicate that this is for all witnesses)
-         // update server to handle it
-         var diffId = owner.attr("id").substring("box-edit-annotation-".length);
          var data = {};
+         var diffId = null;
          var r = $("#heatmap-text .heatmap.active").attr("juxta:range").split(",");
          data.baseId = $("#baseId").text();
          data.baseRange = { start: r[0], end: r[1]};
-         data.notes = [ { witnessId: $("#mb-wit-id-"+diffId).text(), note: $("#annotation-editor-"+diffId).val()} ];
+         
+         if ( owner.exists() ) {
+            diffId = owner.attr("id").substring("box-edit-annotation-".length);
+            data.notes = [ { witnessId: $("#mb-wit-id-"+diffId).text(), note: $("#annotation-editor-"+diffId).val()} ];
+         } else {
+            data.notes = [ { witnessId: "0", note: $(".annotation-editor.group").val()} ];    
+         }
+         
          $.ajax({
            type: "POST",
            url: $('#ajax-base-url').text() + $('#setId').text() + $('#annotate-segment').text(),
@@ -522,7 +540,7 @@ $(function() {
            contentType : 'application/json',
            success: function() {  
               owner.hide();
-              showAnnotation(diffId, $("#annotation-editor-"+diffId).val()); 
+              showAnnotation(diffId, $("#annotation-editor-"+diffId).val());
               $("#annotations-button").show();
            }
          });         

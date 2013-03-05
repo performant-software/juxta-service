@@ -485,7 +485,7 @@ div.group-del-annotation {
    padding: 2px 2px 2px 5px;
    display:none;
 }
-.add, .edit {
+.anno-add, .anno-edit {
    float: right;
    padding: 3px;
    cursor: pointer;
@@ -496,7 +496,7 @@ div.group-del-annotation {
    background-repeat: no-repeat;
    background-position: 0;
 }
-.del {
+.anno-del {
    float: right;
    padding: 3px;
    cursor: pointer;

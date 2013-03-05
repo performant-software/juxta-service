@@ -17,7 +17,7 @@
 </#if>
 
 <div class="margin-boxes<#if condensed> condensed</#if>" id="margin-boxes">
-   <p class="diffs-title">Witness Differences <span class="group-anno add" id="group-add-anno" title="Add annotation to all"/> </p>
+   <p class="diffs-title">Witness Differences <span class="group-anno anno-add" id="group-add-anno" title="Add annotation to all"/> </p>
    <#assign x=numWitnesses>
    <#list 1..x as i>
       <div class="margin-box<#if condensed> condensed</#if>" id="box-${i}">
@@ -25,7 +25,7 @@
             <span id="mb-wit-id-${i}" style="display:none">id</span>
             <p class="box-title" id="box-title-${i}">t</p>
             <#if !condensed>
-               <p class="hm-anno add" id="add-anno-${i}" title="Add annotation"/>
+               <p class="hm-anno anno-add" id="add-anno-${i}" title="Add annotation"/>
             </#if>
             <div style="clear:both"></div>
          </div>
@@ -33,8 +33,8 @@
          <div class="box-annotation" id="box-annotation-${i}">
             <div class="ua-toolbar">
                <span>Annotation</span>
-               <p class="hm-anno edit" id="edit-anno-${i}" title="Edit annotation"/>
-               <p class="hm-del-anno del" id="del-anno-${i}" title="Delete annotation"/>
+               <p class="hm-anno anno-edit" id="edit-anno-${i}" title="Edit annotation"/>
+               <p class="hm-del-anno anno-del" id="del-anno-${i}" title="Delete annotation"/>
                <div style="clear:both"></div>
             </div>
             <p class="box-annotation" id="box-anno-${i}"/>
@@ -73,11 +73,11 @@
    </div>
    <div class="group-annotation">
       <div class="ua-toolbar">Group Annotation
-         <p class="group-anno edit" title="Edit annotation"/>
-         <p class="group-del-anno del" title="Delete annotation"/>
+         <p class="group-anno anno-edit" title="Edit annotation"/>
+         <p class="group-del-anno anno-del" title="Delete annotation"/>
          <div style="clear:both"></div>
       </div>
-      <p class="box-annotation">This is a fake group annotation!</p>
+      <p class="box-annotation group">This is a fake group annotation!</p>
       <div class="group-del-annotation">
          Delete annotation?
          <a class="del-anno-ok-button juxta-button sbs-button">Yes</a>
