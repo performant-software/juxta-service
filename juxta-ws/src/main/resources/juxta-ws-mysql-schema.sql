@@ -199,9 +199,8 @@ CREATE TABLE IF NOT EXISTS juxta_user_note_data (
   note_id bigint(20) NOT NULL,
   witness_id bigint(20) NOT NULL,
   note text NOT NULL,
-  PRIMARY KEY (note_id, witness_id),
-  FOREIGN KEY (note_id) REFERENCES juxta_user_note (id) ON DELETE CASCADE,
-  FOREIGN KEY (witness_id) REFERENCES juxta_witness (id) ON DELETE CASCADE
+  KEY (note_id),
+  FOREIGN KEY (note_id) REFERENCES juxta_user_note (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS juxta_metrics (

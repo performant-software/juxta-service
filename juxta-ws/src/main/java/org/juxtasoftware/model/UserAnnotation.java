@@ -142,10 +142,16 @@ public class UserAnnotation implements Comparable<UserAnnotation> {
         public String getNote() {
             return this.note;
         }
+        public boolean isGroupAnnotation() {
+            return ( this.witnessId.equals(0L));
+        }
         public Long getWitnessId() {
             return this.witnessId;
         }
         public String getWitnessName() {
+            if (witnessName.length() == 0 || this.witnessId.equals(0L)) {
+                return "All";
+            }
             return witnessName;
         }
         public void setWitnessName(String witnessName) {

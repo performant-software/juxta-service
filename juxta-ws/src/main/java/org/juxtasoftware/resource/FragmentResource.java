@@ -29,8 +29,8 @@ import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
-import com.google.gson.Gson;
-import com.google.gson.annotations.Expose;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 
 import eu.interedition.text.Range;
 
@@ -170,10 +170,17 @@ public class FragmentResource extends BaseResource {
         // Get any user annotations on this range & base id combination
         List<UserAnnotation> annos = this.userNotesDao.list(this.set, this.baseWitnessId, this.range);
         UserAnnotation userAnno = null;
+        String groupAnnotation = "";
         if ( annos.size() == 1 ) {
             userAnno = annos.get(0);
+            for ( UserAnnotation.Data noteData : userAnno.getNotes() ) {
+                if ( noteData.isGroupAnnotation() )  {
+                    groupAnnotation = noteData.getNote();
+                    break;
+                }
+            }
         }
-        
+           
         // lookup a fragment for each witness
         for ( Entry<Long, WitnessFragment> entry : witnessDiffMap.entrySet()) {
             Long witnessId = entry.getKey();
@@ -193,25 +200,38 @@ public class FragmentResource extends BaseResource {
             // see if this particular witness diff has been annotated
             if ( userAnno != null ) {
                 for ( UserAnnotation.Data noteData : userAnno.getNotes() ) {
-                    if ( noteData.getWitnessId().equals(witnessId)) {
+                    if ( noteData.getWitnessId().equals(witnessId))  {
                         info.note = noteData.getNote();
                     }
                 }
             }
         }
-        Gson gson = new Gson();
-        String out = gson.toJson(witnessDiffMap.values());
-        return toJsonRepresentation( out );
+
+        JsonObject out = new JsonObject();
+        out.addProperty("groupAnnotation", groupAnnotation);
+        JsonArray frags = new JsonArray();
+        out.add("fragments", frags);
+        for ( WitnessFragment f :  witnessDiffMap.values() ) {
+            JsonObject obj = new JsonObject();
+            obj.addProperty("witnessId", f.witnessId);
+            obj.addProperty("witnessName", f.witnessName);
+            obj.addProperty("typeSymbol", f.typeSymbol);
+            obj.addProperty("fragment", f.fragment);
+            obj.addProperty("note", f.note);
+            frags.add(obj);
+        }
+        
+        String goo = out.toString();
+        return toJsonRepresentation( goo );
     }
 
-    @SuppressWarnings("unused")
     private static class WitnessFragment {
         private Range range;
-        @Expose private Long witnessId;
-        @Expose private String witnessName;
-        @Expose private final String typeSymbol;
-        @Expose private String fragment;
-        @Expose private String note = "";
+        private Long witnessId;
+        private String witnessName;
+        private final String typeSymbol;
+        private String fragment;
+        private String note = "";
         
         public WitnessFragment( final Witness witness, final Range r, final int editDist) {
             this.witnessName = witness.getName();

@@ -359,6 +359,12 @@ $(function() {
 
             // make clicked change active and show margin boxes
             src.addClass("active");
+            
+            // show group anno?
+            if ( jsonData.groupAnnotation.length > 0) {
+               $(".box-annotation.group").text( jsonData.groupAnnotation );
+               $(".group-annotation").show();
+            }
 
             // figure out the top pos of the clicked diff within the scroll div
             var scrollPos = $(".heatmap-scroller").position().top;
@@ -371,8 +377,8 @@ $(function() {
 
             // fill boxes with change data
             var idx;
-            for ( idx = 0; idx < jsonData.length; idx += 1) {
-               var diff = jsonData[idx];
+            for ( idx = 0; idx < jsonData.fragments.length; idx += 1) {
+               var diff = jsonData.fragments[idx];
                var boxId = idx + 1;
 
                if ( diff.note.length === 0) {
