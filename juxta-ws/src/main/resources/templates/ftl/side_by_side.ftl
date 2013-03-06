@@ -19,6 +19,8 @@
         <div id="left-witness-text" class="witness-text">
             <@fileReader src="${witnessDetails[0].file}"/> 
         </div>
+        <div class="more-scroller"><p class="more-scroller"/></div>
+        <div style="clear: both;"></div>
     </div>
     
     <div id="scroll-mode">

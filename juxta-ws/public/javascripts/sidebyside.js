@@ -516,6 +516,21 @@ $(function() {
       // re-render al connection lines
       renderConnections();
    };
+   
+   var showMorePanel = function( show ) {
+      var h = $("#left-witness-text").height(); 
+      if ( show ) {
+         if ( $("div.more-scroller").is(":visible") === false ) {
+            $("div.more-scroller").show();
+            $("#left-witness-text").height( h-$("div.more-scroller").outerHeight(true));
+         }
+      } else {
+         if ( $("div.more-scroller").is(":visible") ) {
+            $("div.more-scroller").hide();
+            $("#left-witness-text").height( h+$("div.more-scroller").outerHeight(true));
+         }   
+      }
+   };
 
    var syncScrolling = function() {
 
@@ -590,6 +605,18 @@ $(function() {
                }
             }
          }
+         
+         var moreVisible = false;
+         if ( (rightTop+rightDivHeight) == maxRightHeight ) {
+            var maxL = $("#left-witness-text")[0].scrollHeight;
+            var heightL = $("#left-witness-text").outerHeight(true);
+            var topL = $("#left-witness-text").scrollTop();
+            if ( (topL+heightL) < (maxL*0.95) ) {
+               moreVisible = true;
+            }
+         }
+         showMorePanel(moreVisible);
+
 
          // do the scroll on left to synch it with right
          $("#left-witness-text").scrollTop(leftTop + posDelta);
@@ -759,6 +786,7 @@ $(function() {
    /**
     * Main entry point for visualization: initialize everythign anf make it ready for use
     */
+   var scrollTimer = -1;
    window.Juxta.SideBySide.initialize = function() {
       $("body").css("overflow","hide");
       $("#juxta-ws-content").css("overflow", "hide");
@@ -766,6 +794,22 @@ $(function() {
       $("#right-witness-text").data("action", "none");
       $("#side-by-side").data("isResizing", false);
       $("#right-witness-text").data("lastTop", 0);
+      
+      // special scroll helper
+      $("div.more-scroller").on("mousedown", function() {
+         if ( scrollTimer === -1 ) {
+            scrollTimer = setInterval(function() {
+               var t = $("#left-witness-text").scrollTop();
+               $("#left-witness-text").scrollTop(t+20);   
+            }, 100);
+         }
+      });
+      $("div.more-scroller").on("mouseup mouseout", function() {
+         if ( scrollTimer !== -1 ) {
+            clearInterval(scrollTimer);
+            scrollTimer = -1;
+         } 
+      });
 
       // initially, scrolling is LOCKED. Must be set before
       // the calls to init height/canvas

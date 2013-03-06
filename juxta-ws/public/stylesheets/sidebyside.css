@@ -192,6 +192,22 @@ p.witness-option {
 .popup-buttons {
     margin: 5px;
 }
+div.more-scroller {
+   background-color: #ccc;
+   text-align: center;
+   border-top: 1px solid #999;
+   border-bottom: 1px solid #999;
+   display:none;
+   margin: 0;
+}
+p.more-scroller {
+   background-image: url("/juxta/images/more.png");
+   background-repeat: no-repeat;
+   padding:0;
+   height:12px;
+   margin: 2px auto;
+   width: 14px;
+}
 
 
 
