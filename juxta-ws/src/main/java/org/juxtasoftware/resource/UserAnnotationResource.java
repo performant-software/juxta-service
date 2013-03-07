@@ -1,17 +1,25 @@
 package org.juxtasoftware.resource;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
+import org.juxtasoftware.dao.AlignmentDao;
 import org.juxtasoftware.dao.ComparisonSetDao;
 import org.juxtasoftware.dao.UserAnnotationDao;
 import org.juxtasoftware.dao.WitnessDao;
+import org.juxtasoftware.model.Alignment;
+import org.juxtasoftware.model.Alignment.AlignedAnnotation;
+import org.juxtasoftware.model.AlignmentConstraint;
 import org.juxtasoftware.model.ComparisonSet;
 import org.juxtasoftware.model.UserAnnotation;
+import org.juxtasoftware.model.UserAnnotation.Data;
 import org.juxtasoftware.model.Witness;
+import org.juxtasoftware.util.QNameFilters;
 import org.juxtasoftware.util.RangedTextReader;
 import org.restlet.data.Status;
 import org.restlet.representation.Representation;
@@ -40,6 +48,8 @@ public class UserAnnotationResource extends BaseResource {
     @Autowired private ComparisonSetDao comparionSetDao;
     @Autowired private WitnessDao witnessDao;
     @Autowired private UserAnnotationDao userNotesDao;
+    @Autowired private QNameFilters filters;
+    @Autowired private AlignmentDao alignmentDao;
     
     private ComparisonSet set;
     private Range range;
@@ -114,10 +124,60 @@ public class UserAnnotationResource extends BaseResource {
             }
         }
         
+        List<UserAnnotation> recip = new ArrayList<UserAnnotation>();
+        for ( Data n : newAnno.getNotes()) {
+            if ( n.isGroupAnnotation() ) {
+                recip = createReciprocalAnnotations(newAnno.getBaseId(), newAnno.getBaseRange(), n.getNote());
+                break;
+            }
+        }
         this.userNotesDao.create(newAnno);
+        for ( UserAnnotation a : recip) {
+            this.userNotesDao.create(a);
+        }
         return toTextRepresentation("OK");
     }
     
+    private List<UserAnnotation> createReciprocalAnnotations(Long baseId, Range r, String note) {
+        // get all of the diff alignments in the specified range
+        AlignmentConstraint constraint = new AlignmentConstraint( this.set, baseId );
+        constraint.setFilter( this.filters.getDifferencesFilter() );
+        constraint.setRange( r );
+        List<Alignment> aligns = this.alignmentDao.list( constraint );
+        
+        // consolidate ranges
+        Map<Long, Range > witRangeMap = new HashMap<Long, Range>();
+        for (Alignment align : aligns ) {     
+            AlignedAnnotation witnessAnno = null;
+            for ( AlignedAnnotation a : align.getAnnotations()) {
+                if ( a.getWitnessId().equals(baseId) == false) {
+                    witnessAnno = a;
+                    break;
+                }
+            }
+            
+            Range range = witRangeMap.get(witnessAnno.getWitnessId());
+            if ( range == null ) {
+                witRangeMap.put(witnessAnno.getWitnessId(), witnessAnno.getRange());
+            } else {
+                witRangeMap.put(witnessAnno.getWitnessId(), new Range(
+                    Math.min(range.getStart(), witnessAnno.getRange().getStart()), 
+                    Math.max(range.getEnd(), witnessAnno.getRange().getEnd())) );
+            }
+        }
+        
+        List<UserAnnotation> annos = new ArrayList<UserAnnotation>();
+        for ( Entry<Long, Range> ent : witRangeMap.entrySet() ) {
+            UserAnnotation a = new UserAnnotation();
+            a.addNote(0L, note);
+            a.setBaseId(ent.getKey());
+            a.setSetId(this.set.getId());
+            a.setBaseRange(ent.getValue());
+            annos.add(a);
+        }
+        return annos;
+    }
+
     @Get("html")
     public Representation getHtml() {
         List<UserAnnotation> ua = getUserAnnotations();
