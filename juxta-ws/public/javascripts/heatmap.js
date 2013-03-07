@@ -367,11 +367,7 @@ $(function() {
                $("#group-add-anno").hide();
             } else {
                $(".group-annotation").hide();
-               if ( jsonData.fragments.length > 1 ) {
-                  $("#group-add-anno").show();
-               } else {
-                  $("#group-add-anno").hide();
-               }
+               $("#group-add-anno").show();
             }
 
             // figure out the top pos of the clicked diff within the scroll div

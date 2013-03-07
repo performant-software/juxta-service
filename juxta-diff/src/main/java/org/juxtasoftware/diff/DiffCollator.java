@@ -77,7 +77,9 @@ public class DiffCollator {
         }
         
         // Do the diff!
+        LOG.info("START DIFF "+base.toString()+" VS "+witness.toString());
         Patch diffResult = DiffUtils.diff(baseTokens, witnessTokens);
+        LOG.info("END DIFF "+base.toString()+" VS "+witness.toString());
 
         // Convert the dif results into differences
         DifferenceStore differenceStore = config.getDifferenceStore();
