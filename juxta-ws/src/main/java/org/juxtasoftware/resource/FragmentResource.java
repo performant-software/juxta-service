@@ -218,6 +218,10 @@ public class FragmentResource extends BaseResource {
             obj.addProperty("typeSymbol", f.typeSymbol);
             obj.addProperty("fragment", f.fragment);
             obj.addProperty("note", f.note);
+            JsonObject rng = new JsonObject();
+            rng.addProperty("start", f.getStart());
+            rng.addProperty("end", f.getEnd());
+            obj.add("range", rng);
             frags.add(obj);
         }
         
