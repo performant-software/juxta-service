@@ -396,9 +396,9 @@ public class JuxtaTagExtractor extends DefaultHandler  {
             return;
         }
 
-        txt = txt.replaceAll("[\\n]\\s*$", "");
-        txt = txt.replaceAll("^[\\n]\\s*$", "");
-        txt = txt.replaceAll("\\n+", "");
+        txt = txt.replaceAll("[\\n]\\s*$", " ");
+        txt = txt.replaceAll("^[\\n]\\s*$", " ");
+        txt = txt.replaceAll("\\n+", " ");
         txt = txt.replaceAll("\\s+", " ");
         
 //        if ( txt.length() > 0 ) {

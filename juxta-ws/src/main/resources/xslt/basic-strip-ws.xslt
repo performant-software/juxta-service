@@ -15,8 +15,8 @@
     <!--breaks-->
     
     <xsl:template match="text()">
-        <xsl:variable name="a" select="replace(., '[\n]\s*$', '')"/>
-        <xsl:variable name="b" select="replace($a, '^[\n]\s*', '')"/>
+        <xsl:variable name="a" select="replace(., '[\n]\s*$', ' ')"/>
+        <xsl:variable name="b" select="replace($a, '^[\n]\s*', ' ')"/>
         <xsl:variable name="c" select="replace($b, '\n+', '')"/>
         <xsl:variable name="d" select="replace($c, '\s+', ' ')"/>
         <xsl:value-of select="$d"/>
