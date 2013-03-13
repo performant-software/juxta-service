@@ -7,6 +7,7 @@ import eu.interedition.text.Range;
 
 public class UserAnnotation implements Comparable<UserAnnotation> {
     private Long id;
+    private Long groupId;
     private Long setId;
     private Long baseId;
     private Set<Data> notes = new HashSet<Data>();
@@ -14,6 +15,12 @@ public class UserAnnotation implements Comparable<UserAnnotation> {
     private String fragment;
     
     public UserAnnotation() {
+    }
+    public Long getGroupId() {
+        return groupId;
+    }
+    public void setGroupId(Long groupId) {
+        this.groupId = groupId;
     }
     public Long getSetId() {
         return setId;
@@ -65,6 +72,24 @@ public class UserAnnotation implements Comparable<UserAnnotation> {
                  this.setId.equals(other.setId));
     }
     
+    public boolean isGroupAnnotation() {
+        for ( Data note : this.notes) {
+            if (note.getWitnessId().equals(0L) ) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+
+    public String getGroupNoteContent() {
+        for ( Data note : this.notes) {
+            if (note.getWitnessId().equals(0L) ) {
+                return note.getNote();
+            }
+        }
+        return "";
+    }
 
     public void updateNotes(Set<Data> otherNotes) {
         for ( Data other : otherNotes ) {
@@ -141,9 +166,6 @@ public class UserAnnotation implements Comparable<UserAnnotation> {
         }
         public String getNote() {
             return this.note;
-        }
-        public boolean isGroupAnnotation() {
-            return ( this.witnessId.equals(0L));
         }
         public Long getWitnessId() {
             return this.witnessId;

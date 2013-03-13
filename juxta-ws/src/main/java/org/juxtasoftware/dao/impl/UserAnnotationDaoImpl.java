@@ -16,6 +16,7 @@ import org.juxtasoftware.model.UserAnnotation.Data;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
+import org.springframework.dao.support.DataAccessUtils;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -39,14 +40,17 @@ public class UserAnnotationDaoImpl implements UserAnnotationDao, InitializingBea
     }
 
     @Override
-    public void create(UserAnnotation ua) {
+    public Long create(UserAnnotation ua) {
         final MapSqlParameterSource ps = new MapSqlParameterSource();
         ps.addValue("set_id", ua.getSetId());
+        ps.addValue("group_id", ua.getGroupId());
         ps.addValue("base_id", ua.getBaseId());
         ps.addValue("range_start", ua.getBaseRange().getStart());
         ps.addValue("range_End", ua.getBaseRange().getEnd());
         Long id = this.insert.executeAndReturnKey(ps).longValue();
         addNotes(id, ua.getNotes());
+        ua.setId(id);
+        return id;
     }
 
     private void addNotes(Long id, Set<Data> notes) {
@@ -55,24 +59,28 @@ public class UserAnnotationDaoImpl implements UserAnnotationDao, InitializingBea
             this.jdbcTemplate.update(sql, id, noteData.getWitnessId(), noteData.getNote());
         }
     }
+    
+    @Override
+    public UserAnnotation find(ComparisonSet set, Long baseId, Range r) {
+        StringBuilder sql = getFindSql();
+        sql.append(" where set_id=? and base_id=?");        
+        sql.append(" and range_start=? and range_end=?");
+        Extractor rse = new Extractor();
+        return DataAccessUtils.uniqueResult(
+            this.jdbcTemplate.query(sql.toString(), rse, set.getId(), baseId, r.getStart(), r.getEnd() ));
+    }
 
     @Override
-    public List<UserAnnotation> list(ComparisonSet set, Long baseId, Range r) {
+    public List<UserAnnotation> list(ComparisonSet set, Long baseId) {
         Extractor rse = new Extractor();
-
         StringBuilder sql = getFindSql();
         sql.append(" where set_id=? and base_id=?");
-        if ( r == null ) {
-            return this.jdbcTemplate.query(sql.toString(), rse, set.getId(), baseId );
-        }
-        
-        sql.append(" and range_start>=? and range_end<=?");
-        return this.jdbcTemplate.query(sql.toString(), rse, set.getId(), baseId, r.getStart(), r.getEnd() );
+        return this.jdbcTemplate.query(sql.toString(), rse, set.getId(), baseId );
     }
     
     private StringBuilder getFindSql() {
         StringBuilder sql = new StringBuilder();
-        sql.append("select id,set_id,base_id,range_start,range_end,witness_id,note from ");
+        sql.append("select id,set_id,base_id,range_start,range_end,group_id,witness_id,note from ");
         sql.append(MAIN_TABLE);
         sql.append(" inner join ").append(DATA_TABLE);
         sql.append(" on id = note_id ");
@@ -81,10 +89,24 @@ public class UserAnnotationDaoImpl implements UserAnnotationDao, InitializingBea
 
     @Override
     public void update(UserAnnotation ua) {
-        String sql = "delete from "+DATA_TABLE+" where note_id=?";
+        String sql="update "+MAIN_TABLE+" set group_id=? where id=?";
+        this.jdbcTemplate.update(sql,ua.getGroupId(), ua.getId());
+        sql = "delete from "+DATA_TABLE+" where note_id=?";
         this.jdbcTemplate.update(sql,ua.getId());
         addNotes(ua.getId(), ua.getNotes());
         
+    }
+    
+    @Override
+    public void updateGroupAnnotation(ComparisonSet set, Long groupId, String newNote) {
+        String sql = "update juxta_user_note_data inner join juxta_user_note on note_id=id set note=? where set_id=? and group_id = ?";
+        this.jdbcTemplate.update(sql, newNote, set.getId(), groupId);
+    }
+    
+    @Override
+    public void deleteGroup(ComparisonSet set, Long groupId) {
+        final String sql = "delete from "+MAIN_TABLE+" where set_id=? and group_id=?";
+        this.jdbcTemplate.update(sql, set.getId(), groupId );
     }
 
     @Override
@@ -133,6 +155,10 @@ public class UserAnnotationDaoImpl implements UserAnnotationDao, InitializingBea
                     ua.setId(id);
                     ua.setBaseId( rs.getLong("base_id") );
                     ua.setSetId( rs.getLong("set_id") );
+                    Object gid = rs.getObject("group_id");
+                    if ( gid != null ) {
+                        ua.setGroupId(rs.getLong("group_id"));
+                    }
                     ua.setBaseRange( new Range(
                         rs.getLong("range_start"),
                         rs.getLong("range_end") ) );

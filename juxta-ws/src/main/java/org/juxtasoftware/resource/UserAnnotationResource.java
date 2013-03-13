@@ -1,7 +1,6 @@
 package org.juxtasoftware.resource;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -17,7 +16,6 @@ import org.juxtasoftware.model.Alignment.AlignedAnnotation;
 import org.juxtasoftware.model.AlignmentConstraint;
 import org.juxtasoftware.model.ComparisonSet;
 import org.juxtasoftware.model.UserAnnotation;
-import org.juxtasoftware.model.UserAnnotation.Data;
 import org.juxtasoftware.model.Witness;
 import org.juxtasoftware.util.QNameFilters;
 import org.juxtasoftware.util.RangedTextReader;
@@ -115,34 +113,39 @@ public class UserAnnotationResource extends BaseResource {
         }
         
         // see if an annotation already exists here. If it does, update with new witness & note info
-        List<UserAnnotation> annos = this.userNotesDao.list(this.set, newAnno.getBaseId(), newAnno.getBaseRange());
-        for ( UserAnnotation ua : annos ) {
-            if ( ua.getBaseRange().equals(newAnno.getBaseRange())) {
-                ua.updateNotes( newAnno.getNotes() );
-                this.userNotesDao.update(ua);
+        UserAnnotation prior = this.userNotesDao.find(this.set, newAnno.getBaseId(), newAnno.getBaseRange());
+        if ( prior != null  ) {
+            if ( newAnno.isGroupAnnotation() != prior.isGroupAnnotation()  ) {
+                setStatus(Status.CLIENT_ERROR_CONFLICT);
+                return toTextRepresentation("Conflicting group/single user annotation");
+            } 
+            
+            if ( prior.isGroupAnnotation() ) {
+                this.userNotesDao.updateGroupAnnotation(this.set, prior.getGroupId(), newAnno.getGroupNoteContent());
+                return toTextRepresentation("OK");
+            } else {
+                prior.updateNotes( newAnno.getNotes() );
+                this.userNotesDao.update(prior);
                 return toTextRepresentation("OK");
             }
         }
         
-        List<UserAnnotation> recip = new ArrayList<UserAnnotation>();
-        for ( Data n : newAnno.getNotes()) {
-            if ( n.isGroupAnnotation() ) {
-                recip = createReciprocalAnnotations(newAnno.getBaseId(), newAnno.getBaseRange(), n.getNote());
-                break;
-            }
+        Long id = this.userNotesDao.create(newAnno);
+        if ( newAnno.isGroupAnnotation() ) {
+            newAnno.setId(id);
+            newAnno.setGroupId(id);
+            this.userNotesDao.update(newAnno);
+            createReciprocalAnnotations( newAnno );
         }
-        this.userNotesDao.create(newAnno);
-        for ( UserAnnotation a : recip) {
-            this.userNotesDao.create(a);
-        }
+       
         return toTextRepresentation("OK");
     }
     
-    private List<UserAnnotation> createReciprocalAnnotations(Long baseId, Range r, String note) {
+    private void createReciprocalAnnotations( UserAnnotation groupAnno ) {
         // get all of the diff alignments in the specified range
-        AlignmentConstraint constraint = new AlignmentConstraint( this.set, baseId );
+        AlignmentConstraint constraint = new AlignmentConstraint( this.set, groupAnno.getBaseId() );
         constraint.setFilter( this.filters.getDifferencesFilter() );
-        constraint.setRange( r );
+        constraint.setRange( groupAnno.getBaseRange() );
         List<Alignment> aligns = this.alignmentDao.list( constraint );
         
         // consolidate ranges
@@ -150,7 +153,7 @@ public class UserAnnotationResource extends BaseResource {
         for (Alignment align : aligns ) {     
             AlignedAnnotation witnessAnno = null;
             for ( AlignedAnnotation a : align.getAnnotations()) {
-                if ( a.getWitnessId().equals(baseId) == false) {
+                if ( a.getWitnessId().equals(groupAnno.getBaseId()) == false) {
                     witnessAnno = a;
                     break;
                 }
@@ -166,16 +169,18 @@ public class UserAnnotationResource extends BaseResource {
             }
         }
         
-        List<UserAnnotation> annos = new ArrayList<UserAnnotation>();
         for ( Entry<Long, Range> ent : witRangeMap.entrySet() ) {
+            if ( ent.getKey().equals(groupAnno.getBaseId())) {
+                throw new RuntimeException("Bad things");
+            }
             UserAnnotation a = new UserAnnotation();
-            a.addNote(0L, note);
+            a.addNote(0L, groupAnno.getGroupNoteContent() );
             a.setBaseId(ent.getKey());
             a.setSetId(this.set.getId());
             a.setBaseRange(ent.getValue());
-            annos.add(a);
+            a.setGroupId( groupAnno.getGroupId() );
+            this.userNotesDao.create(a);
         }
-        return annos;
     }
 
     @Get("html")
@@ -195,7 +200,7 @@ public class UserAnnotationResource extends BaseResource {
     }
 
     private List<UserAnnotation> getUserAnnotations() {
-        List<UserAnnotation> ua = this.userNotesDao.list(this.set, this.baseId, this.range);
+        List<UserAnnotation> ua = this.userNotesDao.list(this.set, this.baseId);
         List<Witness> witnesses = this.comparionSetDao.getWitnesses(this.set);
         for ( UserAnnotation a : ua ) {
             a.setBaseFragment( getBaseFragment(a.getBaseId(), a.getBaseRange()) );
@@ -251,30 +256,37 @@ public class UserAnnotationResource extends BaseResource {
     
     @Delete("json")
     public Representation deleteUserAnnotation( final String jsonData ) { 
-
-        if ( this.witnessId == null ) {
-            // mass delete all user annotations
-            this.userNotesDao.delete( this.set, this.baseId, this.range   );
-        } else {            
-            // Just remove the specified note from the base range.
-            for (UserAnnotation ua : this.userNotesDao.list(this.set, baseId, this.range) ) {
-                for ( Iterator<UserAnnotation.Data> itr=ua.getNotes().iterator(); itr.hasNext(); ) {
-                    UserAnnotation.Data note = itr.next();
-                    if ( this.witnessId.equals(note.getWitnessId())) {
-                        itr.remove();
-                    }
-                }
-
-                // if all notes are gone, kill the whole thing
-                if ( ua.getNotes().size() == 0) {
-                    this.userNotesDao.delete( this.set, ua.getBaseId(), ua.getBaseRange() );
-                } else {
-                    // just update it with newly shortened info
-                    this.userNotesDao.update(ua);
-                }
-            }
+        UserAnnotation tgtAnno = this.userNotesDao.find( this.set, this.baseId, this.range );
+        if ( tgtAnno == null ) {
+            setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
+            return toTextRepresentation("No matching user annotation found");
         }
         
+        // if this is a group annotation... must delete all other annotations in the group
+        if ( tgtAnno.isGroupAnnotation() ) {
+            this.userNotesDao.deleteGroup(this.set, tgtAnno.getGroupId());
+            return toTextRepresentation(""+this.userNotesDao.count(this.set, baseId));
+        } 
+        
+        // normal delete
+        if (this.witnessId != null) {
+            // Just remove the specified note from the base range.
+            for (Iterator<UserAnnotation.Data> itr = tgtAnno.getNotes().iterator(); itr.hasNext();) {
+                UserAnnotation.Data note = itr.next();
+                if (this.witnessId.equals(note.getWitnessId())) {
+                    itr.remove();
+                }
+            }
+
+            // if all notes are gone, kill the whole thing
+            if (tgtAnno.getNotes().size() == 0) {
+                this.userNotesDao.delete(this.set, tgtAnno.getBaseId(), tgtAnno.getBaseRange());
+            } else {
+                // just update it with newly shortened info
+                this.userNotesDao.update(tgtAnno);
+            }
+        }
+
         return toTextRepresentation(""+this.userNotesDao.count(this.set, baseId));
     }
     

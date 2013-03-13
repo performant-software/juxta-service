@@ -168,17 +168,10 @@ public class FragmentResource extends BaseResource {
         }
         
         // Get any user annotations on this range & base id combination
-        List<UserAnnotation> annos = this.userNotesDao.list(this.set, this.baseWitnessId, this.range);
-        UserAnnotation userAnno = null;
+        UserAnnotation userAnno = this.userNotesDao.find(this.set, this.baseWitnessId, this.range);
         String groupAnnotation = "";
-        if ( annos.size() == 1 ) {
-            userAnno = annos.get(0);
-            for ( UserAnnotation.Data noteData : userAnno.getNotes() ) {
-                if ( noteData.isGroupAnnotation() )  {
-                    groupAnnotation = noteData.getNote();
-                    break;
-                }
-            }
+        if (userAnno  != null && userAnno.isGroupAnnotation()) {
+            groupAnnotation = userAnno.getGroupNoteContent();
         }
            
         // lookup a fragment for each witness

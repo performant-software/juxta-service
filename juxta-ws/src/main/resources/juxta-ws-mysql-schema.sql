@@ -191,6 +191,7 @@ CREATE TABLE IF NOT EXISTS juxta_user_note (
   base_id bigint(20) NOT NULL,
   range_start mediumint(8) unsigned NOT NULL,
   range_end mediumint(8) unsigned NOT NULL,
+  group_id bigint(20) default null,
   PRIMARY KEY (id),
   FOREIGN KEY (base_id) REFERENCES juxta_witness (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;

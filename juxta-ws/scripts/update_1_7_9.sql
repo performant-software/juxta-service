@@ -13,3 +13,6 @@ CREATE TABLE IF NOT EXISTS juxta_user_note_data_new (
 insert into juxta_user_note_data_new (note_id,witness_id,note) select note_id,witness_id,note from juxta_user_note_data;
 drop table juxta_user_note_data;
 rename table juxta_user_note_data_new to juxta_user_note_data;
+
+
+alter table juxta_user_note add group_id bigint(20) default null;

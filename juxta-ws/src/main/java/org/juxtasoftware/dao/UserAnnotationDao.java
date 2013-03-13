@@ -13,7 +13,12 @@ public interface UserAnnotationDao {
      * Create a new user annotation
      * @param ua
      */
-    void create(UserAnnotation ua);
+    Long create(UserAnnotation ua);
+    
+    /**
+     * Find a specific user annotation
+     */
+    UserAnnotation find(ComparisonSet set, Long baseId, Range r);
     
     /**
      * List all of the user annotations on a base witness
@@ -21,7 +26,7 @@ public interface UserAnnotationDao {
      * @param baseId
      * @return
      */
-    List<UserAnnotation> list(ComparisonSet set, Long baseId, Range r);
+    List<UserAnnotation> list(ComparisonSet set, Long baseId);
     
     /**
      * Update an existing user annotation with new data
@@ -38,6 +43,14 @@ public interface UserAnnotationDao {
      * @param r
      */
     void delete(ComparisonSet set, Long baseId, Range r);
+    
+    /**
+     * Delete all annotations that are part of a group
+     * @param set
+     * @param groupId
+     */
+    void deleteGroup(ComparisonSet set, Long groupId);
+    void updateGroupAnnotation(ComparisonSet set, Long groupId, String newNote);
     
     /**
      * Check if any annotations exist for this set/base.
