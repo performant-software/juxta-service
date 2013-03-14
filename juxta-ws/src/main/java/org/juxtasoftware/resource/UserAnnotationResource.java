@@ -141,7 +141,8 @@ public class UserAnnotationResource extends BaseResource {
                 }
                 
                 if ( newAnno.hasGroupAnnotation() && wasGroup) {
-                    this.userNotesDao.updateGroupAnnotation(this.set, prior.getGroupId(), newAnno.getGroupNoteContent());
+                    Long groupId = this.userNotesDao.findGroupId(this.set, newAnno.getBaseId(), newAnno.getBaseRange());
+                    this.userNotesDao.updateGroupNote(groupId, newAnno.getGroupNoteContent());
                 } else {
                     this.userNotesDao.updateNotes(prior);
                 }

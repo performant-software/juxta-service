@@ -60,6 +60,15 @@ public class UserAnnotationDaoImpl implements UserAnnotationDao, InitializingBea
     }
     
     @Override
+    public Long findGroupId(ComparisonSet set, Long baseId, Range r) {
+        StringBuilder sql = new StringBuilder("select group_id from ");
+        sql.append(MAIN_TABLE);
+        sql.append(" where set_id=? and base_id=?");        
+        sql.append(" and range_start=? and range_end=? and group_id IS NOT NULL");
+        return this.jdbcTemplate.queryForLong(sql.toString(), set.getId(), baseId, r.getStart(), r.getEnd() );
+    }
+    
+    @Override
     public UserAnnotation find(ComparisonSet set, Long baseId, Range r) {
         StringBuilder sql = getFindSql();
         sql.append(" where set_id=? and base_id=?");        
@@ -145,9 +154,10 @@ public class UserAnnotationDaoImpl implements UserAnnotationDao, InitializingBea
     }
     
     @Override
-    public void updateGroupAnnotation(ComparisonSet set, Long groupId, String newNote) {
-        String sql = "update juxta_user_note_data inner join juxta_user_note on note_id=id set note=? where set_id=? and group_id = ?";
-        this.jdbcTemplate.update(sql, newNote, set.getId(), groupId);
+    public void updateGroupNote(Long groupId, String newNote) {
+        String sql = 
+            "update juxta_user_note_data set note=? where note_id in (select id from juxta_user_note where group_id=?) ";
+        this.jdbcTemplate.update(sql, newNote, groupId);
     }
     
     @Override

@@ -34,6 +34,7 @@ public interface UserAnnotationDao {
      */
     void updateNotes(UserAnnotation ua);
     void updateGroupId(UserAnnotation ua, Long groupId);
+    Long findGroupId( ComparisonSet set, Long baseId, Range r);
     
     /**
      * Delete user annotations. All but set are optional.
@@ -51,7 +52,7 @@ public interface UserAnnotationDao {
      * @param groupId
      */
     void deleteGroup(ComparisonSet set, Long groupId);
-    void updateGroupAnnotation(ComparisonSet set, Long groupId, String newNote);
+    void updateGroupNote( Long groupId, String newNote);
     void deleteWitnessNote(Long noteId);
     
     /**
