@@ -124,27 +124,25 @@ public class UserAnnotationResource extends BaseResource {
                                    prior.hasWitnessAnnotation() !=  newAnno.hasWitnessAnnotation() );
             
             if ( !newAddition ) {
-                boolean wasGroup = prior.hasGroupAnnotation();
                 boolean handled = false;
                 Data newNote = (Data) newAnno.getNotes().toArray()[0];
                 for ( Data n : prior.getNotes() ) {
                     if ( n.getWitnessId().equals(newNote.getWitnessId())) {
                         n.setText(newNote.getText());
                         handled = true;
+                        if (n.getWitnessId().equals(0L)) {
+                            Long groupId = this.userNotesDao.findGroupId(this.set, newAnno.getBaseId(), newAnno.getBaseRange());
+                            this.userNotesDao.updateGroupNote(groupId, newAnno.getGroupNoteContent());
+                        } else {
+                            this.userNotesDao.updateWitnessNote(n.getId(), newNote.getText());
+                        }
                     }
                 }
                 
                 // if the above loop didn't catch the new data
                 // add it as a separate note
                 if ( handled == false ) {
-                    prior.addNote(newNote);
-                }
-                
-                if ( newAnno.hasGroupAnnotation() && wasGroup) {
-                    Long groupId = this.userNotesDao.findGroupId(this.set, newAnno.getBaseId(), newAnno.getBaseRange());
-                    this.userNotesDao.updateGroupNote(groupId, newAnno.getGroupNoteContent());
-                } else {
-                    this.userNotesDao.updateNotes(prior);
+                    this.userNotesDao.addWitnessNote(prior, newNote.getWitnessId(), newNote.getText());
                 }
                 
                 return toTextRepresentation("OK");

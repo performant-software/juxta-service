@@ -122,23 +122,6 @@ public class UserAnnotationDaoImpl implements UserAnnotationDao, InitializingBea
     }
 
     @Override
-    public void updateNotes(UserAnnotation ua) {
-        StringBuilder sb = getFindSql();
-        sb.append(" where set_id=? and base_id=?");        
-        sb.append(" and range_start=? and range_end=?");
-        Extractor rse = new Extractor();
-        List<UserAnnotation> hits = this.jdbcTemplate.query(sb.toString(), rse, 
-            ua.getSetId(), ua.getBaseId(), 
-            ua.getBaseRange().getStart(), ua.getBaseRange().getEnd() );
-        String sql = "delete from "+DATA_TABLE+" where note_id=?";
-        for ( UserAnnotation a : hits) {
-            this.jdbcTemplate.update(sql,a.getId());
-        }
-        
-        addNotes(ua.getId(), ua.getNotes());        
-    }
-    
-    @Override
     public void deleteWitnessNote(Long noteId) {
         String sql = "select note_id from "+DATA_TABLE+" where id=?";
         Long id = this.jdbcTemplate.queryForLong(sql, noteId);
@@ -151,6 +134,19 @@ public class UserAnnotationDaoImpl implements UserAnnotationDao, InitializingBea
             sql = "delete from "+MAIN_TABLE+" where id=?";
             this.jdbcTemplate.update(sql, id);
         }
+    }
+    
+    @Override
+    public void addWitnessNote(UserAnnotation ua, Long witId, String text) {
+        String s = "insert into "+DATA_TABLE+" (note_id,witness_id,note) values (?,?,?)";
+        this.jdbcTemplate.update(s, ua.getId(), witId, text);
+    }
+    
+    @Override
+    public void updateWitnessNote(Long noteId, String text) {
+        String sql = 
+            "update juxta_user_note_data set note=? where note_id=?";
+        this.jdbcTemplate.update(sql, text, noteId);
     }
     
     @Override

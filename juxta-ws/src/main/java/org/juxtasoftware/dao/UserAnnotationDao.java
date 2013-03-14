@@ -28,11 +28,10 @@ public interface UserAnnotationDao {
      */
     List<UserAnnotation> list(ComparisonSet set, Long baseId);
     
-    /**
-     * Update an existing user annotation with new data
-     * @param ua
-     */
-    void updateNotes(UserAnnotation ua);
+    void updateGroupNote( Long groupId, String newNote);
+    void updateWitnessNote( Long noteId, String text);
+    void addWitnessNote( UserAnnotation ua, Long witnessId, String text);
+    
     void updateGroupId(UserAnnotation ua, Long groupId);
     Long findGroupId( ComparisonSet set, Long baseId, Range r);
     
@@ -52,7 +51,6 @@ public interface UserAnnotationDao {
      * @param groupId
      */
     void deleteGroup(ComparisonSet set, Long groupId);
-    void updateGroupNote( Long groupId, String newNote);
     void deleteWitnessNote(Long noteId);
     
     /**
