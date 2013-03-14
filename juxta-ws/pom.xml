@@ -30,7 +30,16 @@
     </repositories>
 
     <dependencies>
-
+       <!-- 
+         For possible use later. A libray full of textual difference / similarity
+         utilities. Web site: http://rockymadden.com/stringmetric/
+         <dependency>
+            <groupId>com.rockymadden.stringmetric</groupId>
+            <artifactId>stringmetric-core</artifactId>
+            <version>0.22.0</version>
+         </dependency>
+        -->
+        
         <!--  Support for import of MSWord, OpenOffice & ePub files -->
         <dependency>
             <groupId>org.apache.tika</groupId>

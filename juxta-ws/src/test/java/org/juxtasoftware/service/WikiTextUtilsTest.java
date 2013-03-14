@@ -12,31 +12,31 @@ import org.juxtasoftware.util.WikiTextUtils;
 
 public class WikiTextUtilsTest {
 
-//    @Test
-//    public void simpleTextTransform() throws Exception {
-//        InputStream is = getClass().getResourceAsStream("/simple.wiki");
-//
-//        File txt = WikiTextUtils.toTxt(is);
-//
-//        FileInputStream fis = new FileInputStream(txt);
-//        final String content = IOUtils.toString(fis).trim();
-//        IOUtils.closeQuietly(fis);
-//        System.out.println(content);
-//        txt.delete();
-//        Assert.assertEquals("This is a Hello World example", content);
-//    }
-//    
-//    @Test
-//    public void testBrStrip() throws Exception {
-//        InputStream is = getClass().getResourceAsStream("/br.wiki");
-//        File txt = WikiTextUtils.toTxt(is);
-//        FileInputStream fis = new FileInputStream(txt);
-//        final String content = IOUtils.toString(fis).trim();
-//        IOUtils.closeQuietly(fis);
-//        System.out.println(content);
-//        txt.delete();
-//        Assert.assertFalse(content.contains("<br"));
-//    }
+    @Test
+    public void simpleTextTransform() throws Exception {
+        InputStream is = getClass().getResourceAsStream("/simple.wiki");
+
+        File txt = WikiTextUtils.toTxt(is);
+
+        FileInputStream fis = new FileInputStream(txt);
+        final String content = IOUtils.toString(fis).trim();
+        IOUtils.closeQuietly(fis);
+        System.out.println(content);
+        txt.delete();
+        Assert.assertEquals("This is a Hello World example", content);
+    }
+    
+    @Test
+    public void testBrStrip() throws Exception {
+        InputStream is = getClass().getResourceAsStream("/br.wiki");
+        File txt = WikiTextUtils.toTxt(is);
+        FileInputStream fis = new FileInputStream(txt);
+        final String content = IOUtils.toString(fis).trim();
+        IOUtils.closeQuietly(fis);
+        System.out.println(content);
+        txt.delete();
+        Assert.assertFalse(content.contains("<br"));
+    }
     
     @Test
     public void testRQuote() throws Exception {
