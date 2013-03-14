@@ -458,6 +458,7 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
             
             // Lastly, use the merged data from above to create the witness variants
             boolean first = true;
+            StringBuilder ids = new StringBuilder();
             for (Entry<String, Set<String>> ent : txtSiglumMap.entrySet() ) {
                 if ( first )  {
                     first = false;
@@ -465,7 +466,7 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
                     sb.append("; ");
                 }
                 String witTxt = ent.getKey();
-                StringBuilder ids = new StringBuilder();
+               
                 for ( String siglum: ent.getValue() ) {
                     if ( ids.length() > 0 ) {
                         ids.append(", ");
@@ -486,13 +487,17 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
             osw.write( out );
             
             // Add any user annotations on this exact range/base combo
-            List<UserAnnotation> annos = this.userNotesDao.list(this.set, this.baseWitnessId, baseRange);
-            if ( annos.size() == 1 ) {
-                for ( UserAnnotation.Data noteData : annos.get(0).getNotes() ) {
+            UserAnnotation anno = this.userNotesDao.find(this.set, this.baseWitnessId, baseRange);
+            if (anno != null ) {
+                for ( UserAnnotation.Data noteData : anno.getNotes() ) {
                     StringBuilder a = new StringBuilder();
                     a.append("<tr><td class=\"num-col\"> </td><td><i>");
-                    a.append( getSiglum(noteData.getWitnessId()) ).append(": ");
-                    a.append(noteData.getNote()).append("</i></td></tr>\n");
+                    if ( anno.hasGroupAnnotation() ) {
+                        a.append( ids ).append(": ");
+                    } else {
+                        a.append( getSiglum(noteData.getWitnessId()) ).append(": ");
+                    }
+                    a.append(noteData.getText()).append("</i></td></tr>\n");
                     osw.write( a.toString() ); 
                 }
             }

@@ -168,17 +168,10 @@ public class FragmentResource extends BaseResource {
         }
         
         // Get any user annotations on this range & base id combination
-        List<UserAnnotation> annos = this.userNotesDao.list(this.set, this.baseWitnessId, this.range);
-        UserAnnotation userAnno = null;
+        UserAnnotation userAnno = this.userNotesDao.find(this.set, this.baseWitnessId, this.range);
         String groupAnnotation = "";
-        if ( annos.size() == 1 ) {
-            userAnno = annos.get(0);
-            for ( UserAnnotation.Data noteData : userAnno.getNotes() ) {
-                if ( noteData.isGroupAnnotation() )  {
-                    groupAnnotation = noteData.getNote();
-                    break;
-                }
-            }
+        if (userAnno  != null && userAnno.hasGroupAnnotation()) {
+            groupAnnotation = userAnno.getGroupNoteContent();
         }
            
         // lookup a fragment for each witness
@@ -201,7 +194,7 @@ public class FragmentResource extends BaseResource {
             if ( userAnno != null ) {
                 for ( UserAnnotation.Data noteData : userAnno.getNotes() ) {
                     if ( noteData.getWitnessId().equals(witnessId))  {
-                        info.note = noteData.getNote();
+                        info.note = noteData.getText();
                     }
                 }
             }
@@ -218,6 +211,10 @@ public class FragmentResource extends BaseResource {
             obj.addProperty("typeSymbol", f.typeSymbol);
             obj.addProperty("fragment", f.fragment);
             obj.addProperty("note", f.note);
+            JsonObject rng = new JsonObject();
+            rng.addProperty("start", f.getStart());
+            rng.addProperty("end", f.getEnd());
+            obj.add("range", rng);
             frags.add(obj);
         }
         

@@ -48,7 +48,8 @@ public class JuxtaTagExtractor extends DefaultHandler  {
     private PsWitnessInfo psWitnessInfo;
     private StringBuilder psWitnessContent;
     private CharArrayWriter contentBuffer = new CharArrayWriter();
-    private Stack<Boolean> choiceExtractedStack = new Stack<Boolean>();
+    private Stack<String> choiceStack = new Stack<String>();
+    private boolean choiceIncluded = false;
     
     /**
      * For parallel segmentated sources, set the witness information that will
@@ -152,7 +153,7 @@ public class JuxtaTagExtractor extends DefaultHandler  {
         // special choice tag handling for ps witnesses: only take content from the
         // first child for each choice element
         if ( this.psWitnessContent != null ) {
-            if ( isExcluded == false && this.choiceExtractedStack.empty() == false && this.choiceExtractedStack.peek() == true ) {
+            if ( isExcluded == false && this.choiceStack.size() >= 1 &&   this.choiceIncluded == true) {
                 // once the first nested tag of a choice is grabbed, bag the rest
                 isExcluded = true;
             }
@@ -166,7 +167,8 @@ public class JuxtaTagExtractor extends DefaultHandler  {
                 this.exclusionContext.push(qName);
             } 
         } else if (isChoice(qName) ) {
-            this.choiceExtractedStack.push(false);
+            this.choiceIncluded = false;
+            this.choiceStack.push(qName);
         }else if ( isRevision(qName) ) {
             this.revisionExtractStack.push( new ExtractRevision(isExcluded, this.currPos) );
         } else if ( isNote(qName) ) {
@@ -176,6 +178,11 @@ public class JuxtaTagExtractor extends DefaultHandler  {
         } else if ( isLineNumber(qName) ) {
             handleLineNumber(attributes);
         }else {
+            // once a choice tag is found, keep pushing tags onto the stwck
+            if ( this.choiceStack.size() >=1 ) {
+                this.choiceStack.push(qName);
+            }
+            
             // default handling for all other tags
             if ( isExcluded ) {
                 this.isExcluding = true;
@@ -344,9 +351,7 @@ public class JuxtaTagExtractor extends DefaultHandler  {
             this.revisions.add( new RevisionInfo(qName, range, rev.content.toString(), !rev.isExcluded) );
 
             
-        } else if ( isChoice(qName)) {
-            this.choiceExtractedStack.pop();
-        }else if ( isNote(qName) ) {
+        } else if ( isNote(qName) ) {
             this.currNote.setContent(this.currNoteContent.toString().replaceAll("\\s+", " ").trim());
             if ( this.currNote.getContent().length() == 0 ) {
                 this.notes.remove(this.currNote);
@@ -363,6 +368,15 @@ public class JuxtaTagExtractor extends DefaultHandler  {
                 }
             }
         } else {
+            if ( this.choiceStack.empty() == false ) {
+                this.choiceStack.pop();
+                // back down to one tag in stack (choice). this means the first 
+                // content nested under the choice tag has been processed. all the
+                // rest will be excluded until choice is empty
+                if ( this.choiceStack.size() == 1) {
+                    this.choiceIncluded = true;
+                }
+            }
             // if the tag has an identifier, save it off for crossreference with targeted notes
             if ( this.xmlIdStack.empty() == false ) {
                 final String xmlId = this.xmlIdStack.pop();
@@ -396,9 +410,9 @@ public class JuxtaTagExtractor extends DefaultHandler  {
             return;
         }
 
-        txt = txt.replaceAll("[\\n]\\s*$", "");
-        txt = txt.replaceAll("^[\\n]\\s*$", "");
-        txt = txt.replaceAll("\\n+", "");
+        txt = txt.replaceAll("[\\n]\\s*$", " ");
+        txt = txt.replaceAll("^[\\n]\\s*$", " ");
+        txt = txt.replaceAll("\\n+", " ");
         txt = txt.replaceAll("\\s+", " ");
         
 //        if ( txt.length() > 0 ) {
@@ -408,8 +422,7 @@ public class JuxtaTagExtractor extends DefaultHandler  {
         if ( this.currNote != null ) {
             this.currNoteContent.append(txt);
         } else {
-            if ( this.choiceExtractedStack.empty() == false ) {
-                this.choiceExtractedStack.setElementAt(true, 0);
+            if ( this.choiceStack.size() >= 1 && this.choiceIncluded == false ) {
                 this.currPos += txt.length();
                 if ( this.psWitnessContent != null ) {
                     this.psWitnessContent.append(txt);

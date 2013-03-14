@@ -331,7 +331,7 @@ public class Exporter extends BaseResource {
                     if ( appJustClosed && Character.isWhitespace(data)) {
                         pos++;
                     } else {
-                        ow.write(data);
+                        ow.write( StringEscapeUtils.escapeXml( ""+(char)data) );
                         lastWritten = data;
                         pos++;
                     }

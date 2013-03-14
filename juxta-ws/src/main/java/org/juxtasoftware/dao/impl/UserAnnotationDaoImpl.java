@@ -39,52 +39,121 @@ public class UserAnnotationDaoImpl implements UserAnnotationDao, InitializingBea
     }
 
     @Override
-    public void create(UserAnnotation ua) {
+    public Long create(UserAnnotation ua) {
         final MapSqlParameterSource ps = new MapSqlParameterSource();
         ps.addValue("set_id", ua.getSetId());
+        ps.addValue("group_id", ua.getGroupId());
         ps.addValue("base_id", ua.getBaseId());
         ps.addValue("range_start", ua.getBaseRange().getStart());
         ps.addValue("range_End", ua.getBaseRange().getEnd());
         Long id = this.insert.executeAndReturnKey(ps).longValue();
         addNotes(id, ua.getNotes());
+        ua.setId(id);
+        return id;
     }
 
     private void addNotes(Long id, Set<Data> notes) {
         final String sql = "insert into "+DATA_TABLE+" (note_id,witness_id,note) values (?,?,?)";
         for ( UserAnnotation.Data noteData : notes ) {
-            this.jdbcTemplate.update(sql, id, noteData.getWitnessId(), noteData.getNote());
+            this.jdbcTemplate.update(sql, id, noteData.getWitnessId(), noteData.getText());
         }
+    }
+    
+    @Override
+    public UserAnnotation find(ComparisonSet set, Long baseId, Range r) {
+        StringBuilder sql = getFindSql();
+        sql.append(" where set_id=? and base_id=?");        
+        sql.append(" and range_start=? and range_end=?");
+        Extractor rse = new Extractor();
+        
+        List<UserAnnotation> hits = this.jdbcTemplate.query(sql.toString(), rse, set.getId(), baseId, r.getStart(), r.getEnd() );
+        if ( hits.size() == 0 ) {
+            return null;
+        }
+        
+        if ( hits.size() == 1 ) {
+            return hits.get(0);
+        }
+        
+        UserAnnotation anno =  null;
+        for ( UserAnnotation a : hits ) {
+            if ( anno == null ) {
+                anno = a;
+            } else {
+                if (anno.getGroupId() == null ) {
+                    anno.setGroupId(a.getGroupId());
+                }
+                anno.addNotes(a.getNotes());
+            }
+        }
+        return anno;
     }
 
     @Override
-    public List<UserAnnotation> list(ComparisonSet set, Long baseId, Range r) {
+    public List<UserAnnotation> list(ComparisonSet set, Long baseId) {
         Extractor rse = new Extractor();
-
         StringBuilder sql = getFindSql();
         sql.append(" where set_id=? and base_id=?");
-        if ( r == null ) {
-            return this.jdbcTemplate.query(sql.toString(), rse, set.getId(), baseId );
-        }
-        
-        sql.append(" and range_start>=? and range_end<=?");
-        return this.jdbcTemplate.query(sql.toString(), rse, set.getId(), baseId, r.getStart(), r.getEnd() );
+        return this.jdbcTemplate.query(sql.toString(), rse, set.getId(), baseId );
     }
     
     private StringBuilder getFindSql() {
         StringBuilder sql = new StringBuilder();
-        sql.append("select id,set_id,base_id,range_start,range_end,witness_id,note from ");
-        sql.append(MAIN_TABLE);
-        sql.append(" inner join ").append(DATA_TABLE);
-        sql.append(" on id = note_id ");
+        sql.append("select n.id as n_id,set_id,base_id,range_start,range_end,group_id,d.id as d_id,witness_id,note from ");
+        sql.append(MAIN_TABLE).append(" n");
+        sql.append(" inner join ").append(DATA_TABLE).append(" d");
+        sql.append(" on n.id = note_id ");
         return sql;
+    }
+    
+    @Override
+    public void updateGroupId(UserAnnotation ua, Long groupId) {
+        String sql="update "+MAIN_TABLE+" set group_id=? where id=?";
+        this.jdbcTemplate.update(sql, groupId, ua.getId());
     }
 
     @Override
-    public void update(UserAnnotation ua) {
+    public void updateNotes(UserAnnotation ua) {
+        StringBuilder sb = getFindSql();
+        sb.append(" where set_id=? and base_id=?");        
+        sb.append(" and range_start=? and range_end=?");
+        Extractor rse = new Extractor();
+        List<UserAnnotation> hits = this.jdbcTemplate.query(sb.toString(), rse, 
+            ua.getSetId(), ua.getBaseId(), 
+            ua.getBaseRange().getStart(), ua.getBaseRange().getEnd() );
         String sql = "delete from "+DATA_TABLE+" where note_id=?";
-        this.jdbcTemplate.update(sql,ua.getId());
-        addNotes(ua.getId(), ua.getNotes());
+        for ( UserAnnotation a : hits) {
+            this.jdbcTemplate.update(sql,a.getId());
+        }
         
+        addNotes(ua.getId(), ua.getNotes());        
+    }
+    
+    @Override
+    public void deleteWitnessNote(Long noteId) {
+        String sql = "select note_id from "+DATA_TABLE+" where id=?";
+        Long id = this.jdbcTemplate.queryForLong(sql, noteId);
+        sql = "delete from "+DATA_TABLE+" where id=?";
+        this.jdbcTemplate.update(sql, noteId);
+        
+        sql = "select count(*) as cnt from "+DATA_TABLE+" where note_id=? and witness_id != 0";
+        int cnt = this.jdbcTemplate.queryForInt(sql,id);
+        if ( cnt == 0 ) {
+            sql = "delete from "+MAIN_TABLE+" where id=?";
+            this.jdbcTemplate.update(sql, id);
+        }
+    }
+    
+    @Override
+    public void updateGroupAnnotation(ComparisonSet set, Long groupId, String newNote) {
+        String sql = "update juxta_user_note_data inner join juxta_user_note on note_id=id set note=? where set_id=? and group_id = ?";
+        this.jdbcTemplate.update(sql, newNote, set.getId(), groupId);
+    }
+    
+    @Override
+    public void deleteGroup(ComparisonSet set, Long groupId) {
+        final String sql = "delete from "+MAIN_TABLE+" where set_id=? and group_id=?";
+        this.jdbcTemplate.update(sql, set.getId(), groupId );
     }
 
     @Override
@@ -126,19 +195,24 @@ public class UserAnnotationDaoImpl implements UserAnnotationDao, InitializingBea
         public List<UserAnnotation> extractData(ResultSet rs) throws SQLException, DataAccessException {
             Map<Long, UserAnnotation> map = new HashMap<Long, UserAnnotation>();
             while ( rs.next() ) {
-                Long id = rs.getLong("id");
+                Long id = rs.getLong("n_id");
                 UserAnnotation ua = map.get(id);
                 if ( ua == null ) {
                     ua = new UserAnnotation();
                     ua.setId(id);
                     ua.setBaseId( rs.getLong("base_id") );
                     ua.setSetId( rs.getLong("set_id") );
+                    Object gid = rs.getObject("group_id");
+                    if ( gid != null ) {
+                        ua.setGroupId(rs.getLong("group_id"));
+                    }
                     ua.setBaseRange( new Range(
                         rs.getLong("range_start"),
                         rs.getLong("range_end") ) );
                     map.put(id, ua);
                 }
-                ua.addNote( rs.getLong("witness_id"), rs.getString("note"));
+                UserAnnotation.Data note = new UserAnnotation.Data(rs.getLong("d_id"), rs.getLong("witness_id"), rs.getString("note"));
+                ua.addNote(note);
             }
             List<UserAnnotation> out = new ArrayList<UserAnnotation>(map.values());
             Collections.sort(out);
