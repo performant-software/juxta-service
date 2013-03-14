@@ -170,7 +170,7 @@ public class FragmentResource extends BaseResource {
         // Get any user annotations on this range & base id combination
         UserAnnotation userAnno = this.userNotesDao.find(this.set, this.baseWitnessId, this.range);
         String groupAnnotation = "";
-        if (userAnno  != null && userAnno.isGroupAnnotation()) {
+        if (userAnno  != null && userAnno.hasGroupAnnotation()) {
             groupAnnotation = userAnno.getGroupNoteContent();
         }
            
@@ -194,7 +194,7 @@ public class FragmentResource extends BaseResource {
             if ( userAnno != null ) {
                 for ( UserAnnotation.Data noteData : userAnno.getNotes() ) {
                     if ( noteData.getWitnessId().equals(witnessId))  {
-                        info.note = noteData.getNote();
+                        info.note = noteData.getText();
                     }
                 }
             }

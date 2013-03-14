@@ -1,5 +1,6 @@
 package org.juxtasoftware.model;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -14,6 +15,9 @@ public class UserAnnotation implements Comparable<UserAnnotation> {
     private Range baseRange;
     private String fragment;
     
+    public static Data createNote(final Long witId, final String note) {
+        return new Data(witId, note);
+    }
     public UserAnnotation() {
     }
     public Long getGroupId() {
@@ -49,8 +53,11 @@ public class UserAnnotation implements Comparable<UserAnnotation> {
     public Set<Data> getNotes() {
         return notes;
     }
-    public void addNote(Long witnessId, String note) {
-        this.notes.add( new Data(witnessId, note ) );
+    public void addNote(UserAnnotation.Data note) {
+        this.notes.add(note );
+    }
+    public void addNotes(Collection<Data> set) {
+        this.notes.addAll(set);
     }
     public void removeNote(Long witnessId) {
         for ( Data d : this.notes ) {
@@ -72,9 +79,18 @@ public class UserAnnotation implements Comparable<UserAnnotation> {
                  this.setId.equals(other.setId));
     }
     
-    public boolean isGroupAnnotation() {
+    public boolean hasGroupAnnotation() {
         for ( Data note : this.notes) {
             if (note.getWitnessId().equals(0L) ) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    public boolean hasWitnessAnnotation() {
+        for ( Data note : this.notes) {
+            if (!note.getWitnessId().equals(0L) ) {
                 return true;
             }
         }
@@ -85,7 +101,7 @@ public class UserAnnotation implements Comparable<UserAnnotation> {
     public String getGroupNoteContent() {
         for ( Data note : this.notes) {
             if (note.getWitnessId().equals(0L) ) {
-                return note.getNote();
+                return note.getText();
             }
         }
         return "";
@@ -96,13 +112,13 @@ public class UserAnnotation implements Comparable<UserAnnotation> {
             boolean found = false;
             for ( Data mine : this.notes ) {
                 if ( mine.getWitnessId().equals(other.getWitnessId())) {
-                    mine.note = other.note;
+                    mine.text = other.text;
                     found = true;
                     break;
                 }
             }
             if ( found == false ) {
-                addNote(other.witnessId, other.note);
+                addNote(other);
             }
         }
     }
@@ -157,15 +173,27 @@ public class UserAnnotation implements Comparable<UserAnnotation> {
     }
     
     public static class Data {
+        private Long id;
         private Long witnessId;
         private String witnessName;
-        private String note;
-        public Data( final Long id, final String note ) {
-            this.witnessId = id;
-            this.note = note;
+        private String text;
+        public Data( final Long id, final Long witId, final String text ) {
+            this.id = id;
+            this.witnessId = witId;
+            this.text = text;
         }
-        public String getNote() {
-            return this.note;
+        public Data( final Long witId, final String text ) {
+            this.witnessId = witId;
+            this.text = text;
+        }
+        public Long getId() {
+            return this.id;
+        }
+        public void setId(Long id) {
+            this.id = id;
+        }
+        public String getText() {
+            return this.text;
         }
         public Long getWitnessId() {
             return this.witnessId;
@@ -179,14 +207,19 @@ public class UserAnnotation implements Comparable<UserAnnotation> {
         public void setWitnessName(String witnessName) {
             this.witnessName = witnessName;
         }
+        public void setText(String txt) {
+            this.text =txt;
+        }
         @Override
         public String toString() {
-            return "[witnessId=" + witnessId + ", note=" + note + "]";
+            return "[witnessId=" + witnessId + ", note=" + text + "]";
         }
         @Override
         public int hashCode() {
             final int prime = 31;
             int result = 1;
+            result = prime * result + ((id == null) ? 0 : id.hashCode());
+            result = prime * result + ((text == null) ? 0 : text.hashCode());
             result = prime * result + ((witnessId == null) ? 0 : witnessId.hashCode());
             return result;
         }
@@ -199,6 +232,16 @@ public class UserAnnotation implements Comparable<UserAnnotation> {
             if (getClass() != obj.getClass())
                 return false;
             Data other = (Data) obj;
+            if (id == null) {
+                if (other.id != null)
+                    return false;
+            } else if (!id.equals(other.id))
+                return false;
+            if (text == null) {
+                if (other.text != null)
+                    return false;
+            } else if (!text.equals(other.text))
+                return false;
             if (witnessId == null) {
                 if (other.witnessId != null)
                     return false;
@@ -206,5 +249,7 @@ public class UserAnnotation implements Comparable<UserAnnotation> {
                 return false;
             return true;
         }
+
+        
     }
 }

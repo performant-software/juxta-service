@@ -32,7 +32,8 @@ public interface UserAnnotationDao {
      * Update an existing user annotation with new data
      * @param ua
      */
-    void update(UserAnnotation ua);
+    void updateNotes(UserAnnotation ua);
+    void updateGroupId(UserAnnotation ua, Long groupId);
     
     /**
      * Delete user annotations. All but set are optional.
@@ -51,6 +52,7 @@ public interface UserAnnotationDao {
      */
     void deleteGroup(ComparisonSet set, Long groupId);
     void updateGroupAnnotation(ComparisonSet set, Long groupId, String newNote);
+    void deleteWitnessNote(Long noteId);
     
     /**
      * Check if any annotations exist for this set/base.

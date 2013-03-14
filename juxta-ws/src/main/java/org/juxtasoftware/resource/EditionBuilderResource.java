@@ -492,12 +492,12 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
                 for ( UserAnnotation.Data noteData : anno.getNotes() ) {
                     StringBuilder a = new StringBuilder();
                     a.append("<tr><td class=\"num-col\"> </td><td><i>");
-                    if ( anno.isGroupAnnotation() ) {
+                    if ( anno.hasGroupAnnotation() ) {
                         a.append( ids ).append(": ");
                     } else {
                         a.append( getSiglum(noteData.getWitnessId()) ).append(": ");
                     }
-                    a.append(noteData.getNote()).append("</i></td></tr>\n");
+                    a.append(noteData.getText()).append("</i></td></tr>\n");
                     osw.write( a.toString() ); 
                 }
             }

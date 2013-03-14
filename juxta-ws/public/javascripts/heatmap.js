@@ -541,10 +541,12 @@ $(function() {
          
          if ( owner.exists() ) {
             diffId = owner.attr("id").substring("box-edit-annotation-".length);
-            data.notes = [ { witnessId: $("#mb-wit-id-"+diffId).text(), note: $("#annotation-editor-"+diffId).val()} ];
+            data.witnessId = $("#mb-wit-id-"+diffId).text();
+            data.note = $("#annotation-editor-"+diffId).val();
          } else {
             owner = $(this).closest(".group-edit-annotation");
-            data.notes = [ { witnessId: "0", note: $(".annotation-editor.group").val()} ];    
+            data.witnessId = "0"; 
+            data.note = $(".annotation-editor.group").val();    
          }
          
          $.ajax({
@@ -554,7 +556,7 @@ $(function() {
            contentType : 'application/json',
            success: function() {  
               owner.hide();
-              showAnnotation(diffId, data.notes[0].note);
+              showAnnotation(diffId, data.note);
               $("#annotations-button").show();
               sizeAnnotationBrowser();
            }
