@@ -500,10 +500,10 @@ $(function() {
          event.stopPropagation();
          if ( $(this).hasClass("anno-edit") ) {
             $(".group-annotation").hide();
-            $(".group-edit-annotation .ua-toolbar").text("Edit Group Annotation");
+            $(".group-edit-annotation .ua-toolbar").text("Edit Regional Annotation");
             $(".annotation-editor.group").val($(".box-annotation.group").text());
          } else {
-            $(".group-edit-annotation .ua-toolbar").text("Add Group Annotation");
+            $(".group-edit-annotation .ua-toolbar").text("Add Regional Annotation");
             $(".annotation-editor.group").val("");
          }
          $(".group-edit-annotation").show();

@@ -62,7 +62,7 @@
    
    <div class="group-edit-annotation">
       <div class="ua-toolbar">
-         Add Group Annotation
+         Add Regional Annotation
       </div>
       <textarea class="annotation-editor group"></textarea>
       <div class="anno-buttons">
@@ -72,12 +72,12 @@
       </div>
    </div>
    <div class="group-annotation">
-      <div class="ua-toolbar">Group Annotation
+      <div class="ua-toolbar">Regional Annotation
          <p class="group-anno anno-edit" title="Edit annotation"/>
          <p class="group-del-anno anno-del" title="Delete annotation"/>
          <div style="clear:both"></div>
       </div>
-      <p class="box-annotation group">This is a fake group annotation!</p>
+      <p class="box-annotation group"></p>
       <div class="group-del-annotation">
          Delete annotation?
          <a class="del-anno-ok-button juxta-button sbs-button">Yes</a>
