@@ -820,8 +820,19 @@ $(function() {
       $("#annotation-browser").on("click", ".show-ua", function() {
          var r = $(this).closest("div.ua").attr("juxta:range");
          $('.heatmap').removeClass("outlined");
+         var matched = false;
          var hit = $('.heatmap').filter(function() {
-            return ($(this).attr('juxta:range') === r);
+            if (matched) return false;
+            var rng = $(this).attr('juxta:range');
+            if ( rng === r ) {
+               matched = true;
+               return true;
+            }
+            if ( parseInt(r.split(",")[0],10) >= parseInt(rng.split(",")[0],10) &&  parseInt(r.split(",")[1],10) <= parseInt(rng.split(",")[1],10) ) {
+               matched = true;
+               return true;
+            }
+            return false;
          });
          $(hit).addClass("outlined");
          $('#heatmap-scroller').animate({
