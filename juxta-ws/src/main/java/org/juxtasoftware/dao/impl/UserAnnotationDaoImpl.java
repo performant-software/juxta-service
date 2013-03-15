@@ -138,8 +138,15 @@ public class UserAnnotationDaoImpl implements UserAnnotationDao, InitializingBea
     
     @Override
     public void addWitnessNote(UserAnnotation ua, Long witId, String text) {
+        StringBuilder sql = new StringBuilder("select id from  ");
+        sql.append(MAIN_TABLE);
+        sql.append(" where set_id=? and base_id=?");        
+        sql.append(" and range_start=? and range_end=? and group_id is null ");
+        Long noteId = this.jdbcTemplate.queryForLong(sql.toString(), 
+            ua.getSetId(), ua.getBaseId(), ua.getBaseRange().getStart(), ua.getBaseRange().getEnd());
+        
         String s = "insert into "+DATA_TABLE+" (note_id,witness_id,note) values (?,?,?)";
-        this.jdbcTemplate.update(s, ua.getId(), witId, text);
+        this.jdbcTemplate.update(s, noteId, witId, text);
     }
     
     @Override
