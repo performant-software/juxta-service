@@ -467,6 +467,7 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
                 }
                 String witTxt = ent.getKey();
                
+                ids = new StringBuilder();
                 for ( String siglum: ent.getValue() ) {
                     if ( ids.length() > 0 ) {
                         ids.append(", ");
@@ -495,7 +496,7 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
                     if ( anno.hasGroupAnnotation() ) {
                         a.append( ids ).append(": ");
                     } else {
-                        a.append( getSiglum(noteData.getWitnessId()) ).append(": ");
+                        a.append( "<b>").append( getSiglum(noteData.getWitnessId()) ).append("</b>: ");
                     }
                     a.append(noteData.getText()).append("</i></td></tr>\n");
                     osw.write( a.toString() ); 

@@ -72,7 +72,7 @@ public class UserAnnotationDaoImpl implements UserAnnotationDao, InitializingBea
     public UserAnnotation find(ComparisonSet set, Long baseId, Range r) {
         StringBuilder sql = getFindSql();
         sql.append(" where set_id=? and base_id=?");        
-        sql.append(" and range_start=? and range_end=?");
+        sql.append(" and range_start >= ? and range_end <= ?");
         Extractor rse = new Extractor();
         
         List<UserAnnotation> hits = this.jdbcTemplate.query(sql.toString(), rse, set.getId(), baseId, r.getStart(), r.getEnd() );
