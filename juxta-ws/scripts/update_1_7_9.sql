@@ -17,3 +17,4 @@ rename table juxta_user_note_data_new to juxta_user_note_data;
 
 alter table juxta_user_note add group_id bigint(20) default null;
 alter table juxta_user_note_data add id BIGINT PRIMARY KEY AUTO_INCREMENT;
+alter table juxta_user_note_data add is_group BOOL NOT NULL DEFAULT 0;

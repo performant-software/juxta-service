@@ -53,9 +53,9 @@ public class UserAnnotationDaoImpl implements UserAnnotationDao, InitializingBea
     }
 
     private void addNotes(Long id, Set<Data> notes) {
-        final String sql = "insert into "+DATA_TABLE+" (note_id,witness_id,note) values (?,?,?)";
+        final String sql = "insert into "+DATA_TABLE+" (note_id,is_group,witness_id,note) values (?,?,?,?)";
         for ( UserAnnotation.Data noteData : notes ) {
-            this.jdbcTemplate.update(sql, id, noteData.getWitnessId(), noteData.getText());
+            this.jdbcTemplate.update(sql, id, noteData.isGroup(), noteData.getWitnessId(), noteData.getText());
         }
     }
     
@@ -108,11 +108,17 @@ public class UserAnnotationDaoImpl implements UserAnnotationDao, InitializingBea
     
     private StringBuilder getFindSql() {
         StringBuilder sql = new StringBuilder();
-        sql.append("select n.id as n_id,set_id,base_id,range_start,range_end,group_id,d.id as d_id,witness_id,note from ");
+        sql.append("select n.id as n_id,set_id,base_id,range_start,range_end,group_id,d.id as d_id,is_group,witness_id,note from ");
         sql.append(MAIN_TABLE).append(" n");
         sql.append(" inner join ").append(DATA_TABLE).append(" d");
         sql.append(" on n.id = note_id ");
         return sql;
+    }
+    
+    @Override
+    public List<Long> getGroupWitnesses(Long groupId) {
+        String sql= "select witness_id from juxta_user_note_data where note_id in (select id from juxta_user_note where group_id = ?)";
+        return this.jdbcTemplate.queryForList(sql, Long.class, groupId);
     }
     
     @Override
@@ -128,7 +134,7 @@ public class UserAnnotationDaoImpl implements UserAnnotationDao, InitializingBea
         sql = "delete from "+DATA_TABLE+" where id=?";
         this.jdbcTemplate.update(sql, noteId);
         
-        sql = "select count(*) as cnt from "+DATA_TABLE+" where note_id=? and witness_id != 0";
+        sql = "select count(*) as cnt from "+DATA_TABLE+" where note_id=?";
         int cnt = this.jdbcTemplate.queryForInt(sql,id);
         if ( cnt == 0 ) {
             sql = "delete from "+MAIN_TABLE+" where id=?";
@@ -152,7 +158,7 @@ public class UserAnnotationDaoImpl implements UserAnnotationDao, InitializingBea
     @Override
     public void updateWitnessNote(Long noteId, String text) {
         String sql = 
-            "update juxta_user_note_data set note=? where note_id=?";
+            "update juxta_user_note_data set note=? where id=?";
         this.jdbcTemplate.update(sql, text, noteId);
     }
     
@@ -164,7 +170,7 @@ public class UserAnnotationDaoImpl implements UserAnnotationDao, InitializingBea
     }
     
     @Override
-    public void deleteGroup(ComparisonSet set, Long groupId) {
+    public void deleteGroupNote(ComparisonSet set, Long groupId) {
         final String sql = "delete from "+MAIN_TABLE+" where set_id=? and group_id=?";
         this.jdbcTemplate.update(sql, set.getId(), groupId );
     }
@@ -224,7 +230,9 @@ public class UserAnnotationDaoImpl implements UserAnnotationDao, InitializingBea
                         rs.getLong("range_end") ) );
                     map.put(id, ua);
                 }
-                UserAnnotation.Data note = new UserAnnotation.Data(rs.getLong("d_id"), rs.getLong("witness_id"), rs.getString("note"));
+                UserAnnotation.Data note = new UserAnnotation.Data(rs.getLong("witness_id"), rs.getString("note"));
+                note.setId(rs.getLong("d_id"));
+                note.setGroup(rs.getBoolean("is_group"));
                 ua.addNote(note);
             }
             List<UserAnnotation> out = new ArrayList<UserAnnotation>(map.values());

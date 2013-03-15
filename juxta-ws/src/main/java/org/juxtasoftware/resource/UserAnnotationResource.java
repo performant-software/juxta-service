@@ -130,7 +130,7 @@ public class UserAnnotationResource extends BaseResource {
                     if ( n.getWitnessId().equals(newNote.getWitnessId())) {
                         n.setText(newNote.getText());
                         handled = true;
-                        if (n.getWitnessId().equals(0L)) {
+                        if (n.isGroup()) {
                             Long groupId = this.userNotesDao.findGroupId(this.set, newAnno.getBaseId(), newAnno.getBaseRange());
                             this.userNotesDao.updateGroupNote(groupId, newAnno.getGroupNoteContent());
                         } else {
@@ -168,7 +168,9 @@ public class UserAnnotationResource extends BaseResource {
         anno.setBaseId( obj.get("baseId").getAsLong() );
         JsonObject rngObj = obj.get("baseRange").getAsJsonObject();
         anno.setBaseRange( new Range( rngObj.get("start").getAsLong(), rngObj.get("end").getAsLong() ));
-        anno.addNote( UserAnnotation.createNote(obj.get("witnessId").getAsLong(), obj.get("note").getAsString()) );
+        Data note = UserAnnotation.createNote(obj.get("witnessId").getAsLong(), obj.get("note").getAsString());
+        note.setGroup(obj.get("isGroup").getAsBoolean());
+        anno.addNote( note );
         return anno;
     }
 
@@ -202,7 +204,9 @@ public class UserAnnotationResource extends BaseResource {
         
         for ( Entry<Long, Range> ent : witRangeMap.entrySet() ) {
             UserAnnotation a = new UserAnnotation();
-            a.addNote(  UserAnnotation.createNote(0L, groupAnno.getGroupNoteContent() ));
+            Data note = UserAnnotation.createNote(ent.getKey(), groupAnno.getGroupNoteContent() );
+            note.setGroup(true);
+            a.addNote( note );
             a.setBaseId(ent.getKey());
             a.setSetId(this.set.getId());
             a.setBaseRange(ent.getValue());
@@ -214,6 +218,31 @@ public class UserAnnotationResource extends BaseResource {
     @Get("html")
     public Representation getHtml() {
         List<UserAnnotation> ua = getUserAnnotations();
+        
+        // replace the name of any group notes with the names of
+        // all witnesses that ahve been annotated
+        List<Witness> wits = this.comparionSetDao.getWitnesses(this.set);
+        for (UserAnnotation a : ua ) {
+            if ( a.hasGroupAnnotation() ) {
+                for (Data n : a.getNotes() ) {
+                    if ( n.isGroup() ) {
+                        StringBuilder newTitle = new StringBuilder();
+                        for (Long witId :  this.userNotesDao.getGroupWitnesses(a.getGroupId()) ) {
+                            for ( Witness w : wits ) {
+                                if ( w.getId().equals(witId)) {
+                                    if ( newTitle.length() != 0) {
+                                        newTitle.append("<br/>");
+                                    }
+                                    newTitle.append(w.getName());
+                                    break;
+                                }
+                            }
+                        }
+                        n.setWitnessName(newTitle.toString());
+                    }
+                }
+            }
+        }
         Map<String,Object> map = new HashMap<String,Object>();
         map.put("annotations", ua);
         return toHtmlRepresentation("user_annotations.ftl", map,false);
@@ -304,7 +333,7 @@ public class UserAnnotationResource extends BaseResource {
                 setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
                 return toTextRepresentation("No matching user annotation found");
             }
-            this.userNotesDao.deleteGroup(this.set, tgtAnno.getGroupId());
+            this.userNotesDao.deleteGroupNote(this.set, tgtAnno.getGroupId());
             return toTextRepresentation(""+this.userNotesDao.count(this.set, baseId));
         }
         

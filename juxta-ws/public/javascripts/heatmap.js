@@ -543,10 +543,12 @@ $(function() {
             diffId = owner.attr("id").substring("box-edit-annotation-".length);
             data.witnessId = $("#mb-wit-id-"+diffId).text();
             data.note = $("#annotation-editor-"+diffId).val();
+            data.isGroup = false;
          } else {
             owner = $(this).closest(".group-edit-annotation");
-            data.witnessId = "0"; 
-            data.note = $(".annotation-editor.group").val();    
+            data.witnessId = $("#curr-base-witness-id").text(); 
+            data.note = $(".annotation-editor.group").val();  
+            data.isGroup = true;  
          }
          
          $.ajax({

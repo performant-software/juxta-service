@@ -201,6 +201,7 @@ CREATE TABLE IF NOT EXISTS juxta_user_note_data (
   note_id bigint(20) NOT NULL,
   witness_id bigint(20) NOT NULL,
   note text NOT NULL,
+  is_group BOOL NOT NULL DEFAULT 0,
   PRIMARY KEY (id),
   KEY (note_id),
   FOREIGN KEY (note_id) REFERENCES juxta_user_note (id) ON DELETE CASCADE

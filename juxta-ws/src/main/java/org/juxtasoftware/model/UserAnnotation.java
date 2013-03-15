@@ -81,7 +81,7 @@ public class UserAnnotation implements Comparable<UserAnnotation> {
     
     public boolean hasGroupAnnotation() {
         for ( Data note : this.notes) {
-            if (note.getWitnessId().equals(0L) ) {
+            if ( note.isGroup() ) {
                 return true;
             }
         }
@@ -90,7 +90,7 @@ public class UserAnnotation implements Comparable<UserAnnotation> {
     
     public boolean hasWitnessAnnotation() {
         for ( Data note : this.notes) {
-            if (!note.getWitnessId().equals(0L) ) {
+            if ( note.isGroup() == false ) {
                 return true;
             }
         }
@@ -100,7 +100,7 @@ public class UserAnnotation implements Comparable<UserAnnotation> {
 
     public String getGroupNoteContent() {
         for ( Data note : this.notes) {
-            if (note.getWitnessId().equals(0L) ) {
+            if ( note.isGroup() ) {
                 return note.getText();
             }
         }
@@ -172,16 +172,16 @@ public class UserAnnotation implements Comparable<UserAnnotation> {
         return 0;
     }
     
+    /**
+     * User note details
+     */
     public static class Data {
         private Long id;
         private Long witnessId;
         private String witnessName;
         private String text;
-        public Data( final Long id, final Long witId, final String text ) {
-            this.id = id;
-            this.witnessId = witId;
-            this.text = text;
-        }
+        private boolean isGroup;
+        
         public Data( final Long witId, final String text ) {
             this.witnessId = witId;
             this.text = text;
@@ -191,6 +191,12 @@ public class UserAnnotation implements Comparable<UserAnnotation> {
         }
         public void setId(Long id) {
             this.id = id;
+        }
+        public boolean isGroup() {
+            return this.isGroup;
+        }
+        public void setGroup(boolean isIt) {
+            this.isGroup = isIt;
         }
         public String getText() {
             return this.text;

@@ -16,6 +16,14 @@ public interface UserAnnotationDao {
     Long create(UserAnnotation ua);
     
     /**
+     * Add a note for a specific witness to an existing user annotation
+     * @param ua
+     * @param witnessId
+     * @param text
+     */
+    void addWitnessNote( UserAnnotation ua, Long witnessId, String text);
+    
+    /**
      * Find a specific user annotation
      */
     UserAnnotation find(ComparisonSet set, Long baseId, Range r);
@@ -30,7 +38,7 @@ public interface UserAnnotationDao {
     
     void updateGroupNote( Long groupId, String newNote);
     void updateWitnessNote( Long noteId, String text);
-    void addWitnessNote( UserAnnotation ua, Long witnessId, String text);
+    List<Long> getGroupWitnesses( Long groupId );
     
     void updateGroupId(UserAnnotation ua, Long groupId);
     Long findGroupId( ComparisonSet set, Long baseId, Range r);
@@ -44,13 +52,7 @@ public interface UserAnnotationDao {
      * @param r
      */
     void delete(ComparisonSet set, Long baseId, Range r);
-    
-    /**
-     * Delete all annotations that are part of a group
-     * @param set
-     * @param groupId
-     */
-    void deleteGroup(ComparisonSet set, Long groupId);
+    void deleteGroupNote(ComparisonSet set, Long groupId);
     void deleteWitnessNote(Long noteId);
     
     /**
