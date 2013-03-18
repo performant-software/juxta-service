@@ -16,7 +16,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <slf4j.version>1.6.1</slf4j.version>
-        <restlet.version>2.1.1</restlet.version>
+        <restlet.version>2.1.2</restlet.version>
     </properties>
 
     <!-- Organization developing the application -->
