@@ -50,15 +50,17 @@
 <div class="witnesses-popup">
     <span id="side" style="display: none"></span>
     <div class="header">Select Witness</div>
-    <table id="witness-select" class="witness-select" size="${witnessCount}">
-        <#list witnesses as witness> 
-            <tr class="wit-sel">
-               <td class="wit-sel">
-                  <p class="witness-option" id="sel-sbs-wit-${witness.id}" title="${witness.name}">${witness.name}</p>
-               </td>
-            </tr>
-        </#list>
-    </table>
+    <div id="wit-scroller">
+       <table class="witness-select" size="${witnessCount}">
+           <#list witnesses as witness> 
+               <tr class="wit-sel">
+                  <td class="wit-sel">
+                     <p class="witness-option" id="sel-sbs-wit-${witness.id}" title="${witness.name}">${witness.name}</p>
+                  </td>
+               </tr>
+           </#list>
+       </table>
+    </div>
     <div class="popup-buttons">
         <a id="sbs-ok-button" class="juxta-button sbs-button">OK</a>
         <a id="sbs-cancel-button" class="juxta-button sbs-button">Cancel</a>

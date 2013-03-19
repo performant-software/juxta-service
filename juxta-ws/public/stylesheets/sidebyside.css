@@ -69,6 +69,15 @@ div.canvas-div {
    outline: 1px solid #227799;
 }
 
+#wit-scroller {
+   height: 150px;
+   overflow-y: scroll;
+   overflow-x: hidden;
+   background: white;
+   margin: 10px 9px 4px 10px;
+   outline: 1px solid #aaa;
+}
+
 /* div containing the right witness for comparison */ 
 #right-witness {
     float: right;
@@ -158,11 +167,10 @@ span.move  {
     padding: 0px 0px 5px 0px;
 }
 table.witness-select {
-    margin: 8px auto 5px auto;
-    background-color: white;
-    border: 0;
-    outline: 1px inset #ccc;
     text-align:left;
+    border: 0;
+    padding: 0;
+    margin: 0;
 }
 
 .wit-sel {
