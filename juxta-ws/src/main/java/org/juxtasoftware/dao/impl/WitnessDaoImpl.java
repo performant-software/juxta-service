@@ -158,8 +158,10 @@ public class WitnessDaoImpl implements WitnessDao, InitializingBean {
         for (Usage u : usage) {
             if (u.getType().equals(Usage.Type.COMPARISON_SET)) {
                 ComparisonSet set = setDao.find(u.getId());
-                set.setStatus(Status.NOT_COLLATED);
-                this.setDao.update(set);
+                if ( !(set.getStatus().equals(Status.DELETED) || !set.getStatus().equals(Status.NOT_COLLATED)) ) {
+                    set.setStatus(Status.NOT_COLLATED);
+                    this.setDao.update(set);
+                }
                 sets.add(set);
             }
         }

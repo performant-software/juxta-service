@@ -84,7 +84,7 @@ public class ComparisionSetDaoImpl extends JuxtaDaoImpl<ComparisonSet> implement
     @Override
     public void clearCollationData( ComparisonSet set) {
         // flag set as uncollated if necessary
-        if ( !(set.getStatus().equals(Status.DELETED) || set.getStatus().equals(Status.NOT_COLLATED)) ) {
+        if ( !(set.getStatus().equals(Status.DELETED) || !set.getStatus().equals(Status.NOT_COLLATED)) ) {
             set.setStatus(ComparisonSet.Status.NOT_COLLATED);
             update(set);
         }
@@ -259,16 +259,18 @@ public class ComparisionSetDaoImpl extends JuxtaDaoImpl<ComparisonSet> implement
 
     @Override
     public void delete(final ComparisonSet set) {
-        set.setName(set.getName()+"-DELETED-"+System.currentTimeMillis());
-        set.setStatus(Status.DELETED);
-        update(set);
-        this.taskExecutor.execute(new Runnable() {
-            @Override
-            public void run() {
-                clearCollationData(set);
-                jt.update("delete from " + tableName + " where id = ?", set.getId());
-            }
-        });
+        if ( set.getStatus().equals(Status.DELETED) == false ) {
+            set.setName(set.getName()+"-DELETED-"+System.currentTimeMillis());
+            set.setStatus(Status.DELETED);
+            update(set);
+            this.taskExecutor.execute(new Runnable() {
+                @Override
+                public void run() {
+                    clearCollationData(set);
+                    jt.update("delete from " + tableName + " where id = ?", set.getId());
+                }
+            });
+        }
     }
 
     @Override
