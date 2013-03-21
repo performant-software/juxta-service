@@ -1,0 +1,109 @@
+
+===============================================================================
+Juxta Web Service Service (Juxta WS)
+===============================================================================
+
+Synopsis
+--------
+
+The Juxta family of software (Juxta, Juxta WS, and Juxta Commons) allows you to 
+compare and collate versions of the same textual work. The Juxta Web Service (Juxta WS) 
+is an open source Java application that provides the core collation and 
+visualization functions of Juxta in a server environment via an API. Development 
+of Juxta WS was supported by NINES at the University of Virginia.
+
+Features
+--------
+
+Juxta WS can collate two or more versions of the same textual work (“witnesses”) 
+and generate a list of alignments as well as two different styles of visualization 
+suitable for display on the web. The “heat map” visualization shows a base text 
+with ranges of difference from the other witnesses highlighted. The “side by side” 
+visualization shows two of the witnesses in synchronously scrolling columns, with 
+areas of difference highlighted.
+
+System requirements
+-------------------
+
+Juxta WS runs on Java 1.6 or greater. By default it expects to have 1 GB memory availble.
+More memory is preferable, since the collation process is memory intensive.
+Juxta WS stores source, witness and collation data in a MySQL database. It is 
+compatible with version greater than 5.1.
+
+Collation Pipeline Overview
+----------------------------
+
+The Juxta WS collation process is based on the Gothenburg Model, which breaks 
+collation in this pipeline of steps:
+
+1 - Raw Content is added to the system and becomes a "source" (XML and TXT are 
+    the accepted formats).
+2 - The source is transformed into a "witness," with XML sources being transformed 
+    by XSLT and TXT sources passed through with limited metadata added.
+3 - Witness are passed through a tokenizer that breaks text content into tokens 
+    based on whitespace and/or punctuation settings. Those tokens are stored in 
+    the database as offset / length pairs.
+4 - Streams of witness tokens are then fed into the diff component, which finds 
+    areas of change. This diff is done with java-diff-utils from Google, and is an 
+    implementation of the Myers diff algorithm.
+5 - These differences are aligned in a process by which gaps are inserted into the 
+    token stream such that the tokens of all witnesses match up. These gaps fill in 
+    holes in the token stream where one witness has missing content relative to 
+    another (for more information and examples, see the TEI wiki on Textual Variance).
+    Once they are aligned, tokens that have been found to have differences are paired, 
+    and this information is stored in the database.
+6 - Visualizations leverage the alignment information to inject markup into 
+    witness texts. When passed up to a web browser, this marked-up text is rendered 
+    according to the selected visualization.
+
+Package Components
+------------------
+
+juxta-diff - This is ithe component that handless all of the text diff logic.
+
+juxta-indexer - This is a helper component that can be used to create a lucene index
+                of the sources and witnesses in you main database. 
+
+juxta-ws - The main application. It exposes the RESTful API and manages the collation
+           pipeline.
+
+Installation
+------------
+
+From the root directory of the Juxta Service checkout, issue the command:
+mvn package
+
+Once this command completes, the web service *.tar.gz can be found in juxta-ws/target/
+Extract this to the location of your choice and change to the newly created directory.
+
+Create the database with the command:  mysql < scripts/create_db.sql
+Create the database users with the command: mysql < scripts/grant.sql
+
+The service configuration can be found in config/ws.properties. It can be left as-is
+or tuned to fit your needs. Comments in the file provide details on what each setting
+is used for.
+
+Launch the service with the startup.sh found in the root directory.
+
+At this point you will have a running service, but searching will not work. To get
+that setup, kill the juxta process and do the following:
+
+java -jar juxta-indexer.jar
+Extract the binary  juxta-indexer *.tar.gz file found in juxta-indexer/target to the
+location of you choice. Move to the new directory and issue the command:
+
+java -jar juxta-indexer.jar [db user] [db pass]
+
+Once cmplete, you will find a lucene-index directory has been created. Either move this
+directory into the web service directory or create a link to it there. Modify the
+web service configuration to point to ths directory. The config property to update is:
+ juxta.lucene.indexDir
+
+Once that has been set, restart the web service with start.sh
+
+Details of the RESTful API can be found here: 
+  https://github.com/performant-software/juxta-service/wiki/API-Documentation
+
+
+
+ 

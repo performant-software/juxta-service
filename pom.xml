@@ -14,7 +14,6 @@
         <module>juxta-diff</module>
         <module>juxta-ws</module>
         <module>juxta-indexer</module>
-        <module>juxta-ws-test</module>
     </modules>
 
     <!-- project property settings -->
