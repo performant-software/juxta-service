@@ -21,6 +21,9 @@ $(function() {
    }
 
    function rgb2hex(rgb) {
+      if ( rgb.indexOf("#") > -1 ) {
+         return rgb;
+      }
       rgb = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
       return "#" + hex(rgb[1]) + hex(rgb[2]) + hex(rgb[3]);
    }
