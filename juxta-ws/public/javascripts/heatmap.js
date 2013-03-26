@@ -365,6 +365,13 @@ $(function() {
                $(".box-annotation.group").text( jsonData.groupAnnotation );
                $(".group-annotation").show();
                $("#group-add-anno").hide();
+               if ( $("#show-annotation-controls").text() === "yes") { 
+                  $(".group-annotation .anno-edit").show();
+                  $(".group-annotation .anno-del").show();
+               } else {
+                  $(".group-annotation .anno-edit").hide();
+                  $(".group-annotation .anno-del").hide();
+               }
             } else {
                $(".group-annotation").hide();
                if ( $("#show-annotation-controls").text() === "yes") {
