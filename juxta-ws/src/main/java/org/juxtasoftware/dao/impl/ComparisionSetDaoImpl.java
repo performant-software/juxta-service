@@ -83,12 +83,12 @@ public class ComparisionSetDaoImpl extends JuxtaDaoImpl<ComparisonSet> implement
     
     @Override
     public void clearCollationData( ComparisonSet set) {
-        // flag set as uncollated if necessary
-        if ( !(set.getStatus().equals(Status.DELETED) || !set.getStatus().equals(Status.NOT_COLLATED)) ) {
+        // be sure the set is always marked as not collated (unless its been deleted)
+        if ( set.getStatus().equals(Status.DELETED) == false ) {
             set.setStatus(ComparisonSet.Status.NOT_COLLATED);
             update(set);
         }
-        
+  
         // clear alignments, annotations and cached visualization data
         this.cacheDao.deleteAll(set.getId());
 
@@ -211,6 +211,8 @@ public class ComparisionSetDaoImpl extends JuxtaDaoImpl<ComparisonSet> implement
         final String sql = "delete from "+SET_MEMBER_TABLE+" where set_id=? and witness_id=?";
         this.jt.update(sql, set.getId(), witness.getId() );
         updateLastUpdatedTime( set );
+        set.setStatus(Status.NOT_COLLATED);
+        update( set );
         
         this.taskExecutor.execute(new Runnable() {
             @Override
