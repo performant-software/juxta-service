@@ -172,10 +172,8 @@ $(function() {
       if ($("#revisions-button").hasClass("pushed") === false) {
          $("#revisions-button").addClass("pushed");
          revTags.removeClass("plain-revs");
-         revTags.addClass("reveal");
       } else {
          $("#revisions-button").removeClass("pushed");
-         revTags.removeClass("reveal");
          revTags.addClass("plain-revs");
       }
    };

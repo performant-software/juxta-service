@@ -5,6 +5,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -14,9 +15,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.regex.Pattern;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.regex.Pattern;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringEscapeUtils;
@@ -39,8 +40,8 @@ import org.juxtasoftware.util.BackgroundTaskCanceledException;
 import org.juxtasoftware.util.BackgroundTaskStatus;
 import org.juxtasoftware.util.ConversionUtils;
 import org.juxtasoftware.util.QNameFilters;
-import org.juxtasoftware.util.RangedTextReader;
 import org.juxtasoftware.util.TaskManager;
+import org.juxtasoftware.util.WitnessTextReader;
 import org.juxtasoftware.util.ftl.FileDirective;
 import org.juxtasoftware.util.ftl.FileDirectiveListener;
 import org.restlet.data.MediaType;
@@ -248,7 +249,14 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
         File baseTxt = File.createTempFile("base", "txt");
         baseTxt.deleteOnExit();
         Witness base = this.witnessDao.find(this.baseWitnessId);
-        Reader reader = this.witnessDao.getContentStream(base);
+        Reader reader = null;
+        if ( this.witnessDao.hasRevisions(base)) {
+            final WitnessTextReader wtr = new WitnessTextReader();
+            wtr.read( this.witnessDao.getContentStream(base), new Range(0L, base.getText().getLength()), this.witnessDao.getRevisions(base) );
+            reader = new  StringReader(wtr.toString());
+        } else {
+            reader = this.witnessDao.getContentStream(base);
+        }
         OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(baseTxt), "UTF-8");
         
         // get the page number marks and select the first one (if available
@@ -833,8 +841,8 @@ public class EditionBuilderResource extends BaseResource implements FileDirectiv
     private String getWitnessText( final Long witId, final Range range ) {
         try {
             Witness w = this.witnessDao.find(witId);
-            final RangedTextReader reader = new RangedTextReader();
-            reader.read( this.witnessDao.getContentStream(w), range );
+            final WitnessTextReader reader = new WitnessTextReader();
+            reader.read( this.witnessDao.getContentStream(w), range, this.witnessDao.getRevisions(w) );
             String out = reader.toString();
             return out;
         } catch (Exception e) {

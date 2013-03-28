@@ -277,8 +277,8 @@ public class WitnessDaoImpl implements WitnessDao, InitializingBean {
     
     @Override
     public boolean hasRevisions(final Witness witness) {
-        final String sql ="select count(*) as cnt from juxta_revision where witness_id=?"; 
-        int cnt = this.jdbcTemplate.queryForInt(sql, witness.getId());
+        final String sql ="select count(*) as cnt from juxta_revision where witness_id=? and is_included=?"; 
+        int cnt = this.jdbcTemplate.queryForInt(sql, witness.getId(), 1);
         return ( cnt > 0);
     }
     
@@ -286,7 +286,7 @@ public class WitnessDaoImpl implements WitnessDao, InitializingBean {
     public List<RevisionInfo> getRevisions(final Witness witness) {
         StringBuilder sql = new StringBuilder();
         sql.append("select id,witness_id,revision_type,start,end,content,is_included"); 
-        sql.append(" from juxta_revision where witness_id=?");
+        sql.append(" from juxta_revision where witness_id=? and is_included = ?");
         return this.jdbcTemplate.query(sql.toString(), new RowMapper<RevisionInfo>(){
 
             @Override
@@ -296,7 +296,7 @@ public class WitnessDaoImpl implements WitnessDao, InitializingBean {
                 RevisionInfo inf = new RevisionInfo( rs.getLong("id"), rs.getLong("witness_id"),
                     type, rng, rs.getString("content"), rs.getBoolean("is_included") );
                 return inf;
-            }}, witness.getId());
+            }}, witness.getId(), 1);
     }
     
     @Override
