@@ -57,17 +57,18 @@ public class RevisionInjector implements StreamInjector<RevisionInfo> {
                 long id = this.currRevision.getId();
                 String type = this.currRevision.getType().toString().toLowerCase();
                 
-                String tagType ="";
+                String show = "hide-rev";
+                if ( this.currRevision.isIncluded() ) {
+                    show = "show-rev";
+                }
+                String tagType = "ins";
                 if (type.equals("delete")) {
                     tagType = "del";
-                    tag.append("<del id=\"rev-").append(id).append("\" ");
-                    tag.append(" class=\"rev ").append(type).append(" plain-revs ").append("\">");
-                } else {
-                    tagType = "ins";
-                    tag.append("<ins id=\"rev-").append(id).append("\" ");
-                    tag.append(" class=\"rev ").append(type).append(" hide").append("\">");
                 }
 
+                tag.append("<"+tagType+" id=\"rev-").append(id).append("\" ");
+                tag.append(" class=\"rev ").append(type).append(" plain-revs ").append(show).append("\">");
+                
                 line.append(tag);
                 
                 // if this is something that was not incuded, add the content

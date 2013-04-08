@@ -20,7 +20,6 @@ import org.juxtasoftware.model.Witness;
 import org.juxtasoftware.util.FragmentFormatter;
 import org.juxtasoftware.util.QNameFilters;
 import org.juxtasoftware.util.RangedTextReader;
-import org.juxtasoftware.util.WitnessTextReader;
 import org.restlet.data.Status;
 import org.restlet.representation.Representation;
 import org.restlet.resource.Get;
@@ -184,15 +183,9 @@ public class FragmentResource extends BaseResource {
                 Math.max(0, info.range.getStart() - FRAG_SIZE), 
                 Math.min(info.range.getEnd()+FRAG_SIZE, w.getText().getLength()));
             try {
-                if ( this.witnessDao.hasRevisions(w)) {
-                    final WitnessTextReader reader = new WitnessTextReader();
-                    reader.read( this.witnessDao.getContentStream(w), fragRange, this.witnessDao.getRevisions(w) );
-                    info.fragment = FragmentFormatter.format(reader.toString(), info.range, fragRange, w.getText().getLength());
-                } else {
-                    final RangedTextReader reader = new RangedTextReader();
-                    reader.read( this.witnessDao.getContentStream(w), fragRange );
-                    info.fragment = FragmentFormatter.format(reader.toString(), info.range, fragRange, w.getText().getLength());
-                }
+                final RangedTextReader reader = new RangedTextReader();
+                reader.read( this.witnessDao.getContentStream(w), fragRange );
+                info.fragment = FragmentFormatter.format(reader.toString(), info.range, fragRange, w.getText().getLength());
             } catch (Exception e) {
                 LOG.error("Error retrieving diff fragment for witness "+witnessId, e);
             }

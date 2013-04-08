@@ -14,12 +14,11 @@ import org.juxtasoftware.dao.PageMarkDao;
 import org.juxtasoftware.dao.WitnessDao;
 import org.juxtasoftware.model.JuxtaXslt;
 import org.juxtasoftware.model.PageMark;
-import org.juxtasoftware.model.RevisionInfo;
 import org.juxtasoftware.model.Usage;
 import org.juxtasoftware.model.Witness;
 import org.juxtasoftware.service.WitnessRemover;
 import org.juxtasoftware.util.ConversionUtils;
-import org.juxtasoftware.util.WitnessTextReader;
+import org.juxtasoftware.util.RangedTextReader;
 import org.juxtasoftware.util.ftl.FileDirective;
 import org.juxtasoftware.util.ftl.FileDirectiveListener;
 import org.restlet.data.Status;
@@ -93,9 +92,8 @@ public class WitnessResource extends BaseResource {
     @Get("txt")
     public Representation toPlainText() {   
         try {
-            final WitnessTextReader reader = new WitnessTextReader();
-            List<RevisionInfo> revs = this.witnessDao.getRevisions(this.witness);
-            reader.read( this.witnessDao.getContentStream(this.witness), this.range, revs );
+            final RangedTextReader reader = new RangedTextReader();
+            reader.read( this.witnessDao.getContentStream(this.witness), this.range );
             return toTextRepresentation(reader.toString());
             
         } catch (IOException e) {
@@ -172,8 +170,7 @@ public class WitnessResource extends BaseResource {
     private File witnessToHtml() throws IOException {
         Reader reader = this.witnessDao.getContentStream(this.witness);
         List<PageMark> marks = this.pageMarkDao.find(this.witness.getId() );
-        List<RevisionInfo> revs = this.witnessDao.getRevisions(this.witness);
-        return ConversionUtils.witnessToHtml(reader, this.range, marks, revs);
+        return ConversionUtils.witnessToHtml(reader, this.range, marks);
     }
     
     /**

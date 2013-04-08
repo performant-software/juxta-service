@@ -196,7 +196,7 @@ public class XsltResource extends BaseResource  {
             try {
                 final File out = doTransform(src, xslt);
                 Reader r = new FileReader(out);
-                File html = ConversionUtils.witnessToHtml(r, null, this.pageMarkDao.find(this.witnessId), this.witnessDao.getRevisions(w));
+                File html = ConversionUtils.witnessToHtml(r, null, this.pageMarkDao.find(this.witnessId));
                 out.delete();
                 FileRepresentation rep = new FileRepresentation(html, MediaType.TEXT_HTML);
                 rep.setAutoDeleting(true);

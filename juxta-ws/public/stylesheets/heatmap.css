@@ -571,10 +571,10 @@ span.active {
    text-decoration: underline;
    color: #008000;
 }
-.rev.show {
+.rev.show-rev {
    display: inline;
 }
-.rev.hide {
+.rev.hide-rev {
    display: none;
 }
 .rev.reveal {

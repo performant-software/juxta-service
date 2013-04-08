@@ -28,8 +28,6 @@ import org.docx4j.openpackaging.packages.WordprocessingMLPackage;
 import org.docx4j.openpackaging.parts.WordprocessingML.NumberingDefinitionsPart;
 import org.juxtasoftware.Constants;
 import org.juxtasoftware.model.PageMark;
-import org.juxtasoftware.model.RevisionInfo;
-import org.juxtasoftware.model.RevisionInfo.Type;
 import org.restlet.data.MediaType;
 import org.restlet.engine.header.ContentType;
 import org.slf4j.Logger;
@@ -59,7 +57,7 @@ public class ConversionUtils {
      * @return
      * @throws IOException
      */
-    public static File witnessToHtml(Reader reader, Range range, List<PageMark> marks, List<RevisionInfo> revs) throws IOException {
+    public static File witnessToHtml(Reader reader, Range range, List<PageMark> marks) throws IOException {
         File out = File.createTempFile("wit", "dat");
         out.deleteOnExit();
         OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(out), "UTF-8");
@@ -80,24 +78,6 @@ public class ConversionUtils {
                 }
             }
         }
-        
-        // get the revisions. toss all deletes and select the first one that is
-        // within the requested range. 
-        for (Iterator<RevisionInfo> itr=revs.iterator(); itr.hasNext(); ) {
-            RevisionInfo inf = itr.next();
-            if ( inf.getType().equals(Type.DELETE)) {
-                itr.remove();
-            } else {
-                if ( inf.getRange().getStart() < range.getStart() ) {
-                    itr.remove();
-                }
-            }
-        }
-        Iterator<RevisionInfo> revItr = revs.iterator();
-        RevisionInfo currRev = null;
-        if (revItr.hasNext()) {
-            currRev = revItr.next();
-        }
 
         // stream witness text from db into file incuding line num/page break markup
         long pos = 0;
@@ -116,21 +96,12 @@ public class ConversionUtils {
                         }
                     }
 
-                    if ( currRev != null && pos >= currRev.getRange().getStart() ) {
-                        if ( currRev.getRange().getEnd() == (pos+1) ) {
-                            currRev = null;
-                            if (revItr.hasNext()) {
-                                currRev = revItr.next();
-                            }
-                        }
+                    if (data == '\n') {
+                        line.append("<br/>");
+                        osw.write(line.toString());
+                        line = new StringBuilder();
                     } else {
-                        if (data == '\n') {
-                            line.append("<br/>");
-                            osw.write(line.toString());
-                            line = new StringBuilder();
-                        } else {
-                            line.append(StringEscapeUtils.escapeHtml(Character.toString((char) data)));
-                        }
+                        line.append(StringEscapeUtils.escapeHtml(Character.toString((char) data)));
                     }
                 }
                 pos++;

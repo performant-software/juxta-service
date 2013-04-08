@@ -24,11 +24,9 @@ import org.juxtasoftware.dao.ComparisonSetDao;
 import org.juxtasoftware.dao.WitnessDao;
 import org.juxtasoftware.model.Alignment;
 import org.juxtasoftware.model.Alignment.AlignedAnnotation;
-import org.juxtasoftware.model.RevisionInfo.Type;
 import org.juxtasoftware.model.AlignmentConstraint;
 import org.juxtasoftware.model.ComparisonSet;
 import org.juxtasoftware.model.QNameFilter;
-import org.juxtasoftware.model.RevisionInfo;
 import org.juxtasoftware.model.Witness;
 import org.juxtasoftware.resource.BaseResource;
 import org.juxtasoftware.util.BackgroundTask;
@@ -350,20 +348,6 @@ public class SideBySideView implements FileDirectiveListener  {
         boolean done = false;
         int pos = 0;
         
-        // revisions tracking (throw out all deletes... they remain seen)
-        List<RevisionInfo> revs = this.witnessDao.getRevisions(info.witness);
-        for (Iterator<RevisionInfo> itr=revs.iterator(); itr.hasNext(); ) {
-            RevisionInfo inf = itr.next();
-            if ( inf.getType().equals(Type.DELETE)) {
-                itr.remove();
-            } 
-        }
-        Iterator<RevisionInfo> revItr = revs.iterator();
-        RevisionInfo currRev = null;
-        if ( revItr.hasNext() ) {
-            currRev = revItr.next();
-        }
-        
         long lastMoveStart = -1;
         long lastDiffStart = -1;
         while ( done == false ) {
@@ -371,17 +355,6 @@ public class SideBySideView implements FileDirectiveListener  {
             if ( data == -1 ) {
                 done = true;
             } 
-            
-            if ( currRev != null && pos >= currRev.getRange().getStart() ) {
-                if ( currRev.getRange().getEnd() == (pos+1) ) {
-                    currRev = null;
-                    if (revItr.hasNext()) {
-                        currRev = revItr.next();
-                    }
-                }
-                pos++;
-                continue;
-            }
             
             // as long as any injectors are ready, keep going
             while ( diffInjector.hasContent(pos) || moveInjector.hasContent(pos)  ) { 
