@@ -116,6 +116,11 @@
         <constructor-arg value="${juxta.cache.lifespan}" />
     </bean>
     
+    <!-- property to toggle capture of metrics -->
+    <bean id="captureMetrics" class="java.lang.Boolean" factory-method="valueOf">
+        <constructor-arg value="${juxta.captureMetrics}" />
+    </bean>
+    
     <!-- batch limits -->
     <bean id="tokenizationBatchSize" class="java.lang.Integer" factory-method="valueOf">
         <constructor-arg value="${juxta.tokenization.batch}" />

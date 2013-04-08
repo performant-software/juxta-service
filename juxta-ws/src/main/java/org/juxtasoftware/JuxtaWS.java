@@ -47,7 +47,13 @@ public class JuxtaWS {
         LoggerFactory.getLogger(Constants.WS_LOGGER_NAME).info("Juxta Web service started");
         
         if ( (Boolean)context.getBean("useAuthenticator") == false ) {
-            String msg = "Juxta WS is running in NON-AUTHENTICATED mode, and is viewable/editabe by anyone";
+            String msg = "*** Juxta WS is running in NON-AUTHENTICATED mode, and is viewable/editabe by anyone ***";
+            LoggerFactory.getLogger(Constants.WS_LOGGER_NAME).info(msg);
+            System.out.println(msg);
+        }
+        
+        if ( (Boolean)context.getBean("captureMetrics") == false ) {
+            String msg = "*** Juxta WS not capturing usage metrics ***";
             LoggerFactory.getLogger(Constants.WS_LOGGER_NAME).info(msg);
             System.out.println(msg);
         }
