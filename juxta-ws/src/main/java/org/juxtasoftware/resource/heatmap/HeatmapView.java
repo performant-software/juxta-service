@@ -150,10 +150,15 @@ public class HeatmapView  {
                 if ( baseLength == 0 ) {
                     LOG.error("Missing tokenized length of witness "+w.getId());
                     parent.setStatus(Status.SERVER_ERROR_INTERNAL);
-                    parent.toTextRepresentation("Missing length of base witness. Please re-collate.");
+                    return parent.toTextRepresentation("Missing length of base witness. Please re-collate.");
                 }
                 break;
             }
+        }
+        
+        if ( base == null) {
+            parent.setStatus(Status.CLIENT_ERROR_NOT_FOUND);
+            return parent.toTextRepresentation("The specified base witness was not found");
         }
         
         // get the witness filter list. these witnesses will not be rendered in the visualization.
