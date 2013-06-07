@@ -19,9 +19,4 @@
        <property name="statementsCacheSize" value="100"/>
        <property name="releaseHelperThreads" value="3"/>
     </bean>
-    
-    <jdbc:initialize-database data-source="dataSource">
-        <jdbc:script location="classpath:/eu/interedition/text/rdbms/mysql-schema.sql"/>
-        <jdbc:script location="classpath:/juxta-ws-mysql-schema.sql"/>
-    </jdbc:initialize-database>
 </beans>

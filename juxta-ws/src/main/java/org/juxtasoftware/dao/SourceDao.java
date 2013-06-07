@@ -61,6 +61,7 @@ public interface SourceDao  {
      * @return
      */
     Source find( final Long workspaceId, Long id );
+    Source find( final Long workspaceId, String name );
     
     /**
      * Given a source, find its root element

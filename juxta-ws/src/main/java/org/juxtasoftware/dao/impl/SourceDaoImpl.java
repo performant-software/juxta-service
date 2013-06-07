@@ -235,6 +235,13 @@ public class SourceDaoImpl implements SourceDao, InitializingBean {
     }
     
     @Override
+    public Source find(final Long workspaceId, final String name) {
+        return DataAccessUtils.uniqueResult(
+            this.jdbcTemplate.query(buildFinderSQL("where s.workspace_id=? and s.name = ?"), 
+                ROW_MAPPER, workspaceId, name));
+    }
+    
+    @Override
     public List<Usage> getUsage(Source src) {
         // First pass, find all witnesses that have been created from this source
         final String witnessSql = "select id,name from juxta_witness where source_id=?";

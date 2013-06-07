@@ -70,14 +70,22 @@ juxta-ws - The main application. It exposes the RESTful API and manages the coll
 Installation
 ------------
 
-From the root directory of the Juxta Service checkout, issue the command:
+First, the MySQL database instance that JuxtaWS uses must be set up. Do this
+by issuing the following command from the root directory of the Juxta Service checkout:
+
+./juxta-ws/scripts/init_db.sh [db_user] [db_pass]
+
+If you have setup your MySQL credentials in a .my.cnf file, or your MySQL instance has
+no user / password protection, you can leave off both db_* parameters. Similarly,
+if you have a user but no password, leave off the db_pass parameter.
+
+Once the database is setup, you can build the service. From the root directory of 
+the Juxta Service checkout, issue the command:
+
 mvn package
 
 Once this command completes, the web service *.tar.gz can be found in juxta-ws/target/
 Extract this to the location of your choice and change to the newly created directory.
-
-Create the database with the command:  mysql < scripts/create_db.sql
-Create the database users with the command: mysql < scripts/grant.sql
 
 The service configuration can be found in config/ws.properties. It can be left as-is
 or tuned to fit your needs. Comments in the file provide details on what each setting

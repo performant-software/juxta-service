@@ -42,8 +42,10 @@ public class JuxtaWS {
         }
         
         // init all common filters and public workspace
-        ((QNameFilters)context.getBean(QNameFilters.class)).initialize();   
-        ((MetricsHelper)context.getBean(MetricsHelper.class)).init();  
+        ((QNameFilters)context.getBean(QNameFilters.class)).initialize(); 
+        if ( (Boolean)context.getBean("captureMetrics") ) {
+            ((MetricsHelper)context.getBean(MetricsHelper.class)).init();
+        }
         LoggerFactory.getLogger(Constants.WS_LOGGER_NAME).info("Juxta Web service started");
         
         if ( (Boolean)context.getBean("useAuthenticator") == false ) {

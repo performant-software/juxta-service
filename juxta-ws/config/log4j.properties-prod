@@ -9,7 +9,8 @@ log4j.appender.rolling.layout.ConversionPattern=%d{E MMM dd, HH:mm:ss} [%p] - %m
 
 # file appender for metrics logging 
 log4j.appender.metrics=org.apache.log4j.FileAppender
-log4j.appender.metrics.File = /home/juxta/ws_metrics/metrics.log
+#log4j.appender.metrics.File = /home/juxta/ws_metrics/metrics.log
+log4j.appender.metrics.File = logs/metrics.log
 log4j.appender.metrics.Append = true
 log4j.appender.metrics.layout=org.apache.log4j.PatternLayout
 log4j.appender.metrics.layout.ConversionPattern=%m\n
