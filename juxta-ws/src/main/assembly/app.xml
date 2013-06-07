@@ -34,6 +34,11 @@
             <fileMode>0744</fileMode>   
         </file>
         <file>
+            <source>scripts/init_db.sh</source>
+            <outputDirectory>scripts</outputDirectory>
+            <fileMode>0744</fileMode>   
+        </file>
+        <file>
             <source>config/ws.properties</source>
             <outputDirectory>config</outputDirectory>
         </file>
