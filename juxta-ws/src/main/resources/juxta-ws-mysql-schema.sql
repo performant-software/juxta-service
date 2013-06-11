@@ -1,33 +1,8 @@
-CREATE DATABASE if not exists juxta_ws CHARACTER SET=utf8;
-use juxta_ws;
-
 CREATE TABLE IF NOT EXISTS juxta_schema_version (
    major tinyint unsigned not null,
    minor tinyint unsigned not null,
    micro tinyint unsigned not null
 )  ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
-CREATE TABLE IF NOT EXISTS text_incrementer (
-  text_qname_sequence BIGINT NOT NULL DEFAULT 0,
-  text_content_sequence BIGINT NOT NULL DEFAULT 0,
-  text_annotation_sequence BIGINT NOT NULL DEFAULT 0,
-  text_annotation_link_sequence BIGINT NOT NULL DEFAULT 0
-) ENGINE = MYISAM;
-
-CREATE TABLE IF NOT EXISTS text_qname (
-  id BIGINT PRIMARY KEY,
-  local_name VARCHAR(100) NOT NULL,
-  namespace VARCHAR(100),
-  UNIQUE (local_name, namespace)
-) ENGINE = INNODB;
-
-CREATE TABLE IF NOT EXISTS text_content (
-  id BIGINT PRIMARY KEY,
-  type SMALLINT NOT NULL,
-  content LONGTEXT NOT NULL,
-  content_length BIGINT NOT NULL,
-  content_digest BINARY(64) NOT NULL
-) ENGINE = INNODB;
 
 CREATE TABLE IF NOT EXISTS juxta_workspace (
     id BIGINT NOT NULL AUTO_INCREMENT,
@@ -248,3 +223,9 @@ CREATE TABLE IF NOT EXISTS juxta_metrics (
     mean_set_witnesses INT UNSIGNED not null default 0,
     PRIMARY KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+DROP TABLE text_annotation_link_data;
+DROP TABLE text_annotation_link_target;
+DROP TABLE text_annotation_link;
+DROP TABLE text_annotation_data;
+DROP TABLE text_annotation;
