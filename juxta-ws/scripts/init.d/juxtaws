@@ -1,0 +1,44 @@
+#!/bin/sh
+
+# Starts, stops, and restarts JuxtaWS
+#
+# chkconfig: - 85 15
+# description: Starts and stops JuxtaWS
+
+JUXTA_WS_DIR="/home/juxta/juxta-ws"
+
+case $1 in
+    start)
+        echo "Starting JuxtaWS"
+        cd $JUXTA_WS_DIR
+        ./start.sh  > /dev/null 2>&1 &
+        ;;
+    stop)
+        echo "Stopping JuxtaWS"
+        pid=`ps aux | grep -- juxta-ws | grep -v grep | awk '{print $2}'`
+        if [[ "$pid" =~ ^[0-9]+$ ]] ; then
+           kill -9 $pid
+           echo "  * JuxtaWS stopped"
+        else
+           echo "  * JuxtaWS is not running"
+        fi
+        ;;
+    status)
+        pid=`ps aux | grep -- juxta-ws | grep -v grep | awk '{print $2}'`
+        if [[ "$pid" =~ ^[0-9]+$ ]] ; then
+           echo "JuxtaWS is running"
+        else
+           echo "JuxtaWS is not running"
+        fi
+        ;;
+    restart)
+        $0 stop
+        sleep 1
+        $0 start
+        ;;
+    *)
+        echo "Usage: $0 {status|start|stop|restart}" >&2
+        exit 1
+        ;;
+esac
+
