@@ -50,6 +50,9 @@
     <bean id="juxtaRouter" class="org.restlet.ext.spring.SpringBeanRouter"/>
     <bean name="/juxta" class="org.juxtasoftware.resource.RootResource" scope="prototype" autowire="byName" />
     
+     <!-- QNAmes resources -->
+    <bean name="/juxta/qnames" class="org.juxtasoftware.resource.QNamesResource" scope="prototype" autowire="byName" />
+    
     <!-- workspace resources -->
     <bean name="/juxta/workspace" class="org.juxtasoftware.resource.WorkspacesResource" scope="prototype" autowire="byName" />
     <bean name="/juxta/workspace/{name}" class="org.juxtasoftware.resource.WorkspaceResource" scope="prototype" autowire="byName" />

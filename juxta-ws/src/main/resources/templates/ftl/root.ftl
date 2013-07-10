@@ -9,7 +9,7 @@
     
     <hr />
     <p class="dox">Full API Documentation can be found 
-        <a href="http://code.google.com/p/juxta/wiki/JuxtaWebServiceApi?ts=1311779178&updated=JuxtaWebServiceApi">here</a>.
+        <a href="https://github.com/performant-software/juxta-service/wiki/API-Documentation">here</a>.
     </p>
 </div>
  
