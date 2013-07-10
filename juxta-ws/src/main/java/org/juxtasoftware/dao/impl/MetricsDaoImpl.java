@@ -20,9 +20,9 @@ public class MetricsDaoImpl extends JuxtaDaoImpl<Metrics> implements MetricsDao 
         super("juxta_metrics");
     }
 
-    public void delete(Metrics obj) {
-        final String sql = "delete from " + this.tableName + " where id=?";
-        this.jt.update(sql, obj.getId());
+    public void delete(Metrics metrics) {
+        final String sql = "delete from " + this.tableName + " where workspace=?";
+        this.jt.update(sql, metrics.getWorkspace());
     }
     
     @Override
