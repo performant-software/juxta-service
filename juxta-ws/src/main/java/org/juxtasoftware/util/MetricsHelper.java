@@ -106,6 +106,19 @@ public class MetricsHelper {
         }
     }
     
+    public void workspaceRemoved(final Workspace ws) {
+        if ( this.captureMetrics ) {
+            try {
+                DEBUG_LOG.info("Deleted user workspace "+ws.getName());
+                Metrics m = new Metrics();
+                m.setWorkspace(ws.getName());
+                this.metricsDao.delete(m);
+            } catch (Exception e) {
+                DEBUG_LOG.error("Unable to delete metrics entry for " + ws, e);
+            }
+        }
+    }
+    
     public void sourceAdded(final Workspace ws, final Source src) {
         if ( this.captureMetrics ) {
             try {

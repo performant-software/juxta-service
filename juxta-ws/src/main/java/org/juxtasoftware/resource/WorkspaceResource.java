@@ -4,6 +4,7 @@ import org.juxtasoftware.dao.MetricsDao;
 import org.juxtasoftware.dao.WorkspaceDao;
 import org.juxtasoftware.model.Metrics;
 import org.juxtasoftware.model.Workspace;
+import org.juxtasoftware.util.MetricsHelper;
 import org.restlet.data.Status;
 import org.restlet.representation.Representation;
 import org.restlet.resource.Delete;
@@ -30,7 +31,9 @@ public class WorkspaceResource extends BaseResource {
     private Workspace workspace;
     @Autowired private WorkspaceDao workspaceDao;
     @Autowired private Integer maxSetWitnesses;
-    @Autowired private MetricsDao metrics;
+    @Autowired private MetricsDao metricsDao;
+    @Autowired private MetricsHelper metrics;
+
     
     @Override
     protected void doInit() throws ResourceException {
@@ -48,7 +51,7 @@ public class WorkspaceResource extends BaseResource {
         Gson gson = new Gson();
         JsonObject jsonObj = gson.toJsonTree(this.workspace).getAsJsonObject(); 
         jsonObj.addProperty("maxSetWitnesses", this.maxSetWitnesses);
-        Metrics m = this.metrics.get(this.workspace);
+        Metrics m = this.metricsDao.get(this.workspace);
         jsonObj.addProperty("numSources", m.getNumSources());
         jsonObj.addProperty("totalSourcesSize", m.getTotalSourcesSize());
         return toJsonRepresentation(jsonObj.toString()); 
@@ -58,6 +61,7 @@ public class WorkspaceResource extends BaseResource {
     public Representation deleteWorkspace() {
         LOG.info("Delete "+this.workspace+" and all content");
         this.workspaceDao.delete(this.workspace);
+        this.metrics.workspaceRemoved(this.workspace);
         return null;
     }
 }
