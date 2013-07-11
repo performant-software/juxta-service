@@ -14,7 +14,7 @@ import com.google.common.base.Objects;
 import com.google.common.collect.Maps;
 
 public class BackgroundTaskStatus {
-    public enum Status {PENDING, PROCESSING, COMPLETE, CANCEL_REQUESTED, CANCELED, FAILED};
+    public enum Status {PENDING, PROCESSING, COMPLETE, CANCEL_REQUESTED, CANCELLED, FAILED};
     
     private final PropertyChangeSupport propertyChangeSupport = new PropertyChangeSupport(this);
     private final BoundedRangeModel boundedRangeModel = new DefaultBoundedRangeModel();
@@ -109,7 +109,7 @@ public class BackgroundTaskStatus {
         
         // Check for status changes...
         if (this.status.equals(Status.CANCEL_REQUESTED)) {
-            this.status = Status.CANCELED;
+            this.status = Status.CANCELLED;
             throw new BackgroundTaskCanceledException();
         } else if ( this.boundedRangeModel.getValue() == this.boundedRangeModel.getMaximum() ) {
             this.status = Status.COMPLETE;

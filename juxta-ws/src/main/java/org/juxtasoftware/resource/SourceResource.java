@@ -430,7 +430,7 @@ public class SourceResource extends BaseResource  {
             } catch ( BackgroundTaskCanceledException e) {
                 LOG.info( this.updateExecutor.getName()+" update source task was canceled");
                 this.endDate = new Date();
-                this.status = BackgroundTaskStatus.Status.CANCELED;
+                this.status = BackgroundTaskStatus.Status.CANCELLED;
             } catch (Exception e) {
                 LOG.error(this.updateExecutor.getName()+" update source task failed", e);
                 this.task.fail(e.getMessage());

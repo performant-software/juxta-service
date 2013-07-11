@@ -101,7 +101,7 @@ public class TaskManager {
     }
     
     private boolean isDone( final BackgroundTask task ) {
-        return (task.getStatus().equals(Status.CANCELED) || 
+        return (task.getStatus().equals(Status.CANCELLED) || 
                 task.getStatus().equals(Status.COMPLETE) ||
                 task.getStatus().equals(Status.FAILED) );
     }

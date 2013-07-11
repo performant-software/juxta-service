@@ -277,7 +277,7 @@ public class Importer extends BaseResource  {
                 LOG.info( this.taskName+" task was canceled");
                 cleanupCanceledImport( this.set );
                 this.endDate = new Date();
-                this.status = BackgroundTaskStatus.Status.CANCELED;
+                this.status = BackgroundTaskStatus.Status.CANCELLED;
                 this.set.setStatus( ComparisonSet.Status.NOT_COLLATED );
                 Importer.this.setDao.update(this.set);
             } catch (Exception e) {
