@@ -42,7 +42,6 @@ public class SourceRemover {
             if ( u.getType().equals(Usage.Type.COMPARISON_SET)) {
                 ComparisonSet s = this.setDao.find(u.getId());
                 if ( s.getStatus().equals(ComparisonSet.Status.COLLATING)||
-                     s.getStatus().equals(ComparisonSet.Status.TOKENIZED) ||
                      s.getStatus().equals(ComparisonSet.Status.TOKENIZING) ) {
                     throw new ResourceException(Status.CLIENT_ERROR_CONFLICT, 
                         "Cannot delete source; related set '"+s.getName()+"' is collating.");
