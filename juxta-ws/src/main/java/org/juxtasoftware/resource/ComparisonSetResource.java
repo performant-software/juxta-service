@@ -250,9 +250,9 @@ public class ComparisonSetResource extends BaseResource {
             this.remover.remove(this.workspace, this.set);
             return toTextRepresentation("ok");
         } catch (ResourceException e) {
-            LOG.error(e.toString());
-            setStatus(e.getStatus());
-            return toTextRepresentation(e.getMessage());
+            Status statusCode = e.getStatus();
+            setStatus( statusCode);
+            return toTextRepresentation( e.getStatus().getDescription() );
         }
     }
 

@@ -208,8 +208,9 @@ public class WitnessResource extends BaseResource {
             Gson gson = new Gson();
             return toJsonRepresentation( gson.toJson(usage) );
         } catch (ResourceException e) {
-            setStatus(e.getStatus());
-            return toTextRepresentation(e.getMessage());
+            Status statusCode = e.getStatus();
+            setStatus( statusCode);
+            return toTextRepresentation( e.getStatus().getDescription() );
         }
     }
 }
