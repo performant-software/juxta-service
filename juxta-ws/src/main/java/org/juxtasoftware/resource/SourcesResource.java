@@ -9,6 +9,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.lang.reflect.Type;
+import java.net.UnknownHostException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -25,6 +26,7 @@ import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.FileUploadBase.FileSizeLimitExceededException;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.validator.routines.UrlValidator;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.HttpResponseException;
 import org.apache.http.client.ResponseHandler;
@@ -211,10 +213,15 @@ public class SourcesResource extends BaseResource {
             String data = jsonObj.get("data").getAsString();
 
             try {
-                if (type.equalsIgnoreCase("url")) {
-                    // pull content from the URL. Type will be determined from
-                    // the HTTP response
-                    ids.add( scrapeExternalUrl(name, data) );
+                if (type.equalsIgnoreCase("url")) {                   
+                    if ( UrlValidator.getInstance().isValid(data)) {
+                        // pull content from the URL. Type will be determined from
+                        // the HTTP response
+                        ids.add( scrapeExternalUrl(name, data) );
+                    } else {
+                        setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
+                        return toTextRepresentation("Malformed source URL");
+                    }
                 } else if (type.equalsIgnoreCase("raw")) {
                     if (jsonObj.has("contentType") == false) {
                         setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
@@ -233,6 +240,9 @@ public class SourcesResource extends BaseResource {
                 } else {
                     return toTextRepresentation("Link to "+data+" failed: "+e.getMessage());
                 }
+            } catch (UnknownHostException e) {
+                setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
+                return toTextRepresentation("The URL contains an unknown host");
             } catch (IOException e) {
                 setStatus(Status.SERVER_ERROR_INTERNAL);
                 return toTextRepresentation("Unable to create source "+name+": "+e.toString());
