@@ -10,12 +10,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.io.IOUtils;
 import org.juxtasoftware.model.ComparisonSet;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
-
-import com.google.common.io.Closeables;
 
 import eu.interedition.text.Range;
 
@@ -50,7 +49,7 @@ public class MovesParser {
                 }
             }
         } finally {
-            Closeables.closeQuietly(br);
+            IOUtils.closeQuietly(br);
         }
         
         return moves;

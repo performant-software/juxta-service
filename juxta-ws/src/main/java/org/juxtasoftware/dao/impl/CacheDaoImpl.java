@@ -336,7 +336,7 @@ public class CacheDaoImpl implements CacheDao {
             return;
         }
         try {
-            final String sql = "delete from juxta_collation_cache where created < ( NOW() - INTERVAL "+this.cacheLifespan+" HOUR)";
+            final String sql = "delete from juxta_collation_cache where permanent=0 and created < ( NOW() - INTERVAL "+this.cacheLifespan+" HOUR)";
             this.jdbcTemplate.update(sql);
         } catch (Exception e) {
             LOG.error("Unable to purge expired cache", e);

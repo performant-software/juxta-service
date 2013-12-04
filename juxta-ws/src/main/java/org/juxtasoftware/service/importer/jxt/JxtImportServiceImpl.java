@@ -19,6 +19,7 @@ import java.util.zip.ZipInputStream;
 
 import javax.xml.stream.XMLStreamException;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.json.simple.JSONObject;
 import org.juxtasoftware.Constants;
@@ -166,7 +167,7 @@ public class JxtImportServiceImpl implements ImportService<InputStream> {
             
         } finally {
             try {
-                Files.deleteRecursively(sessionDataDir.getCanonicalFile());
+                FileUtils.deleteDirectory(sessionDataDir);
             } catch (IOException e) {}
         }
     }

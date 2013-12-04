@@ -130,6 +130,7 @@ CREATE TABLE IF NOT EXISTS juxta_collation_cache (
     config VARCHAR(255) NOT NULL,
     data_type enum('HEATMAP', "SIDEBYSIDE", "HISTOGRAM", "CONDENSED_HEATMAP", "EDITION", "EXPORT") not null,
     data LONGTEXT,
+    permanent BOOL not null default 0,
     created TIMESTAMP not null,
     PRIMARY KEY (id),
     FOREIGN KEY (set_id) REFERENCES juxta_comparison_set (id)  ON DELETE CASCADE

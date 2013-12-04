@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
 
+import org.apache.commons.io.IOUtils;
 import org.juxtasoftware.dao.ComparisonSetDao;
 import org.juxtasoftware.model.CollatorConfig;
 import org.juxtasoftware.model.ComparisonSet;
@@ -20,8 +21,6 @@ import org.springframework.stereotype.Component;
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
-
-import com.google.common.io.Closeables;
 
 /**
  * Parse juxta manifest.xml and parse out a list of sources present. Data 
@@ -125,7 +124,7 @@ public class ManifestParser extends DefaultHandler  {
             } catch (IOException e) {
                 
             } finally {
-                Closeables.closeQuietly(rdr);
+                IOUtils.closeQuietly(rdr);
             }
         }
     }

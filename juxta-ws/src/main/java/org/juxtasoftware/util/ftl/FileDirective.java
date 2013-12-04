@@ -7,7 +7,7 @@ import java.io.InputStreamReader;
 import java.io.Writer;
 import java.util.Map;
 
-import com.google.common.io.Closeables;
+import org.apache.commons.io.IOUtils;
 
 import freemarker.core.Environment;
 import freemarker.template.SimpleScalar;
@@ -97,7 +97,7 @@ public class FileDirective implements TemplateDirectiveModel {
         } catch (Exception e) {
             e.printStackTrace();
         } finally  {
-            Closeables.closeQuietly(isr);
+            IOUtils.closeQuietly(isr);
         }
         
         // notify others that we are done with the file
