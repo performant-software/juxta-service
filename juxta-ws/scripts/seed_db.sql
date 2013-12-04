@@ -3,7 +3,7 @@ use juxta_ws;
 
 INSERT INTO `juxta_schema_version` (`major`, `minor`, `micro`)
 VALUES
-   (1, 7, 8);
+   (1, 7, 10);
 
 INSERT INTO `juxta_workspace` (`id`, `name`, `description`)
 VALUES
