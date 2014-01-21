@@ -5,18 +5,10 @@
             "http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd 
              http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc.xsd">
 
-    <bean id="dataSource" class="com.jolbox.bonecp.BoneCPDataSource" destroy-method="close">
-       <property name="driverClass" value="com.mysql.jdbc.Driver" />
-       <property name="jdbcUrl" value="jdbc:mysql://${juxta.ws.db.host}/juxta_ws?useUnicode=yes&amp;characterEncoding=UTF-8" />
-       <property name="username" value="${juxta.ws.db.user}"/>
-       <property name="password" value="${juxta.ws.db.password}"/>
-       <property name="idleConnectionTestPeriodInMinutes" value="240"/>
-       <property name="idleMaxAgeInMinutes" value="60"/>
-       <property name="maxConnectionsPerPartition" value="30"/>
-       <property name="minConnectionsPerPartition" value="10"/>
-       <property name="partitionCount" value="3"/>
-       <property name="acquireIncrement" value="5"/>
-       <property name="statementsCacheSize" value="100"/>
+    <bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource">
+        <property name="url" value="jdbc:mysql://${juxta.ws.db.host}/juxta_ws?useUnicode=yes&amp;characterEncoding=UTF-8"/>
+        <property name="username" value="${juxta.ws.db.user}"/>
+        <property name="password" value="${juxta.ws.db.password}"/>
     </bean>
     
     <jdbc:initialize-database data-source="dataSource">
