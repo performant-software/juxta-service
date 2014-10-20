@@ -72,7 +72,7 @@ public class HtmlUtils {
                 }
             }
         };
-        new ParserDelegator().parse( new InputStreamReader(htmlStream), callback, false);
+        new ParserDelegator().parse( new InputStreamReader(htmlStream, "UTF-8"), callback, false);
         IOUtils.closeQuietly(osw);
         return out;
     }
