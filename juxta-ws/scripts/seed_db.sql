@@ -30,8 +30,8 @@ VALUES
       
 INSERT INTO `juxta_qname_filter_member` (`filter_id`, `qname_id`)
 VALUES
-   (1, 1),
    (1, 2),
+   (1, 4),
    (2, 6),
    (2, 4),
    (2, 3),
